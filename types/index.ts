@@ -72,5 +72,6 @@ export interface ConfigUsuario {
   meta: {
     usdMensual: number;
     tipoCambioRef: TipoCambioRef;
+    saldoUSD?: number;
   };
 }

@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { ConfigUsuario, Categoria, MedioPago, OrigenAhorro } from "@/types";
 
@@ -64,4 +64,14 @@ export async function obtenerCategorias(userId: string): Promise<Categoria[]> {
 export async function obtenerMediosPago(userId: string): Promise<MedioPago[]> {
   const config = await obtenerConfig(userId);
   return config.mediosPago;
+}
+
+export async function actualizarSaldoUSD(userId: string, saldoUSD: number): Promise<void> {
+  const ref = doc(db, `users/${userId}/config/meta`);
+  await updateDoc(ref, { "meta.saldoUSD": saldoUSD });
+}
+
+export async function actualizarTipoCambio(userId: string, tipo: "blue" | "oficial" | "mep"): Promise<void> {
+  const ref = doc(db, `users/${userId}/config/meta`);
+  await updateDoc(ref, { "meta.tipoCambioRef": tipo });
 }

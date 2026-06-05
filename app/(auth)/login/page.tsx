@@ -4,7 +4,6 @@ import { useState } from "react";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/services/firebase/firebase";
 import { useRouter } from "next/navigation";
-import { COLORS } from "@/constants/colors";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -18,7 +17,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
@@ -34,115 +32,56 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        background: COLORS.bg,
-        color: COLORS.text,
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
-      <div style={{ maxWidth: 400, width: "100%" }}>
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>
-            💰 Finanzas
-          </h1>
-          <p style={{ fontSize: 13, color: COLORS.muted }}>
-            {isSignUp ? "Crear cuenta" : "Inicia sesión"}
-          </p>
+    <div style={{
+      minHeight: "100dvh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+      background: "var(--bg)",
+    }}>
+      <div style={{ maxWidth: 380, width: "100%" }} className="fade-up">
+
+        <div style={{ marginBottom: 40, textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: "var(--accent)", letterSpacing: 4, marginBottom: 10 }}>FINANZAS APP</div>
+          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5 }}>
+            {isSignUp ? "Crear cuenta" : "Bienvenido"}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
+            {isSignUp ? "Registrate para continuar" : "Ingresá a tu cuenta"}
+          </div>
         </div>
 
-        <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <label style={{ display: "block", fontSize: 11, color: COLORS.muted, marginBottom: 6, letterSpacing: 1 }}>
-              EMAIL
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{
-                width: "100%",
-                background: COLORS.surfaceAlt,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: 6,
-                padding: "10px 12px",
-                color: COLORS.text,
-                fontSize: 13,
-                boxSizing: "border-box",
-              }}
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: 11, color: COLORS.muted, marginBottom: 6, letterSpacing: 1 }}>
-              PASSWORD
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{
-                width: "100%",
-                background: COLORS.surfaceAlt,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: 6,
-                padding: "10px 12px",
-                color: COLORS.text,
-                fontSize: 13,
-                boxSizing: "border-box",
-              }}
-              disabled={loading}
-            />
-          </div>
-
-          {error && (
-            <div style={{ background: COLORS.redDim, border: `1px solid ${COLORS.red}`, borderRadius: 6, padding: 12, fontSize: 12, color: COLORS.red }}>
-              {error}
+        <div className="card">
+          <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <div className="label">Email</div>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                className="input" disabled={loading} autoComplete="email" />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              background: COLORS.accent,
-              color: COLORS.bg,
-              border: "none",
-              borderRadius: 6,
-              padding: "12px 18px",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.6 : 1,
-              letterSpacing: 2,
-              textTransform: "uppercase",
-            }}
-          >
-            {loading ? "..." : isSignUp ? "CREAR" : "INGRESAR"}
-          </button>
-        </form>
+            <div>
+              <div className="label">Contraseña</div>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                className="input" disabled={loading} autoComplete={isSignUp ? "new-password" : "current-password"} />
+            </div>
+
+            {error && (
+              <div style={{ background: "var(--red-dim)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: 12, fontSize: 11, color: "var(--red)", lineHeight: 1.5 }}>
+                {error}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 4 }}>
+              {loading ? "..." : isSignUp ? "Crear cuenta" : "Ingresar"}
+            </button>
+          </form>
+        </div>
 
         <div style={{ marginTop: 20, textAlign: "center" }}>
-          <button
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError("");
-            }}
-            style={{
-              background: "none",
-              border: "none",
-              color: COLORS.accent,
-              fontSize: 12,
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
-          >
-            {isSignUp ? "¿Ya tenés cuenta? Ingresar" : "¿No tenés cuenta? Crear"}
+          <button onClick={() => { setIsSignUp(!isSignUp); setError(""); }}
+            style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12, cursor: "pointer" }}>
+            {isSignUp ? "¿Ya tenés cuenta? Ingresar" : "¿No tenés cuenta? Registrarse"}
           </button>
         </div>
       </div>

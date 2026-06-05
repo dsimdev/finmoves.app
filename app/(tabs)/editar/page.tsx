@@ -1,4 +1,4 @@
 import { redirect } from "next/navigation";
-export default function CargarPage() {
+export default function EditarPage() {
   redirect("/movimientos");
 }

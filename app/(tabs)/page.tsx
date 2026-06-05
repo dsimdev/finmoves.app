@@ -1,143 +1,117 @@
 "use client";
 
-import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/hooks/useAuth";
-import { usePeriodos } from "@/hooks/usePeriodos";
-import { signOut } from "firebase/auth";
-import { auth } from "@/services/firebase/firebase";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { crearPeriodo } from "@/services/firebase/periodos";
-import Link from "next/link";
+import { useAllMovimientos } from "@/hooks/useAllMovimientos";
+import { agruparPorPeriodo, formatARS } from "@/utils/periodo";
+import { Movimiento } from "@/types";
 
-const TABS = [
-  { href: "/", label: "Dashboard" },
-  { href: "/cargar", label: "Cargar" },
-  { href: "/resumen", label: "Resumen" },
-  { href: "/dolares", label: "USD" },
-  { href: "/config", label: "Config" },
-];
+function TipoColor(m: Movimiento) {
+  if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
+  if (m.tipo === "Move") return "var(--yellow)";
+  return "var(--green)";
+}
+
+function TipoPrefix(m: Movimiento) {
+  if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "-";
+  return "+";
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { periodoActivo, periodos } = usePeriodos(user?.uid);
-  const router = useRouter();
-  const [creatingPeriodo, setCreatingPeriodo] = useState(false);
+  const { movimientos, loading } = useAllMovimientos(user?.uid);
 
-  // Crear período inicial si no existe
-  useEffect(() => {
-    if (!user?.uid || periodos.length > 0) return;
-
-    const createInitialPeriodo = async () => {
-      try {
-        setCreatingPeriodo(true);
-        const now = new Date();
-        await crearPeriodo(user.uid, {
-          id: "",
-          inicio: now,
-          fin: null,
-          sueldo: 0,
-          estado: "activo",
-          resto: 0,
-        });
-      } catch (err) {
-        console.error("Error creating initial periodo:", err);
-      } finally {
-        setCreatingPeriodo(false);
-      }
-    };
-
-    createInitialPeriodo();
-  }, [user?.uid, periodos.length]);
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/login");
-  };
+  const periodos = agruparPorPeriodo(movimientos);
+  const p = periodos[0];
+  const ultimos = p?.movimientos.slice(0, 6) ?? [];
+  const pct = p?.pct ?? 0;
+  const barColor = pct > 100 ? "var(--red)" : pct > 80 ? "var(--yellow)" : "var(--green)";
 
   return (
-    <div
-      style={{
-        fontFamily: "'IBM Plex Mono', monospace",
-        background: COLORS.bg,
-        color: COLORS.text,
-        minHeight: "100vh",
-        padding: "24px 20px",
-      }}
-    >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <div>
-            <div style={{ fontSize: 10, color: COLORS.muted, letterSpacing: 4, textTransform: "uppercase", marginBottom: 4 }}>
-              Finanzas App
-            </div>
-            <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: -1 }}>
-              Dashboard
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              background: COLORS.red,
-              color: COLORS.bg,
-              border: "none",
-              borderRadius: 6,
-              padding: "10px 18px",
-              fontSize: 11,
-              letterSpacing: 2,
-              textTransform: "uppercase",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
-            Logout
-          </button>
-        </div>
+    <div className="page fade-up">
 
-        {/* Navegación */}
-        <div style={{ display: "flex", gap: 2, marginBottom: 24, flexWrap: "wrap", borderBottom: `1px solid ${COLORS.border}` }}>
-          {TABS.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              style={{
-                padding: "9px 18px",
-                background: "none",
-                border: "none",
-                borderBottom: tab.href === "/" ? `2px solid ${COLORS.accent}` : "2px solid transparent",
-                color: tab.href === "/" ? COLORS.accent : COLORS.muted,
-                cursor: "pointer",
-                fontSize: 11,
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                fontFamily: "'IBM Plex Mono', monospace",
-                marginBottom: -1,
-                textDecoration: "none",
-              }}
-            >
-              {tab.label}
-            </Link>
-          ))}
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+        <div>
+          <div className="label" style={{ marginBottom: 2 }}>Finanzas App</div>
+          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Dashboard</div>
         </div>
-
-        <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 20 }}>
-          <div style={{ fontSize: 14, color: COLORS.muted, marginBottom: 12 }}>
-            Conectado como: <span style={{ color: COLORS.accent }}>{user?.email}</span>
+        {p && (
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 2 }}>PERÍODO</div>
+            <div style={{ fontSize: 12, color: "var(--accent)", fontWeight: 700 }}>{p.periodoId}</div>
           </div>
-          <p style={{ color: COLORS.text, lineHeight: 1.6 }}>
-            📊 Período activo: <span style={{ color: COLORS.green }}>{periodoActivo ? "✓" : "cargando..."}</span>
-            {creatingPeriodo && " (creando período inicial...)"}
-            <br />
-            <br />
-            🚀 Navegá por las pestañas arriba para:
-            <br />
-            • Cargar movimientos<br/>
-            • Ver resumen de períodos<br/>
-            • Gestionar reserva USD<br/>
-            • Editar configuración
-          </p>
-        </div>
+        )}
       </div>
+
+      {loading ? (
+        <div className="loading-pulse" style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 3, textAlign: "center", paddingTop: 60 }}>CARGANDO...</div>
+      ) : !p ? (
+        <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 12 }}>
+          No hay datos. Cargá el primer movimiento.
+        </div>
+      ) : (
+        <>
+          {/* Hero */}
+          <div className="card" style={{ borderColor: `${barColor}44`, marginBottom: 12, background: `linear-gradient(135deg, var(--surface) 0%, ${barColor}08 100%)` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+              <div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Disponible</div>
+                <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -1, color: "var(--text)", lineHeight: 1 }}>
+                  {formatARS(p.disponible)}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
+                  de {formatARS(p.total)} · {p.movimientos.length} movimientos
+                </div>
+              </div>
+              <span className="badge" style={{ background: barColor + "20", color: barColor, border: `1px solid ${barColor}44`, marginTop: 4 }}>
+                {pct}%
+              </span>
+            </div>
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />
+            </div>
+          </div>
+
+          {/* KPIs */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+            {[
+              { label: "Gastado", value: formatARS(p.gastado), color: "var(--red)" },
+              { label: "Ahorros", value: formatARS(p.ahorros), color: "var(--blue)" },
+              { label: "Sueldo", value: formatARS(p.sueldo), color: "var(--green)" },
+              { label: "Extras", value: p.extras > 0 ? formatARS(p.extras) : "—", color: "var(--green)" },
+            ].map((k) => (
+              <div key={k.label} className="card" style={{ padding: 14 }}>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>{k.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Últimos movimientos */}
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <span className="label" style={{ marginBottom: 0 }}>Últimos movimientos</span>
+            </div>
+            {ultimos.length === 0 ? (
+              <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>Sin movimientos</div>
+            ) : ultimos.map((m) => (
+              <div key={m.id} className="row">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {m.descripcion || m.categoria}
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+                    {m.categoria} · {m.fecha}
+                  </div>
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: TipoColor(m), marginLeft: 12, whiteSpace: "nowrap" }}>
+                  {TipoPrefix(m)}{formatARS(m.monto)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

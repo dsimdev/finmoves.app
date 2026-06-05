@@ -41,10 +41,10 @@ export async function obtenerMovimientos(
   }
 
   const snap = await getDocs(q);
-  return snap.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    timestampCarga: (doc.data().timestampCarga as Timestamp).toDate(),
+  return snap.docs.map((d) => ({
+    ...d.data(),
+    id: d.id,
+    timestampCarga: (d.data().timestampCarga as Timestamp).toDate(),
   } as Movimiento));
 }
 

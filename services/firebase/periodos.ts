@@ -75,3 +75,28 @@ export async function asignarPeriodoId(
     .sort((a, b) => b.inicio.getTime() - a.inicio.getTime())[0];
   return periodo?.id ?? "";
 }
+
+export async function cerrarPeriodoYAbrir(
+  userId: string,
+  periodoActualId: string,
+  nuevoSueldo: number
+): Promise<string> {
+  const ahora = new Date();
+
+  // Cerrar período actual
+  await actualizarPeriodo(userId, periodoActualId, {
+    fin: ahora,
+    estado: "cerrado" as any,
+  });
+
+  // Crear nuevo período
+  const nuevoPeriodoId = await crearPeriodo(userId, {
+    inicio: ahora,
+    fin: null,
+    sueldo: nuevoSueldo,
+    estado: "activo",
+    resto: 0,
+  });
+
+  return nuevoPeriodoId;
+}

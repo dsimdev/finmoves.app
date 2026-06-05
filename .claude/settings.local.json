@@ -14,7 +14,18 @@
       "PowerShell(git config user.name \"Claude\")",
       "PowerShell(\\(curl.exe -s http://localhost:3000/\\) | Measure-Object -Character -Line -Word)",
       "PowerShell(git commit -m \"fix: Separate Firebase initialization from user config module\")",
-      "PowerShell(git commit -m \"fix: Update Firebase imports in all services\")"
+      "PowerShell(git commit -m \"fix: Update Firebase imports in all services\")",
+      "Bash(cat tailwind.config.ts)",
+      "Bash(cat tailwind.config.js)",
+      "Bash(cat postcss.config.js)",
+      "Bash(cat postcss.config.mjs)",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\usuario\\\\Desktop\\\\moves-project\\\\app\\\\\\(tabs\\)\\\\movimientos\")",
+      "Bash(vercel --version)",
+      "Bash(npm run *)",
+      "Bash(cd \"c:/Users/usuario/Desktop/moves-project\" && rm -f components/Navigation.tsx hooks/useMovimientos.ts hooks/usePeriodos.ts store/useAppStore.ts constants/colors.ts scripts/importFromSheet.js IMPORT_GUIDE.md public/file.svg public/globe.svg public/next.svg public/vercel.svg public/window.svg && rm -rf components/movimiento components/periodo components/ui store constants scripts \"services/{firebase}\" && echo \"Done\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\usuario\\Desktop\\moves-project\\services\\{firebase}"
     ]
   }
 }
