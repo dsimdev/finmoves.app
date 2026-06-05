@@ -12,7 +12,8 @@
       "PowerShell(git add .)",
       "PowerShell(git config user.email \"dmnsimon@gmail.com\")",
       "PowerShell(git config user.name \"Claude\")",
-      "PowerShell(\\(curl.exe -s http://localhost:3000/\\) | Measure-Object -Character -Line -Word)"
+      "PowerShell(\\(curl.exe -s http://localhost:3000/\\) | Measure-Object -Character -Line -Word)",
+      "PowerShell(git commit -m \"fix: Separate Firebase initialization from user config module\")"
     ]
   }
 }

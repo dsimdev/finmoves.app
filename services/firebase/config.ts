@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "./config";
+import { db } from "./firebase";
 import { ConfigUsuario, Categoria, MedioPago, OrigenAhorro } from "@/types";
 
 const TEMPLATE_CONFIG = {

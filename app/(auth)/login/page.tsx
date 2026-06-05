@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/services/firebase/config";
+import { auth } from "@/services/firebase/firebase";
 import { useRouter } from "next/navigation";
 import { COLORS } from "@/constants/colors";
 

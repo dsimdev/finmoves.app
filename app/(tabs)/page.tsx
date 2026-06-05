@@ -4,7 +4,7 @@ import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/hooks/useAuth";
 import { usePeriodos } from "@/hooks/usePeriodos";
 import { signOut } from "firebase/auth";
-import { auth } from "@/services/firebase/config";
+import { auth } from "@/services/firebase/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { crearPeriodo } from "@/services/firebase/periodos";
