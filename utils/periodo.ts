@@ -104,3 +104,18 @@ export function gastosPorCategoria(
 export function formatARS(n: number): string {
   return "$" + Math.round(n).toLocaleString("es-AR");
 }
+
+// Fecha corta para mostrar al lado de la categoría (el año ya está en el período)
+// "YYYY-MM-DD" → "dd-MM"  ·  también tolera "D/M/YYYY"
+export function fechaCorta(fecha: string): string {
+  if (!fecha) return "";
+  if (fecha.includes("-")) {
+    const [, m, d] = fecha.split("-");
+    return `${d}-${m}`;
+  }
+  if (fecha.includes("/")) {
+    const [d, m] = fecha.split("/");
+    return `${d.padStart(2, "0")}-${m.padStart(2, "0")}`;
+  }
+  return fecha;
+}

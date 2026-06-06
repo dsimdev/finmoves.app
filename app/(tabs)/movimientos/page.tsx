@@ -6,8 +6,31 @@ import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useConfig } from "@/hooks/useConfig";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
-import { agruparPorPeriodo, formatARS } from "@/utils/periodo";
+import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
+import { serieTendencia } from "@/utils/reportes";
+import { useHideValues } from "@/hooks/useHideValues";
 import { Movimiento, TipoMovimiento } from "@/types";
+
+// ── Íconos ────────────────────────────────────────────────────────────────────
+const PencilIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+    <path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    <path d="M13.5 6.5l3 3" stroke="currentColor" strokeWidth="1.7" />
+  </svg>
+);
+const SaveIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+    <path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    <path d="M8 3v5h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="7.5" y="13" width="9" height="6" rx="1" stroke="currentColor" strokeWidth="1.7" />
+  </svg>
+);
+const TrashIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
 
 // ── Un solo Modal ────────────────────────────────────────────────────────────
 function Modal({ open, onClose, title, children }: {
@@ -71,7 +94,8 @@ const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = [
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function MovimientosPage() {
   const { user } = useAuth();
-  const { movimientos, loading } = useAllMovimientos(user?.uid);
+  const { oculto } = useHideValues();
+  const { movimientos, loading, refresh } = useAllMovimientos(user?.uid);
   const { config } = useConfig(user?.uid);
   const { cotizacion } = useCotizacion();
 
@@ -79,6 +103,9 @@ export default function MovimientosPage() {
   const [periodoSel, setPeriodoSel] = useState<string | null>(null);
   const activePeriodoId = periodoSel ?? periodos[0]?.periodoId;
   const periodoActual = periodos.find(p => p.periodoId === activePeriodoId);
+  // Ahorro acumulado (carry-forward) hasta el período activo — para el Move
+  const serie = useMemo(() => serieTendencia(periodos), [periodos]);
+  const ahorrosAcumActivo = serie.find(s => s.periodoId === activePeriodoId)?.ahorrosAcum ?? 0;
 
   // ── Modal: "add" | "edit" | "delete" | null
   const [modal, setModal] = useState<"add" | "edit" | "delete" | null>(null);
@@ -163,9 +190,9 @@ export default function MovimientosPage() {
         ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
         ...(esUSD ? { cantidadUSD: parseFloat(cantidadUSD), cotizacion: cotizActual } : {}),
       });
-      resetAdd(); closeModal();
-    } catch (err: any) {
-      setAddError(err.message);
+      resetAdd(); closeModal(); refresh();
+    } catch (err: unknown) {
+      setAddError(err instanceof Error ? err.message : "Error inesperado");
     } finally {
       setAddLoading(false);
     }
@@ -179,7 +206,7 @@ export default function MovimientosPage() {
       const update: Partial<Movimiento> = { monto: parseFloat(eMonto), observaciones: eObs };
       if (!locked) { update.descripcion = eDesc.trim(); update.medioPago = eMedio; }
       await actualizarMovimiento(user.uid, movSel.id, update);
-      closeModal(); window.location.reload();
+      closeModal(); refresh();
     } catch (err) { console.error(err); }
     finally { setEditLoading(false); }
   };
@@ -189,7 +216,7 @@ export default function MovimientosPage() {
     setEditLoading(true);
     try {
       await eliminarMovimiento(user.uid, movSel.id);
-      closeModal(); window.location.reload();
+      closeModal(); refresh();
     } catch (err) { console.error(err); }
     finally { setEditLoading(false); }
   };
@@ -210,7 +237,7 @@ export default function MovimientosPage() {
           <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Movimientos</div>
           {periodoActual && (
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
-              Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{formatARS(periodoActual.disponible)}</span>
+              Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{oculto ? "••••••" : formatARS(periodoActual.disponible)}</span>
             </div>
           )}
         </div>
@@ -257,18 +284,18 @@ export default function MovimientosPage() {
                     {m.descripcion || m.categoria}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                    {m.categoria} · {m.fecha}
+                    {m.categoria} · {fechaCorta(m.fecha)}
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : "var(--green)", fontFamily: "var(--font-mono)" }}>
                     {isGasto ? "-" : "+"}{formatARS(m.monto)}
                   </span>
-                  <button onClick={() => openEdit(m)} style={{
+                  <button onClick={() => openEdit(m)} aria-label="Editar" style={{
                     background: "var(--surface-alt)", border: "1px solid var(--border)",
-                    color: "var(--muted)", borderRadius: 8, padding: "4px 10px",
-                    fontSize: 11, fontWeight: 600, cursor: "pointer",
-                  }}>editar</button>
+                    color: "var(--muted)", borderRadius: 9, width: 30, height: 30, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}><PencilIcon /></button>
                 </div>
               </div>
             );
@@ -345,7 +372,7 @@ export default function MovimientosPage() {
               <div style={{ marginBottom: 18 }}>
                 <div className="label">Cotización</div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
-                  {cotizacion ? (["blue", "oficial", "mep"] as const).map(t => (
+                  {cotizacion ? (["blue", "oficial"] as const).map(t => (
                     <button key={t} type="button" onClick={() => setCotizManual(String(cotizacion[t]))}
                       className="pill" style={{
                         borderColor: (cotizManual === String(cotizacion[t]) || (!cotizManual && t === "blue")) ? "var(--yellow)" : "var(--border)",
@@ -422,7 +449,7 @@ export default function MovimientosPage() {
         {modal === "edit" && movSel && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-              {[{ l: "Tipo", v: movSel.tipo }, { l: "Categoría", v: movSel.categoria }, { l: "Fecha", v: movSel.fecha }].map(f => (
+              {[{ l: "Tipo", v: movSel.tipo }, { l: "Categoría", v: movSel.categoria }, { l: "Fecha", v: fechaCorta(movSel.fecha) }].map(f => (
                 <div key={f.l} style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 12px" }}>
                   <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{f.l}</div>
                   <div style={{ fontSize: 12, fontWeight: 600 }}>{f.v}</div>
@@ -460,12 +487,12 @@ export default function MovimientosPage() {
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={handleEdit} disabled={editLoading} className="btn btn-primary" style={{ flex: 1 }}>
-                {editLoading ? "..." : "Guardar"}
+              <button onClick={handleEdit} disabled={editLoading} aria-label="Guardar" className="btn btn-primary" style={{ flex: 1 }}>
+                {editLoading ? "..." : <SaveIcon />}
               </button>
               {!isLocked && (
-                <button onClick={() => setModal("delete")} className="btn" style={{ background: "transparent", border: "1px solid var(--red)", color: "var(--red)", padding: "13px 16px" }}>
-                  Eliminar
+                <button onClick={() => setModal("delete")} aria-label="Eliminar" className="btn" style={{ background: "transparent", border: "1px solid var(--red)", color: "var(--red)", padding: "13px 18px" }}>
+                  <TrashIcon />
                 </button>
               )}
             </div>

@@ -24,8 +24,8 @@ export default function LoginPage() {
         await signInWithEmailAndPassword(auth, email, password);
       }
       router.push("/");
-    } catch (err: any) {
-      setError(err.message || "Auth error");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Auth error");
     } finally {
       setLoading(false);
     }

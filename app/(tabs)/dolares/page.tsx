@@ -8,7 +8,6 @@ import { useConfig } from "@/hooks/useConfig";
 import { actualizarTipoCambio } from "@/services/firebase/config";
 import { formatARS } from "@/utils/periodo";
 import { Movimiento } from "@/types";
-import { TipoCambioRef } from "@/types";
 
 const SALDO_INICIAL_USD = 5.77;
 
@@ -30,7 +29,7 @@ export default function DolaresPage() {
   const { cotizacion, minutosDesdeActualizacion } = useCotizacion();
   const { config } = useConfig(user?.uid);
 
-  const [tipoCambioSel, setTipoCambioSel] = useState<TipoCambioRef | null>(null);
+  const [tipoCambioSel, setTipoCambioSel] = useState<"blue" | "oficial" | null>(null);
 
   const movimientosUSD = movimientos
     .filter((m) => m.tipo === "CompraUSD")
@@ -39,7 +38,8 @@ export default function DolaresPage() {
   const { totalUSD: desdeMovimientos, costoPromedio } = calcularReserva(movimientosUSD);
   const totalUSD = SALDO_INICIAL_USD + desdeMovimientos;
 
-  const tipoCambioRef = tipoCambioSel ?? config?.meta.tipoCambioRef ?? "blue";
+  const rawTipoCambio = tipoCambioSel ?? config?.meta.tipoCambioRef ?? "blue";
+  const tipoCambioRef: "blue" | "oficial" = rawTipoCambio === "oficial" ? "oficial" : "blue";
   const cotizacionActual = cotizacion ? cotizacion[tipoCambioRef] : null;
   const reservaEnARS = cotizacionActual ? totalUSD * cotizacionActual : null;
   const gananciaARS = reservaEnARS && costoPromedio > 0 ? reservaEnARS - desdeMovimientos * costoPromedio : null;
@@ -98,7 +98,7 @@ export default function DolaresPage() {
             </div>
             {cotizacion ? (
               <div style={{ display: "flex", gap: 8 }}>
-                {(["blue", "oficial", "mep"] as const).map((t) => (
+                {(["blue", "oficial"] as const).map((t) => (
                   <div key={t} onClick={() => { setTipoCambioSel(t); if (user?.uid) actualizarTipoCambio(user.uid, t); }}
                     style={{
                       flex: 1, cursor: "pointer",

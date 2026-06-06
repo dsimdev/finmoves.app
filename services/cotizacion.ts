@@ -16,7 +16,6 @@ export async function getCotizacion(): Promise<Cotizacion | null> {
     const data: Cotizacion = {
       blue: json.blue.value_sell,
       oficial: json.oficial.value_sell,
-      mep: json.blue.value_sell,
       fuente: "api",
       timestamp: new Date(),
     };
@@ -28,9 +27,3 @@ export async function getCotizacion(): Promise<Cotizacion | null> {
   }
 }
 
-export function getCotizacionPorTipo(
-  cotizacion: Cotizacion,
-  tipo: "blue" | "oficial" | "mep"
-): number {
-  return cotizacion[tipo];
-}

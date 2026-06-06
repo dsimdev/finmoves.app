@@ -1,7 +1,7 @@
 export type TipoMovimiento = "Gasto" | "Ingreso" | "Move" | "CompraUSD";
 export type TipoCategoria = "Gasto" | "Ingreso" | "Ambos";
 export type EstadoPeriodo = "activo" | "cerrado";
-export type TipoCambioRef = "blue" | "oficial" | "mep";
+export type TipoCambioRef = "blue" | "oficial";
 
 export interface Periodo {
   id: string;
@@ -27,8 +27,6 @@ export interface Movimiento {
   cantidadUSD?: number;
   cotizacion?: number;
   origenAhorro?: string;
-  desde?: string;
-  hacia?: string;
 }
 
 export interface ReservaUSD {
@@ -40,7 +38,6 @@ export interface ReservaUSD {
 export interface Cotizacion {
   blue: number;
   oficial: number;
-  mep: number;
   fuente: "api" | "manual" | "cache";
   timestamp: Date;
 }

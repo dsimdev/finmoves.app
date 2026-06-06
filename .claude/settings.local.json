@@ -22,7 +22,11 @@
       "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\usuario\\\\Desktop\\\\moves-project\\\\app\\\\\\(tabs\\)\\\\movimientos\")",
       "Bash(vercel --version)",
       "Bash(npm run *)",
-      "Bash(cd \"c:/Users/usuario/Desktop/moves-project\" && rm -f components/Navigation.tsx hooks/useMovimientos.ts hooks/usePeriodos.ts store/useAppStore.ts constants/colors.ts scripts/importFromSheet.js IMPORT_GUIDE.md public/file.svg public/globe.svg public/next.svg public/vercel.svg public/window.svg && rm -rf components/movimiento components/periodo components/ui store constants scripts \"services/{firebase}\" && echo \"Done\")"
+      "Bash(cd \"c:/Users/usuario/Desktop/moves-project\" && rm -f components/Navigation.tsx hooks/useMovimientos.ts hooks/usePeriodos.ts store/useAppStore.ts constants/colors.ts scripts/importFromSheet.js IMPORT_GUIDE.md public/file.svg public/globe.svg public/next.svg public/vercel.svg public/window.svg && rm -rf components/movimiento components/periodo components/ui store constants scripts \"services/{firebase}\" && echo \"Done\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\usuario\\\\Desktop\\\\moves-project\" -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(curl -s \"https://api.bluelytics.com.ar/v2/latest\")",
+      "Bash(Remove-Item \"c:\\\\Users\\\\usuario\\\\Desktop\\\\moves-project\\\\services\\\\firebase\\\\periodos.ts\" -Force)"
     ],
     "additionalDirectories": [
       "C:\\Users\\usuario\\Desktop\\moves-project\\services\\{firebase}"

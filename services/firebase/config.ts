@@ -56,22 +56,7 @@ export async function crearConfigDefault(userId: string): Promise<void> {
   await setDoc(ref, TEMPLATE_CONFIG);
 }
 
-export async function obtenerCategorias(userId: string): Promise<Categoria[]> {
-  const config = await obtenerConfig(userId);
-  return config.categorias;
-}
-
-export async function obtenerMediosPago(userId: string): Promise<MedioPago[]> {
-  const config = await obtenerConfig(userId);
-  return config.mediosPago;
-}
-
-export async function actualizarSaldoUSD(userId: string, saldoUSD: number): Promise<void> {
-  const ref = doc(db, `users/${userId}/config/meta`);
-  await updateDoc(ref, { "meta.saldoUSD": saldoUSD });
-}
-
-export async function actualizarTipoCambio(userId: string, tipo: "blue" | "oficial" | "mep"): Promise<void> {
+export async function actualizarTipoCambio(userId: string, tipo: "blue" | "oficial"): Promise<void> {
   const ref = doc(db, `users/${userId}/config/meta`);
   await updateDoc(ref, { "meta.tipoCambioRef": tipo });
 }

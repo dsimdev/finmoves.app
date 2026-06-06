@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useConfig } from "@/hooks/useConfig";
 import { doc, setDoc } from "firebase/firestore";
 import { db, auth } from "@/services/firebase/firebase";
-import { signOut } from "firebase/auth";
+import { signOut, getIdToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 type SeccionId = "categorias" | "medios" | "origenes" | "meta";
@@ -35,21 +35,23 @@ function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
 
 export default function ConfigPage() {
   const { user } = useAuth();
-  const { config, loading } = useConfig(user?.uid);
+  const { config, loading, refresh } = useConfig(user?.uid);
   const router = useRouter();
   const [seccion, setSeccion] = useState<SeccionId>("categorias");
   const [guardando, setGuardando] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [nuevoTipo, setNuevoTipo] = useState<"Gasto" | "Ingreso">("Gasto");
   const [metaUSD, setMetaUSD] = useState("");
-  const [tipoCambio, setTipoCambio] = useState<"blue" | "oficial" | "mep">("blue");
+  const [tipoCambio, setTipoCambio] = useState<"blue" | "oficial">("blue");
 
   const saveConfig = async (newConfig: typeof config) => {
     if (!user?.uid || !newConfig) return;
     setGuardando(true);
     try {
       await setDoc(doc(db, `users/${user.uid}/config/meta`), newConfig);
-      window.location.reload();
+      refresh();
     } catch (err) { console.error(err); }
     finally { setGuardando(false); }
   };
@@ -90,12 +92,48 @@ export default function ConfigPage() {
   const guardarMeta = () =>
     saveConfig({ ...config, meta: { usdMensual: parseFloat(metaUSD) || config.meta.usdMensual, tipoCambioRef: tipoCambio || config.meta.tipoCambioRef } });
 
+  const handleSync = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const token = await getIdToken(currentUser);
+      const res = await fetch("/api/sync-sheets", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error");
+      setSyncMsg({ ok: true, text: data.message });
+    } catch (err: unknown) {
+      setSyncMsg({ ok: false, text: err instanceof Error ? err.message : "Error al sincronizar" });
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMsg(null), 4000);
+    }
+  };
+
   return (
     <div className="page fade-up">
 
-      <div style={{ marginBottom: 24 }}>
-        <div className="label" style={{ marginBottom: 2 }}>Preferencias</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Config</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+        <div>
+          <div className="label" style={{ marginBottom: 2 }}>Preferencias</div>
+          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Config</div>
+        </div>
+        <button onClick={handleSync} disabled={syncing} title="Sincronizar con Google Sheets" style={{
+          width: 40, height: 40, borderRadius: "50%",
+          background: "var(--accent)", color: "#000",
+          border: "none", cursor: syncing ? "default" : "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0, marginTop: 4,
+        }}>
+          <svg className={syncing ? "spin" : ""} width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
+              stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
       </div>
 
       {/* Tabs */}
@@ -199,7 +237,7 @@ export default function ConfigPage() {
           <div style={{ marginBottom: 20 }}>
             <div className="label">Tipo de cambio referencia</div>
             <div style={{ display: "flex", gap: 6 }}>
-              {(["blue", "oficial", "mep"] as const).map(t => (
+              {(["blue", "oficial"] as const).map(t => (
                 <button key={t} type="button" onClick={() => setTipoCambio(t)}
                   className="pill"
                   style={{
@@ -224,6 +262,20 @@ export default function ConfigPage() {
           Cerrar sesión
         </button>
       </div>
+
+      {/* Toast de resultado del sync */}
+      {syncMsg && (
+        <div className="fade-up" style={{
+          position: "fixed", left: 16, right: 16, bottom: "calc(var(--nav-h) + 16px)",
+          zIndex: 150, padding: "12px 16px", borderRadius: "var(--radius-sm)", fontSize: 13,
+          background: syncMsg.ok ? "var(--green-dim)" : "var(--red-dim)",
+          border: `1px solid ${syncMsg.ok ? "var(--green)" : "var(--red)"}44`,
+          color: syncMsg.ok ? "var(--green)" : "var(--red)",
+          textAlign: "center", backdropFilter: "blur(8px)",
+        }}>
+          {syncMsg.text}
+        </div>
+      )}
     </div>
   );
 }

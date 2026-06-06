@@ -30,7 +30,7 @@ const TABS = [
   },
   {
     href: "/resumen",
-    label: "Resumen",
+    label: "Reportes",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <rect x="3" y="3" width="18" height="18" rx="3" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" fill={active ? "var(--accent-dim)" : "none"} />
@@ -78,7 +78,7 @@ export function BottomNav() {
       paddingBottom: "env(safe-area-inset-bottom, 0px)",
     }}>
       {TABS.map((tab) => {
-        const active = pathname === tab.href || (tab.href === "/movimientos" && (pathname === "/cargar" || pathname === "/editar"));
+        const active = pathname === tab.href;
         return (
           <Link key={tab.href} href={tab.href} style={{
             flex: 1, display: "flex", flexDirection: "column",
