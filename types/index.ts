@@ -1,4 +1,4 @@
-export type TipoMovimiento = "Gasto" | "Ingreso" | "Move" | "CompraUSD";
+export type TipoMovimiento = "Gasto" | "Ingreso" | "Move" | "CompraUSD" | "GastoUSD";
 export type TipoCategoria = "Gasto" | "Ingreso" | "Ambos";
 export type EstadoPeriodo = "activo" | "cerrado";
 export type TipoCambioRef = "blue" | "oficial";
@@ -70,5 +70,9 @@ export interface ConfigUsuario {
     usdMensual: number;
     tipoCambioRef: TipoCambioRef;
     saldoUSD?: number;
+    metaFecha?: string; // YYYY-MM-DD
+    metaMoneda?: "USD"; // siempre USD
+    metaMonto?: number;
+    metaPorPeriodo?: number;
   };
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatARS } from "@/utils/periodo";
 
 const KEY = "finmoves_hide";
+export const MASK = "$ ••••";
 
 // Estado compartido (vía localStorage) para ocultar montos sensibles en toda la app.
 export function useHideValues() {
@@ -28,4 +30,11 @@ export function useHideValues() {
     });
 
   return { oculto, toggle };
+}
+
+// Igual que useHideValues pero además expone m(): formatea ARS u oculta según el estado.
+export function useMoney() {
+  const { oculto, toggle } = useHideValues();
+  const m = (n: number) => (oculto ? MASK : formatARS(n));
+  return { oculto, toggle, m };
 }

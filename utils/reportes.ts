@@ -49,7 +49,14 @@ export const gastosPorDescripcion = (movs: Movimiento[], totalGastado: number, t
 // Gastos por fecha del evento (no de carga), en orden cronológico
 export function gastosPorFecha(movs: Movimiento[], totalGastado: number): Distribucion[] {
   const dist = distribucion(movs, (m) => m.fecha, totalGastado);
-  return dist.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  return dist.sort((a, b) => {
+    const parseDate = (s: string) => {
+      if (s.includes("-")) return new Date(s).getTime();
+      const [d, m, y] = s.split("/").map(Number);
+      return new Date(y, m - 1, d).getTime();
+    };
+    return parseDate(a.nombre) - parseDate(b.nombre);
+  });
 }
 
 // ── KPIs del período ─────────────────────────────────────────────────────────
@@ -179,4 +186,190 @@ export function serieTendencia(periodos: PeriodoResumen[]): PuntoTendencia[] {
       ahorrosAcum: acum,
     };
   });
+}
+
+// ── Estadísticas avanzadas ────────────────────────────────────────────────────
+
+export function medioPagoMasUsadoCount(movs: Movimiento[]): { nombre: string; count: number } | null {
+  const counts = new Map<string, number>();
+  for (const m of movs) {
+    if (!esGasto(m)) continue;
+    const k = m.medioPago || "—";
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  if (counts.size === 0) return null;
+  const [nombre, count] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]!;
+  return { nombre, count };
+}
+
+export function diasSinGastos(
+  movs: Movimiento[],
+  startDate: Date,
+  endDate: Date
+): { sinGasto: number; total: number } {
+  const daysWithGasto = new Set<string>();
+  for (const m of movs) if (esGasto(m)) daysWithGasto.add(m.fecha);
+  const total = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / DIA_MS));
+  return { sinGasto: Math.max(0, total - daysWithGasto.size), total };
+}
+
+export function mejorPeriodo(periodos: PeriodoResumen[]): PeriodoResumen | null {
+  if (periodos.length === 0) return null;
+  return periodos.reduce((b, p) => p.pct < b.pct ? p : b);
+}
+
+export function peorPeriodo(periodos: PeriodoResumen[]): PeriodoResumen | null {
+  if (periodos.length === 0) return null;
+  return periodos.reduce((w, p) => p.pct > w.pct ? p : w);
+}
+
+export function promedioAhorroPeriodo(periodos: PeriodoResumen[]): number {
+  const con = periodos.filter((p) => p.ahorros > 0);
+  return con.length > 0 ? con.reduce((s, p) => s + p.ahorros, 0) / con.length : 0;
+}
+
+export function evolucionSueldo(
+  periodos: PeriodoResumen[]
+): { delta: number; deltaPct: number | null } | null {
+  if (periodos.length < 2) return null;
+  const ultimo = periodos[0]!.sueldo;
+  const primero = periodos[periodos.length - 1]!.sueldo;
+  const delta = ultimo - primero;
+  const deltaPct = primero > 0 ? Math.round((delta / primero) * 100) : null;
+  return { delta, deltaPct };
+}
+
+export function gastoPromedioHistorico(serie: PuntoTendencia[]): number {
+  if (serie.length === 0) return 0;
+  return serie.reduce((s, p) => s + p.gastado, 0) / serie.length;
+}
+
+export function proyectarAhorros(serie: PuntoTendencia[], nPeriodos: number): number {
+  if (serie.length === 0) return 0;
+  const ultimos = serie.slice(-Math.min(3, serie.length));
+  let promedio = ultimos.reduce((s, p) => s + p.ahorros, 0) / ultimos.length;
+  // Si el promedio reciente es <= 0, cae al promedio histórico de períodos positivos
+  if (promedio <= 0) {
+    const positivos = serie.filter((p) => p.ahorros > 0);
+    promedio = positivos.length > 0 ? positivos.reduce((s, p) => s + p.ahorros, 0) / positivos.length : 0;
+  }
+  return serie[serie.length - 1]!.ahorrosAcum + Math.max(0, promedio) * nPeriodos;
+}
+
+export function periodosParaMetaARS(serie: PuntoTendencia[], metaARS: number): number | null {
+  if (serie.length === 0) return null;
+  const acumActual = serie[serie.length - 1]!.ahorrosAcum;
+  if (acumActual >= metaARS) return 0;
+  const ultimos = serie.slice(-Math.min(3, serie.length));
+  const promedio = ultimos.reduce((s, p) => s + p.ahorros, 0) / ultimos.length;
+  if (promedio <= 0) return null;
+  return Math.ceil((metaARS - acumActual) / promedio);
+}
+
+// ── Estadísticas de metas de ahorro ──────────────────────────────────────
+
+export function ritmoAhorroActual(serie: PuntoTendencia[]): number {
+  if (serie.length < 2) return 0;
+  const ultimos = serie.slice(-3);
+  return ultimos.reduce((s, p) => s + p.ahorros, 0) / ultimos.length;
+}
+
+export function progresoMetaUSD(ahorrosAcumARS: number, metaUSD: number, cotizacionBlue: number): number {
+  const metaEnARS = metaUSD * cotizacionBlue;
+  return Math.round((ahorrosAcumARS / metaEnARS) * 100);
+}
+
+export function periodosParaMetaUSD(serie: PuntoTendencia[], metaUSD: number, cotizacionBlue: number): number | null {
+  const metaEnARS = metaUSD * cotizacionBlue;
+  return periodosParaMetaARS(serie, metaEnARS);
+}
+
+export function consistenciaAhorro(periodos: PeriodoResumen[], metaPorPeriodo: number): { cumplidos: number; total: number } {
+  const cumplidos = periodos.filter((p) => p.ahorros >= metaPorPeriodo).length;
+  return { cumplidos, total: periodos.length };
+}
+
+export interface AhorroVsProyectado {
+  periodoId: string;
+  real: number;
+  esperado: number;
+  delta: number;
+}
+
+export function ahorrosVsProyectados(
+  serie: PuntoTendencia[],
+  metaPorPeriodo: number
+): AhorroVsProyectado[] {
+  return serie.map((p, i) => {
+    const esperado = metaPorPeriodo * (i + 1);
+    const real = p.ahorrosAcum;
+    return {
+      periodoId: p.periodoId,
+      real,
+      esperado,
+      delta: real - esperado,
+    };
+  });
+}
+
+export interface Insight {
+  texto: string;
+  valor?: number; // monetary value — rendered with money(), use "{n}" placeholder in texto
+  tipo: "good" | "warn" | "info";
+}
+
+export function generarInsights(periodos: PeriodoResumen[], serie: PuntoTendencia[]): Insight[] {
+  const result: Insight[] = [];
+  if (periodos.length === 0 || serie.length === 0) return result;
+
+  const actual = periodos[0]!;
+  const ant = periodos[1];
+  const sp = (s: string) => { const [d, m] = s.split("/"); return `${d}/${m}`; };
+
+  // Categoría más cara del período actual
+  const cats = new Map<string, number>();
+  for (const m of actual.movimientos) if (esGasto(m)) cats.set(m.categoria, (cats.get(m.categoria) ?? 0) + m.monto);
+  const topCat = [...cats.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (topCat) {
+    const pct = actual.gastado > 0 ? Math.round((topCat[1] / actual.gastado) * 100) : 0;
+    result.push({ texto: `Categoría más cara: ${topCat[0]} — ${pct}% del gasto`, tipo: pct > 40 ? "warn" : "info" });
+  }
+
+  // Gasto vs período anterior
+  if (ant && ant.gastado > 0) {
+    const delta = Math.round(((actual.gastado - ant.gastado) / ant.gastado) * 100);
+    if (delta > 10) result.push({ texto: `Gastaste ${delta}% más que el período anterior`, tipo: "warn" });
+    else if (delta < -10) result.push({ texto: `Gastaste ${Math.abs(delta)}% menos que el período anterior`, tipo: "good" });
+  }
+
+  // Tendencia ahorros últimos 3 períodos
+  if (serie.length >= 3) {
+    const [a, b, c] = serie.slice(-3) as [PuntoTendencia, PuntoTendencia, PuntoTendencia];
+    if (b.ahorros > a.ahorros && c.ahorros > b.ahorros) result.push({ texto: "Ahorros en alza 3 períodos seguidos", tipo: "good" });
+    else if (b.ahorros < a.ahorros && c.ahorros < b.ahorros) result.push({ texto: "Ahorros en baja 3 períodos seguidos", tipo: "warn" });
+  }
+
+  // Mejor ahorro histórico
+  if (serie.length > 1) {
+    const mejor = [...serie].sort((a, b) => b.ahorros - a.ahorros)[0]!;
+    result.push({ texto: `Mejor ahorro: período ${sp(mejor.periodoId)} — {n}`, valor: mejor.ahorros, tipo: "info" });
+  }
+
+  // Disponible promedio al cierre
+  const promedioDisp = serie.reduce((s, p) => s + p.disponible, 0) / serie.length;
+  if (promedioDisp >= 0) {
+    result.push({ texto: "Disponible promedio al cierre: {n}", valor: promedioDisp, tipo: "good" });
+  } else {
+    result.push({ texto: "Déficit promedio al cierre: {n}", valor: Math.abs(promedioDisp), tipo: "warn" });
+  }
+
+  // % períodos con ahorro positivo
+  const conAhorros = serie.filter((s) => s.ahorros > 0).length;
+  const pctAh = Math.round((conAhorros / serie.length) * 100);
+  result.push({
+    texto: `Ahorraste en ${pctAh}% de tus períodos (${conAhorros}/${serie.length})`,
+    tipo: pctAh >= 75 ? "good" : pctAh >= 50 ? "info" : "warn",
+  });
+
+  return result.slice(0, 6);
 }

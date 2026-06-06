@@ -8,7 +8,7 @@ import { useCotizacion } from "@/hooks/useCotizacion";
 import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
 import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
-import { useHideValues } from "@/hooks/useHideValues";
+import { useMoney } from "@/hooks/useHideValues";
 import { Movimiento, TipoMovimiento } from "@/types";
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
@@ -29,6 +29,22 @@ const TrashIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
+const EyeIcon = ({ off }: { off: boolean }) => (
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+    {off ? (
+      <>
+        <path d="M2 12s3.5-7 10-7c1.6 0 3 .4 4.3 1M22 12s-3.5 7-10 7c-1.6 0-3-.4-4.3-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </>
+    ) : (
+      <>
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
+      </>
+    )}
   </svg>
 );
 
@@ -88,13 +104,14 @@ const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = [
   { t: "Gasto",     label: "Gasto",   color: "var(--red)" },
   { t: "Ingreso",   label: "Ingreso", color: "var(--green)" },
   { t: "Move",      label: "Move",    color: "var(--yellow)" },
-  { t: "CompraUSD", label: "USD",     color: "var(--yellow)" },
+  { t: "CompraUSD", label: "+USD",    color: "var(--yellow)" },
+  { t: "GastoUSD",  label: "-USD",    color: "var(--yellow)" },
 ];
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function MovimientosPage() {
   const { user } = useAuth();
-  const { oculto } = useHideValues();
+  const { oculto, toggle, m: money } = useMoney();
   const { movimientos, loading, refresh } = useAllMovimientos(user?.uid);
   const { config } = useConfig(user?.uid);
   const { cotizacion } = useCotizacion();
@@ -121,6 +138,8 @@ export default function MovimientosPage() {
   const [observaciones, setObservaciones] = useState("");
   const [origenAhorro, setOrigenAhorro] = useState("");
   const [cantidadUSD, setCantidadUSD] = useState("");
+  const [montoARSInput, setMontoARSInput] = useState("");
+  const [modoCarga, setModoCarga] = useState<"USD" | "ARS">("USD");
   const [cotizManual, setCotizManual] = useState("");
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
@@ -135,7 +154,9 @@ export default function MovimientosPage() {
   const esSueldo  = tipo === "Ingreso" && categoria === "Sueldo";
   const esAhorros = tipo === "Ingreso" && categoria === "Ahorros";
   const esMove    = tipo === "Move";
-  const esUSD     = tipo === "CompraUSD";
+  const esCompraUSD = tipo === "CompraUSD";
+  const esGastoUSD  = tipo === "GastoUSD";
+  const esUSD     = esCompraUSD || esGastoUSD;
 
   const categoriasFiltradas = config?.categorias.filter(c =>
     tipo === "Gasto" ? c.tipo === "Gasto" && c.activa :
@@ -143,7 +164,16 @@ export default function MovimientosPage() {
   ) ?? [];
 
   const cotizActual = cotizManual ? parseFloat(cotizManual) : cotizacion?.blue ?? 0;
-  const totalARS    = cantidadUSD && cotizActual ? parseFloat(cantidadUSD) * cotizActual : 0;
+  // GastoUSD: sólo USD, no ARS. CompraUSD: bidireccional USD↔ARS
+  const usdFinal = !esUSD ? 0 : esGastoUSD
+    ? parseFloat(cantidadUSD || "0")
+    : modoCarga === "USD"
+    ? parseFloat(cantidadUSD || "0")
+    : (cotizActual ? parseFloat(montoARSInput || "0") / cotizActual : 0);
+  const arsFinal = !esGastoUSD ? 0 : 0; // GastoUSD no genera monto ARS
+  const arsCompraUSD = !esCompraUSD ? 0 : modoCarga === "USD"
+    ? parseFloat(cantidadUSD || "0") * cotizActual
+    : parseFloat(montoARSInput || "0");
 
   const movsFiltrados = useMemo(() =>
     [...(periodoActual?.movimientos ?? [])].sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime()),
@@ -153,6 +183,7 @@ export default function MovimientosPage() {
   const resetAdd = () => {
     setDescripcion(""); setMonto(""); setCategoria(""); setOrigenAhorro("");
     setCantidadUSD(""); setCotizManual(""); setObservaciones(""); setAddError("");
+    setMontoARSInput(""); setModoCarga("USD");
     setFecha(new Date().toISOString().split("T")[0]);
   };
 
@@ -177,18 +208,20 @@ export default function MovimientosPage() {
     try {
       if (!user?.uid) throw new Error("No autenticado");
       if (!esMove && !esUSD && !categoria) throw new Error("Seleccioná una categoría");
-      const montoFinal = esUSD ? totalARS : parseFloat(monto);
-      if (!montoFinal || montoFinal <= 0) throw new Error("Monto inválido");
+      const montoFinal = esCompraUSD ? arsCompraUSD : esGastoUSD ? 0 : parseFloat(monto);
+      if (!esGastoUSD && (!montoFinal || montoFinal <= 0)) throw new Error("Monto inválido");
+      if (esUSD && (!usdFinal || usdFinal <= 0)) throw new Error("Cantidad USD inválida");
       if (!periodoActual) throw new Error("No hay período activo");
       await crearMovimiento(user.uid, {
         timestampCarga: new Date(), fecha, tipo,
-        categoria: esMove ? "Move" : esUSD ? "CompraUSD" : categoria,
-        descripcion: esMove ? "Move a disponible" : esUSD ? "Compra USD" : descripcion.trim(),
+        categoria: esMove ? "Move" : esCompraUSD ? "CompraUSD" : esGastoUSD ? "GastoUSD" : categoria,
+        descripcion: esMove ? "Move a disponible" : esCompraUSD ? "Compra USD" : esGastoUSD ? "Gasto USD" : descripcion.trim(),
         monto: montoFinal,
-        medioPago: esMove || esUSD ? "Mercado Pago" : medioPago,
+        medioPago: esMove || esCompraUSD ? "Mercado Pago" : esGastoUSD ? "—" : medioPago,
         observaciones, periodoId: periodoActual.periodoId, userId: user.uid,
         ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
-        ...(esUSD ? { cantidadUSD: parseFloat(cantidadUSD), cotizacion: cotizActual } : {}),
+        ...(esCompraUSD ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
+        ...(esGastoUSD ? { cantidadUSD: usdFinal } : {}),
       });
       resetAdd(); closeModal(); refresh();
     } catch (err: unknown) {
@@ -236,8 +269,14 @@ export default function MovimientosPage() {
           <div className="label" style={{ marginBottom: 2 }}>Gestión</div>
           <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Movimientos</div>
           {periodoActual && (
-            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
-              Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{oculto ? "••••••" : formatARS(periodoActual.disponible)}</span>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+              Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
+              <button onClick={toggle} aria-label="Ocultar valores" style={{
+                background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
+                width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
+              }}>
+                <EyeIcon off={oculto} />
+              </button>
             </div>
           )}
         </div>
@@ -289,7 +328,7 @@ export default function MovimientosPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : "var(--green)", fontFamily: "var(--font-mono)" }}>
-                    {isGasto ? "-" : "+"}{formatARS(m.monto)}
+                    {isGasto ? "-" : "+"}{money(m.monto)}
                   </span>
                   <button onClick={() => openEdit(m)} aria-label="Editar" style={{
                     background: "var(--surface-alt)", border: "1px solid var(--border)",
@@ -332,7 +371,7 @@ export default function MovimientosPage() {
             {esMove && (
               <div style={{ background: "var(--yellow-dim)", border: "1px solid var(--yellow)44", borderRadius: "var(--radius-sm)", padding: 12, marginBottom: 16, fontSize: 12, color: "var(--yellow)" }}>
                 Mueve saldo de Ahorros → Disponible
-                {periodoActual && <div style={{ color: "var(--muted)", marginTop: 4 }}>Ahorros: {formatARS(periodoActual.ahorros)}</div>}
+                {periodoActual && <div style={{ color: "var(--muted)", marginTop: 4 }}>Ahorros: {money(ahorrosAcumActivo)}</div>}
               </div>
             )}
 
@@ -368,8 +407,21 @@ export default function MovimientosPage() {
               </div>
             )}
 
-            {esUSD && (
+            {esCompraUSD && (
               <div style={{ marginBottom: 18 }}>
+                {/* Modo de carga: ingresar en USD o en ARS */}
+                <div className="label">Ingresar en</div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                  {(["USD", "ARS"] as const).map(mo => (
+                    <button key={mo} type="button" onClick={() => setModoCarga(mo)} className="pill" style={{
+                      flex: 1,
+                      borderColor: modoCarga === mo ? "var(--yellow)" : "var(--border)",
+                      background: modoCarga === mo ? "var(--yellow-dim)" : "transparent",
+                      color: modoCarga === mo ? "var(--yellow)" : "var(--muted)",
+                    }}>{mo}</button>
+                  ))}
+                </div>
+
                 <div className="label">Cotización</div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
                   {cotizacion ? (["blue", "oficial"] as const).map(t => (
@@ -381,20 +433,40 @@ export default function MovimientosPage() {
                       }}>{t} ${cotizacion[t].toLocaleString("es-AR")}</button>
                   )) : <span style={{ fontSize: 12, color: "var(--muted)" }}>Sin cotización</span>}
                 </div>
+
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
-                    <div className="label">USD</div>
-                    <input className="input" type="number" value={cantidadUSD} onChange={e => setCantidadUSD(e.target.value)} placeholder="0" />
+                    <div className="label">{modoCarga}</div>
+                    {modoCarga === "USD" ? (
+                      <input className="input" type="number" value={cantidadUSD} onChange={e => setCantidadUSD(e.target.value)} placeholder="0" />
+                    ) : (
+                      <input className="input" type="number" value={montoARSInput} onChange={e => setMontoARSInput(e.target.value)} placeholder="0" />
+                    )}
                   </div>
                   <div>
                     <div className="label">Cotización</div>
                     <input className="input" type="number" value={cotizManual || String(cotizacion?.blue ?? "")} onChange={e => setCotizManual(e.target.value)} placeholder="0" />
                   </div>
                 </div>
-                <div className="label">Total ARS</div>
+
+                <div className="label">{modoCarga === "USD" ? "Total ARS" : "Equivale a"}</div>
                 <div style={{ padding: "12px 14px", background: "var(--yellow-dim)", border: "1px solid var(--yellow)33", borderRadius: "var(--radius-sm)", fontSize: 14, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
-                  {totalARS > 0 ? formatARS(totalARS) : "—"}
+                  {modoCarga === "USD"
+                    ? (arsCompraUSD > 0 ? formatARS(arsCompraUSD) : "—")
+                    : (usdFinal > 0 ? `U$D ${usdFinal.toFixed(2)}` : "—")}
                 </div>
+              </div>
+            )}
+
+            {esGastoUSD && (
+              <div style={{ marginBottom: 18 }}>
+                <div className="label">Cantidad USD gastada</div>
+                <input className="input" type="number" value={cantidadUSD} onChange={e => setCantidadUSD(e.target.value)} placeholder="0" style={{ fontFamily: "var(--font-mono)" }} />
+                {usdFinal > 0 && (
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
+                    Total: U$D {usdFinal.toFixed(2)}
+                  </div>
+                )}
               </div>
             )}
 
@@ -439,7 +511,7 @@ export default function MovimientosPage() {
                 {addError}
               </div>
             )}
-            <button type="submit" disabled={addLoading} className="btn btn-primary" style={{ width: "100%" }}>
+            <button type="submit" disabled={addLoading} className="btn" style={{ width: "100%", background: "var(--green)", color: "var(--bg)" }}>
               {addLoading ? "Guardando..." : "Confirmar"}
             </button>
           </form>
@@ -487,11 +559,11 @@ export default function MovimientosPage() {
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={handleEdit} disabled={editLoading} aria-label="Guardar" className="btn btn-primary" style={{ flex: 1 }}>
+              <button onClick={handleEdit} disabled={editLoading} aria-label="Guardar" className="btn" style={{ flex: 1, background: "var(--green)", color: "var(--bg)" }}>
                 {editLoading ? "..." : <SaveIcon />}
               </button>
               {!isLocked && (
-                <button onClick={() => setModal("delete")} aria-label="Eliminar" className="btn" style={{ background: "transparent", border: "1px solid var(--red)", color: "var(--red)", padding: "13px 18px" }}>
+                <button onClick={() => setModal("delete")} aria-label="Eliminar" className="btn" style={{ flex: 1, background: "transparent", border: "1px solid var(--red)", color: "var(--red)" }}>
                   <TrashIcon />
                 </button>
               )}
@@ -505,7 +577,7 @@ export default function MovimientosPage() {
             <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>¿Eliminar este movimiento?</div>
             <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>{movSel.descripcion || movSel.categoria}</div>
             <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 28 }}>
-              {formatARS(movSel.monto)}
+              {money(movSel.monto)}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setModal("edit")} className="btn btn-ghost" style={{ flex: 1 }}>Cancelar</button>

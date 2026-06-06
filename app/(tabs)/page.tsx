@@ -4,12 +4,10 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
-import { useHideValues } from "@/hooks/useHideValues";
-import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
+import { useMoney } from "@/hooks/useHideValues";
+import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { Movimiento } from "@/types";
-
-const OCULTO = "$ ••••••";
 
 function TipoColor(m: Movimiento) {
   if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
@@ -42,7 +40,7 @@ function EyeIcon({ off }: { off: boolean }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const { movimientos, loading } = useAllMovimientos(user?.uid);
-  const { oculto, toggle: toggleOculto } = useHideValues();
+  const { oculto, toggle: toggleOculto, m: money } = useMoney();
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const serie = useMemo(() => serieTendencia(periodos), [periodos]);
@@ -52,8 +50,6 @@ export default function Dashboard() {
   // % disponible sobre el sueldo del período (cuánto queda, no lo gastado)
   const pctDisp = p && p.sueldo > 0 ? Math.round((p.disponible / p.sueldo) * 100) : 0;
   const barColor = pctDisp < 20 ? "var(--red)" : pctDisp < 40 ? "var(--yellow)" : "var(--green)";
-
-  const v = (s: string) => (oculto ? OCULTO : s);
 
   return (
     <div className="page">
@@ -86,10 +82,10 @@ export default function Dashboard() {
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 7 }}>Disponible</div>
                 <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -1, color: "var(--text)", lineHeight: 1, fontFamily: "var(--font-mono)" }}>
-                  {v(formatARS(p.disponible))}
+                  {money(p.disponible)}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 7 }}>
-                  de {v(formatARS(p.total))} · {p.movimientos.length} mov.
+                  de {money(p.total)} · {p.movimientos.length} mov.
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, flexShrink: 0 }}>
@@ -110,10 +106,10 @@ export default function Dashboard() {
           {/* KPIs */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
             {[
-              { label: "Gastado", value: formatARS(p.gastado), color: "var(--red)", hide: false },
-              { label: "Ahorros", value: v(formatARS(ahorrosAcum)), color: "var(--blue)", hide: true },
-              { label: "Sueldo", value: v(formatARS(p.sueldo)), color: "var(--green)", hide: true },
-              { label: "Extras", value: oculto ? OCULTO : p.extras > 0 ? formatARS(p.extras) : "—", color: "var(--green)", hide: true },
+              { label: "Gastado", value: money(p.gastado), color: "var(--red)" },
+              { label: "Ahorros", value: money(ahorrosAcum), color: "var(--blue)" },
+              { label: "Sueldo", value: money(p.sueldo), color: "var(--green)" },
+              { label: "Extras", value: p.extras > 0 ? money(p.extras) : "—", color: "var(--green)" },
             ].map((k) => (
               <div key={k.label} className="soft" style={{ padding: 15 }}>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7 }}>{k.label}</div>
@@ -136,7 +132,7 @@ export default function Dashboard() {
                   <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{m.categoria} · {fechaCorta(m.fecha)}</div>
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 700, color: TipoColor(m), marginLeft: 12, whiteSpace: "nowrap", fontFamily: "var(--font-mono)" }}>
-                  {TipoPrefix(m)}{formatARS(m.monto)}
+                  {TipoPrefix(m)}{money(m.monto)}
                 </span>
               </div>
             ))}

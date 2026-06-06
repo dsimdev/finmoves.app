@@ -54,9 +54,9 @@ const TABS = [
     label: "Config",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="3" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" />
-        <path d="M12 2V4M12 20V22M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M2 12H4M20 12H22M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22"
-          stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="12" cy="12" r="2.5" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" />
+        <path d="M15.5 12C15.5 13.93 13.93 15.5 12 15.5C10.07 15.5 8.5 13.93 8.5 12C8.5 10.07 10.07 8.5 12 8.5C13.93 8.5 15.5 10.07 15.5 12Z" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" fill="none" />
+        <path d="M12 2V4M12 20V22M20 12H22M2 12H4M18.66 5.34L20.08 3.92M3.92 20.08L5.34 18.66M18.66 18.66L20.08 20.08M3.92 3.92L5.34 5.34" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -83,18 +83,9 @@ export function BottomNav() {
           <Link key={tab.href} href={tab.href} style={{
             flex: 1, display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
-            gap: 3, textDecoration: "none", paddingTop: 6,
+            gap: 0, textDecoration: "none", paddingTop: 0,
           }}>
             {tab.icon(active)}
-            <span style={{
-              fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
-              color: active
-                ? tab.href === "/dolares" ? "var(--yellow)" : "var(--accent)"
-                : "var(--muted)",
-              transition: "color 0.15s",
-            }}>
-              {tab.label}
-            </span>
           </Link>
         );
       })}
