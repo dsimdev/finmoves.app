@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfig } from "@/hooks/useConfig";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useReportConfig, REPORTES_TOGGLES } from "@/hooks/useReportConfig";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { serieTendencia, parsePeriodoId } from "@/utils/reportes";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/services/firebase/firebase";
 import { signOut, getIdToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -58,6 +58,8 @@ export default function ConfigPage() {
   const [tipoCambio, setTipoCambio] = useState<"blue" | "oficial" | "">("");
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
   const [movSub, setMovSub] = useState<"categorias" | "medios" | "origenes">("categorias");
 
   // Meta de ahorro (siempre USD)
@@ -67,7 +69,7 @@ export default function ConfigPage() {
 
   // Cálculo de sugerido para meta de ahorro (antes de useEffect)
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
-  const serie = useMemo(() => serieTendencia(periodos), [periodos]);
+  const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const ahorrosActual = serie.length > 0 ? serie[serie.length - 1]!.ahorrosAcum : 0;
 
   const sugeridoPorPeriodo = useMemo(() => {
@@ -92,6 +94,17 @@ export default function ConfigPage() {
     return Math.round(((meta - ahorrosActual) / periodosHastaFecha) * 100) / 100;
   }, [metaFecha, metaMonto, ahorrosActual, periodos]);
 
+  // Cargar última sync al montar
+  useEffect(() => {
+    if (!user?.uid) return;
+    getDoc(doc(db, `users/${user.uid}/config/syncMeta`)).then((snap) => {
+      if (snap.exists()) {
+        const ts = snap.data()?.lastSync;
+        if (ts?.toDate) setLastSync(ts.toDate());
+      }
+    });
+  }, [user?.uid]);
+
   // Sincronizar con config cuando carga o se actualiza
   useEffect(() => {
     if (config) {
@@ -107,8 +120,15 @@ export default function ConfigPage() {
     try {
       await setDoc(doc(db, `users/${user.uid}/config/meta`), newConfig);
       refresh();
-    } catch (err) { console.error(err); }
-    finally { setGuardando(false); }
+      setSaveMsg({ ok: true, text: "Guardado" });
+    } catch (err) {
+      console.error(err);
+      const msg = err instanceof Error ? err.message : "Error al guardar";
+      setSaveMsg({ ok: false, text: msg });
+    } finally {
+      setGuardando(false);
+      setTimeout(() => setSaveMsg(null), 3000);
+    }
   };
 
   const handleSync = async () => {
@@ -124,6 +144,8 @@ export default function ConfigPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error");
+      const now = new Date();
+      setLastSync(now);
       setSyncMsg({ ok: true, text: data.message });
     } catch (err: unknown) {
       setSyncMsg({ ok: false, text: err instanceof Error ? err.message : "Error al sincronizar" });
@@ -174,7 +196,6 @@ export default function ConfigPage() {
 
   const guardarMetaAhorro = async () => {
     if (!config) return;
-    setGuardando(true);
     const newMeta = { ...config.meta };
     if (metaFecha) newMeta.metaFecha = metaFecha;
     else delete newMeta.metaFecha;
@@ -184,7 +205,6 @@ export default function ConfigPage() {
     else delete newMeta.metaPorPeriodo;
     newMeta.metaMoneda = "USD";
     await saveConfig({ ...config, meta: newMeta });
-    setGuardando(false);
   };
 
   return (
@@ -229,7 +249,11 @@ export default function ConfigPage() {
             <div className="row" style={{ padding: "10px 0" }}>
               <div>
                 <div style={{ fontSize: 13 }}>Google Sheets</div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Exporta todos tus movimientos</div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                  {lastSync
+                    ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
+                    : "Nunca sincronizado"}
+                </div>
               </div>
               <button onClick={handleSync} disabled={syncing} style={{
                 display: "flex", alignItems: "center", gap: 6,
@@ -420,6 +444,20 @@ export default function ConfigPage() {
               {guardando ? "Guardando..." : "Guardar"}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Toast guardar config */}
+      {saveMsg && (
+        <div className="fade-up" style={{
+          position: "fixed", left: 16, right: 16, bottom: "calc(var(--nav-h) + 16px)",
+          zIndex: 150, padding: "12px 16px", borderRadius: "var(--radius-sm)", fontSize: 13,
+          background: saveMsg.ok ? "var(--green-dim)" : "var(--red-dim)",
+          border: `1px solid ${saveMsg.ok ? "var(--green)" : "var(--red)"}44`,
+          color: saveMsg.ok ? "var(--green)" : "var(--red)",
+          textAlign: "center", backdropFilter: "blur(8px)",
+        }}>
+          {saveMsg.text}
         </div>
       )}
 

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useConfig } from "@/hooks/useConfig";
-import { agruparPorPeriodo } from "@/utils/periodo";
+import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { actualizarTipoCambio } from "@/services/firebase/config";
 import { useMoney, MASK } from "@/hooks/useHideValues";
@@ -13,11 +13,6 @@ import { Movimiento } from "@/types";
 
 const SALDO_INICIAL_USD = 5.77;
 
-const formatFecha = (fecha: string) => {
-  // Convierte dd/MM/yyyy a dd-MM-yyyy (o al revés)
-  if (fecha.includes("/")) return fecha.replace(/\//g, "-");
-  return fecha;
-};
 
 function EyeIcon({ off }: { off: boolean }) {
   return (
@@ -55,13 +50,15 @@ function calcularReserva(movimientos: Movimiento[]) {
 export default function DolaresPage() {
   const { user } = useAuth();
   const { movimientos, loading } = useAllMovimientos(user?.uid);
-  const { cotizacion, minutosDesdeActualizacion } = useCotizacion();
+  const { cotizacion, minutosDesdeActualizacion, refresh } = useCotizacion();
   const { config } = useConfig(user?.uid);
+
+  useEffect(() => { refresh(); }, []);
   const { oculto, toggle, m: money } = useMoney();
 
   // Ahorros acumulados (en ARS) para meta de ahorro
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
-  const serie = useMemo(() => serieTendencia(periodos), [periodos]);
+  const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const ahorrosAcumARS = serie.length > 0 ? serie[serie.length - 1]!.ahorrosAcum : 0;
 
   const [tipoCambioSel, setTipoCambioSel] = useState<"blue" | "oficial" | null>(null);
@@ -192,7 +189,7 @@ export default function DolaresPage() {
             <div className="card" style={{ borderColor: "var(--blue)33", background: "linear-gradient(135deg, var(--surface), var(--blue-dim, var(--surface-alt)))", marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div className="label" style={{ marginBottom: 0 }}>Meta de ahorro</div>
-                {config.meta.metaFecha && <div style={{ fontSize: 9, color: "var(--muted)" }}>{formatFecha(config.meta.metaFecha)}</div>}
+                {config.meta.metaFecha && <div style={{ fontSize: 9, color: "var(--muted)" }}>{fechaCorta(config.meta.metaFecha)}</div>}
               </div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Objetivo USD</div>
@@ -230,7 +227,12 @@ export default function DolaresPage() {
             ) : movimientosUSD.map((m) => (
               <div key={m.id} className="row">
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 500 }}>{m.fecha}</div>
+                  <div style={{ fontSize: 12, fontWeight: 500 }}>{(() => {
+                    const f = m.fecha;
+                    if (f.includes("-")) { const [y, mo, d] = f.split("-"); return `${d}-${mo}-${y}`; }
+                    if (f.includes("/")) { const [d, mo, y] = f.split("/"); return `${d.padStart(2,"0")}-${mo.padStart(2,"0")}${y ? `-${y}` : ""}`; }
+                    return f;
+                  })()}</div>
                   {m.cotizacion && (
                     <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
                       cotiz. ${m.cotizacion.toLocaleString("es-AR")}

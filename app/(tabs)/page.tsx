@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
+import { useConfig } from "@/hooks/useConfig";
 import { useMoney } from "@/hooks/useHideValues";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
@@ -40,10 +41,11 @@ function EyeIcon({ off }: { off: boolean }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const { movimientos, loading } = useAllMovimientos(user?.uid);
+  const { config } = useConfig(user?.uid);
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
-  const serie = useMemo(() => serieTendencia(periodos), [periodos]);
+  const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const p = periodos[0];
   const ahorrosAcum = serie.length ? serie[serie.length - 1].ahorrosAcum : 0;
   const ultimos = p?.movimientos.slice(0, 6) ?? [];
@@ -58,7 +60,7 @@ export default function Dashboard() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
           <div className="label fade-up-1" style={{ marginBottom: 2 }}>Inicio</div>
-          <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>FinMoves</div>
+          <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Dashboard</div>
         </div>
         {p && (
           <div className="fade-up-2" style={{ textAlign: "right" }}>

@@ -46,7 +46,7 @@ export const gastosPorMedioPago = (movs: Movimiento[], totalGastado: number) =>
 export const gastosPorDescripcion = (movs: Movimiento[], totalGastado: number, topN = 12) =>
   distribucion(movs, (m) => m.descripcion, totalGastado).slice(0, topN);
 
-// Gastos por fecha del evento (no de carga), en orden cronológico
+// Gastos por fecha del evento (no de carga), más reciente primero
 export function gastosPorFecha(movs: Movimiento[], totalGastado: number): Distribucion[] {
   const dist = distribucion(movs, (m) => m.fecha, totalGastado);
   return dist.sort((a, b) => {
@@ -55,7 +55,7 @@ export function gastosPorFecha(movs: Movimiento[], totalGastado: number): Distri
       const [d, m, y] = s.split("/").map(Number);
       return new Date(y, m - 1, d).getTime();
     };
-    return parseDate(a.nombre) - parseDate(b.nombre);
+    return parseDate(b.nombre) - parseDate(a.nombre);
   });
 }
 
@@ -170,12 +170,20 @@ export interface PuntoTendencia {
   ahorrosAcum: number;
 }
 
-export function serieTendencia(periodos: PeriodoResumen[]): PuntoTendencia[] {
-  // periodos viene ordenado desc (más reciente primero) → invertir a cronológico
+export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: string): PuntoTendencia[] {
   const cron = [...periodos].reverse();
+  // Si hay seed guardado, anclar desde ese período para que la ventana crezca hacia adelante.
+  // Si no hay seed aún (primera vez), usar los últimos 2 como baseline provisional.
+  let startIdx: number;
+  if (seedPeriodoId) {
+    const idx = cron.findIndex((p) => p.periodoId === seedPeriodoId);
+    startIdx = idx >= 0 ? idx : Math.max(0, cron.length - 2);
+  } else {
+    startIdx = Math.max(0, cron.length - 2);
+  }
   let acum = 0;
-  return cron.map((p) => {
-    acum = p.ahorros > 0 ? acum + p.ahorros : 0; // mismo criterio carry-forward que el Resumen
+  return cron.map((p, i) => {
+    if (i >= startIdx) acum = Math.max(0, acum + p.ahorros - p.moveTotal);
     return {
       periodoId: p.periodoId,
       sueldo: p.sueldo,
@@ -230,13 +238,20 @@ export function promedioAhorroPeriodo(periodos: PeriodoResumen[]): number {
 
 export function evolucionSueldo(
   periodos: PeriodoResumen[]
-): { delta: number; deltaPct: number | null } | null {
+): { ultimo: number; promedio: number; delta: number; deltaPct: number | null; esVacaciones: boolean } | null {
   if (periodos.length < 2) return null;
   const ultimo = periodos[0]!.sueldo;
-  const primero = periodos[periodos.length - 1]!.sueldo;
-  const delta = ultimo - primero;
-  const deltaPct = primero > 0 ? Math.round((delta / primero) * 100) : null;
-  return { delta, deltaPct };
+  // Promedio excluyendo períodos de vacaciones (sueldo < 50% del max)
+  const maxSueldo = Math.max(...periodos.map((p) => p.sueldo));
+  const normales = periodos.slice(1).filter((p) => p.sueldo >= maxSueldo * 0.5);
+  const promedio = normales.length > 0
+    ? normales.reduce((s, p) => s + p.sueldo, 0) / normales.length
+    : periodos[periodos.length - 1]!.sueldo;
+  // Si el período actual tiene sueldo < 50% del máximo, probablemente son vacaciones
+  const esVacaciones = ultimo < maxSueldo * 0.5;
+  const delta = ultimo - promedio;
+  const deltaPct = promedio > 0 ? Math.round((delta / promedio) * 100) : null;
+  return { ultimo, promedio, delta, deltaPct, esVacaciones };
 }
 
 export function gastoPromedioHistorico(serie: PuntoTendencia[]): number {
@@ -246,13 +261,8 @@ export function gastoPromedioHistorico(serie: PuntoTendencia[]): number {
 
 export function proyectarAhorros(serie: PuntoTendencia[], nPeriodos: number): number {
   if (serie.length === 0) return 0;
-  const ultimos = serie.slice(-Math.min(3, serie.length));
-  let promedio = ultimos.reduce((s, p) => s + p.ahorros, 0) / ultimos.length;
-  // Si el promedio reciente es <= 0, cae al promedio histórico de períodos positivos
-  if (promedio <= 0) {
-    const positivos = serie.filter((p) => p.ahorros > 0);
-    promedio = positivos.length > 0 ? positivos.reduce((s, p) => s + p.ahorros, 0) / positivos.length : 0;
-  }
+  const ultimos = serie.slice(-Math.min(2, serie.length));
+  const promedio = ultimos.reduce((s, p) => s + p.ahorros, 0) / ultimos.length;
   return serie[serie.length - 1]!.ahorrosAcum + Math.max(0, promedio) * nPeriodos;
 }
 

@@ -75,6 +75,22 @@ export async function backupAndRotate(sheets: SheetsClient): Promise<string> {
   return name;
 }
 
+// Incremental: agrega filas nuevas al final sin tocar las existentes
+export async function appendData(
+  sheets: SheetsClient,
+  sheetName: string,
+  rows: (string | number)[][]
+): Promise<void> {
+  if (rows.length === 0) return;
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `'${sheetName}'!A2`,
+    valueInputOption: "USER_ENTERED",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: { values: rows },
+  });
+}
+
 // Espejo: reemplaza TODOS los datos (desde la fila 2, preserva el header)
 // con las filas dadas. Refleja altas, ediciones y borrados de la app.
 export async function overwriteData(

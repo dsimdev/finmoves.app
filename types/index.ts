@@ -74,5 +74,6 @@ export interface ConfigUsuario {
     metaMoneda?: "USD"; // siempre USD
     metaMonto?: number;
     metaPorPeriodo?: number;
+    ahorrosAcumSeedPeriodoId?: string;
   };
 }

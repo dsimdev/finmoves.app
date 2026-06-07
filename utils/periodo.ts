@@ -9,6 +9,7 @@ export interface PeriodoResumen {
   ahorros: number;
   resto: number;
   disponible: number;
+  moveTotal: number;
   pct: number;
   movimientos: Movimiento[];
 }
@@ -36,7 +37,7 @@ export function agruparPorPeriodo(movimientos: Movimiento[]): PeriodoResumen[] {
     let gastado = 0;
     let ahorrosBruto = 0; // total depositado en ahorros (Ahorros + RESTO)
     let restoBruto = 0;   // solo Ingreso/RESTO
-    let moveTotal = 0;    // total movido de ahorros → disponible
+    let moveTotal = 0;    // retiro de ahorros acumulados → ingresa como extra al período
 
     for (const m of movs) {
       if (m.tipo === "Gasto" || m.tipo === "CompraUSD") {
@@ -51,17 +52,19 @@ export function agruparPorPeriodo(movimientos: Movimiento[]): PeriodoResumen[] {
           extras += m.monto;
         }
       } else if (m.tipo === "Move") {
-        moveTotal += m.monto; // sale de ahorros, entra a disponible
+        moveTotal += m.monto; // se suma a extras: es ingreso disponible del período
       }
     }
 
-    const total = sueldo + extras;
-    const disponible = total + moveTotal - gastado;
-    const ahorros = ahorrosBruto - moveTotal; // ahorros netos del período
+    // Move se trata como ingreso extra del período — no altera ahorros del período
+    const extrasTotal = extras + moveTotal;
+    const total = sueldo + extrasTotal;
+    const disponible = total - gastado;
+    const ahorros = ahorrosBruto; // solo lo depositado intencionalmente en ahorros
     const resto = restoBruto;
     const pct = total > 0 ? Math.round((gastado / total) * 100) : 0;
 
-    periodos.push({ periodoId, sueldo, extras, total, gastado, ahorros, resto, disponible, pct, movimientos: movs });
+    periodos.push({ periodoId, sueldo, extras: extrasTotal, total, gastado, ahorros, resto, disponible, moveTotal, pct, movimientos: movs });
   }
 
   // Ordenar por fecha del periodoId (más reciente primero)

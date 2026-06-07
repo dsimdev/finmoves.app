@@ -9,19 +9,19 @@ export function useCotizacion() {
   const [loading, setLoading] = useState(true);
   const [ultimaActualizacion, setUltimaActualizacion] = useState<Date | null>(null);
 
-  useEffect(() => {
-    const fetch = async () => {
-      const data = await getCotizacion();
-      setCotizacion(data);
-      setUltimaActualizacion(new Date());
-      setLoading(false);
-    };
-    fetch();
-  }, []);
+  const refresh = async () => {
+    setLoading(true);
+    const data = await getCotizacion();
+    setCotizacion(data);
+    setUltimaActualizacion(new Date());
+    setLoading(false);
+  };
+
+  useEffect(() => { refresh(); }, []);
 
   const minutosDesdeActualizacion = ultimaActualizacion
     ? Math.floor((Date.now() - ultimaActualizacion.getTime()) / 60000)
     : null;
 
-  return { cotizacion, loading, minutosDesdeActualizacion };
+  return { cotizacion, loading, minutosDesdeActualizacion, refresh };
 }

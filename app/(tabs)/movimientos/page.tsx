@@ -121,8 +121,17 @@ export default function MovimientosPage() {
   const activePeriodoId = periodoSel ?? periodos[0]?.periodoId;
   const periodoActual = periodos.find(p => p.periodoId === activePeriodoId);
   // Ahorro acumulado (carry-forward) hasta el período activo — para el Move
-  const serie = useMemo(() => serieTendencia(periodos), [periodos]);
+  const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const ahorrosAcumActivo = serie.find(s => s.periodoId === activePeriodoId)?.ahorrosAcum ?? 0;
+
+  const ultimoCargado = useMemo(() => {
+    if (movimientos.length === 0) return null;
+    return movimientos.reduce((a, b) => {
+      const ta = new Date(a.timestampCarga).getTime();
+      const tb = new Date(b.timestampCarga).getTime();
+      return ta > tb ? a : b;
+    }).timestampCarga;
+  }, [movimientos]);
 
   // ── Modal: "add" | "edit" | "delete" | null
   const [modal, setModal] = useState<"add" | "edit" | "delete" | null>(null);
@@ -268,6 +277,11 @@ export default function MovimientosPage() {
         <div>
           <div className="label" style={{ marginBottom: 2 }}>Gestión</div>
           <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Movimientos</div>
+          {ultimoCargado && (
+            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+              Último: {new Date(ultimoCargado).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}
+            </div>
+          )}
           {periodoActual && (
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
               Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>

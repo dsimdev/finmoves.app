@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
-import { getSheetsClient, getSheetName, backupAndRotate, overwriteData } from "@/lib/google-sheets";
+import { getSheetsClient, getSheetName, backupAndRotate, overwriteData, appendData } from "@/lib/google-sheets";
 import { movimientoToRow } from "@/lib/sheet-format";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento } from "@/types";
 
 export async function POST(req: NextRequest) {
-  // Verificar el ID token de Firebase
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) {
@@ -22,11 +21,25 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Fuente de verdad: todos los movimientos de la app, en orden de carga.
-    const snap = await adminDb()
+    // Leer último timestamp de sync (1 sola lectura)
+    const syncMetaRef = adminDb().doc(`users/${uid}/config/syncMeta`);
+    const syncMetaSnap = await syncMetaRef.get();
+    const lastSync = syncMetaSnap.exists ? (syncMetaSnap.data()!.lastSync as Timestamp) : null;
+
+    // Solo leer movimientos nuevos si hay sync previa
+    const baseQuery = adminDb()
       .collection(`users/${uid}/movimientos`)
-      .orderBy("timestampCarga", "asc")
-      .get();
+      .orderBy("timestampCarga", "asc");
+
+    const snap = await (lastSync
+      ? baseQuery.where("timestampCarga", ">", lastSync)
+      : baseQuery
+    ).get();
+
+    // Nada nuevo desde la última sync
+    if (lastSync && snap.empty) {
+      return NextResponse.json({ synced: 0, message: "Sin cambios desde la última sync" });
+    }
 
     const rows = snap.docs.map((doc) => {
       const data = doc.data();
@@ -41,18 +54,26 @@ export async function POST(req: NextRequest) {
     const sheets = await getSheetsClient();
     const sheetName = await getSheetName(sheets);
 
-    // Backup ANTES de reescribir. Si falla, abortamos sin tocar los datos.
-    await backupAndRotate(sheets);
+    if (!lastSync) {
+      // Primera sync: backup completo + overwrite
+      await backupAndRotate(sheets);
+      await overwriteData(sheets, sheetName, rows);
+    } else {
+      // Sync incremental: solo append, sin backup
+      await appendData(sheets, sheetName, rows);
+    }
 
-    // Espejo: la hoja Movimientos queda idéntica a la app.
-    await overwriteData(sheets, sheetName, rows);
+    // Guardar timestamp de esta sync
+    await syncMetaRef.set({ lastSync: Timestamp.now() }, { merge: true });
 
-    return NextResponse.json({
-      synced: rows.length,
-      message: `Backup actualizado · ${rows.length} movimientos`,
-    });
+    const msg = lastSync
+      ? `${rows.length} movimiento${rows.length !== 1 ? "s" : ""} nuevo${rows.length !== 1 ? "s" : ""} sincronizado${rows.length !== 1 ? "s" : ""}`
+      : `Sync completa · ${rows.length} movimientos`;
+
+    return NextResponse.json({ synced: rows.length, message: msg });
   } catch (err) {
     console.error("Sync error:", err);
-    return NextResponse.json({ error: "Error al sincronizar" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

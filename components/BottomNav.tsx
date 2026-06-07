@@ -29,6 +29,18 @@ const TABS = [
     ),
   },
   {
+    href: "/dolares",
+    label: "USD",
+    icon: (active: boolean) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke={active ? "var(--yellow)" : "var(--muted)"} strokeWidth="1.8" fill={active ? "var(--yellow-dim)" : "none"} />
+        <path d="M12 7V17" stroke={active ? "var(--yellow)" : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M14.5 9.5C14.5 8.4 13.4 8 12 8C10.3 8 9 8.8 9 10C9 11.2 10.2 11.7 12 12C13.8 12.3 15 12.8 15 14C15 15.2 13.7 16 12 16C10.5 16 9.5 15.6 9.5 14.5"
+          stroke={active ? "var(--yellow)" : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      </svg>
+    ),
+  },
+  {
     href: "/resumen",
     label: "Reportes",
     icon: (active: boolean) => (
@@ -39,24 +51,13 @@ const TABS = [
     ),
   },
   {
-    href: "/dolares",
-    label: "USD",
-    icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="9" stroke={active ? "var(--yellow)" : "var(--muted)"} strokeWidth="1.8" fill={active ? "var(--yellow-dim)" : "none"} />
-        <path d="M12 7V17M9.5 9.5H13.5C14.3 9.5 15 10.2 15 11C15 11.8 14.3 12.5 13.5 12.5H10.5C9.7 12.5 9 13.2 9 14C9 14.8 9.7 15.5 10.5 15.5H14.5"
-          stroke={active ? "var(--yellow)" : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
     href: "/config",
     label: "Config",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="2.5" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" />
-        <path d="M15.5 12C15.5 13.93 13.93 15.5 12 15.5C10.07 15.5 8.5 13.93 8.5 12C8.5 10.07 10.07 8.5 12 8.5C13.93 8.5 15.5 10.07 15.5 12Z" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" fill="none" />
-        <path d="M12 2V4M12 20V22M20 12H22M2 12H4M18.66 5.34L20.08 3.92M3.92 20.08L5.34 18.66M18.66 18.66L20.08 20.08M3.92 3.92L5.34 5.34" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" fill={active ? "var(--accent-dim)" : "none"} />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
+          stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     ),
   },
