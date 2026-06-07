@@ -54,9 +54,9 @@ function Bar({ nombre, monto, pct, color = "var(--accent)", oculto }: { nombre: 
   );
 }
 
-function Stat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+function Stat({ label, value, sub, color, danger }: { label: string; value: string; sub?: string; color?: string; danger?: boolean }) {
   return (
-    <div className="soft" style={{ padding: 15 }}>
+    <div className="soft" style={{ padding: 15, ...(danger ? { borderColor: "var(--red)66", background: "linear-gradient(135deg, var(--surface), var(--red-dim, var(--surface-alt)))" } : {}) }}>
       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7 }}>{label}</div>
       <div style={{ fontSize: 19, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.05 }}>{value}</div>
       {sub && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{sub}</div>}
@@ -81,9 +81,9 @@ function VBars({ data, max, oculto }: { data: { label: string; value: number; co
 }
 
 const SUBS: { id: Sub; label: string }[] = [
-  { id: "periodos",   label: "Períodos" },
   { id: "gastos",     label: "Gastos" },
   { id: "ingresos",   label: "Ingresos" },
+  { id: "periodos",   label: "Períodos" },
   { id: "tendencias", label: "Tendencias" },
 ];
 
@@ -131,7 +131,7 @@ export default function ReportesPage() {
   // finPeriodo = inicio del período siguiente (si existe), para cerrar el intervalo correctamente
   const finPeriodo = idx1 > 0 ? parsePeriodoId(periodos[idx1 - 1].periodoId) : null;
 
-  const colorPct = (pct: number) => (pct > 100 ? "var(--red)" : pct > 80 ? "var(--yellow)" : "var(--green)");
+  const colorPct = (pct: number) => pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)";
 
   // ── Cálculos del período seleccionado (sub Gastos) ──
   const cats = periodo ? gastosPorCategoria(periodo.movimientos, periodo.gastado) : [];
@@ -156,17 +156,25 @@ export default function ReportesPage() {
   const catMasCrecio = comp.filter((c) => c.deltaPct !== null && c.deltaPct > 0).sort((a, b) => (b.deltaPct ?? 0) - (a.deltaPct ?? 0))[0] ?? null;
 
   // ── Ingresos ──
+  // Ingresos a disponible (Sueldo + Extras). Moves son transferencias internas.
   const movIngresos = periodo
     ? periodo.movimientos
         .filter((m) =>
-          m.tipo === "Move" ||
-          (m.tipo === "Ingreso" && m.categoria !== "Ahorros" && m.categoria !== "RESTO")
+          m.tipo === "Ingreso" && m.categoria !== "Ahorros" && m.categoria !== "RESTO"
         )
         .sort((a, b) => b.monto - a.monto)
     : [];
 
-  const totalIngresos = periodo?.total ?? 0;
+  // Ingresos que fueron directo a ahorros (dinero real que entró pero no pasó por disponible)
+  const movIngresosAhorros = periodo
+    ? periodo.movimientos
+        .filter((m) => m.tipo === "Ingreso" && m.categoria === "Ahorros")
+        .sort((a, b) => b.monto - a.monto)
+    : [];
+
   const extrasReales = periodo ? periodo.extras - periodo.moveTotal : 0;
+  const totalIngresos = periodo ? periodo.sueldo + extrasReales : 0;
+  const totalAhorradoDirecto = movIngresosAhorros.reduce((s, m) => s + m.monto, 0);
 
   const ingXCat: { cat: string; monto: number; pct: number }[] = (() => {
     if (!periodo) return [];
@@ -177,31 +185,31 @@ export default function ReportesPage() {
         catMap.set(m.categoria, (catMap.get(m.categoria) ?? 0) + m.monto);
       }
     }
-    if (periodo.moveTotal > 0) catMap.set("Retiro ahorro", periodo.moveTotal);
     return Array.from(catMap.entries())
       .filter(([, v]) => v > 0)
       .map(([cat, monto]) => ({ cat, monto, pct: totalIngresos > 0 ? Math.round((monto / totalIngresos) * 100) : 0 }))
       .sort((a, b) => b.monto - a.monto);
   })();
 
-  const deltaIngresos = anterior && anterior.total > 0
-    ? Math.round(((totalIngresos - anterior.total) / anterior.total) * 100)
+  const ingresosAnteriores = anterior ? anterior.sueldo + (anterior.extras - anterior.moveTotal) : 0;
+  const deltaIngresos = anterior && ingresosAnteriores > 0
+    ? Math.round(((totalIngresos - ingresosAnteriores) / ingresosAnteriores) * 100)
     : null;
 
   const ingXDesc: { cat: string; monto: number; pct: number }[] = (() => {
     if (!periodo) return [];
     const descMap = new Map<string, number>();
     for (const m of periodo.movimientos) {
-      const esIngreso = m.tipo === "Move" ||
-        (m.tipo === "Ingreso" && m.categoria !== "Ahorros" && m.categoria !== "RESTO");
-      if (esIngreso) {
+      // Incluye todos los ingresos reales (a disponible Y a ahorros directo)
+      if (m.tipo === "Ingreso" && m.categoria !== "RESTO") {
         const key = m.descripcion || m.categoria;
         descMap.set(key, (descMap.get(key) ?? 0) + m.monto);
       }
     }
+    const totalAll = totalIngresos + totalAhorradoDirecto;
     return Array.from(descMap.entries())
       .filter(([, v]) => v > 0)
-      .map(([cat, monto]) => ({ cat, monto, pct: totalIngresos > 0 ? Math.round((monto / totalIngresos) * 100) : 0 }))
+      .map(([cat, monto]) => ({ cat, monto, pct: totalAll > 0 ? Math.round((monto / totalAll) * 100) : 0 }))
       .sort((a, b) => b.monto - a.monto);
   })();
 
@@ -246,7 +254,7 @@ export default function ReportesPage() {
     <div className="page">
       <div style={{ marginBottom: 18 }}>
         <div className="label fade-up-1" style={{ marginBottom: 2 }}>Análisis</div>
-        <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Reportes</div>
+        <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reportes</div>
       </div>
 
       {/* Sub-tabs */}
@@ -389,7 +397,7 @@ export default function ReportesPage() {
 
               {/* KPIs */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
-                <Stat label="Gastado" value={money(periodo.gastado)} sub={`${periodo.pct}% del total`} color={colorPct(periodo.pct)} />
+                <Stat label="Gastado" value={money(periodo.gastado)} sub={`${periodo.pct}% del total`} color={colorPct(periodo.pct)} danger={periodo.pct > 100} />
                 {ritmo && <Stat label="Promedio / día" value={money(kpis.promedioDiario)} sub={`${ritmo.diasTranscurridos} días`} />}
                 <Stat label="Mayor gasto" value={kpis.diaMayorGasto ? money(kpis.diaMayorGasto.monto) : "—"} sub={kpis.diaMayorGasto ? sinAño(kpis.diaMayorGasto.fecha) : undefined} color="var(--red)" />
                 {activos.length > 1 && (() => {
@@ -495,7 +503,7 @@ export default function ReportesPage() {
               {/* Hero */}
               <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--green-dim))", borderColor: "var(--green)33" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Total ingresos</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Ingresos reales</div>
                   <button onClick={toggle} aria-label="Ocultar valores" style={{
                     background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
                     width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
@@ -516,9 +524,9 @@ export default function ReportesPage() {
               {/* KPIs */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <Stat label="Sueldo" value={money(periodo.sueldo)} color="var(--green)" />
-                <Stat label="Extras" value={extrasReales > 0 ? money(extrasReales) : "—"} color="var(--green)" />
                 {kpis && <Stat label="Registrados" value={String(kpis.cantIngresos)} sub="movimientos ingreso" />}
-                {periodo.moveTotal > 0 && <Stat label="Retiros" value={money(periodo.moveTotal)} color="var(--yellow)" sub="desde ahorros" />}
+                {totalAhorradoDirecto > 0 && <Stat label="→ Ahorros" value={money(totalAhorradoDirecto)} sub="ingreso directo" color="var(--blue)" />}
+                {periodo.moveTotal > 0 && <Stat label="Retiros" value={money(periodo.moveTotal)} sub="desde ahorros" color="var(--yellow)" />}
               </div>
 
               {/* Por categoría */}
@@ -546,11 +554,11 @@ export default function ReportesPage() {
                 <div className="soft" style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Evolución</div>
                   <VBars
-                    max={Math.max(...evolucionIngresos.map((p) => p.total), 1)}
+                    max={Math.max(...evolucionIngresos.map((p) => p.sueldo + (p.extras - p.moveTotal)), 1)}
                     oculto={oculto}
                     data={evolucionIngresos.map((p) => ({
                       label: shortPer(p.periodoId),
-                      value: p.total,
+                      value: p.sueldo + (p.extras - p.moveTotal),
                       color: "var(--green)",
                       hi: activos.includes(p.periodoId),
                     }))}
@@ -559,7 +567,7 @@ export default function ReportesPage() {
               )}
 
               {/* Detalle de movimientos */}
-              {movIngresos.length > 0 && (
+              {(movIngresos.length > 0 || movIngresosAhorros.length > 0) && (
                 <div className="soft" style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Detalle</div>
                   {movIngresos.map((m) => (
@@ -573,10 +581,28 @@ export default function ReportesPage() {
                       </span>
                     </div>
                   ))}
+                  {movIngresosAhorros.length > 0 && (
+                    <>
+                      <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 2, textTransform: "uppercase", padding: "10px 0 4px", borderTop: movIngresos.length > 0 ? "1px solid var(--faint)" : "none", marginTop: movIngresos.length > 0 ? 4 : 0 }}>
+                        Directo a ahorros
+                      </div>
+                      {movIngresosAhorros.map((m) => (
+                        <div key={m.id} className="row" style={{ padding: "9px 0" }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || m.origenAhorro || m.categoria}</div>
+                            <div style={{ fontSize: 10, color: "var(--muted)" }}>{sinAño(m.fecha)}</div>
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+                            +{money(m.monto)}
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
 
-              {movIngresos.length === 0 && (
+              {movIngresos.length === 0 && movIngresosAhorros.length === 0 && (
                 <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
                   No hay ingresos registrados en este período.
                 </div>
@@ -590,7 +616,7 @@ export default function ReportesPage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <Stat label="Sueldo" value={money(periodo.sueldo)} color="var(--green)" />
                 <Stat label="Extras" value={periodo.extras > 0 ? money(periodo.extras) : "—"} color="var(--green)" />
-                <Stat label="Gastado" value={money(periodo.gastado)} sub={`${periodo.pct}%`} color={colorPct(periodo.pct)} />
+                <Stat label="Gastado" value={money(periodo.gastado)} sub={`${periodo.pct}%`} color={colorPct(periodo.pct)} danger={periodo.pct > 100} />
                 <Stat label="Disponible" value={money(periodo.disponible)} color={periodo.disponible >= 0 ? "var(--green)" : "var(--red)"} />
                 <Stat label="Ahorros acum." value={ahorrosAcumPeriodo > 0 ? money(ahorrosAcumPeriodo) : "—"} color="var(--blue)" />
                 <Stat label="Resto" value={periodo.resto > 0 ? money(periodo.resto) : "—"} />
@@ -606,7 +632,7 @@ export default function ReportesPage() {
                         ? activos.filter((id) => id !== p.periodoId)
                         : [...activos, p.periodoId]
                       );
-                    }} style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)", cursor: "pointer" }}>
+                    }} style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)", cursor: "pointer", background: p.pct > 100 ? "var(--red-dim)" : "transparent", borderRadius: p.pct > 100 ? 6 : 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: isAct ? "var(--accent)" : "var(--text)" }}>{p.periodoId}</span>
                         <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: colorPct(p.pct) }}>{p.pct}%</span>
@@ -763,7 +789,7 @@ export default function ReportesPage() {
                         }));
                         const maxPct = Math.max(...data.map((d) => d.pct), 110);
                         const lineBottom = Math.round((100 / maxPct) * 96);
-                        const color = (pct: number) => pct > 100 ? "var(--red)" : pct > 80 ? "var(--yellow)" : "var(--green)";
+                        const color = (pct: number) => pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)";
                         return (
                           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
                             {data.map((d, i) => (

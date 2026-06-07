@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useConfig } from "@/hooks/useConfig";
@@ -171,11 +171,37 @@ export default function MovimientosPage() {
   const esCompraUSD = tipo === "CompraUSD";
   const esGastoUSD  = tipo === "GastoUSD";
   const esUSD     = esCompraUSD || esGastoUSD;
+  const tipoColor = TIPOS.find(tx => tx.t === tipo)?.color ?? "var(--accent)";
 
-  const categoriasFiltradas = config?.categorias.filter(c =>
-    tipo === "Gasto" ? c.tipo === "Gasto" && c.activa :
-    tipo === "Ingreso" ? c.tipo === "Ingreso" && c.activa : false
-  ) ?? [];
+  // Fade del botón flotante: visible al cargar, desaparece tras 2.5s sin scroll
+  const [btnVisible, setBtnVisible] = useState(true);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const show = () => {
+      setBtnVisible(true);
+      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+      scrollTimer.current = setTimeout(() => setBtnVisible(false), 1000);
+    };
+    scrollTimer.current = setTimeout(() => setBtnVisible(false), 2000);
+    document.addEventListener("scroll", show, { passive: true });
+    document.addEventListener("touchstart", show, { passive: true });
+    document.addEventListener("touchmove", show, { passive: true });
+    document.addEventListener("click", show);
+    return () => {
+      document.removeEventListener("scroll", show);
+      document.removeEventListener("touchstart", show);
+      document.removeEventListener("touchmove", show);
+      document.removeEventListener("click", show);
+      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    };
+  }, []);
+
+  const categoriasFiltradas = tipo === "Gasto"
+    ? (config?.categorias.filter(c => c.tipo === "Gasto" && c.activa) ?? [])
+    : tipo === "Ingreso"
+    ? [{ id: "sueldo", nombre: "Sueldo", tipo: "Ingreso" as const, activa: true },
+       { id: "ahorros", nombre: "Ahorros", tipo: "Ingreso" as const, activa: true }]
+    : [];
 
   const cotizActual = cotizManual ? parseFloat(cotizManual) : cotizacion?.blue ?? 0;
   // GastoUSD: sólo USD, no ARS. CompraUSD: bidireccional USD↔ARS
@@ -277,34 +303,25 @@ export default function MovimientosPage() {
     <>
     <div className="page fade-up">
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-        <div>
-          <div className="label" style={{ marginBottom: 2 }}>Gestión</div>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Movimientos</div>
-          {ultimoCargado && (
-            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
-              Último: {new Date(ultimoCargado).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}
-            </div>
-          )}
-          {periodoActual && (
-            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-              Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
-              <button onClick={toggle} aria-label="Ocultar valores" style={{
-                background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
-                width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
-              }}>
-                <EyeIcon off={oculto} />
-              </button>
-            </div>
-          )}
-        </div>
-        <button onClick={openAdd} style={{
-          width: 40, height: 40, borderRadius: "50%",
-          background: "var(--accent)", color: "#000",
-          border: "none", fontSize: 24, fontWeight: 300, cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          lineHeight: 1, flexShrink: 0,
-        }}>+</button>
+      <div style={{ marginBottom: 20 }}>
+        <div className="label" style={{ marginBottom: 2 }}>Gestión</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Movimientos</div>
+        {ultimoCargado && (
+          <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+            Último: {new Date(ultimoCargado).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}
+          </div>
+        )}
+        {periodoActual && (
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
+            <button onClick={toggle} aria-label="Ocultar valores" style={{
+              background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
+              width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
+            }}>
+              <EyeIcon off={oculto} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Períodos */}
@@ -379,6 +396,35 @@ export default function MovimientosPage() {
       )}
 
     </div>
+
+    {/* Botón flotante — fijo sobre el navbar, se oculta tras inactividad */}
+    <button
+      onClick={openAdd}
+      aria-label="Nuevo movimiento"
+      style={{
+        position: "fixed",
+        bottom: "calc(var(--nav-h) + 14px)",
+        left: 0, right: 0, margin: "0 auto",
+        width: 54, height: 54,
+        borderRadius: "50%",
+        background: "transparent",
+        color: "var(--green)",
+        border: "none",
+        cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 100,
+        filter: "drop-shadow(0 2px 12px var(--green)99)",
+        opacity: btnVisible ? 1 : 0,
+        pointerEvents: btnVisible ? "all" : "none",
+        transition: "opacity 0.4s ease",
+      }}
+    >
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+
     {/* ── MODAL ÚNICO — fuera del div animado para evitar stacking context ── */}
     <Modal open={modal !== null} onClose={closeModal} title={modalTitle}>
 
@@ -418,9 +464,9 @@ export default function MovimientosPage() {
                   {categoriasFiltradas.map(c => (
                     <button key={c.nombre} type="button" onClick={() => setCategoria(c.nombre)}
                       className="pill" style={{
-                        borderColor: categoria === c.nombre ? "var(--accent)" : "var(--border)",
-                        background: categoria === c.nombre ? "var(--accent-dim)" : "transparent",
-                        color: categoria === c.nombre ? "var(--accent)" : "var(--muted)",
+                        borderColor: categoria === c.nombre ? tipoColor : "var(--border)",
+                        background: categoria === c.nombre ? tipoColor + "22" : "transparent",
+                        color: categoria === c.nombre ? tipoColor : "var(--muted)",
                       }}>{c.nombre}</button>
                   ))}
                 </div>
@@ -506,7 +552,7 @@ export default function MovimientosPage() {
               </div>
             )}
 
-            {!esMove && !esUSD && !esAhorros && (
+            {!esMove && !esUSD && !esAhorros && !esSueldo && (
               <div style={{ marginBottom: 14 }}>
                 <div className="label">Descripción</div>
                 <input className="input" type="text" value={descripcion} onChange={e => setDescripcion(e.target.value)} />

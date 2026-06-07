@@ -15,13 +15,12 @@ import type { ConfigUsuario } from "@/types";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 
-type Tab = "cuenta" | "movimientos" | "reportes" | "ahorros";
+type Tab = "cuenta" | "movimientos" | "reportes";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "cuenta",      label: "Cuenta" },
   { id: "movimientos", label: "Movimientos" },
   { id: "reportes",    label: "Reportes" },
-  { id: "ahorros",     label: "Ahorros" },
 ];
 
 const SECCION_LABEL: Record<string, string> = {
@@ -295,7 +294,7 @@ export default function ConfigPage() {
 
       <div style={{ marginBottom: 24 }}>
         <div className="label" style={{ marginBottom: 2 }}>Preferencias</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Config</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Config</div>
       </div>
 
       {/* Pills principales */}
@@ -305,9 +304,9 @@ export default function ConfigPage() {
             className="pill"
             style={{
               flexShrink: 0,
-              borderColor: tab === t.id ? "var(--accent)" : "var(--border)",
-              background: tab === t.id ? "var(--accent-dim)" : "transparent",
-              color: tab === t.id ? "var(--accent)" : "var(--muted)",
+              borderColor: tab === t.id ? "var(--green)" : "var(--border)",
+              background: tab === t.id ? "var(--green-dim)" : "transparent",
+              color: tab === t.id ? "var(--green)" : "var(--muted)",
             }}>
             {t.label}
           </button>
@@ -410,9 +409,9 @@ export default function ConfigPage() {
               <button key={s.id} onClick={() => { setMovSub(s.id); setNuevoNombre(""); }}
                 className="pill"
                 style={{
-                  borderColor: movSub === s.id ? "var(--accent)" : "var(--border)",
-                  background: movSub === s.id ? "var(--accent-dim)" : "transparent",
-                  color: movSub === s.id ? "var(--accent)" : "var(--muted)",
+                  borderColor: movSub === s.id ? "var(--green)" : "var(--border)",
+                  background: movSub === s.id ? "var(--green-dim)" : "transparent",
+                  color: movSub === s.id ? "var(--green)" : "var(--muted)",
                 }}>
                 {s.label}
               </button>

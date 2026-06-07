@@ -8,20 +8,34 @@ export function useCotizacion() {
   const [cotizacion, setCotizacion] = useState<Cotizacion | null>(null);
   const [loading, setLoading] = useState(true);
   const [ultimaActualizacion, setUltimaActualizacion] = useState<Date | null>(null);
+  const [minutosDesdeActualizacion, setMinutos] = useState<number | null>(null);
+
+  useEffect(() => {
+    getCotizacion().then((data) => {
+      setCotizacion(data);
+      setUltimaActualizacion(new Date());
+      setMinutos(0);
+      setLoading(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!ultimaActualizacion) return;
+    const id = setInterval(() => {
+      setMinutos(Math.floor((Date.now() - ultimaActualizacion.getTime()) / 60000));
+    }, 60000);
+    return () => clearInterval(id);
+  }, [ultimaActualizacion]);
 
   const refresh = async () => {
     setLoading(true);
-    const data = await getCotizacion();
-    setCotizacion(data);
-    setUltimaActualizacion(new Date());
-    setLoading(false);
+    getCotizacion().then((data) => {
+      setCotizacion(data);
+      setUltimaActualizacion(new Date());
+      setMinutos(0);
+      setLoading(false);
+    });
   };
-
-  useEffect(() => { refresh(); }, []);
-
-  const minutosDesdeActualizacion = ultimaActualizacion
-    ? Math.floor((Date.now() - ultimaActualizacion.getTime()) / 60000)
-    : null;
 
   return { cotizacion, loading, minutosDesdeActualizacion, refresh };
 }

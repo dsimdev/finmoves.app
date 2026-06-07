@@ -71,7 +71,7 @@ export default function DolaresPage() {
 
       <div style={{ marginBottom: 24 }}>
         <div className="label" style={{ marginBottom: 2 }}>Inversión</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Reserva USD</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reserva USD</div>
       </div>
 
       {loading ? (

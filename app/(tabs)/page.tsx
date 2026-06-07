@@ -34,7 +34,7 @@ export default function Dashboard() {
   const ultimos = p?.movimientos.slice(0, 6) ?? [];
   // % disponible sobre el sueldo del período (cuánto queda, no lo gastado)
   const pctDisp = p && p.sueldo > 0 ? Math.round((p.disponible / p.sueldo) * 100) : 0;
-  const barColor = pctDisp < 20 ? "var(--red)" : pctDisp < 40 ? "var(--yellow)" : "var(--green)";
+  const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
 
   return (
     <div className="page">
@@ -43,12 +43,12 @@ export default function Dashboard() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <div className="label fade-up-1" style={{ marginBottom: 2 }}>Inicio</div>
-          <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Dashboard</div>
+          <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Dashboard</div>
         </div>
         {p && (
           <div className="fade-up-2" style={{ textAlign: "right" }}>
             <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>Período</div>
-            <div style={{ fontSize: 13, color: "var(--accent)", fontWeight: 700, fontFamily: "var(--font-mono)" }}>{p.periodoId}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{p.periodoId}</div>
           </div>
         )}
       </div>
