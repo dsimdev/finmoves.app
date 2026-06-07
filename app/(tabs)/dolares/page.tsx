@@ -20,6 +20,7 @@ function fechaCortaConAnio(fecha: string): string {
 }
 import { actualizarTipoCambio } from "@/services/firebase/config";
 import { useMoney, MASK } from "@/hooks/useHideValues";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/EyeIcon";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Movimiento } from "@/types";
@@ -48,8 +49,12 @@ export default function DolaresPage() {
 
   useEffect(() => { refresh(); }, []);
   const { oculto, toggle, m: money } = useMoney();
+  const { monedaInversiones } = useAppPrefs();
 
   const [tipoCambioSel, setTipoCambioSel] = useState<"blue" | "oficial" | null>(null);
+
+  const esEUR = monedaInversiones === "EUR";
+  const simbolo = esEUR ? "€" : "U$D";
 
   const movimientosUSD = movimientos
     .filter((m) => m.tipo === "CompraUSD")
@@ -58,9 +63,11 @@ export default function DolaresPage() {
   const { totalUSD: desdeMovimientos, costoPromedio } = calcularReserva(movimientosUSD);
   const totalUSD = SALDO_INICIAL_USD + desdeMovimientos;
 
-  const rawTipoCambio = tipoCambioSel ?? config?.meta.tipoCambioRef ?? "blue";
+  const rawTipoCambio = tipoCambioSel ?? config?.meta.tipoCambioRef ?? "oficial";
   const tipoCambioRef: "blue" | "oficial" = rawTipoCambio === "oficial" ? "oficial" : "blue";
-  const cotizacionActual = cotizacion ? cotizacion[tipoCambioRef] : null;
+  const cotizacionUSD = cotizacion ? cotizacion[tipoCambioRef] : null;
+  const cotizacionEUR = cotizacion ? (tipoCambioRef === "oficial" ? cotizacion.oficial_euro : cotizacion.blue_euro) ?? null : null;
+  const cotizacionActual = esEUR ? cotizacionEUR : cotizacionUSD;
   const reservaEnARS = cotizacionActual ? totalUSD * cotizacionActual : null;
   const gananciaARS = reservaEnARS && costoPromedio > 0 ? reservaEnARS - desdeMovimientos * costoPromedio : null;
   const gananciaPct = gananciaARS && desdeMovimientos * costoPromedio > 0 ? (gananciaARS / (desdeMovimientos * costoPromedio)) * 100 : null;
@@ -71,7 +78,7 @@ export default function DolaresPage() {
 
       <div style={{ marginBottom: 24 }}>
         <div className="label" style={{ marginBottom: 2 }}>Inversión</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reserva USD</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reserva {monedaInversiones}</div>
       </div>
 
       {loading ? (
@@ -90,7 +97,7 @@ export default function DolaresPage() {
               </button>
             </div>
             <div style={{ fontSize: 36, fontWeight: 700, color: "var(--yellow)", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
-              U$D {oculto ? "••••" : totalUSD.toFixed(2)}
+              {simbolo} {oculto ? "••••" : totalUSD.toFixed(2)}
             </div>
             {reservaEnARS && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
@@ -126,21 +133,26 @@ export default function DolaresPage() {
             </div>
             {cotizacion ? (
               <div style={{ display: "flex", gap: 8 }}>
-                {(["blue", "oficial"] as const).map((t) => (
-                  <div key={t} onClick={() => { setTipoCambioSel(t); if (user?.uid) actualizarTipoCambio(user.uid, t); }}
-                    style={{
-                      flex: 1, cursor: "pointer",
-                      background: t === tipoCambioRef ? "var(--blue-dim)" : "var(--surface-alt)",
-                      border: `1px solid ${t === tipoCambioRef ? "var(--blue)55" : "var(--border)"}`,
-                      borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center",
-                      transition: "all 0.15s",
-                    }}>
-                    <div style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", marginBottom: 6 }}>{t}</div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: t === tipoCambioRef ? "var(--blue)" : "var(--text)" }}>
-                      ${cotizacion[t].toLocaleString("es-AR")}
+                {(["blue", "oficial"] as const).map((t) => {
+                  const val = esEUR
+                    ? (t === "oficial" ? cotizacion.oficial_euro : cotizacion.blue_euro)
+                    : cotizacion[t];
+                  return (
+                    <div key={t} onClick={() => { setTipoCambioSel(t); if (user?.uid) actualizarTipoCambio(user.uid, t); }}
+                      style={{
+                        flex: 1, cursor: "pointer",
+                        background: t === tipoCambioRef ? "var(--blue-dim)" : "var(--surface-alt)",
+                        border: `1px solid ${t === tipoCambioRef ? "var(--blue)55" : "var(--border)"}`,
+                        borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center",
+                        transition: "all 0.15s",
+                      }}>
+                      <div style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", marginBottom: 6 }}>{t}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t === tipoCambioRef ? "var(--blue)" : "var(--text)" }}>
+                        {val ? `$${val.toLocaleString("es-AR")}` : "—"}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div style={{ fontSize: 12, color: "var(--muted)" }}>Sin datos. Verificá conexión.</div>
@@ -153,7 +165,7 @@ export default function DolaresPage() {
               <div>
                 <div className="label" style={{ marginBottom: 4 }}>Meta por período</div>
                 <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--font-mono)" }}>
-                  U$D {oculto ? "••" : totalUSD.toFixed(0)} <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 400, fontFamily: "var(--font)" }}>/ {metaUSD}</span>
+                  {simbolo} {oculto ? "••" : totalUSD.toFixed(0)} <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 400, fontFamily: "var(--font)" }}>/ {metaUSD}</span>
                 </div>
               </div>
               <span className="badge" style={{
@@ -180,9 +192,9 @@ export default function DolaresPage() {
                 {config.meta.metaFecha && <div style={{ fontSize: 9, color: "var(--muted)" }}>{fechaCortaConAnio(config.meta.metaFecha)}</div>}
               </div>
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Objetivo USD</div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Objetivo {monedaInversiones}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>
-                  U$D {config.meta.metaMonto.toLocaleString("es-AR")}
+                  {simbolo} {config.meta.metaMonto.toLocaleString("es-AR")}
                 </div>
               </div>
               {(() => {
@@ -191,12 +203,12 @@ export default function DolaresPage() {
                   <>
                     <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid var(--faint)", marginBottom: 8 }}>
                       <span style={{ fontSize: 11, color: "var(--muted)" }}>Ahorrado</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>U$D {oculto ? "••" : totalUSD.toFixed(2)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>{simbolo} {oculto ? "••" : totalUSD.toFixed(2)}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
                       <span style={{ fontSize: 11, color: "var(--muted)" }}>Falta</span>
                       <span style={{ fontSize: 12, fontWeight: 700, color: faltaUSD <= 0 ? "var(--green)" : "var(--blue)", fontFamily: "var(--font-mono)" }}>
-                        U$D {oculto ? "••" : (faltaUSD <= 0 ? "0.00" : faltaUSD.toFixed(2))}
+                        {simbolo} {oculto ? "••" : (faltaUSD <= 0 ? "0.00" : faltaUSD.toFixed(2))}
                       </span>
                     </div>
                   </>

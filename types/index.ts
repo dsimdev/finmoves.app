@@ -38,6 +38,8 @@ export interface ReservaUSD {
 export interface Cotizacion {
   blue: number;
   oficial: number;
+  blue_euro?: number;
+  oficial_euro?: number;
   fuente: "api" | "manual" | "cache";
   timestamp: Date;
 }

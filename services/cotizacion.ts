@@ -16,6 +16,8 @@ export async function getCotizacion(): Promise<Cotizacion | null> {
     const data: Cotizacion = {
       blue: json.blue.value_sell,
       oficial: json.oficial.value_sell,
+      blue_euro: json.blue_euro?.value_sell,
+      oficial_euro: json.oficial_euro?.value_sell,
       fuente: "api",
       timestamp: new Date(),
     };

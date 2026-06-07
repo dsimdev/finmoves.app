@@ -14,18 +14,20 @@ import { useRouter } from "next/navigation";
 import type { ConfigUsuario } from "@/types";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 
 type Tab = "cuenta" | "movimientos" | "reportes" | "ahorros";
 
-const TABS: { id: Tab; label: string }[] = [
+const ALL_TABS: { id: Tab; label: string }[] = [
   { id: "cuenta",      label: "Cuenta" },
   { id: "movimientos", label: "Movimientos" },
   { id: "reportes",    label: "Reportes" },
-  { id: "ahorros",     label: "Ahorros" },
+  { id: "ahorros",     label: "Inversiones" },
 ];
 
 const SECCION_LABEL: Record<string, string> = {
   gastos: "Gastos",
+  ingresos: "Ingresos",
   periodos: "Períodos",
   tendencias: "Tendencias",
 };
@@ -46,9 +48,6 @@ function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
   );
 }
 
-const BTN_SAVE_STYLE: React.CSSProperties = {
-  width: "100%", marginTop: 4, height: 46, fontSize: 14, fontWeight: 700,
-};
 
 export default function ConfigPage() {
   const { user } = useAuth();
@@ -58,6 +57,12 @@ export default function ConfigPage() {
   const router = useRouter();
 
   const { dark, toggle: toggleTheme } = useTheme();
+  const { showReportes, showAhorros, monedaInversiones, set: setPref, setMoneda } = useAppPrefs();
+  const TABS = ALL_TABS.filter((t) => {
+    if (t.id === "reportes" && !showReportes) return false;
+    if (t.id === "ahorros" && !showAhorros) return false;
+    return true;
+  });
   const [tab, setTab] = useState<Tab>("cuenta");
   const [guardando, setGuardando] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
@@ -282,8 +287,6 @@ export default function ConfigPage() {
     await saveConfig({ ...config, meta: newMeta });
   };
 
-  const seccionesReporte = ["gastos", "periodos", "tendencias"] as const;
-
   if (loading || !config) return (
     <div className="page">
       <LoadingSpinner />
@@ -295,7 +298,7 @@ export default function ConfigPage() {
 
       <div style={{ marginBottom: 24 }}>
         <div className="label" style={{ marginBottom: 2 }}>Preferencias</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Config</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Configuraciones</div>
       </div>
 
       {/* Pills principales */}
@@ -305,9 +308,9 @@ export default function ConfigPage() {
             className="pill"
             style={{
               flexShrink: 0,
-              borderColor: tab === t.id ? "var(--green)" : "var(--border)",
-              background: tab === t.id ? "var(--green-dim)" : "transparent",
-              color: tab === t.id ? "var(--green)" : "var(--muted)",
+              borderColor: tab === t.id ? "var(--accent)" : "var(--border)",
+              background: tab === t.id ? "var(--accent-dim)" : "transparent",
+              color: tab === t.id ? "var(--accent)" : "var(--muted)",
             }}>
             {t.label}
           </button>
@@ -380,20 +383,79 @@ export default function ConfigPage() {
                   )}
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Modo {dark ? "oscuro" : "claro"}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Modo oscuro</div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
                     {dark ? "Cambiá a tema claro" : "Cambiá a tema oscuro"}
                   </div>
                 </div>
               </div>
-              <Toggle activo={!dark} onClick={toggleTheme} />
+              <Toggle activo={dark} onClick={toggleTheme} />
+            </div>
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>Reportes</div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de reportes</div>
+              </div>
+              <Toggle activo={showReportes} onClick={() => setPref("showReportes", !showReportes)} />
+            </div>
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>Inversiones</div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de inversiones</div>
+              </div>
+              <Toggle activo={showAhorros} onClick={() => setPref("showAhorros", !showAhorros)} />
+            </div>
+            {showAhorros && (
+            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda de inversiones</div>
+                {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>meta activa</span>}
+              </div>
+              {config?.meta.metaMonto ? (
+                <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                  No se puede cambiar mientras haya una meta de ahorro activa.
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 6 }}>
+                  {(["USD", "EUR"] as const).map((m) => (
+                    <button key={m} onClick={() => setMoneda(m)} className="pill" style={{
+                      borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)",
+                      background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent",
+                      color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)",
+                    }}>{m}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+            )}
+          </div>
+
+          <div className="card">
+            <div className="label">App</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "8px 0" }}>
+              <img src="/logo5-cropped.png" alt="FinMoves" style={{ width: 100, borderRadius: 12, objectFit: "contain", flexShrink: 0 }} />
+              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>v{process.env.NEXT_PUBLIC_APP_VERSION}</div>
             </div>
           </div>
 
-          <button onClick={async () => { await signOut(auth); router.push("/login"); }}
-            className="btn" style={{ background: "transparent", border: "1px solid var(--red)", color: "var(--red)", marginTop: 8 }}>
-            Cerrar sesión
-          </button>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+            <button
+              onClick={async () => { await signOut(auth); router.push("/login"); }}
+              aria-label="Cerrar sesión"
+              style={{
+                background: "transparent", border: "none", cursor: "pointer",
+                color: "var(--red)", display: "flex", alignItems: "center", justifyContent: "center",
+                width: 54, height: 54, borderRadius: "50%",
+                filter: "drop-shadow(0 2px 10px var(--red)88)",
+              }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
@@ -410,9 +472,9 @@ export default function ConfigPage() {
               <button key={s.id} onClick={() => { setMovSub(s.id); setNuevoNombre(""); }}
                 className="pill"
                 style={{
-                  borderColor: movSub === s.id ? "var(--green)" : "var(--border)",
-                  background: movSub === s.id ? "var(--green-dim)" : "transparent",
-                  color: movSub === s.id ? "var(--green)" : "var(--muted)",
+                  borderColor: movSub === s.id ? "var(--accent)" : "var(--border)",
+                  background: movSub === s.id ? "var(--accent-dim)" : "transparent",
+                  color: movSub === s.id ? "var(--accent)" : "var(--muted)",
                 }}>
                 {s.label}
               </button>
@@ -494,38 +556,32 @@ export default function ConfigPage() {
             </div>
           )}
 
-          <button onClick={guardarMovimientos} disabled={guardando || !isDirtyMovimientos}
-            className="btn btn-primary" style={{ ...BTN_SAVE_STYLE, opacity: isDirtyMovimientos ? 1 : 0.35 }}>
-            {guardando ? "Guardando..." : "Guardar"}
-          </button>
         </div>
       )}
 
       {/* ── REPORTES ── */}
       {tab === "reportes" && (
         <div key="reportes" className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>
-            Activá o desactivá cada sección de Reportes
-          </div>
-          {seccionesReporte.map((sec) => {
-            const items = REPORTES_TOGGLES.filter((r) => r.seccion === sec);
-            return (
-              <div key={sec} className="card">
-                <div className="label">{SECCION_LABEL[sec]}</div>
-                {items.map((r) => (
-                  <div key={r.id} className="row">
-                    <span style={{ fontSize: 13, color: localIsEnabled(r.id) ? "var(--text)" : "var(--muted)" }}>{r.label}</span>
-                    <Toggle activo={localIsEnabled(r.id)} onClick={() => toggleLocalReporte(r.id)} />
-                  </div>
-                ))}
+          {(["gastos", "ingresos", "periodos"] as const).map((sec) => (
+            <div key={sec} className="card">
+              <div className="label">{SECCION_LABEL[sec]}</div>
+              {REPORTES_TOGGLES.filter((r) => r.seccion === sec).map((r) => (
+                <div key={r.id} className="row">
+                  <span style={{ fontSize: 13, color: localIsEnabled(r.id) ? "var(--text)" : "var(--muted)" }}>{r.label}</span>
+                  <Toggle activo={localIsEnabled(r.id)} onClick={() => toggleLocalReporte(r.id)} />
+                </div>
+              ))}
+            </div>
+          ))}
+          <div className="card">
+            <div className="label">Tendencias</div>
+            {REPORTES_TOGGLES.filter((r) => r.seccion === "tendencias").map((r) => (
+              <div key={r.id} className="row">
+                <span style={{ fontSize: 13, color: localIsEnabled(r.id) ? "var(--text)" : "var(--muted)" }}>{r.label}</span>
+                <Toggle activo={localIsEnabled(r.id)} onClick={() => toggleLocalReporte(r.id)} />
               </div>
-            );
-          })}
-
-          <button onClick={guardarReportes} disabled={!isDirtyReportes}
-            className="btn btn-primary" style={{ ...BTN_SAVE_STYLE, opacity: isDirtyReportes ? 1 : 0.35 }}>
-            Guardar
-          </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -559,12 +615,40 @@ export default function ConfigPage() {
               </div>
             </div>
 
-            <button onClick={guardarMetaAhorro} disabled={guardando || !isDirtyAhorros}
-              className="btn btn-primary" style={{ ...BTN_SAVE_STYLE, opacity: isDirtyAhorros ? 1 : 0.35 }}>
-              {guardando ? "Guardando..." : "Guardar"}
-            </button>
           </div>
         </div>
+      )}
+
+      {/* Botón guardar flotante — diskette, aparece solo con cambios */}
+      {((tab === "movimientos" && isDirtyMovimientos) ||
+        tab === "reportes" ||
+        (tab === "ahorros" && isDirtyAhorros)) && (
+        <button
+          onClick={tab === "movimientos" ? guardarMovimientos : tab === "reportes" ? guardarReportes : guardarMetaAhorro}
+          disabled={guardando}
+          aria-label="Guardar cambios"
+          style={{
+            position: "fixed",
+            bottom: "calc(var(--nav-h) + 14px)",
+            left: 0, right: 0, margin: "0 auto",
+            width: 54, height: 54,
+            borderRadius: "50%",
+            background: "transparent",
+            color: "var(--accent)",
+            border: "none", cursor: guardando ? "default" : "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 160,
+            filter: "drop-shadow(0 2px 12px var(--accent)99)",
+            opacity: guardando ? 0.5 : 1,
+            transition: "opacity 0.4s ease",
+          }}
+        >
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+        </button>
       )}
 
       {saveMsg && (

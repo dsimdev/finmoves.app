@@ -5,26 +5,19 @@ import { useState, useEffect, useCallback } from "react";
 export interface ReporteToggle {
   id: string;
   label: string;
-  seccion: "gastos" | "periodos" | "tendencias";
+  seccion: "gastos" | "ingresos" | "periodos" | "tendencias";
 }
 
 export const REPORTES_TOGGLES: ReporteToggle[] = [
-  { id: "ritmo",       label: "Ritmo de gasto",         seccion: "gastos" },
-  { id: "diasLibres",  label: "Días sin gastos",         seccion: "gastos" },
-  { id: "promPorMov",  label: "Prom. por movimiento",    seccion: "gastos" },
-  { id: "comparativa", label: "Comparativa vs anterior", seccion: "gastos" },
-  { id: "catCrecio",   label: "Cat. que más creció",     seccion: "gastos" },
-  { id: "mejorPeor",   label: "Mejor / Peor período",    seccion: "periodos" },
-  { id: "evolSueldo",  label: "Evolución sueldo",        seccion: "periodos" },
-  { id: "disponible",  label: "Disponible por período",  seccion: "tendencias" },
-  { id: "proyeccion",  label: "Proyección ahorros",      seccion: "tendencias" },
-  { id: "paraMeta",    label: "Períodos para meta",      seccion: "tendencias" },
-  { id: "ritmoAhorro", label: "Ritmo de ahorro actual",  seccion: "tendencias" },
-  { id: "progreso",    label: "Progreso meta USD",       seccion: "tendencias" },
-  { id: "periodosParaMeta", label: "Períodos para meta USD", seccion: "tendencias" },
-  { id: "ahorrosVsProyectados", label: "Ahorros vs proyectados", seccion: "tendencias" },
-  { id: "consistencia", label: "Consistencia ahorro",    seccion: "tendencias" },
-  { id: "insights",    label: "Insights",                seccion: "tendencias" },
+  { id: "gastos_kpis",            label: "KPIs",       seccion: "gastos" },
+  { id: "gastos_otros",           label: "Otros datos", seccion: "gastos" },
+  { id: "ingresos_kpis",          label: "KPIs",       seccion: "ingresos" },
+  { id: "ingresos_otros",         label: "Otros datos", seccion: "ingresos" },
+  { id: "periodos_kpis",          label: "KPIs",       seccion: "periodos" },
+  { id: "periodos_otros",         label: "Otros datos", seccion: "periodos" },
+  { id: "tendencias_gastos",      label: "Gastos",     seccion: "tendencias" },
+  { id: "tendencias_ingresos",    label: "Ingresos",   seccion: "tendencias" },
+  { id: "tendencias_inversiones", label: "Inversiones", seccion: "tendencias" },
 ];
 
 const LS_KEY = "finmoves_report_config";
@@ -46,7 +39,7 @@ export function useReportConfig() {
   }, []);
 
   const isEnabled = useCallback(
-    (id: string) => overrides[id] !== false, // default ON
+    (id: string) => overrides[id] !== false,
     [overrides]
   );
 

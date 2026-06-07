@@ -9,9 +9,9 @@ const LIGHT: Record<string, string> = {
   "--surface-alt": "#e4e4e4",
   "--border":      "#b8b8b8",
   "--border-hi":   "#909090",
+  "--accent-dim":  "#00b4ff28",
   "--green":       "#007a38",
   "--green-dim":   "#007a3822",
-  "--accent-dim":  "#00b4ff22",
   "--red-dim":     "#ff525222",
   "--yellow":      "#a06200",
   "--yellow-dim":  "#a0620022",
@@ -33,14 +33,13 @@ export function applyTheme(isLight: boolean) {
 }
 
 export function useTheme() {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    const isLight = localStorage.getItem(LS_KEY) === "light";
-    if (isLight) {
-      setDark(false);
-      applyTheme(true);
-    }
+    const saved = localStorage.getItem(LS_KEY);
+    const isDark = saved === "dark";
+    setDark(isDark);
+    applyTheme(!isDark);
   }, []);
 
   const toggle = () => {

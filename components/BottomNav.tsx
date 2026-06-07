@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 
 const TABS = [
   {
     href: "/",
-    label: "Inicio",
+    key: "inicio",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z"
@@ -17,7 +18,7 @@ const TABS = [
   },
   {
     href: "/movimientos",
-    label: "Movimientos",
+    key: "movimientos",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <rect x="3" y="6" width="18" height="2.5" rx="1.25" fill={active ? "var(--accent)" : "var(--muted)"} />
@@ -30,7 +31,7 @@ const TABS = [
   },
   {
     href: "/dolares",
-    label: "USD",
+    key: "ahorros",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="9" stroke={active ? "var(--yellow)" : "var(--muted)"} strokeWidth="1.8" fill={active ? "var(--yellow-dim)" : "none"} />
@@ -42,7 +43,7 @@ const TABS = [
   },
   {
     href: "/resumen",
-    label: "Reportes",
+    key: "reportes",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <rect x="3" y="3" width="18" height="18" rx="3" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" fill={active ? "var(--accent-dim)" : "none"} />
@@ -52,7 +53,7 @@ const TABS = [
   },
   {
     href: "/config",
-    label: "Config",
+    key: "config",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke={active ? "var(--accent)" : "var(--muted)"} strokeWidth="1.8" fill={active ? "var(--accent-dim)" : "none"} />
@@ -65,6 +66,13 @@ const TABS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { showReportes, showAhorros } = useAppPrefs();
+
+  const visible = TABS.filter((t) => {
+    if (t.key === "reportes" && !showReportes) return false;
+    if (t.key === "ahorros" && !showAhorros) return false;
+    return true;
+  });
 
   return (
     <nav style={{
@@ -78,7 +86,7 @@ export function BottomNav() {
       zIndex: 100,
       paddingBottom: "env(safe-area-inset-bottom, 0px)",
     }}>
-      {TABS.map((tab) => {
+      {visible.map((tab) => {
         const active = pathname === tab.href;
         return (
           <Link key={tab.href} href={tab.href} style={{

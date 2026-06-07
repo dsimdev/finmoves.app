@@ -9,7 +9,7 @@ import { agruparPorPeriodo, gastosPorCategoria, formatARS } from "@/utils/period
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import {
   gastosPorMedioPago, gastosPorDescripcion, gastosPorFecha,
-  kpisPeriodo, topGastos, ritmoGasto, comparativaCategorias,
+  kpisPeriodo, ritmoGasto, comparativaCategorias,
   serieTendencia, parsePeriodoId, diasSinGastos,
   evolucionSueldo, proyectarAhorros,
   progresoMetaUSD, periodosParaMetaUSD,
@@ -17,6 +17,7 @@ import {
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useConfig } from "@/hooks/useConfig";
 import { useReportConfig } from "@/hooks/useReportConfig";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/EyeIcon";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
@@ -100,6 +101,7 @@ export default function ReportesPage() {
   const { cotizacion } = useCotizacion();
   const { config } = useConfig(user?.uid);
   const { isEnabled: reportOn } = useReportConfig();
+  const { monedaInversiones } = useAppPrefs();
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const [sub, setSub] = useState<Sub>("gastos");
@@ -145,8 +147,6 @@ export default function ReportesPage() {
   const descsModal = periodo ? gastosPorDescripcion(periodo.movimientos, periodo.gastado, 20) : [];
   const porFecha = periodo ? gastosPorFecha(periodo.movimientos, periodo.gastado) : [];
   const kpis = periodo ? kpisPeriodo(periodo) : null;
-  const top = periodo ? topGastos(periodo.movimientos, 5) : [];
-  const topTodos = periodo ? topGastos(periodo.movimientos, 20) : [];
   // Ritmo y comparativa sólo aplican a un período individual
   const ritmo = periodo && activos.length === 1 ? ritmoGasto(periodo, finPeriodo) : null;
   const comp = periodo && activos.length === 1 ? comparativaCategorias(periodo, anterior) : [];
@@ -256,7 +256,10 @@ export default function ReportesPage() {
     : null;
 
   // ── Tendencias / metas de ahorro ──
-  const cotizActual = cotizacion?.oficial ?? null;
+  const cotizActual = monedaInversiones === "EUR"
+    ? (cotizacion?.oficial_euro ?? null)
+    : (cotizacion?.oficial ?? null);
+  const simBoloInv = monedaInversiones === "EUR" ? "€" : "U$D";
   const ahorrosAcumActual = serie.length > 0 ? serie[serie.length - 1]!.ahorrosAcum : 0;
   const metaMonto = config?.meta.metaMonto;
   const progresoMeta = metaMonto && cotizActual ? progresoMetaUSD(ahorrosAcumActual, metaMonto, cotizActual) : null;
@@ -417,7 +420,7 @@ export default function ReportesPage() {
           {sub === "gastos" && periodo && kpis && (
             <>
               {/* Ritmo de gasto (sólo para período individual) */}
-              {ritmo && reportOn("ritmo") && (
+              {ritmo && reportOn("gastos_kpis") && (
               <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--red-dim))", borderColor: "var(--red)22" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>Ritmo de gasto</div>
@@ -439,6 +442,7 @@ export default function ReportesPage() {
               )}
 
               {/* KPIs */}
+              {reportOn("gastos_kpis") && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
                 <Stat label="Gastado" value={money(periodo.gastado)} sub={`${periodo.pct}% del total`} color={colorPct(periodo.pct)} danger={periodo.pct > 100} dimVar={periodo.pct > 90 ? "var(--red-dim)" : periodo.pct > 50 ? "var(--yellow-dim)" : "var(--green-dim)"} />
                 {ritmo && <Stat label="Promedio / día" value={money(kpis.promedioDiario)} sub={`${ritmo.diasTranscurridos} días`} color="var(--red)" dimVar="var(--red-dim)" />}
@@ -454,31 +458,34 @@ export default function ReportesPage() {
                   return <Stat label="Días" value={String(Math.abs(dias))} sub={rango} color="var(--blue)" dimVar="var(--blue-dim)" />;
                 })()}
                 <Stat label="Movimientos" value={String(kpis.cantGastos + kpis.cantIngresos)} sub={`${kpis.cantGastos} gastos · ${kpis.cantIngresos} ingresos`} color="var(--accent)" dimVar="var(--accent-dim)" />
-                {promPorMov !== null && reportOn("promPorMov") && <Stat label="Prom. por gasto" value={money(promPorMov)} sub={`${kpis.cantGastos} transacciones`} color="var(--red)" dimVar="var(--red-dim)" />}
-                {diasLibres && reportOn("diasLibres") && <Stat label="Días sin gastos" value={String(diasLibres.sinGasto)} sub={`de ${diasLibres.total} días`} color="var(--green)" dimVar="var(--green-dim)" />}
+                {promPorMov !== null && <Stat label="Prom. por gasto" value={money(promPorMov)} sub={`${kpis.cantGastos} transacciones`} color="var(--red)" dimVar="var(--red-dim)" />}
+                {diasLibres && <Stat label="Días sin gastos" value={String(diasLibres.sinGasto)} sub={`de ${diasLibres.total} días`} color="var(--green)" dimVar="var(--green-dim)" />}
               </div>
+              )}
 
               {/* Categorías */}
+              {reportOn("gastos_otros") && (
               <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por categoría</div>
                 {cats.map((c) => <Bar key={c.categoria} nombre={c.categoria} monto={c.monto} pct={c.pct} oculto={oculto} />)}
               </div>
+              )}
 
               {/* Comparativa vs anterior */}
-              {anterior && reportOn("comparativa") && (
+              {anterior && reportOn("gastos_otros") && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>vs período anterior</div>
-                  <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12 }}>{shortPer(anterior.periodoId)} → {shortPer(periodo.periodoId)}</div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12 }}>{shortPer(anterior.periodoId)}</div>
                   {comp.filter((c) => c.actual > 0 || c.anterior > 0).slice(0, 8).map((c) => (
                     <div key={c.categoria} className="row" style={{ padding: "8px 0" }}>
                       <span style={{ fontSize: 13 }}>{c.categoria}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--muted)" }}>{money(c.actual)}</span>
+                        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--muted)" }}>{c.anterior > 0 ? money(c.anterior) : "—"}</span>
                         {c.deltaPct !== null ? (
                           <span style={{ fontSize: 11, fontWeight: 700, color: c.deltaPct > 0 ? "var(--red)" : "var(--green)", minWidth: 48, textAlign: "right" }}>
                             {c.deltaPct > 0 ? "↑" : "↓"}{Math.abs(c.deltaPct)}%
                           </span>
-                        ) : <span style={{ fontSize: 10, color: "var(--green)", minWidth: 48, textAlign: "right" }}>nuevo</span>}
+                        ) : <span style={{ fontSize: 10, color: "var(--red)", minWidth: 48, textAlign: "right" }}>nuevo</span>}
                       </div>
                     </div>
                   ))}
@@ -486,7 +493,7 @@ export default function ReportesPage() {
               )}
 
               {/* Categoría que más creció */}
-              {catMasCrecio && reportOn("catCrecio") && (
+              {catMasCrecio && reportOn("gastos_otros") && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--red-dim, var(--surface-alt)))", borderColor: "var(--red)22" }}>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Categoría que más creció</div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -499,39 +506,25 @@ export default function ReportesPage() {
                 </div>
               )}
 
-              {/* Top 5 gastos */}
-              {top.length > 0 && (
-                <div className="soft" style={{ marginBottom: 12, cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }} onClick={() => setModalTop("gastos")}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Top 5 gastos</div>
-                  {top.map((m, i) => (
-                    <div key={m.id} className="row" style={{ padding: "9px 0" }}>
-                      <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-                        <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "var(--font-mono)", width: 14 }}>{i + 1}</span>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || m.categoria}</div>
-                          <div style={{ fontSize: 10, color: "var(--muted)" }}>{m.categoria} · {sinAño(m.fecha)}</div>
-                        </div>
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{money(m.monto)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
 
               {/* Descripción (top) */}
+              {reportOn("gastos_otros") && (
               <div className="soft" style={{ marginBottom: 12, cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }} onClick={() => setModalTop("descs")}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Top 5 descripciones</div>
                 {descs.map((d) => <Bar key={d.nombre} nombre={d.nombre} monto={d.monto} pct={d.pct} color="var(--yellow)" oculto={oculto} />)}
               </div>
+              )}
 
               {/* Medios de pago */}
+              {reportOn("gastos_otros") && (
               <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por medio de pago</div>
                 {medios.map((m) => <Bar key={m.nombre} nombre={m.nombre} monto={m.monto} pct={m.pct} color="var(--blue)" oculto={oculto} />)}
               </div>
+              )}
 
               {/* Por fecha */}
-              {porFecha.length > 0 && (
+              {reportOn("gastos_otros") && porFecha.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por día</div>
                   <VBars max={Math.max(...porFecha.map((f) => f.monto), 1)} oculto={oculto} data={porFecha.map((f) => ({ label: sinAño(f.nombre), value: f.monto, color: "var(--red)" }))} />
@@ -543,7 +536,9 @@ export default function ReportesPage() {
           {/* ══ INGRESOS ══ */}
           {sub === "ingresos" && periodo && (
             <>
-              {/* Hero */}
+              {/* Hero + KPIs */}
+              {reportOn("ingresos_kpis") && (
+              <>
               <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--green-dim))", borderColor: "var(--green)33" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>Ingresos disponibles</div>
@@ -564,7 +559,6 @@ export default function ReportesPage() {
                 )}
               </div>
 
-              {/* KPIs */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <Stat label="Sueldo" value={money(periodo.sueldo)} color="var(--green)" dimVar="var(--green-dim)" />
                 {periodo.moveTotal > 0 && <Stat label="Retiros" value={money(periodo.moveTotal)} sub="desde ahorros" color="var(--yellow)" dimVar="var(--yellow-dim)" />}
@@ -582,9 +576,11 @@ export default function ReportesPage() {
                 </div>
                 {kpis && <Stat label="Registrados" value={String(kpis.cantIngresos)} sub="movimientos ingreso" color="var(--accent)" dimVar="var(--accent-dim)" />}
               </div>
+              </>
+              )}
 
               {/* Total ingresado */}
-              {totalAhorradoDirecto > 0 && (
+              {reportOn("ingresos_otros") && totalAhorradoDirecto > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--green-dim))", borderColor: "var(--green)22" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
@@ -607,7 +603,7 @@ export default function ReportesPage() {
               )}
 
               {/* Por categoría */}
-              {ingXCat.length > 0 && (
+              {reportOn("ingresos_otros") && ingXCat.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por categoría</div>
                   {ingXCat.map((c) => (
@@ -617,7 +613,7 @@ export default function ReportesPage() {
               )}
 
               {/* Por descripción */}
-              {ingXDesc.length > 0 && (
+              {reportOn("ingresos_otros") && ingXDesc.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por descripción</div>
                   {ingXDesc.map((c) => (
@@ -628,7 +624,7 @@ export default function ReportesPage() {
 
 
               {/* Detalle de movimientos */}
-              {(movIngresos.length > 0 || movIngresosAhorros.length > 0) && (
+              {reportOn("ingresos_otros") && (movIngresos.length > 0 || movIngresosAhorros.length > 0) && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Detalle</div>
                   {movIngresos.map((m) => (
@@ -674,6 +670,7 @@ export default function ReportesPage() {
           {/* ══ PERÍODOS ══ */}
           {sub === "periodos" && periodo && (
             <>
+              {reportOn("periodos_kpis") && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <Stat label="Sueldo" value={money(periodo.sueldo)} color="var(--green)" dimVar="var(--green-dim)" />
                 <Stat label="Extras" value={periodo.extras > 0 ? money(periodo.extras) : "—"} color="var(--green)" dimVar="var(--green-dim)" />
@@ -682,10 +679,10 @@ export default function ReportesPage() {
                 <Stat label="Ahorros acum." value={ahorrosAcumPeriodo > 0 ? money(ahorrosAcumPeriodo) : "—"} color="var(--blue)" dimVar="var(--blue-dim)" />
                 <Stat label="Resto período anterior" value={periodo.resto > 0 ? money(periodo.resto) : "—"} color={periodo.resto > 0 ? "var(--green)" : "var(--muted)"} dimVar={periodo.resto > 0 ? "var(--green-dim)" : undefined} />
               </div>
-
+              )}
 
               {/* Gastado por período */}
-              {serieDesc.length > 0 && (
+              {reportOn("periodos_otros") && serieDesc.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Gastado por período</div>
                   <VBars max={maxTotal} oculto={oculto} data={serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId) }))} />
@@ -693,7 +690,7 @@ export default function ReportesPage() {
               )}
 
               {/* Gastos vs sueldo por período */}
-              {serieDesc.filter((s) => s.sueldo > 0).length > 0 && (
+              {reportOn("periodos_otros") && serieDesc.filter((s) => s.sueldo > 0).length > 0 && (
                 <div className="soft" style={{ background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Gastos vs sueldo</div>
                   {(() => {
@@ -731,6 +728,8 @@ export default function ReportesPage() {
           {sub === "tendencias" && (
             <>
               {/* ─ GASTOS ─ */}
+              {reportOn("tendencias_gastos") && (
+              <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "var(--red)", textTransform: "uppercase" }}>Gastos</div>
                 <div style={{ flex: 1, height: 1, background: "var(--faint)" }} />
@@ -750,13 +749,17 @@ export default function ReportesPage() {
                   <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 6 }}>promedio últimos 3 períodos</div>
                 </div>
               )}
+              </>
+              )}
 
               {/* ─ INGRESOS ─ */}
+              {reportOn("tendencias_ingresos") && (
+              <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 8 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "var(--green)", textTransform: "uppercase" }}>Ingresos</div>
                 <div style={{ flex: 1, height: 1, background: "var(--faint)" }} />
               </div>
-              {reportOn("evolSueldo") && evolSueldo && (
+              {evolSueldo && (
                 <div className="soft" style={{ marginBottom: 12, background: evolSueldo.esVacaciones ? "linear-gradient(135deg, var(--surface), var(--yellow-dim))" : evolSueldo.delta >= 0 ? "linear-gradient(135deg, var(--surface), var(--green-dim))" : "linear-gradient(135deg, var(--surface), var(--surface-alt))", borderColor: evolSueldo.esVacaciones ? "var(--yellow)33" : evolSueldo.delta >= 0 ? "var(--green)33" : "var(--border)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                     <div style={{ fontSize: 11, color: "var(--muted)" }}>Evolución sueldo</div>
@@ -793,7 +796,7 @@ export default function ReportesPage() {
                   />
                 </div>
               )}
-              {serie.length >= 2 && reportOn("proyeccion") && (
+              {serie.length >= 2 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--blue-dim))", borderColor: "var(--blue)22" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <div style={{ fontSize: 11, color: "var(--muted)" }}>Proyección ahorros</div>
@@ -814,13 +817,17 @@ export default function ReportesPage() {
                   <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 6 }}>en {proyPeriodos} períodos · desde {money(serie[serie.length - 1]!.ahorrosAcum)} actuales</div>
                 </div>
               )}
+              </>
+              )}
 
-              {/* ─ USD ─ */}
+              {/* ─ INVERSIONES ─ */}
+              {reportOn("tendencias_inversiones") && (
+              <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "var(--yellow)", textTransform: "uppercase" }}>USD</div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "var(--yellow)", textTransform: "uppercase" }}>Inversiones</div>
                 <div style={{ flex: 1, height: 1, background: "var(--faint)" }} />
               </div>
-              {progresoMeta !== null && reportOn("progreso") && (
+              {progresoMeta !== null && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--yellow-dim))", borderColor: "var(--yellow)22" }}>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8 }}>Progreso meta USD</div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -832,7 +839,7 @@ export default function ReportesPage() {
                   <div className="progress-track"><div className="progress-fill" style={{ width: `${Math.min(progresoMeta, 100)}%`, background: progresoMeta >= 100 ? "var(--green)" : "var(--yellow)" }} /></div>
                 </div>
               )}
-              {periodosParaMetaMonto !== null && reportOn("periodosParaMeta") && (
+              {periodosParaMetaMonto !== null && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--yellow-dim))", borderColor: "var(--yellow)22" }}>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Períodos para alcanzar meta USD</div>
                   <div style={{ fontSize: 24, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
@@ -843,23 +850,25 @@ export default function ReportesPage() {
               {(ahorrosEnUSD !== null || promAhorroUSD !== null) && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                   {ahorrosEnUSD !== null && (
-                    <Stat label="Ahorros en USD" value={`U$D ${oculto ? "••••" : ahorrosEnUSD.toFixed(0)}`} sub={`a oficial $${cotizActual?.toLocaleString("es-AR")}`} color="var(--yellow)" dimVar="var(--yellow-dim)" />
+                    <Stat label={`Ahorros en ${monedaInversiones}`} value={`${simBoloInv} ${oculto ? "••••" : ahorrosEnUSD.toFixed(0)}`} sub={`a oficial $${cotizActual?.toLocaleString("es-AR")}`} color="var(--yellow)" dimVar="var(--yellow-dim)" />
                   )}
                   {promAhorroUSD !== null && (
-                    <Stat label="Ritmo / período" value={`U$D ${oculto ? "••" : promAhorroUSD.toFixed(0)}`} sub="prom. ahorrado" color="var(--yellow)" dimVar="var(--yellow-dim)" />
+                    <Stat label="Ritmo / período" value={`${simBoloInv} ${oculto ? "••" : promAhorroUSD.toFixed(0)}`} sub="prom. ahorrado" color="var(--yellow)" dimVar="var(--yellow-dim)" />
                   )}
                 </div>
               )}
               {proyUSD !== null && cotizActual && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--yellow-dim))", borderColor: "var(--yellow)22" }}>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Proyección en USD · 3 períodos</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Proyección en {monedaInversiones} · 3 períodos</div>
                   <div style={{ fontSize: 28, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", letterSpacing: -0.5 }}>
-                    U$D {oculto ? "••••" : proyUSD.toFixed(0)}
+                    {simBoloInv} {oculto ? "••••" : proyUSD.toFixed(0)}
                   </div>
                   <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 6 }}>
-                    a oficial ${cotizActual.toLocaleString("es-AR")} · desde U$D {ahorrosEnUSD !== null && !oculto ? ahorrosEnUSD.toFixed(0) : "••••"} actuales
+                    a oficial ${cotizActual.toLocaleString("es-AR")} · desde {simBoloInv} {ahorrosEnUSD !== null && !oculto ? ahorrosEnUSD.toFixed(0) : "••••"} actuales
                   </div>
                 </div>
+              )}
+              </>
               )}
             </>
           )}
@@ -885,18 +894,6 @@ export default function ReportesPage() {
                 borderRadius: "50%", color: "var(--muted)", cursor: "pointer", fontSize: 18,
               }}>×</button>
             </div>
-            {modalTop === "gastos" && topTodos.map((m, i) => (
-              <div key={m.id} className="row" style={{ padding: "12px 0" }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-                  <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "var(--font-mono)", width: 14 }}>{i + 1}</span>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || m.categoria}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted)" }}>{m.categoria} · {sinAño(m.fecha)}</div>
-                  </div>
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{money(m.monto)}</span>
-              </div>
-            ))}
             {modalTop === "descs" && descsModal.map((d, i) => (
               <div key={d.nombre} className="row" style={{ padding: "12px 0" }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
