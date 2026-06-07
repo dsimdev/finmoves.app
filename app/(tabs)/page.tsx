@@ -10,6 +10,7 @@ import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { EyeIcon } from "@/components/EyeIcon";
 import { Movimiento } from "@/types";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 function TipoColor(m: Movimiento) {
   if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
@@ -39,7 +40,7 @@ export default function Dashboard() {
     <div className="page">
 
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <div className="label fade-up-1" style={{ marginBottom: 2 }}>Inicio</div>
           <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5 }}>Dashboard</div>
@@ -53,7 +54,7 @@ export default function Dashboard() {
       </div>
 
       {loading ? (
-        <div className="loading-pulse" style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 3, textAlign: "center", paddingTop: 60 }}>CARGANDO...</div>
+        <LoadingSpinner />
       ) : !p ? (
         <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
           No hay datos. Cargá el primer movimiento.

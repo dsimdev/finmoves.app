@@ -34,6 +34,10 @@
   --radius-sm: 11px;
 }
 
+[data-theme="light"] {
+  color-scheme: light;
+}
+
 html {
   font-family: var(--font);
   background: var(--bg);
@@ -48,6 +52,8 @@ body {
   overflow-x: hidden;
   background: var(--bg);
 }
+
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator { filter: none; }
 
 button { font-family: var(--font); cursor: pointer; }
 input, select, textarea { font-family: var(--font); }

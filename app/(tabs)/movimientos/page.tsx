@@ -10,6 +10,7 @@ import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { useMoney } from "@/hooks/useHideValues";
 import { Movimiento, TipoMovimiento } from "@/types";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
 const PencilIcon = () => (
@@ -117,8 +118,12 @@ export default function MovimientosPage() {
   const { cotizacion } = useCotizacion();
 
   const periodos = agruparPorPeriodo(movimientos);
+  const años = useMemo(() => Array.from(new Set(periodos.map(p => p.periodoId.split("/")[2] ?? ""))).filter(Boolean), [periodos]);
+  const [añoSel, setAñoSel] = useState<string>("");
+  const añoActivo = añoSel || años[0] || "";
+  const periodosDelAño = useMemo(() => periodos.filter(p => (p.periodoId.split("/")[2] ?? "") === añoActivo), [periodos, añoActivo]);
   const [periodoSel, setPeriodoSel] = useState<string | null>(null);
-  const activePeriodoId = periodoSel ?? periodos[0]?.periodoId;
+  const activePeriodoId = periodoSel ?? periodosDelAño[0]?.periodoId;
   const periodoActual = periodos.find(p => p.periodoId === activePeriodoId);
   // Ahorro acumulado (carry-forward) hasta el período activo — para el Move
   const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
@@ -298,25 +303,43 @@ export default function MovimientosPage() {
           background: "var(--accent)", color: "#000",
           border: "none", fontSize: 24, fontWeight: 300, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          flexShrink: 0, lineHeight: 1, marginTop: 4,
+          lineHeight: 1, flexShrink: 0,
         }}>+</button>
       </div>
 
       {/* Períodos */}
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2, scrollbarWidth: "none" }}>
-        {periodos.map(p => (
-          <button key={p.periodoId} onClick={() => setPeriodoSel(p.periodoId)} style={{
-            flexShrink: 0, padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
-            border: `1px solid ${activePeriodoId === p.periodoId ? "var(--accent)" : "var(--border)"}`,
-            background: activePeriodoId === p.periodoId ? "var(--accent-dim)" : "transparent",
-            color: activePeriodoId === p.periodoId ? "var(--accent)" : "var(--muted)",
-          }}>{p.periodoId}</button>
+      {/* Pills año */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+        {años.map(año => (
+          <button key={año} onClick={() => { setAñoSel(año); setPeriodoSel(null); }} style={{
+            flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
+            border: `1px solid ${añoActivo === año ? "var(--blue)" : "var(--border)"}`,
+            background: añoActivo === año ? "var(--blue-dim)" : "transparent",
+            color: añoActivo === año ? "var(--blue)" : "var(--muted)",
+            transition: "all 0.15s",
+          }}>{año}</button>
         ))}
+      </div>
+      {/* Pills período */}
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2, scrollbarWidth: "none" }}>
+        {periodosDelAño.map(p => {
+          const isSelected = activePeriodoId === p.periodoId;
+          const [d, m] = p.periodoId.split("/");
+          return (
+            <button key={p.periodoId} onClick={() => setPeriodoSel(p.periodoId)} style={{
+              flexShrink: 0, padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer",
+              border: `1px solid ${isSelected ? "var(--green)" : "var(--border)"}`,
+              background: isSelected ? "var(--green-dim)" : "transparent",
+              color: isSelected ? "var(--green)" : "var(--muted)",
+              transition: "all 0.15s",
+            }}>{d}/{m}</button>
+          );
+        })}
       </div>
 
       {/* Lista */}
       {loading ? (
-        <div className="loading-pulse" style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 3, textAlign: "center", paddingTop: 40 }}>CARGANDO...</div>
+        <LoadingSpinner />
       ) : movsFiltrados.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
           No hay movimientos. Usá + para agregar.

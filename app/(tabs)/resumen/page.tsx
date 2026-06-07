@@ -18,6 +18,7 @@ import { useCotizacion } from "@/hooks/useCotizacion";
 import { useConfig } from "@/hooks/useConfig";
 import { useReportConfig } from "@/hooks/useReportConfig";
 import { EyeIcon } from "@/components/EyeIcon";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 type Sub = "gastos" | "ingresos" | "periodos" | "tendencias";
 
@@ -80,9 +81,9 @@ function VBars({ data, max, oculto }: { data: { label: string; value: number; co
 }
 
 const SUBS: { id: Sub; label: string }[] = [
+  { id: "periodos",   label: "Períodos" },
   { id: "gastos",     label: "Gastos" },
   { id: "ingresos",   label: "Ingresos" },
-  { id: "periodos",   label: "Períodos" },
   { id: "tendencias", label: "Tendencias" },
 ];
 
@@ -258,7 +259,7 @@ export default function ReportesPage() {
       </div>
 
       {loading ? (
-        <div className="loading-pulse" style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 3, textAlign: "center", paddingTop: 60 }}>CARGANDO...</div>
+        <LoadingSpinner />
       ) : periodos.length === 0 ? (
         <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>No hay movimientos.</div>
       ) : (
@@ -305,11 +306,11 @@ export default function ReportesPage() {
                         }}
                         style={{
                           flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
-                          border: `1px solid ${isAñoActivo ? "var(--text)" : "var(--border)"}`,
-                          background: isAñoActivo ? "var(--text)" : "transparent",
-                          color: isAñoActivo ? "var(--bg)" : "var(--muted)",
+                          border: `1px solid ${isAñoActivo ? "var(--blue)" : "var(--border)"}`,
+                          background: isAñoActivo ? "var(--blue-dim)" : "transparent",
+                          color: isAñoActivo ? "var(--blue)" : "var(--muted)",
                           transition: "all 0.15s",
-                          boxShadow: añosActivos.size > 1 && isAñoActivo ? `0 0 0 2px var(--text)` : "none",
+                          boxShadow: añosActivos.size > 1 && isAñoActivo ? `0 0 0 2px var(--blue)` : "none",
                         }}
                       >{año}</button>
                     );
@@ -342,11 +343,11 @@ export default function ReportesPage() {
                         }}
                         style={{
                           flexShrink: 0, padding: "6px 13px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                          border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
-                          background: isSelected ? "var(--accent-dim)" : "transparent",
-                          color: isSelected ? "var(--accent)" : "var(--muted)",
+                          border: `1px solid ${isSelected ? "var(--green)" : "var(--border)"}`,
+                          background: isSelected ? "var(--green-dim)" : "transparent",
+                          color: isSelected ? "var(--green)" : "var(--muted)",
                           transition: "all 0.15s",
-                          boxShadow: periodosSelIds.length > 1 && isSelected ? `0 0 0 2px var(--accent)` : "none",
+                          boxShadow: periodosSelIds.length > 1 && isSelected ? `0 0 0 2px var(--green)` : "none",
                         }}
                       >{shortPer(p.periodoId)}</button>
                     );

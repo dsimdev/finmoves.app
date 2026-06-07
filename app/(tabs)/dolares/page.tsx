@@ -10,17 +10,18 @@ function fechaCortaConAnio(fecha: string): string {
   if (!fecha) return "";
   if (fecha.includes("-")) {
     const [y, m, d] = fecha.split("-");
-    return `${d}-${m}-${y.slice(-2)}`;
+    return `${d}/${m}/${y.slice(-2)}`;
   }
   if (fecha.includes("/")) {
     const [d, m, y] = fecha.split("/");
-    return `${d.padStart(2,"0")}-${m.padStart(2,"0")}-${(y??"").slice(-2)}`;
+    return `${d.padStart(2,"0")}/${m.padStart(2,"0")}/${(y??"").slice(-2)}`;
   }
   return fecha;
 }
 import { actualizarTipoCambio } from "@/services/firebase/config";
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import { EyeIcon } from "@/components/EyeIcon";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Movimiento } from "@/types";
 
 const SALDO_INICIAL_USD = 5.77;
@@ -74,7 +75,7 @@ export default function DolaresPage() {
       </div>
 
       {loading ? (
-        <div className="loading-pulse" style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 3, textAlign: "center", paddingTop: 60 }}>CARGANDO...</div>
+        <LoadingSpinner />
       ) : (
         <>
           {/* Hero reserva */}
@@ -216,8 +217,8 @@ export default function DolaresPage() {
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 500 }}>{(() => {
                     const f = m.fecha;
-                    if (f.includes("-")) { const [y, mo, d] = f.split("-"); return `${d}-${mo}-${y}`; }
-                    if (f.includes("/")) { const [d, mo, y] = f.split("/"); return `${d.padStart(2,"0")}-${mo.padStart(2,"0")}${y ? `-${y}` : ""}`; }
+                    if (f.includes("-")) { const [y, mo, d] = f.split("-"); return `${d}/${mo}/${y}`; }
+                    if (f.includes("/")) { const [d, mo, y] = f.split("/"); return `${d.padStart(2,"0")}/${mo.padStart(2,"0")}${y ? `/${y}` : ""}`; }
                     return f;
                   })()}</div>
                   {m.cotizacion && (

@@ -12,6 +12,8 @@ import { db, auth } from "@/services/firebase/firebase";
 import { signOut, getIdToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { ConfigUsuario } from "@/types";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useTheme } from "@/hooks/useTheme";
 
 type Tab = "cuenta" | "movimientos" | "reportes" | "ahorros";
 
@@ -55,6 +57,7 @@ export default function ConfigPage() {
   const { overrides, saveAll: saveReportes } = useReportConfig();
   const router = useRouter();
 
+  const { dark, toggle: toggleTheme } = useTheme();
   const [tab, setTab] = useState<Tab>("cuenta");
   const [guardando, setGuardando] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
@@ -283,7 +286,7 @@ export default function ConfigPage() {
 
   if (loading || !config) return (
     <div className="page">
-      <div className="loading-pulse" style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 3, textAlign: "center", paddingTop: 60 }}>CARGANDO...</div>
+      <LoadingSpinner />
     </div>
   );
 
@@ -351,6 +354,39 @@ export default function ConfigPage() {
                   {syncing ? "Reintentando..." : "Reintentar"}
                 </button>
               )}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="label" style={{ marginBottom: 16 }}>Preferencias generales</div>
+            <div className="row" style={{ padding: "12px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: dark ? "var(--surface-alt)" : "var(--yellow-dim)",
+                  border: "1px solid var(--border)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {dark ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" stroke="var(--muted)" strokeWidth="1.7" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="4" stroke="var(--yellow)" strokeWidth="1.7" />
+                      <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="var(--yellow)" strokeWidth="1.7" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Modo {dark ? "oscuro" : "claro"}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                    {dark ? "Cambiá a tema claro" : "Cambiá a tema oscuro"}
+                  </div>
+                </div>
+              </div>
+              <Toggle activo={!dark} onClick={toggleTheme} />
             </div>
           </div>
 

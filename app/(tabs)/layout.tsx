@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function TabsLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -15,7 +16,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
 
   if (loading) return (
     <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div className="loading-pulse" style={{ fontSize: 12, color: "var(--muted)", letterSpacing: 3 }}>CARGANDO</div>
+      <LoadingSpinner />
     </div>
   );
 

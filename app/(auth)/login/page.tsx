@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { signInWithEmailAndPassword/*, createUserWithEmailAndPassword*/ } from "firebase/auth";
 import { auth } from "@/services/firebase/firebase";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -42,15 +42,14 @@ export default function LoginPage() {
     }}>
       <div style={{ width: "min(400px, 100%)" }} className="fade-up">
 
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ marginBottom: 32 }}>
           <Image
             src="/logo5-cropped.png"
             alt="FinMoves"
             width={240}
             height={163}
             priority
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "contain", display: "block", margin: "0 auto" }}
           />
         </div>
 
