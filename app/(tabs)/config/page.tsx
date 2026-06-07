@@ -15,12 +15,13 @@ import type { ConfigUsuario } from "@/types";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 
-type Tab = "cuenta" | "movimientos" | "reportes";
+type Tab = "cuenta" | "movimientos" | "reportes" | "ahorros";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "cuenta",      label: "Cuenta" },
   { id: "movimientos", label: "Movimientos" },
   { id: "reportes",    label: "Reportes" },
+  { id: "ahorros",     label: "Ahorros" },
 ];
 
 const SECCION_LABEL: Record<string, string> = {
