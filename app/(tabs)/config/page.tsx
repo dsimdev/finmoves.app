@@ -21,8 +21,8 @@ type Tab = "cuenta" | "movimientos" | "reportes" | "ahorros";
 const ALL_TABS: { id: Tab; label: string }[] = [
   { id: "cuenta",      label: "Cuenta" },
   { id: "movimientos", label: "Movimientos" },
+  { id: "ahorros",     label: "Inversión" },
   { id: "reportes",    label: "Reportes" },
-  { id: "ahorros",     label: "Inversiones" },
 ];
 
 const SECCION_LABEL: Record<string, string> = {
@@ -323,9 +323,23 @@ export default function ConfigPage() {
           <div className="card">
             <div className="label">Cuenta</div>
             <div className="row" style={{ padding: "10px 0" }}>
-              <div>
-                <div style={{ fontSize: 13 }}>Usuario</div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{user?.email}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: "var(--surface-alt)",
+                  border: "1px solid var(--border)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="4" stroke="var(--muted)" strokeWidth="1.7" />
+                    <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="var(--muted)" strokeWidth="1.7" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13 }}>Usuario</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{user?.email}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -333,14 +347,29 @@ export default function ConfigPage() {
           <div className="card">
             <div className="label">Sincronización</div>
             <div className="row" style={{ padding: "10px 0" }}>
-              <div>
-                <div style={{ fontSize: 13 }}>Google Sheets</div>
-                <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
-                  {syncError
-                    ? `Error de sync: ${syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
-                    : lastSync
-                      ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
-                      : "Nunca sincronizado"}
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: syncError ? "var(--red-dim)" : lastSync ? "var(--green-dim)" : "var(--surface-alt)",
+                  border: `1px solid ${syncError ? "var(--red)44" : lastSync ? "var(--green)44" : "var(--border)"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <svg className={syncing ? "spin" : ""} width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
+                      stroke={syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)"}
+                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13 }}>Google Sheets</div>
+                  <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
+                    {syncError
+                      ? `Error de sync: ${syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
+                      : lastSync
+                        ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
+                        : "Nunca sincronizado"}
+                  </div>
                 </div>
               </div>
               {syncError && (
@@ -350,10 +379,6 @@ export default function ConfigPage() {
                   border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
                   padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
                 }}>
-                  <svg className={syncing ? "spin" : ""} width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
-                      stroke="var(--red)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
                   {syncing ? "Reintentando..." : "Reintentar"}
                 </button>
               )}
@@ -392,40 +417,83 @@ export default function ConfigPage() {
               <Toggle activo={dark} onClick={toggleTheme} />
             </div>
             <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>Reportes</div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de reportes</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: showReportes ? "var(--green-dim)" : "var(--red-dim)",
+                  border: `1px solid ${showReportes ? "var(--green)44" : "var(--red)44"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="18" height="18" rx="2" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
+                    <path d="M3 9h18M9 3v18" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Reportes</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de reportes</div>
+                </div>
               </div>
               <Toggle activo={showReportes} onClick={() => setPref("showReportes", !showReportes)} />
             </div>
             <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>Inversiones</div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de inversiones</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: showAhorros ? "var(--green-dim)" : "var(--red-dim)",
+                  border: `1px solid ${showAhorros ? "var(--green)44" : "var(--red)44"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 1 18" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    <polyline points="16 7 22 7 22 13" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Inversión</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de inversión</div>
+                </div>
               </div>
               <Toggle activo={showAhorros} onClick={() => setPref("showAhorros", !showAhorros)} />
             </div>
             {showAhorros && (
             <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda de inversiones</div>
-                {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>meta activa</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: "var(--yellow-dim)",
+                  border: "1px solid var(--yellow)44",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
+                    {monedaInversiones === "EUR" ? "€" : "$"}
+                  </span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda de inversiones</div>
+                    {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>meta activa</span>}
+                  </div>
+                  {config?.meta.metaMonto ? (
+                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                      No se puede cambiar mientras haya una meta de ahorro activa.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {(["USD", "EUR"] as const).map((m) => (
+                        <button key={m} onClick={() => setMoneda(m)} className="pill" style={{
+                          borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)",
+                          background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent",
+                          color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)",
+                        }}>{m}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              {config?.meta.metaMonto ? (
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                  No se puede cambiar mientras haya una meta de ahorro activa.
-                </div>
-              ) : (
-                <div style={{ display: "flex", gap: 6 }}>
-                  {(["USD", "EUR"] as const).map((m) => (
-                    <button key={m} onClick={() => setMoneda(m)} className="pill" style={{
-                      borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)",
-                      background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent",
-                      color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)",
-                    }}>{m}</button>
-                  ))}
-                </div>
-              )}
             </div>
             )}
           </div>

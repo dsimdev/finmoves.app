@@ -824,7 +824,7 @@ export default function ReportesPage() {
               {reportOn("tendencias_inversiones") && (
               <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "var(--yellow)", textTransform: "uppercase" }}>Inversiones</div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "var(--yellow)", textTransform: "uppercase" }}>Inversión</div>
                 <div style={{ flex: 1, height: 1, background: "var(--faint)" }} />
               </div>
               {progresoMeta !== null && (

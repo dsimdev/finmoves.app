@@ -78,7 +78,7 @@ export default function DolaresPage() {
 
       <div style={{ marginBottom: 24 }}>
         <div className="label" style={{ marginBottom: 2 }}>Inversión</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reserva {monedaInversiones}</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{monedaInversiones === "EUR" ? "Euros" : "Dólares"}</div>
       </div>
 
       {loading ? (
@@ -122,7 +122,7 @@ export default function DolaresPage() {
           </div>
 
           {/* Cotización */}
-          <div className="card" style={{ borderColor: "var(--blue)33", marginBottom: 10 }}>
+          <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <div className="label" style={{ marginBottom: 0 }}>Cotización</div>
               <div style={{ fontSize: 9, color: "var(--muted)" }}>
@@ -133,7 +133,7 @@ export default function DolaresPage() {
             </div>
             {cotizacion ? (
               <div style={{ display: "flex", gap: 8 }}>
-                {(["blue", "oficial"] as const).map((t) => {
+                {(["oficial", "blue"] as const).map((t) => {
                   const val = esEUR
                     ? (t === "oficial" ? cotizacion.oficial_euro : cotizacion.blue_euro)
                     : cotizacion[t];
@@ -141,13 +141,13 @@ export default function DolaresPage() {
                     <div key={t} onClick={() => { setTipoCambioSel(t); if (user?.uid) actualizarTipoCambio(user.uid, t); }}
                       style={{
                         flex: 1, cursor: "pointer",
-                        background: t === tipoCambioRef ? "var(--blue-dim)" : "var(--surface-alt)",
-                        border: `1px solid ${t === tipoCambioRef ? "var(--blue)55" : "var(--border)"}`,
+                        background: t === tipoCambioRef ? "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)" : "var(--surface-alt)",
+                        border: `1px solid ${t === tipoCambioRef ? "var(--yellow)55" : "var(--border)"}`,
                         borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center",
                         transition: "all 0.15s",
                       }}>
                       <div style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", marginBottom: 6 }}>{t}</div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: t === tipoCambioRef ? "var(--blue)" : "var(--text)" }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t === tipoCambioRef ? "var(--yellow)" : "var(--text)" }}>
                         {val ? `$${val.toLocaleString("es-AR")}` : "—"}
                       </div>
                     </div>
@@ -160,7 +160,7 @@ export default function DolaresPage() {
           </div>
 
           {/* Meta por período */}
-          <div className="card" style={{ borderColor: "var(--accent)33", marginBottom: 10 }}>
+          <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <div>
                 <div className="label" style={{ marginBottom: 4 }}>Meta por período</div>
@@ -186,14 +186,14 @@ export default function DolaresPage() {
 
           {/* Meta de ahorro */}
           {config?.meta.metaMonto && (
-            <div className="card" style={{ borderColor: "var(--blue)33", background: "linear-gradient(135deg, var(--surface), var(--blue-dim, var(--surface-alt)))", marginBottom: 10 }}>
+            <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div className="label" style={{ marginBottom: 0 }}>Meta de ahorro</div>
                 {config.meta.metaFecha && <div style={{ fontSize: 9, color: "var(--muted)" }}>{fechaCortaConAnio(config.meta.metaFecha)}</div>}
               </div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Objetivo {monedaInversiones}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
                   {simbolo} {config.meta.metaMonto.toLocaleString("es-AR")}
                 </div>
               </div>
@@ -203,11 +203,11 @@ export default function DolaresPage() {
                   <>
                     <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid var(--faint)", marginBottom: 8 }}>
                       <span style={{ fontSize: 11, color: "var(--muted)" }}>Ahorrado</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>{simbolo} {oculto ? "••" : totalUSD.toFixed(2)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>{simbolo} {oculto ? "••" : totalUSD.toFixed(2)}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
                       <span style={{ fontSize: 11, color: "var(--muted)" }}>Falta</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: faltaUSD <= 0 ? "var(--green)" : "var(--blue)", fontFamily: "var(--font-mono)" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: faltaUSD <= 0 ? "var(--green)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
                         {simbolo} {oculto ? "••" : (faltaUSD <= 0 ? "0.00" : faltaUSD.toFixed(2))}
                       </span>
                     </div>
@@ -218,7 +218,7 @@ export default function DolaresPage() {
           )}
 
           {/* Historial */}
-          <div className="card">
+          <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)" }}>
             <div className="label">Historial compras</div>
             {movimientosUSD.length === 0 ? (
               <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>

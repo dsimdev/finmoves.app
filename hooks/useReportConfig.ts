@@ -17,7 +17,7 @@ export const REPORTES_TOGGLES: ReporteToggle[] = [
   { id: "periodos_otros",         label: "Otros datos", seccion: "periodos" },
   { id: "tendencias_gastos",      label: "Gastos",     seccion: "tendencias" },
   { id: "tendencias_ingresos",    label: "Ingresos",   seccion: "tendencias" },
-  { id: "tendencias_inversiones", label: "Inversiones", seccion: "tendencias" },
+  { id: "tendencias_inversiones", label: "Inversión", seccion: "tendencias" },
 ];
 
 const LS_KEY = "finmoves_report_config";

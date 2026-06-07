@@ -9,7 +9,7 @@ const LIGHT: Record<string, string> = {
   "--surface-alt": "#e4e4e4",
   "--border":      "#b8b8b8",
   "--border-hi":   "#909090",
-  "--accent-dim":  "#00b4ff28",
+  "--accent-dim":  "#3f52e828",
   "--green":       "#007a38",
   "--green-dim":   "#007a3822",
   "--red-dim":     "#ff525222",
@@ -19,6 +19,7 @@ const LIGHT: Record<string, string> = {
   "--text":        "#0d1524",
   "--muted":       "#4a5060",
   "--faint":       "#d0d0d0",
+  "--nav-bg":      "rgba(244,244,244,0.92)",
 };
 
 export function applyTheme(isLight: boolean) {

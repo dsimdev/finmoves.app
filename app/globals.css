@@ -14,8 +14,8 @@
   --surface-alt: #162030;
   --border: #1e2e45;
   --border-hi: #2a3f60;
-  --accent: #00b4ff;
-  --accent-dim: #00b4ff20;
+  --accent: #3f52e8;
+  --accent-dim: #3f52e820;
   --green: #00e676;
   --green-dim: #00e67620;
   --red: #ff5252;
@@ -29,6 +29,7 @@
   --faint: #0d1828;
   --font: 'Inter', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
+  --nav-bg: rgba(7,9,15,0.92);
   --nav-h: 68px;
   --radius: 18px;
   --radius-sm: 11px;
