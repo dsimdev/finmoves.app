@@ -1,37 +1,29 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useConfig } from "@/hooks/useConfig";
-import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
-import { serieTendencia } from "@/utils/reportes";
+
+function fechaCortaConAnio(fecha: string): string {
+  if (!fecha) return "";
+  if (fecha.includes("-")) {
+    const [y, m, d] = fecha.split("-");
+    return `${d}-${m}-${y.slice(-2)}`;
+  }
+  if (fecha.includes("/")) {
+    const [d, m, y] = fecha.split("/");
+    return `${d.padStart(2,"0")}-${m.padStart(2,"0")}-${(y??"").slice(-2)}`;
+  }
+  return fecha;
+}
 import { actualizarTipoCambio } from "@/services/firebase/config";
 import { useMoney, MASK } from "@/hooks/useHideValues";
+import { EyeIcon } from "@/components/EyeIcon";
 import { Movimiento } from "@/types";
 
 const SALDO_INICIAL_USD = 5.77;
-
-
-function EyeIcon({ off }: { off: boolean }) {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
-      {off ? (
-        <>
-          <path d="M2 12s3.5-7 10-7c1.6 0 3 .4 4.3 1M22 12s-3.5 7-10 7c-1.6 0-3-.4-4.3-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-          <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-          <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
-        </>
-      )}
-    </svg>
-  );
-}
 
 function calcularReserva(movimientos: Movimiento[]) {
   let totalUSD = 0;
@@ -56,11 +48,6 @@ export default function DolaresPage() {
   useEffect(() => { refresh(); }, []);
   const { oculto, toggle, m: money } = useMoney();
 
-  // Ahorros acumulados (en ARS) para meta de ahorro
-  const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
-  const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
-  const ahorrosAcumARS = serie.length > 0 ? serie[serie.length - 1]!.ahorrosAcum : 0;
-
   const [tipoCambioSel, setTipoCambioSel] = useState<"blue" | "oficial" | null>(null);
 
   const movimientosUSD = movimientos
@@ -76,7 +63,7 @@ export default function DolaresPage() {
   const reservaEnARS = cotizacionActual ? totalUSD * cotizacionActual : null;
   const gananciaARS = reservaEnARS && costoPromedio > 0 ? reservaEnARS - desdeMovimientos * costoPromedio : null;
   const gananciaPct = gananciaARS && desdeMovimientos * costoPromedio > 0 ? (gananciaARS / (desdeMovimientos * costoPromedio)) * 100 : null;
-  const metaUSD = config?.meta.usdMensual ?? 400;
+  const metaUSD = config?.meta.metaPorPeriodo ?? config?.meta.usdMensual ?? 400;
 
   return (
     <div className="page fade-up">
@@ -189,7 +176,7 @@ export default function DolaresPage() {
             <div className="card" style={{ borderColor: "var(--blue)33", background: "linear-gradient(135deg, var(--surface), var(--blue-dim, var(--surface-alt)))", marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div className="label" style={{ marginBottom: 0 }}>Meta de ahorro</div>
-                {config.meta.metaFecha && <div style={{ fontSize: 9, color: "var(--muted)" }}>{fechaCorta(config.meta.metaFecha)}</div>}
+                {config.meta.metaFecha && <div style={{ fontSize: 9, color: "var(--muted)" }}>{fechaCortaConAnio(config.meta.metaFecha)}</div>}
               </div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Objetivo USD</div>

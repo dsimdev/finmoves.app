@@ -10,40 +10,18 @@ import { useMoney, MASK } from "@/hooks/useHideValues";
 import {
   gastosPorMedioPago, gastosPorDescripcion, gastosPorFecha,
   kpisPeriodo, topGastos, ritmoGasto, comparativaCategorias,
-  serieTendencia, parsePeriodoId,
-  medioPagoMasUsadoCount, diasSinGastos,
-  mejorPeriodo, peorPeriodo, promedioAhorroPeriodo, evolucionSueldo,
-  gastoPromedioHistorico, proyectarAhorros, periodosParaMetaARS,
-  generarInsights, Insight,
-  ritmoAhorroActual, progresoMetaUSD, periodosParaMetaUSD, consistenciaAhorro, ahorrosVsProyectados, AhorroVsProyectado,
+  serieTendencia, parsePeriodoId, diasSinGastos,
+  mejorPeriodo, peorPeriodo, evolucionSueldo, proyectarAhorros,
+  progresoMetaUSD, periodosParaMetaUSD,
 } from "@/utils/reportes";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useConfig } from "@/hooks/useConfig";
 import { useReportConfig } from "@/hooks/useReportConfig";
+import { EyeIcon } from "@/components/EyeIcon";
 
-type Sub = "periodos" | "gastos" | "tendencias";
+type Sub = "gastos" | "ingresos" | "periodos" | "tendencias";
 
 const periodoAnio = (periodoId: string) => periodoId.split("/")[2] ?? "??";
-
-// ── Íconos ──────────────────────────────────────────────────────────────────
-function EyeIcon({ off }: { off: boolean }) {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
-      {off ? (
-        <>
-          <path d="M2 12s3.5-7 10-7c1.6 0 3 .4 4.3 1M22 12s-3.5 7-10 7c-1.6 0-3-.4-4.3-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-          <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-          <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
-        </>
-      )}
-    </svg>
-  );
-}
 
 // ── Helpers de formato ───────────────────────────────────────────────────────
 const abbr = (n: number) => {
@@ -101,22 +79,10 @@ function VBars({ data, max, oculto }: { data: { label: string; value: number; co
   );
 }
 
-function Spark({ values, color }: { values: number[]; color: string }) {
-  if (values.length < 2) return null;
-  const max = Math.max(...values, 1);
-  const w = 320, h = 56;
-  const pts = values.map((v, i) => `${(i / (values.length - 1)) * w},${h - (v / max) * (h - 4) - 2}`);
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none" style={{ display: "block" }}>
-      <polyline points={`0,${h} ${pts.join(" ")} ${w},${h}`} fill={color + "1a"} stroke="none" />
-      <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-}
-
 const SUBS: { id: Sub; label: string }[] = [
-  { id: "gastos", label: "Gastos" },
-  { id: "periodos", label: "Períodos" },
+  { id: "gastos",     label: "Gastos" },
+  { id: "ingresos",   label: "Ingresos" },
+  { id: "periodos",   label: "Períodos" },
   { id: "tendencias", label: "Tendencias" },
 ];
 
@@ -180,7 +146,6 @@ export default function ReportesPage() {
   const comp = periodo && activos.length === 1 ? comparativaCategorias(periodo, anterior) : [];
 
   // ── Estadísticas avanzadas (Gastos) ──
-  const medioPagoTop = periodo ? medioPagoMasUsadoCount(periodo.movimientos) : null;
   const promPorMov = periodo && kpis && kpis.cantGastos > 0 ? periodo.gastado / kpis.cantGastos : null;
   const diasLibres = activos.length === 1 && periodo ? (() => {
     const start = parsePeriodoId(activos[0]!);
@@ -189,10 +154,64 @@ export default function ReportesPage() {
   })() : null;
   const catMasCrecio = comp.filter((c) => c.deltaPct !== null && c.deltaPct > 0).sort((a, b) => (b.deltaPct ?? 0) - (a.deltaPct ?? 0))[0] ?? null;
 
+  // ── Ingresos ──
+  const movIngresos = periodo
+    ? periodo.movimientos
+        .filter((m) =>
+          m.tipo === "Move" ||
+          (m.tipo === "Ingreso" && m.categoria !== "Ahorros" && m.categoria !== "RESTO")
+        )
+        .sort((a, b) => b.monto - a.monto)
+    : [];
+
+  const totalIngresos = periodo?.total ?? 0;
+  const extrasReales = periodo ? periodo.extras - periodo.moveTotal : 0;
+
+  const ingXCat: { cat: string; monto: number; pct: number }[] = (() => {
+    if (!periodo) return [];
+    const catMap = new Map<string, number>();
+    if (periodo.sueldo > 0) catMap.set("Sueldo", periodo.sueldo);
+    for (const m of periodo.movimientos) {
+      if (m.tipo === "Ingreso" && m.categoria !== "Ahorros" && m.categoria !== "RESTO" && m.categoria !== "Sueldo") {
+        catMap.set(m.categoria, (catMap.get(m.categoria) ?? 0) + m.monto);
+      }
+    }
+    if (periodo.moveTotal > 0) catMap.set("Retiro ahorro", periodo.moveTotal);
+    return Array.from(catMap.entries())
+      .filter(([, v]) => v > 0)
+      .map(([cat, monto]) => ({ cat, monto, pct: totalIngresos > 0 ? Math.round((monto / totalIngresos) * 100) : 0 }))
+      .sort((a, b) => b.monto - a.monto);
+  })();
+
+  const deltaIngresos = anterior && anterior.total > 0
+    ? Math.round(((totalIngresos - anterior.total) / anterior.total) * 100)
+    : null;
+
+  const ingXDesc: { cat: string; monto: number; pct: number }[] = (() => {
+    if (!periodo) return [];
+    const descMap = new Map<string, number>();
+    for (const m of periodo.movimientos) {
+      const esIngreso = m.tipo === "Move" ||
+        (m.tipo === "Ingreso" && m.categoria !== "Ahorros" && m.categoria !== "RESTO");
+      if (esIngreso) {
+        const key = m.descripcion || m.categoria;
+        descMap.set(key, (descMap.get(key) ?? 0) + m.monto);
+      }
+    }
+    return Array.from(descMap.entries())
+      .filter(([, v]) => v > 0)
+      .map(([cat, monto]) => ({ cat, monto, pct: totalIngresos > 0 ? Math.round((monto / totalIngresos) * 100) : 0 }))
+      .sort((a, b) => b.monto - a.monto);
+  })();
+
+  const evolucionIngresos = useMemo(
+    () => [...periodos].reverse().slice(-12),
+    [periodos]
+  );
+
   // ── Estadísticas avanzadas (Períodos) ──
   const mejorPer = periodos.length > 1 ? mejorPeriodo(periodos) : null;
   const peorPer = periodos.length > 1 ? peorPeriodo(periodos) : null;
-  const promedioAhorro = promedioAhorroPeriodo(periodos);
   const evolSueldo = evolucionSueldo(periodos);
 
   // ── Tendencias ──
@@ -209,31 +228,18 @@ export default function ReportesPage() {
 
   const serie = useMemo(() => serieTendencia(periodos, seedPeriodoId), [periodos, seedPeriodoId]);
   const maxTotal = Math.max(...serie.map((s) => s.total), 1);
-  const maxSueldo = Math.max(...serie.map((s) => s.sueldo), 1);
 
   // Ahorros acumulados al cierre del período seleccionado (para mostrar en Períodos)
   const ahorrosAcumPeriodo = activos.length === 1
     ? (serie.find((s) => s.periodoId === activos[0])?.ahorrosAcum ?? 0)
     : serie[serie.length - 1]?.ahorrosAcum ?? 0;
 
-  // ── Estadísticas avanzadas (Tendencias) ──
-  const gastoPromHist = gastoPromedioHistorico(serie);
-  const maxDisp = Math.max(...serie.map((s) => Math.abs(s.disponible)), 1);
-  const metaUSD = config?.meta.usdMensual ?? 400;
+  // ── Tendencias / metas de ahorro ──
   const cotizActual = cotizacion?.blue ?? null;
-  const metaARS = cotizActual ? metaUSD * cotizActual : null;
-  const periodosParaMeta = metaARS ? periodosParaMetaARS(serie, metaARS) : null;
-  const insights: Insight[] = useMemo(() => generarInsights(periodos, serie), [periodos, serie]);
-
-  // ── Estadísticas de metas de ahorro ──
-  const ritmoAhorro = ritmoAhorroActual(serie);
   const ahorrosAcumActual = serie.length > 0 ? serie[serie.length - 1]!.ahorrosAcum : 0;
   const metaMonto = config?.meta.metaMonto;
-  const metaPorPeriodo = config?.meta.metaPorPeriodo;
   const progresoMeta = metaMonto && cotizActual ? progresoMetaUSD(ahorrosAcumActual, metaMonto, cotizActual) : null;
   const periodosParaMetaMonto = metaMonto && cotizActual ? periodosParaMetaUSD(serie, metaMonto, cotizActual) : null;
-  const consistencia = metaPorPeriodo ? consistenciaAhorro(periodos, metaPorPeriodo) : null;
-  const datosAhorrosVsProyectados = metaPorPeriodo ? ahorrosVsProyectados(serie, metaPorPeriodo) : [];
 
   return (
     <div className="page">
@@ -477,6 +483,101 @@ export default function ReportesPage() {
                 <div className="soft" style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por día</div>
                   <VBars max={Math.max(...porFecha.map((f) => f.monto), 1)} oculto={oculto} data={porFecha.map((f) => ({ label: sinAño(f.nombre), value: f.monto, color: "var(--red)" }))} />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ══ INGRESOS ══ */}
+          {sub === "ingresos" && periodo && (
+            <>
+              {/* Hero */}
+              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--green-dim))", borderColor: "var(--green)33" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Total ingresos</div>
+                  <button onClick={toggle} aria-label="Ocultar valores" style={{
+                    background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
+                    width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
+                  }}>
+                    <EyeIcon off={oculto} />
+                  </button>
+                </div>
+                <div style={{ fontSize: 34, fontWeight: 700, color: "var(--green)", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
+                  {money(totalIngresos)}
+                </div>
+                {deltaIngresos !== null && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: deltaIngresos >= 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
+                    {deltaIngresos >= 0 ? "↑" : "↓"}{Math.abs(deltaIngresos)}% vs {shortPer(anterior!.periodoId)}
+                  </div>
+                )}
+              </div>
+
+              {/* KPIs */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                <Stat label="Sueldo" value={money(periodo.sueldo)} color="var(--green)" />
+                <Stat label="Extras" value={extrasReales > 0 ? money(extrasReales) : "—"} color="var(--green)" />
+                {kpis && <Stat label="Registrados" value={String(kpis.cantIngresos)} sub="movimientos ingreso" />}
+                {periodo.moveTotal > 0 && <Stat label="Retiros" value={money(periodo.moveTotal)} color="var(--yellow)" sub="desde ahorros" />}
+              </div>
+
+              {/* Por categoría */}
+              {ingXCat.length > 0 && (
+                <div className="soft" style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por categoría</div>
+                  {ingXCat.map((c) => (
+                    <Bar key={c.cat} nombre={c.cat} monto={c.monto} pct={c.pct} color="var(--green)" oculto={oculto} />
+                  ))}
+                </div>
+              )}
+
+              {/* Por descripción */}
+              {ingXDesc.length > 0 && (
+                <div className="soft" style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por descripción</div>
+                  {ingXDesc.map((c) => (
+                    <Bar key={c.cat} nombre={c.cat} monto={c.monto} pct={c.pct} color="var(--blue)" oculto={oculto} />
+                  ))}
+                </div>
+              )}
+
+              {/* Evolución histórica */}
+              {evolucionIngresos.length > 1 && (
+                <div className="soft" style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Evolución</div>
+                  <VBars
+                    max={Math.max(...evolucionIngresos.map((p) => p.total), 1)}
+                    oculto={oculto}
+                    data={evolucionIngresos.map((p) => ({
+                      label: shortPer(p.periodoId),
+                      value: p.total,
+                      color: "var(--green)",
+                      hi: activos.includes(p.periodoId),
+                    }))}
+                  />
+                </div>
+              )}
+
+              {/* Detalle de movimientos */}
+              {movIngresos.length > 0 && (
+                <div className="soft" style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Detalle</div>
+                  {movIngresos.map((m) => (
+                    <div key={m.id} className="row" style={{ padding: "9px 0" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || m.categoria}</div>
+                        <div style={{ fontSize: 10, color: "var(--muted)" }}>{m.categoria} · {sinAño(m.fecha)}</div>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+                        +{money(m.monto)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {movIngresos.length === 0 && (
+                <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
+                  No hay ingresos registrados en este período.
                 </div>
               )}
             </>

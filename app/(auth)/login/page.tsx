@@ -33,15 +33,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ width: "min(400px, calc(100vw - 48px))" }} className="fade-up">
+    <div style={{
+      height: "100dvh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+    }}>
+      <div style={{ width: "min(400px, 100%)" }} className="fade-up">
 
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <Image
             src="/logo5-cropped.png"
             alt="FinMoves"
-            width={220}
-            height={142}
+            width={240}
+            height={163}
             priority
             style={{ objectFit: "contain" }}
           />
@@ -119,5 +126,6 @@ export default function LoginPage() {
         </div> */}
 
       </div>
+    </div>
   );
 }

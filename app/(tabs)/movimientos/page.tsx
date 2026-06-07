@@ -179,7 +179,6 @@ export default function MovimientosPage() {
     : modoCarga === "USD"
     ? parseFloat(cantidadUSD || "0")
     : (cotizActual ? parseFloat(montoARSInput || "0") / cotizActual : 0);
-  const arsFinal = !esGastoUSD ? 0 : 0; // GastoUSD no genera monto ARS
   const arsCompraUSD = !esCompraUSD ? 0 : modoCarga === "USD"
     ? parseFloat(cantidadUSD || "0") * cotizActual
     : parseFloat(montoARSInput || "0");

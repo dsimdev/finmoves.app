@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfig } from "@/hooks/useConfig";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useReportConfig, REPORTES_TOGGLES } from "@/hooks/useReportConfig";
 import { agruparPorPeriodo } from "@/utils/periodo";
-import { serieTendencia, parsePeriodoId } from "@/utils/reportes";
+import { parsePeriodoId } from "@/utils/reportes";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/services/firebase/firebase";
 import { signOut, getIdToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import type { ConfigUsuario } from "@/types";
 
 type Tab = "cuenta" | "movimientos" | "reportes" | "ahorros";
 
@@ -43,77 +44,146 @@ function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
   );
 }
 
+const BTN_SAVE_STYLE: React.CSSProperties = {
+  width: "100%", marginTop: 4, height: 46, fontSize: 14, fontWeight: 700,
+};
+
 export default function ConfigPage() {
   const { user } = useAuth();
   const { config, loading, refresh } = useConfig(user?.uid);
   const { movimientos } = useAllMovimientos(user?.uid);
-  const { isEnabled, toggle: toggleReport } = useReportConfig();
+  const { overrides, saveAll: saveReportes } = useReportConfig();
   const router = useRouter();
 
   const [tab, setTab] = useState<Tab>("cuenta");
   const [guardando, setGuardando] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoTipo, setNuevoTipo] = useState<"Gasto" | "Ingreso">("Gasto");
-  const [metaUSD, setMetaUSD] = useState("");
-  const [tipoCambio, setTipoCambio] = useState<"blue" | "oficial" | "">("");
+  const [movSub, setMovSub] = useState<"categorias" | "medios" | "origenes">("categorias");
+
+  // Sync state
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [movSub, setMovSub] = useState<"categorias" | "medios" | "origenes">("categorias");
+  const [syncError, setSyncError] = useState<{ message: string; at: Date } | null>(null);
 
-  // Meta de ahorro (siempre USD)
+  // ── Movimientos local state ──
+  const [localCats, setLocalCats] = useState<ConfigUsuario["categorias"]>([]);
+  const [localMedios, setLocalMedios] = useState<ConfigUsuario["mediosPago"]>([]);
+  const [localOrigenes, setLocalOrigenes] = useState<ConfigUsuario["origenesAhorro"]>([]);
+  const didInitMov = useRef(false);
+
+  useEffect(() => {
+    if (config && !didInitMov.current) {
+      setLocalCats(config.categorias);
+      setLocalMedios(config.mediosPago);
+      setLocalOrigenes(config.origenesAhorro);
+      didInitMov.current = true;
+    }
+  }, [config]);
+
+  const isDirtyMovimientos = useMemo(() => {
+    if (!config || !didInitMov.current) return false;
+    return (
+      JSON.stringify(localCats) !== JSON.stringify(config.categorias) ||
+      JSON.stringify(localMedios) !== JSON.stringify(config.mediosPago) ||
+      JSON.stringify(localOrigenes) !== JSON.stringify(config.origenesAhorro)
+    );
+  }, [localCats, localMedios, localOrigenes, config]);
+
+  // ── Reportes local state ──
+  const [localReportes, setLocalReportes] = useState<Record<string, boolean>>({});
+  const didInitRep = useRef(false);
+
+  useEffect(() => {
+    if (!didInitRep.current && Object.keys(overrides).length >= 0) {
+      setLocalReportes(overrides);
+      didInitRep.current = true;
+    }
+  }, [overrides]);
+
+  const isDirtyReportes = useMemo(() =>
+    JSON.stringify(localReportes) !== JSON.stringify(overrides),
+    [localReportes, overrides]
+  );
+
+  const localIsEnabled = (id: string) => localReportes[id] !== false;
+
+  // ── Ahorros state ──
   const [metaFecha, setMetaFecha] = useState("");
   const [metaMonto, setMetaMonto] = useState("");
-  const [metaPorPeriodo, setMetaPorPeriodo] = useState("");
 
-  // Cálculo de sugerido para meta de ahorro (antes de useEffect)
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
-  const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
-  const ahorrosActual = serie.length > 0 ? serie[serie.length - 1]!.ahorrosAcum : 0;
+
+  const totalUSD = useMemo(() => {
+    const SALDO_INICIAL_USD = 5.77;
+    let total = SALDO_INICIAL_USD;
+    for (const m of movimientos) {
+      if (m.tipo === "CompraUSD" && m.cantidadUSD) total += m.cantidadUSD;
+      else if (m.tipo === "GastoUSD" && m.cantidadUSD) total -= m.cantidadUSD;
+    }
+    return total;
+  }, [movimientos]);
 
   const sugeridoPorPeriodo = useMemo(() => {
-    if (!metaFecha || !metaMonto) return null;
+    if (!metaFecha || !metaMonto || periodos.length < 2) return null;
     const meta = parseFloat(metaMonto);
-    if (meta <= 0 || ahorrosActual >= meta) return null;
-
+    if (isNaN(meta) || meta <= 0 || totalUSD >= meta) return null;
+    const fechaMeta = new Date(metaFecha + "T12:00:00");
+    if (isNaN(fechaMeta.getTime())) return null;
     const hoy = new Date();
-    const [d, m, y] = metaFecha.split("/").map(Number);
-    if (!d || !m || !y) return null;
-    const fechaMeta = new Date(y, m - 1, d);
-
     if (fechaMeta <= hoy) return null;
+    const fechasPeriodo = [...periodos]
+      .map((p) => parsePeriodoId(p.periodoId))
+      .sort((a, b) => a.getTime() - b.getTime());
+    const gaps = fechasPeriodo.slice(1).map((f, i) => f.getTime() - fechasPeriodo[i].getTime());
+    const avgGapMs = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
+    const msRestantes = fechaMeta.getTime() - hoy.getTime();
+    const periodosRestantes = Math.max(1, Math.round(msRestantes / avgGapMs));
+    return Math.round(((meta - totalUSD) / periodosRestantes) * 100) / 100;
+  }, [metaFecha, metaMonto, totalUSD, periodos]);
 
-    const periodosHastaFecha = periodos.filter((p) => {
-      const pDate = parsePeriodoId(p.periodoId);
-      return pDate < fechaMeta;
-    }).length;
+  const isDirtyAhorros = useMemo(() => {
+    if (!config) return false;
+    const raw = config.meta.metaFecha ?? "";
+    let savedIso = raw;
+    if (raw && !raw.includes("-")) {
+      const [d, m, y] = raw.split("/").map(Number);
+      if (d && m && y) savedIso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      else savedIso = "";
+    }
+    return metaFecha !== savedIso || metaMonto !== (config.meta.metaMonto?.toString() ?? "");
+  }, [metaFecha, metaMonto, config]);
 
-    if (periodosHastaFecha <= 0) return null;
-
-    return Math.round(((meta - ahorrosActual) / periodosHastaFecha) * 100) / 100;
-  }, [metaFecha, metaMonto, ahorrosActual, periodos]);
-
-  // Cargar última sync al montar
+  // ── Effects ──
   useEffect(() => {
     if (!user?.uid) return;
     getDoc(doc(db, `users/${user.uid}/config/syncMeta`)).then((snap) => {
-      if (snap.exists()) {
-        const ts = snap.data()?.lastSync;
-        if (ts?.toDate) setLastSync(ts.toDate());
-      }
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const ts = data?.lastSync;
+      if (ts?.toDate) setLastSync(ts.toDate());
+      const err = data?.lastError;
+      if (err?.at?.toDate) setSyncError({ message: err.message, at: err.at.toDate() });
     });
   }, [user?.uid]);
 
-  // Sincronizar con config cuando carga o se actualiza
   useEffect(() => {
     if (config) {
-      setMetaFecha(config.meta.metaFecha ?? "");
+      const raw = config.meta.metaFecha ?? "";
+      let iso = raw;
+      if (raw && !raw.includes("-")) {
+        const [d, m, y] = raw.split("/").map(Number);
+        if (d && m && y) iso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        else iso = "";
+      }
+      setMetaFecha(iso);
       setMetaMonto(config.meta.metaMonto?.toString() ?? "");
-      setMetaPorPeriodo(config.meta.metaPorPeriodo?.toString() ?? "");
     }
-  }, [config?.meta.metaFecha, config?.meta.metaMonto, config?.meta.metaPorPeriodo]);
+  }, [config?.meta.metaFecha, config?.meta.metaMonto]);
 
+  // ── Helpers ──
   const saveConfig = async (newConfig: typeof config) => {
     if (!user?.uid || !newConfig) return;
     setGuardando(true);
@@ -122,7 +192,6 @@ export default function ConfigPage() {
       refresh();
       setSaveMsg({ ok: true, text: "Guardado" });
     } catch (err) {
-      console.error(err);
       const msg = err instanceof Error ? err.message : "Error al guardar";
       setSaveMsg({ ok: false, text: msg });
     } finally {
@@ -144,56 +213,59 @@ export default function ConfigPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error");
-      const now = new Date();
-      setLastSync(now);
+      setLastSync(new Date());
+      setSyncError(null);
       setSyncMsg({ ok: true, text: data.message });
     } catch (err: unknown) {
-      setSyncMsg({ ok: false, text: err instanceof Error ? err.message : "Error al sincronizar" });
+      const message = err instanceof Error ? err.message : "Error al sincronizar";
+      setSyncError({ message, at: new Date() });
+      setSyncMsg({ ok: false, text: message });
     } finally {
       setSyncing(false);
       setTimeout(() => setSyncMsg(null), 4000);
     }
   };
 
-  if (loading || !config) return (
-    <div className="page">
-      <div className="loading-pulse" style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 3, textAlign: "center", paddingTop: 60 }}>CARGANDO...</div>
-    </div>
-  );
+  // ── Movimientos handlers (local only) ──
+  const toggleCategoriaLocal = (nombre: string) =>
+    setLocalCats(prev => prev.map(c => c.nombre === nombre ? { ...c, activa: !c.activa } : c));
 
-  const toggleCategoria = (nombre: string) =>
-    saveConfig({ ...config, categorias: config.categorias.map(c => c.nombre === nombre ? { ...c, activa: !c.activa } : c) });
+  const toggleMedioLocal = (nombre: string) =>
+    setLocalMedios(prev => prev.map(m => m.nombre === nombre ? { ...m, activo: !m.activo } : m));
 
-  const toggleMedio = (nombre: string) =>
-    saveConfig({ ...config, mediosPago: config.mediosPago.map(m => m.nombre === nombre ? { ...m, activo: !m.activo } : m) });
+  const toggleOrigenLocal = (nombre: string) =>
+    setLocalOrigenes(prev => prev.map(o => o.nombre === nombre ? { ...o, activo: !o.activo } : o));
 
-  const toggleOrigen = (nombre: string) =>
-    saveConfig({ ...config, origenesAhorro: config.origenesAhorro.map(o => o.nombre === nombre ? { ...o, activo: !o.activo } : o) });
-
-  const agregarCategoria = () => {
+  const agregarCategoriaLocal = () => {
     if (!nuevoNombre.trim()) return;
-    saveConfig({ ...config, categorias: [...config.categorias, { id: nuevoNombre, nombre: nuevoNombre.trim(), tipo: nuevoTipo, activa: true }] });
+    setLocalCats(prev => [...prev, { id: nuevoNombre, nombre: nuevoNombre.trim(), tipo: nuevoTipo, activa: true }]);
     setNuevoNombre("");
   };
 
-  const agregarMedio = () => {
+  const agregarMedioLocal = () => {
     if (!nuevoNombre.trim()) return;
-    saveConfig({ ...config, mediosPago: [...config.mediosPago, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }] });
+    setLocalMedios(prev => [...prev, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }]);
     setNuevoNombre("");
   };
 
-  const agregarOrigen = () => {
+  const agregarOrigenLocal = () => {
     if (!nuevoNombre.trim()) return;
-    saveConfig({ ...config, origenesAhorro: [...config.origenesAhorro, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }] });
+    setLocalOrigenes(prev => [...prev, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }]);
     setNuevoNombre("");
   };
 
-  const guardarMeta = () =>
-    saveConfig({ ...config, meta: { usdMensual: parseFloat(metaUSD) || config.meta.usdMensual, tipoCambioRef: (tipoCambio || config.meta.tipoCambioRef) as "blue" | "oficial" } });
+  const guardarMovimientos = () => {
+    if (!config) return;
+    saveConfig({ ...config, categorias: localCats, mediosPago: localMedios, origenesAhorro: localOrigenes });
+  };
 
-  // Agrupar toggles de reportes por sección
-  const seccionesReporte = ["gastos", "periodos", "tendencias"] as const;
+  // ── Reportes handlers (local only) ──
+  const toggleLocalReporte = (id: string) =>
+    setLocalReportes(prev => ({ ...prev, [id]: prev[id] === false ? true : false }));
 
+  const guardarReportes = () => saveReportes(localReportes);
+
+  // ── Ahorros handler ──
   const guardarMetaAhorro = async () => {
     if (!config) return;
     const newMeta = { ...config.meta };
@@ -201,11 +273,19 @@ export default function ConfigPage() {
     else delete newMeta.metaFecha;
     if (metaMonto) newMeta.metaMonto = parseFloat(metaMonto);
     else delete newMeta.metaMonto;
-    if (metaPorPeriodo) newMeta.metaPorPeriodo = parseFloat(metaPorPeriodo);
+    if (sugeridoPorPeriodo != null) newMeta.metaPorPeriodo = sugeridoPorPeriodo;
     else delete newMeta.metaPorPeriodo;
     newMeta.metaMoneda = "USD";
     await saveConfig({ ...config, meta: newMeta });
   };
+
+  const seccionesReporte = ["gastos", "periodos", "tendencias"] as const;
+
+  if (loading || !config) return (
+    <div className="page">
+      <div className="loading-pulse" style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 3, textAlign: "center", paddingTop: 60 }}>CARGANDO...</div>
+    </div>
+  );
 
   return (
     <div className="page fade-up">
@@ -249,24 +329,28 @@ export default function ConfigPage() {
             <div className="row" style={{ padding: "10px 0" }}>
               <div>
                 <div style={{ fontSize: 13 }}>Google Sheets</div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                  {lastSync
-                    ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
-                    : "Nunca sincronizado"}
+                <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
+                  {syncError
+                    ? `Error de sync: ${syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
+                    : lastSync
+                      ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
+                      : "Nunca sincronizado"}
                 </div>
               </div>
-              <button onClick={handleSync} disabled={syncing} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: "var(--accent)", color: "#000",
-                border: "none", borderRadius: "var(--radius-sm)",
-                padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
-              }}>
-                <svg className={syncing ? "spin" : ""} width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
-                    stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {syncing ? "Sincronizando..." : "Sincronizar"}
-              </button>
+              {syncError && (
+                <button onClick={handleSync} disabled={syncing} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "var(--red-dim)", color: "var(--red)",
+                  border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
+                  padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
+                }}>
+                  <svg className={syncing ? "spin" : ""} width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
+                      stroke="var(--red)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {syncing ? "Reintentando..." : "Reintentar"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -281,7 +365,6 @@ export default function ConfigPage() {
       {tab === "movimientos" && (
         <div key="movimientos" className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {/* Sub-pills */}
           <div style={{ display: "flex", gap: 6 }}>
             {([
               { id: "categorias", label: "Categorías" },
@@ -300,11 +383,10 @@ export default function ConfigPage() {
             ))}
           </div>
 
-          {/* Categorías */}
           {movSub === "categorias" && (
             <div className="card">
               <div className="label">Categorías</div>
-              {config.categorias.map(c => (
+              {localCats.map(c => (
                 <div key={c.nombre} className="row">
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
                     <span style={{ fontSize: 12, color: c.activa ? "var(--text)" : "var(--muted)" }}>{c.nombre}</span>
@@ -316,7 +398,7 @@ export default function ConfigPage() {
                       {c.tipo}
                     </span>
                   </div>
-                  <Toggle activo={c.activa} onClick={() => toggleCategoria(c.nombre)} />
+                  <Toggle activo={c.activa} onClick={() => toggleCategoriaLocal(c.nombre)} />
                 </div>
               ))}
               <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
@@ -327,7 +409,7 @@ export default function ConfigPage() {
                   <option value="Gasto">Gasto</option>
                   <option value="Ingreso">Ingreso</option>
                 </select>
-                <button onClick={agregarCategoria} disabled={guardando}
+                <button onClick={agregarCategoriaLocal}
                   style={{ background: "var(--green)", color: "var(--bg)", border: "none", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                   +
                 </button>
@@ -335,20 +417,19 @@ export default function ConfigPage() {
             </div>
           )}
 
-          {/* Medios de pago */}
           {movSub === "medios" && (
             <div className="card">
               <div className="label">Medios de pago</div>
-              {config.mediosPago.map(m => (
+              {localMedios.map(m => (
                 <div key={m.nombre} className="row">
                   <span style={{ fontSize: 12, color: m.activo ? "var(--text)" : "var(--muted)" }}>{m.nombre}</span>
-                  <Toggle activo={m.activo} onClick={() => toggleMedio(m.nombre)} />
+                  <Toggle activo={m.activo} onClick={() => toggleMedioLocal(m.nombre)} />
                 </div>
               ))}
               <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
                 <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
                   placeholder="Nuevo medio" className="input" style={{ flex: 1 }} />
-                <button onClick={agregarMedio} disabled={guardando}
+                <button onClick={agregarMedioLocal}
                   style={{ background: "var(--green)", color: "var(--bg)", border: "none", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                   +
                 </button>
@@ -356,27 +437,31 @@ export default function ConfigPage() {
             </div>
           )}
 
-          {/* Orígenes de ahorro */}
           {movSub === "origenes" && (
             <div className="card">
               <div className="label">Orígenes de ahorro</div>
               <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12, marginTop: -6 }}>Aparecen al cargar Ingreso → Ahorros</div>
-              {config.origenesAhorro.map(o => (
+              {localOrigenes.map(o => (
                 <div key={o.nombre} className="row">
                   <span style={{ fontSize: 12, color: o.activo ? "var(--text)" : "var(--muted)" }}>{o.nombre}</span>
-                  <Toggle activo={o.activo} onClick={() => toggleOrigen(o.nombre)} />
+                  <Toggle activo={o.activo} onClick={() => toggleOrigenLocal(o.nombre)} />
                 </div>
               ))}
               <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
                 <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
                   placeholder="Nuevo origen" className="input" style={{ flex: 1 }} />
-                <button onClick={agregarOrigen} disabled={guardando}
+                <button onClick={agregarOrigenLocal}
                   style={{ background: "var(--green)", color: "var(--bg)", border: "none", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                   +
                 </button>
               </div>
             </div>
           )}
+
+          <button onClick={guardarMovimientos} disabled={guardando || !isDirtyMovimientos}
+            className="btn btn-primary" style={{ ...BTN_SAVE_STYLE, opacity: isDirtyMovimientos ? 1 : 0.35 }}>
+            {guardando ? "Guardando..." : "Guardar"}
+          </button>
         </div>
       )}
 
@@ -393,28 +478,32 @@ export default function ConfigPage() {
                 <div className="label">{SECCION_LABEL[sec]}</div>
                 {items.map((r) => (
                   <div key={r.id} className="row">
-                    <span style={{ fontSize: 13, color: isEnabled(r.id) ? "var(--text)" : "var(--muted)" }}>{r.label}</span>
-                    <Toggle activo={isEnabled(r.id)} onClick={() => toggleReport(r.id)} />
+                    <span style={{ fontSize: 13, color: localIsEnabled(r.id) ? "var(--text)" : "var(--muted)" }}>{r.label}</span>
+                    <Toggle activo={localIsEnabled(r.id)} onClick={() => toggleLocalReporte(r.id)} />
                   </div>
                 ))}
               </div>
             );
           })}
+
+          <button onClick={guardarReportes} disabled={!isDirtyReportes}
+            className="btn btn-primary" style={{ ...BTN_SAVE_STYLE, opacity: isDirtyReportes ? 1 : 0.35 }}>
+            Guardar
+          </button>
         </div>
       )}
 
       {/* ── AHORROS ── */}
       {tab === "ahorros" && (
         <div key="ahorros" className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {/* Meta de ahorro a fecha */}
           <div className="card">
             <div className="label">Meta de ahorro</div>
-            <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12, marginTop: -4 }}>
-              Ahorros actuales: <strong>{ahorrosActual.toLocaleString("es-AR")}</strong>
+            <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 16, marginTop: -4 }}>
+              Reserva actual: <strong>U$D {totalUSD.toFixed(2)}</strong>
             </div>
             <div style={{ marginBottom: 12 }}>
               <div className="label" style={{ marginBottom: 6 }}>Fecha objetivo</div>
-              <input type="text" value={metaFecha} placeholder="dd/MM/yyyy"
+              <input type="date" value={metaFecha}
                 onChange={(e) => setMetaFecha(e.target.value)} className="input" />
             </div>
             <div style={{ marginBottom: 16 }}>
@@ -422,32 +511,26 @@ export default function ConfigPage() {
               <input type="number" value={metaMonto} placeholder="0"
                 onChange={(e) => setMetaMonto(e.target.value)} className="input" />
             </div>
-            <button onClick={guardarMetaAhorro} disabled={guardando} className="btn btn-primary" style={{ width: "100%" }}>
-              {guardando ? "Guardando..." : "Guardar meta"}
-            </button>
-          </div>
 
-          {/* Por período sugerido */}
-          <div className="card">
-            <div className="label">Por período</div>
-            {sugeridoPorPeriodo !== null && (
-              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12, marginTop: -4 }}>
-                Sugerido: <strong>USD {sugeridoPorPeriodo.toLocaleString("es-AR")}</strong>
+            <div style={{
+              padding: "12px 14px", borderRadius: "var(--radius-sm)",
+              background: "var(--surface-alt)", border: "1px solid var(--border)",
+              marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>Por período estimado</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: sugeridoPorPeriodo != null ? "var(--green)" : "var(--muted)" }}>
+                {sugeridoPorPeriodo != null ? `U$D ${sugeridoPorPeriodo.toLocaleString("es-AR")}` : "—"}
               </div>
-            )}
-            <div style={{ marginBottom: 16 }}>
-              <div className="label" style={{ marginBottom: 6 }}>Cantidad por período</div>
-              <input type="number" value={metaPorPeriodo} placeholder={sugeridoPorPeriodo?.toString() ?? "0"}
-                onChange={(e) => setMetaPorPeriodo(e.target.value)} className="input" />
             </div>
-            <button onClick={guardarMetaAhorro} disabled={guardando} className="btn btn-primary" style={{ width: "100%" }}>
+
+            <button onClick={guardarMetaAhorro} disabled={guardando || !isDirtyAhorros}
+              className="btn btn-primary" style={{ ...BTN_SAVE_STYLE, opacity: isDirtyAhorros ? 1 : 0.35 }}>
               {guardando ? "Guardando..." : "Guardar"}
             </button>
           </div>
         </div>
       )}
 
-      {/* Toast guardar config */}
       {saveMsg && (
         <div className="fade-up" style={{
           position: "fixed", left: 16, right: 16, bottom: "calc(var(--nav-h) + 16px)",
@@ -461,7 +544,6 @@ export default function ConfigPage() {
         </div>
       )}
 
-      {/* Toast sync */}
       {syncMsg && (
         <div className="fade-up" style={{
           position: "fixed", left: 16, right: 16, bottom: "calc(var(--nav-h) + 16px)",

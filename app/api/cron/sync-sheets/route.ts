@@ -1,23 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import { getSheetsClient, getSheetName, backupAndRotate, overwriteData } from "@/lib/google-sheets";
 import { movimientoToRow } from "@/lib/sheet-format";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento } from "@/types";
 
-export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) {
+// Vercel invoca esta ruta diariamente (ver vercel.json) con Authorization: Bearer <CRON_SECRET>
+export async function GET(req: NextRequest) {
+  const auth = req.headers.get("authorization") ?? "";
+  const secret = process.env.CRON_SECRET;
+  if (!secret || auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let uid: string;
-  try {
-    const decoded = await adminAuth().verifyIdToken(token);
-    uid = decoded.uid;
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  const uid = process.env.NEXT_PUBLIC_OWNER_UID;
+  if (!uid) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_OWNER_UID not set" }, { status: 500 });
   }
 
   const syncMetaRef = adminDb().doc(`users/${uid}/config/syncMeta`);
@@ -45,12 +43,9 @@ export async function POST(req: NextRequest) {
 
     await syncMetaRef.set({ lastSync: Timestamp.now(), lastError: null }, { merge: true });
 
-    return NextResponse.json({
-      synced: rows.length,
-      message: `Sync completa · ${rows.length} movimientos`,
-    });
+    return NextResponse.json({ synced: rows.length, ok: true });
   } catch (err) {
-    console.error("Sync error:", err);
+    console.error("[cron/sync-sheets]", err);
     const message = err instanceof Error ? err.message : String(err);
     try {
       await syncMetaRef.set({ lastError: { message, at: Timestamp.now() } }, { merge: true });

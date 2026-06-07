@@ -58,5 +58,10 @@ export function useReportConfig() {
     });
   }, []);
 
-  return { isEnabled, toggle, overrides };
+  const saveAll = useCallback((next: Record<string, boolean>) => {
+    localStorage.setItem(LS_KEY, JSON.stringify(next));
+    setOverrides(next);
+  }, []);
+
+  return { isEnabled, toggle, overrides, saveAll };
 }
