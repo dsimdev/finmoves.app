@@ -5,6 +5,17 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.5.0] — 2026-06-07
+
+### Added
+- Modal de changelog en Config > App — sin salir de la app
+- Logo GitHub (izquierda del logo FinMoves) con link al repositorio
+
+### Changed
+- El link "changelog" abre modal inline en lugar de redirigir a GitHub
+
+---
+
 ## [1.4.0] — 2026-06-07
 
 ### Added

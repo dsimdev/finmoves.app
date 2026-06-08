@@ -95,4 +95,4 @@ Vercel deploya automáticamente desde `main`. El rollback se hace desde el dashb
 
 ## Versión actual
 
-`v1.4.0` — ver [CHANGELOG.md](./CHANGELOG.md) para el historial completo.
+`v1.5.0` — ver [CHANGELOG.md](./CHANGELOG.md) para el historial completo.

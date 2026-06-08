@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfig } from "@/hooks/useConfig";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
@@ -75,6 +76,10 @@ export default function ConfigPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [changelog, setChangelog] = useState<string | null>(null);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncError, setSyncError] = useState<{ message: string; at: Date } | null>(null);
 
@@ -221,6 +226,15 @@ export default function ConfigPage() {
     } finally {
       setGuardando(false);
     }
+  };
+
+  const openChangelog = async () => {
+    if (!changelog) {
+      const res = await fetch("/api/changelog");
+      const text = await res.text();
+      setChangelog(text);
+    }
+    setShowChangelog(true);
   };
 
   const exportCSV = () => {
@@ -409,115 +423,13 @@ export default function ConfigPage() {
       {/* ── CUENTA ── */}
       {tab === "cuenta" && (
         <div key="cuenta" className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="card">
-            <div className="label">Cuenta</div>
-            <div className="row" style={{ padding: "10px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: "var(--surface-alt)", border: "1px solid var(--border)",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="8" r="4" stroke="var(--muted)" strokeWidth="1.7" />
-                    <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="var(--muted)" strokeWidth="1.7" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13 }}>Usuario</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{user?.email}</div>
-                </div>
-              </div>
-              <button onClick={exportCSV} title="Exportar CSV" style={{
-                background: "var(--surface-alt)", border: "1px solid var(--border)",
-                borderRadius: 10, width: 36, height: 36,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", flexShrink: 0, color: "var(--muted)",
-              }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-              </button>
-            </div>
-          </div>
 
+          {/* Generales */}
           <div className="card">
-            <div className="label">Sincronización</div>
-            <div className="row" style={{ padding: "10px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: syncError ? "var(--red-dim)" : lastSync ? "var(--green-dim)" : "var(--surface-alt)",
-                  border: `1px solid ${syncError ? "var(--red)44" : lastSync ? "var(--green)44" : "var(--border)"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <svg className={syncing ? "spin" : ""} width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
-                      stroke={syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)"}
-                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13 }}>Google Sheets</div>
-                  <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
-                    {syncError
-                      ? `Error de sync: ${syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
-                      : lastSync
-                        ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
-                        : "Nunca sincronizado"}
-                  </div>
-                </div>
-              </div>
-              {syncError && (
-                <button onClick={handleSync} disabled={syncing} style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  background: "var(--red-dim)", color: "var(--red)",
-                  border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
-                  padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
-                }}>
-                  {syncing ? "Reintentando..." : "Reintentar"}
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="label" style={{ marginBottom: 16 }}>Preferencias generales</div>
-            <div className="row" style={{ padding: "12px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: dark ? "var(--surface-alt)" : "var(--yellow-dim)",
-                  border: "1px solid var(--border)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  {dark ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" stroke="var(--muted)" strokeWidth="1.7" strokeLinejoin="round" />
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="4" stroke="var(--yellow)" strokeWidth="1.7" />
-                      <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="var(--yellow)" strokeWidth="1.7" strokeLinecap="round" />
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Modo oscuro</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                    {dark ? "Cambiá a tema claro" : "Cambiá a tema oscuro"}
-                  </div>
-                </div>
-              </div>
-              <Toggle activo={dark} onClick={toggleTheme} />
-            </div>
+            <div className="label" style={{ marginBottom: 16 }}>Generales</div>
 
             {/* Moneda principal */}
-            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ padding: "12px 0", display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
                 background: "var(--accent-dim)", border: "1px solid var(--accent)44",
@@ -555,7 +467,7 @@ export default function ConfigPage() {
               <Toggle activo={showAhorros} onClick={() => setPref("showAhorros", !showAhorros)} />
             </div>
 
-            {/* Moneda de inversiones */}
+            {/* Moneda de inversión */}
             {showAhorros && (
             <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
@@ -570,7 +482,7 @@ export default function ConfigPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda de inversiones</div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda de inversión</div>
                     {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>meta activa</span>}
                   </div>
                   {monedaPrincipal === "ARS" ? (
@@ -618,21 +530,128 @@ export default function ConfigPage() {
               </div>
               <Toggle activo={showReportes} onClick={() => setPref("showReportes", !showReportes)} />
             </div>
+
+            {/* Theme mode */}
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: dark ? "var(--surface-alt)" : "var(--yellow-dim)",
+                  border: "1px solid var(--border)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {dark ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" stroke="var(--muted)" strokeWidth="1.7" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="4" stroke="var(--yellow)" strokeWidth="1.7" />
+                      <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="var(--yellow)" strokeWidth="1.7" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Modo oscuro</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                    {dark ? "Cambiá a tema claro" : "Cambiá a tema oscuro"}
+                  </div>
+                </div>
+              </div>
+              <Toggle activo={dark} onClick={toggleTheme} />
+            </div>
+          </div>
+
+          {/* Sincronización */}
+          <div className="card">
+            <div className="label">Sincronización</div>
+            <div className="row" style={{ padding: "10px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: syncError ? "var(--red-dim)" : lastSync ? "var(--green-dim)" : "var(--surface-alt)",
+                  border: `1px solid ${syncError ? "var(--red)44" : lastSync ? "var(--green)44" : "var(--border)"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <svg className={syncing ? "spin" : ""} width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
+                      stroke={syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)"}
+                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13 }}>Google Sheets</div>
+                  <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
+                    {syncError
+                      ? `Error de sync: ${syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
+                      : lastSync
+                        ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`
+                        : "Nunca sincronizado"}
+                  </div>
+                </div>
+              </div>
+              {syncError && (
+                <button onClick={handleSync} disabled={syncing} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "var(--red-dim)", color: "var(--red)",
+                  border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
+                  padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
+                }}>
+                  {syncing ? "Reintentando..." : "Reintentar"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Cuenta */}
+          <div className="card">
+            <div className="label">Cuenta</div>
+            <div className="row" style={{ padding: "10px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: "var(--surface-alt)", border: "1px solid var(--border)",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="4" stroke="var(--muted)" strokeWidth="1.7" />
+                    <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="var(--muted)" strokeWidth="1.7" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13 }}>Usuario</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{user?.email}</div>
+                </div>
+              </div>
+              <button onClick={exportCSV} title="Exportar CSV" style={{
+                background: "var(--surface-alt)", border: "1px solid var(--border)",
+                borderRadius: 10, width: 36, height: 36,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", flexShrink: 0, color: "var(--muted)",
+              }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="card">
             <div className="label">App</div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "8px 0" }}>
-              <img src="/logo5-cropped.png" alt="FinMoves" style={{ width: 100, borderRadius: 12, objectFit: "contain", flexShrink: 0 }} />
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <a href="https://github.com/dsimdev/moves-app" target="_blank" rel="noopener noreferrer" aria-label="GitHub" style={{ display: "flex", alignItems: "center", color: "var(--muted)", flexShrink: 0 }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+              </a>
+              <img src="/logo5-cropped.png" alt="FinMoves" style={{ width: 90, borderRadius: 12, objectFit: "contain", flexShrink: 0 }} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>v{process.env.NEXT_PUBLIC_APP_VERSION}</div>
-                <a href="https://github.com/dsimdev/moves-app/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer"
-                  style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--muted)", textDecoration: "none", fontSize: 11 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--muted)">
-                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-                  </svg>
-                  changelog
-                </a>
+                <button onClick={openChangelog} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 11, padding: 0, textDecoration: "underline" }}>changelog</button>
               </div>
             </div>
           </div>
@@ -894,6 +913,28 @@ export default function ConfigPage() {
         }}>
           {syncMsg.text}
         </div>
+      )}
+
+      {showChangelog && mounted && createPortal(
+        <div onClick={() => setShowChangelog(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "75vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>Changelog</span>
+              <button onClick={() => setShowChangelog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
+            </div>
+            <div style={{ overflowY: "auto", padding: "16px 20px 32px", fontSize: 13, lineHeight: 1.65, color: "var(--text)" }}>
+              {changelog ? changelog.split("\n").map((line, i) => {
+                if (line.startsWith("## ")) return <div key={i} style={{ fontSize: 14, fontWeight: 700, margin: "16px 0 4px", color: "var(--blue)" }}>{line.replace(/^## /, "")}</div>;
+                if (line.startsWith("### ")) return <div key={i} style={{ fontSize: 11, fontWeight: 600, margin: "10px 0 2px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{line.replace(/^### /, "")}</div>;
+                if (line.startsWith("- ")) return <div key={i} style={{ paddingLeft: 10, marginBottom: 3 }}>• {line.replace(/^- /, "")}</div>;
+                if (line.startsWith("---")) return <hr key={i} style={{ border: "none", borderTop: "1px solid var(--border)", margin: "10px 0" }} />;
+                if (line.startsWith("# ") || line.trim() === "" || line.startsWith("Todos los cambios") || line.startsWith("Formato basado") || line.startsWith("https://keep")) return null;
+                return <div key={i}>{line}</div>;
+              }) : <div style={{ color: "var(--muted)" }}>Cargando…</div>}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
