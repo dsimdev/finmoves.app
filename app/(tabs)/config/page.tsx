@@ -68,6 +68,7 @@ export default function ConfigPage() {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoTipo, setNuevoTipo] = useState<"Gasto" | "Ingreso">("Gasto");
   const [movSub, setMovSub] = useState<"categorias" | "medios" | "origenes">("categorias");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // Sync state
   const [syncing, setSyncing] = useState(false);
@@ -100,15 +101,11 @@ export default function ConfigPage() {
     );
   }, [localCats, localMedios, localOrigenes, config]);
 
-  // ── Reportes local state ──
+  // ── Reportes local state — siempre en sync con overrides (localStorage) ──
   const [localReportes, setLocalReportes] = useState<Record<string, boolean>>({});
-  const didInitRep = useRef(false);
 
   useEffect(() => {
-    if (!didInitRep.current && Object.keys(overrides).length >= 0) {
-      setLocalReportes(overrides);
-      didInitRep.current = true;
-    }
+    setLocalReportes(overrides);
   }, [overrides]);
 
   const isDirtyReportes = useMemo(() =>
@@ -134,10 +131,22 @@ export default function ConfigPage() {
     return total;
   }, [movimientos]);
 
+  const totalEUR = useMemo(() => {
+    let total = 0;
+    for (const m of movimientos) {
+      if (m.tipo === "CompraEUR" && m.cantidadUSD) total += m.cantidadUSD;
+      else if (m.tipo === "GastoEUR" && m.cantidadUSD) total -= m.cantidadUSD;
+    }
+    return total;
+  }, [movimientos]);
+
+  const totalReserva = monedaInversiones === "EUR" ? totalEUR : totalUSD;
+  const simboloReserva = monedaInversiones === "EUR" ? "€" : "U$D";
+
   const sugeridoPorPeriodo = useMemo(() => {
     if (!metaFecha || !metaMonto || periodos.length < 2) return null;
     const meta = parseFloat(metaMonto);
-    if (isNaN(meta) || meta <= 0 || totalUSD >= meta) return null;
+    if (isNaN(meta) || meta <= 0 || totalReserva >= meta) return null;
     const fechaMeta = new Date(metaFecha + "T12:00:00");
     if (isNaN(fechaMeta.getTime())) return null;
     const hoy = new Date();
@@ -198,13 +207,12 @@ export default function ConfigPage() {
     try {
       await setDoc(doc(db, `users/${user.uid}/config/meta`), newConfig);
       refresh();
-      setSaveMsg({ ok: true, text: "Guardado" });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error al guardar";
       setSaveMsg({ ok: false, text: msg });
+      setTimeout(() => setSaveMsg(null), 3000);
     } finally {
       setGuardando(false);
-      setTimeout(() => setSaveMsg(null), 3000);
     }
   };
 
@@ -234,32 +242,74 @@ export default function ConfigPage() {
     }
   };
 
-  // ── Movimientos handlers (local only) ──
-  const toggleCategoriaLocal = (nombre: string) =>
-    setLocalCats(prev => prev.map(c => c.nombre === nombre ? { ...c, activa: !c.activa } : c));
+  // ── Movimientos handlers (auto-save) ──
+  const toggleCategoriaLocal = (nombre: string) => {
+    if (!config) return;
+    const next = localCats.map(c => c.nombre === nombre ? { ...c, activa: !c.activa } : c);
+    setLocalCats(next);
+    saveConfig({ ...config, categorias: next, mediosPago: localMedios, origenesAhorro: localOrigenes });
+  };
 
-  const toggleMedioLocal = (nombre: string) =>
-    setLocalMedios(prev => prev.map(m => m.nombre === nombre ? { ...m, activo: !m.activo } : m));
+  const toggleMedioLocal = (nombre: string) => {
+    if (!config) return;
+    const next = localMedios.map(m => m.nombre === nombre ? { ...m, activo: !m.activo } : m);
+    setLocalMedios(next);
+    saveConfig({ ...config, categorias: localCats, mediosPago: next, origenesAhorro: localOrigenes });
+  };
 
-  const toggleOrigenLocal = (nombre: string) =>
-    setLocalOrigenes(prev => prev.map(o => o.nombre === nombre ? { ...o, activo: !o.activo } : o));
+  const toggleOrigenLocal = (nombre: string) => {
+    if (!config) return;
+    const next = localOrigenes.map(o => o.nombre === nombre ? { ...o, activo: !o.activo } : o);
+    setLocalOrigenes(next);
+    saveConfig({ ...config, categorias: localCats, mediosPago: localMedios, origenesAhorro: next });
+  };
 
   const agregarCategoriaLocal = () => {
-    if (!nuevoNombre.trim()) return;
-    setLocalCats(prev => [...prev, { id: nuevoNombre, nombre: nuevoNombre.trim(), tipo: nuevoTipo, activa: true }]);
+    if (!nuevoNombre.trim() || !config) return;
+    const next = [...localCats, { id: nuevoNombre, nombre: nuevoNombre.trim(), tipo: nuevoTipo, activa: true }];
+    setLocalCats(next);
     setNuevoNombre("");
+    saveConfig({ ...config, categorias: next, mediosPago: localMedios, origenesAhorro: localOrigenes });
+  };
+
+  const eliminarCategoriaLocal = (nombre: string) => {
+    if (!config) return;
+    const next = localCats.filter(c => c.nombre !== nombre);
+    setLocalCats(next);
+    setConfirmDelete(null);
+    saveConfig({ ...config, categorias: next, mediosPago: localMedios, origenesAhorro: localOrigenes });
+  };
+
+  const eliminarMedioLocal = (nombre: string) => {
+    if (!config) return;
+    const next = localMedios.filter(m => m.nombre !== nombre);
+    setLocalMedios(next);
+    setConfirmDelete(null);
+    saveConfig({ ...config, categorias: localCats, mediosPago: next, origenesAhorro: localOrigenes });
+  };
+
+  const eliminarOrigenLocal = (nombre: string) => {
+    if (!config) return;
+    const next = localOrigenes.filter(o => o.nombre !== nombre);
+    setLocalOrigenes(next);
+    setConfirmDelete(null);
+    saveConfig({ ...config, categorias: localCats, mediosPago: localMedios, origenesAhorro: next });
   };
 
   const agregarMedioLocal = () => {
-    if (!nuevoNombre.trim()) return;
-    setLocalMedios(prev => [...prev, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }]);
+    if (!nuevoNombre.trim() || !config) return;
+    const next = [...localMedios, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }];
+    setLocalMedios(next);
     setNuevoNombre("");
+    saveConfig({ ...config, categorias: localCats, mediosPago: next, origenesAhorro: localOrigenes });
   };
 
   const agregarOrigenLocal = () => {
-    if (!nuevoNombre.trim()) return;
-    setLocalOrigenes(prev => [...prev, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }]);
+    if (!nuevoNombre.trim() || !config) return;
+    const next = [...localOrigenes, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }];
+    setLocalOrigenes(next);
     setNuevoNombre("");
+    saveConfig({ ...config, categorias: localCats, mediosPago: localMedios, origenesAhorro: next });
   };
 
   const guardarMovimientos = () => {
@@ -267,9 +317,16 @@ export default function ConfigPage() {
     saveConfig({ ...config, categorias: localCats, mediosPago: localMedios, origenesAhorro: localOrigenes });
   };
 
-  // ── Reportes handlers (local only) ──
-  const toggleLocalReporte = (id: string) =>
-    setLocalReportes(prev => ({ ...prev, [id]: prev[id] === false ? true : false }));
+  // ── Reportes handlers (auto-save) ──
+  const toggleLocalReporte = (id: string) => {
+    setLocalReportes(prev => {
+      const next = { ...prev };
+      if (next[id] === false) delete next[id];
+      else next[id] = false;
+      saveReportes(next);
+      return next;
+    });
+  };
 
   const guardarReportes = () => saveReportes(localReportes);
 
@@ -552,47 +609,56 @@ export default function ConfigPage() {
           {movSub === "categorias" && (
             <div className="card">
               <div className="label">Categorías</div>
+              <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {(["Gasto", "Ingreso"] as const).map(t => (
+                    <button key={t} onClick={() => setNuevoTipo(t)} className="pill" style={{
+                      borderColor: nuevoTipo === t ? (t === "Gasto" ? "var(--red)" : "var(--green)") : "var(--border)",
+                      background: nuevoTipo === t ? (t === "Gasto" ? "var(--red-dim)" : "var(--green-dim)") : "transparent",
+                      color: nuevoTipo === t ? (t === "Gasto" ? "var(--red)" : "var(--green)") : "var(--muted)",
+                    }}>{t}</button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
+                    placeholder="Nueva categoría" className="input" style={{ flex: 1 }} />
+                  <button onClick={agregarCategoriaLocal}
+                    style={{ background: "var(--green)", color: "var(--bg)", border: "none", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                    +
+                  </button>
+                </div>
+              </div>
               {localCats.map(c => (
                 <div key={c.nombre} className="row">
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
-                    <span style={{ fontSize: 12, color: c.activa ? "var(--text)" : "var(--muted)" }}>{c.nombre}</span>
-                    <span className="badge" style={{
-                      background: c.tipo === "Gasto" ? "var(--red-dim)" : "var(--green-dim)",
-                      color: c.tipo === "Gasto" ? "var(--red)" : "var(--green)",
-                      border: `1px solid ${c.tipo === "Gasto" ? "var(--red)" : "var(--green)"}44`,
-                    }}>
-                      {c.tipo}
-                    </span>
+                    {confirmDelete === `cat_${c.nombre}` ? (
+                      <>
+                        <span style={{ fontSize: 11, color: "var(--red)" }}>¿Eliminar?</span>
+                        <button onClick={() => eliminarCategoriaLocal(c.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>Sí</button>
+                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>No</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => setConfirmDelete(`cat_${c.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--muted)", lineHeight: 1, fontSize: 14, flexShrink: 0 }}>✕</button>
+                        <span style={{ fontSize: 12, color: c.activa ? "var(--text)" : "var(--muted)" }}>{c.nombre}</span>
+                        <span className="badge" style={{
+                          background: c.tipo === "Gasto" ? "var(--red-dim)" : "var(--green-dim)",
+                          color: c.tipo === "Gasto" ? "var(--red)" : "var(--green)",
+                          border: `1px solid ${c.tipo === "Gasto" ? "var(--red)" : "var(--green)"}44`,
+                        }}>{c.tipo}</span>
+                      </>
+                    )}
                   </div>
-                  <Toggle activo={c.activa} onClick={() => toggleCategoriaLocal(c.nombre)} />
+                  {confirmDelete !== `cat_${c.nombre}` && <Toggle activo={c.activa} onClick={() => toggleCategoriaLocal(c.nombre)} />}
                 </div>
               ))}
-              <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
-                <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
-                  placeholder="Nueva categoría" className="input" style={{ flex: 1 }} />
-                <select value={nuevoTipo} onChange={e => setNuevoTipo(e.target.value as "Gasto" | "Ingreso")}
-                  className="input" style={{ width: "auto", padding: "12px 8px" }}>
-                  <option value="Gasto">Gasto</option>
-                  <option value="Ingreso">Ingreso</option>
-                </select>
-                <button onClick={agregarCategoriaLocal}
-                  style={{ background: "var(--green)", color: "var(--bg)", border: "none", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                  +
-                </button>
-              </div>
             </div>
           )}
 
           {movSub === "medios" && (
             <div className="card">
               <div className="label">Medios de pago</div>
-              {localMedios.map(m => (
-                <div key={m.nombre} className="row">
-                  <span style={{ fontSize: 12, color: m.activo ? "var(--text)" : "var(--muted)" }}>{m.nombre}</span>
-                  <Toggle activo={m.activo} onClick={() => toggleMedioLocal(m.nombre)} />
-                </div>
-              ))}
-              <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+              <div style={{ marginBottom: 14, display: "flex", gap: 8 }}>
                 <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
                   placeholder="Nuevo medio" className="input" style={{ flex: 1 }} />
                 <button onClick={agregarMedioLocal}
@@ -600,6 +666,25 @@ export default function ConfigPage() {
                   +
                 </button>
               </div>
+              {localMedios.map(m => (
+                <div key={m.nombre} className="row">
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+                    {confirmDelete === `med_${m.nombre}` ? (
+                      <>
+                        <span style={{ fontSize: 11, color: "var(--red)" }}>¿Eliminar?</span>
+                        <button onClick={() => eliminarMedioLocal(m.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>Sí</button>
+                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>No</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => setConfirmDelete(`med_${m.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--muted)", lineHeight: 1, fontSize: 14, flexShrink: 0 }}>✕</button>
+                        <span style={{ fontSize: 12, color: m.activo ? "var(--text)" : "var(--muted)" }}>{m.nombre}</span>
+                      </>
+                    )}
+                  </div>
+                  {confirmDelete !== `med_${m.nombre}` && <Toggle activo={m.activo} onClick={() => toggleMedioLocal(m.nombre)} />}
+                </div>
+              ))}
             </div>
           )}
 
@@ -607,13 +692,7 @@ export default function ConfigPage() {
             <div className="card">
               <div className="label">Orígenes de ahorro</div>
               <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12, marginTop: -6 }}>Aparecen al cargar Ingreso → Ahorros</div>
-              {localOrigenes.map(o => (
-                <div key={o.nombre} className="row">
-                  <span style={{ fontSize: 12, color: o.activo ? "var(--text)" : "var(--muted)" }}>{o.nombre}</span>
-                  <Toggle activo={o.activo} onClick={() => toggleOrigenLocal(o.nombre)} />
-                </div>
-              ))}
-              <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+              <div style={{ marginBottom: 14, display: "flex", gap: 8 }}>
                 <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
                   placeholder="Nuevo origen" className="input" style={{ flex: 1 }} />
                 <button onClick={agregarOrigenLocal}
@@ -621,6 +700,25 @@ export default function ConfigPage() {
                   +
                 </button>
               </div>
+              {localOrigenes.map(o => (
+                <div key={o.nombre} className="row">
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+                    {confirmDelete === `ori_${o.nombre}` ? (
+                      <>
+                        <span style={{ fontSize: 11, color: "var(--red)" }}>¿Eliminar?</span>
+                        <button onClick={() => eliminarOrigenLocal(o.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>Sí</button>
+                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>No</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => setConfirmDelete(`ori_${o.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--muted)", lineHeight: 1, fontSize: 14, flexShrink: 0 }}>✕</button>
+                        <span style={{ fontSize: 12, color: o.activo ? "var(--text)" : "var(--muted)" }}>{o.nombre}</span>
+                      </>
+                    )}
+                  </div>
+                  {confirmDelete !== `ori_${o.nombre}` && <Toggle activo={o.activo} onClick={() => toggleOrigenLocal(o.nombre)} />}
+                </div>
+              ))}
             </div>
           )}
 
@@ -659,7 +757,7 @@ export default function ConfigPage() {
           <div className="card">
             <div className="label">Meta de ahorro</div>
             <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 16, marginTop: -4 }}>
-              Reserva actual: <strong>U$D {totalUSD.toFixed(2)}</strong>
+              Reserva actual: <strong>{simboloReserva} {totalReserva.toFixed(2)}</strong>
             </div>
             <div style={{ marginBottom: 12 }}>
               <div className="label" style={{ marginBottom: 6 }}>Fecha objetivo</div>
@@ -667,7 +765,7 @@ export default function ConfigPage() {
                 onChange={(e) => setMetaFecha(e.target.value)} className="input" />
             </div>
             <div style={{ marginBottom: 16 }}>
-              <div className="label" style={{ marginBottom: 6 }}>Monto objetivo (USD)</div>
+              <div className="label" style={{ marginBottom: 6 }}>Monto objetivo ({monedaInversiones})</div>
               <input type="number" value={metaMonto} placeholder="0"
                 onChange={(e) => setMetaMonto(e.target.value)} className="input" />
             </div>
@@ -683,40 +781,19 @@ export default function ConfigPage() {
               </div>
             </div>
 
+            {isDirtyAhorros && (
+              <button onClick={guardarMetaAhorro} disabled={guardando} style={{
+                width: "100%", padding: "13px 0", borderRadius: "var(--radius-sm)",
+                background: "var(--accent)", color: "#fff",
+                border: "none", fontSize: 13, fontWeight: 700, cursor: guardando ? "default" : "pointer",
+                opacity: guardando ? 0.6 : 1,
+              }}>
+                {guardando ? "Guardando…" : "Guardar"}
+              </button>
+            )}
+
           </div>
         </div>
-      )}
-
-      {/* Botón guardar flotante — diskette, aparece solo con cambios */}
-      {((tab === "movimientos" && isDirtyMovimientos) ||
-        tab === "reportes" ||
-        (tab === "ahorros" && isDirtyAhorros)) && (
-        <button
-          onClick={tab === "movimientos" ? guardarMovimientos : tab === "reportes" ? guardarReportes : guardarMetaAhorro}
-          disabled={guardando}
-          aria-label="Guardar cambios"
-          style={{
-            position: "fixed",
-            bottom: "calc(var(--nav-h) + 14px)",
-            left: 0, right: 0, margin: "0 auto",
-            width: 54, height: 54,
-            borderRadius: "50%",
-            background: "transparent",
-            color: "var(--accent)",
-            border: "none", cursor: guardando ? "default" : "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 160,
-            filter: "drop-shadow(0 2px 12px var(--accent)99)",
-            opacity: guardando ? 0.5 : 1,
-            transition: "opacity 0.4s ease",
-          }}
-        >
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
-        </button>
       )}
 
       {saveMsg && (

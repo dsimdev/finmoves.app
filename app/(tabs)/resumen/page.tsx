@@ -580,7 +580,7 @@ export default function ReportesPage() {
               )}
 
               {/* Total ingresado */}
-              {reportOn("ingresos_otros") && totalAhorradoDirecto > 0 && (
+              {reportOn("ingresos_kpis") && totalAhorradoDirecto > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--green-dim))", borderColor: "var(--green)22" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>

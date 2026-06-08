@@ -121,13 +121,17 @@ export default function Dashboard() {
                 </span>
               </div>
             ))}
-            {/* Lleva al listado (navegación) — color neutro para diferenciarlo del + sólido accent de Movimientos (alta) */}
             <Link href="/movimientos" aria-label="Ver todos los movimientos" style={{
               display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "16px auto 2px", width: 38, height: 38, borderRadius: "50%",
-              background: "var(--surface-alt)", border: "1px solid var(--border)", color: "var(--accent)",
-              fontSize: 22, fontWeight: 300, lineHeight: 1, textDecoration: "none",
-            }}>+</Link>
+              margin: "16px auto 2px", width: 48, height: 48, borderRadius: "50%",
+              background: "transparent", border: "none", color: "var(--accent)",
+              textDecoration: "none", filter: "drop-shadow(0 2px 10px var(--accent)88)",
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </Link>
           </div>
         </div>
       )}

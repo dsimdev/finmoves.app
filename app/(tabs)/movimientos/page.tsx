@@ -9,6 +9,7 @@ import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/ser
 import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { useMoney } from "@/hooks/useHideValues";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { Movimiento, TipoMovimiento } from "@/types";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
@@ -92,7 +93,7 @@ function Modal({ open, onClose, title, children }: {
 
 function TipoDot({ tipo, categoria }: { tipo: TipoMovimiento; categoria: string }) {
   let c = "var(--muted)";
-  if (tipo === "Gasto" || tipo === "CompraUSD") c = "var(--red)";
+  if (tipo === "Gasto" || tipo === "CompraUSD" || tipo === "CompraEUR") c = "var(--red)";
   else if (tipo === "Move") c = "var(--yellow)";
   else if (tipo === "Ingreso") {
     if (categoria === "Ahorros" || categoria === "RESTO") c = "var(--blue)";
@@ -101,14 +102,6 @@ function TipoDot({ tipo, categoria }: { tipo: TipoMovimiento; categoria: string 
   return <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0, marginTop: 5 }} />;
 }
 
-const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = [
-  { t: "Gasto",     label: "Gasto",   color: "var(--red)" },
-  { t: "Ingreso",   label: "Ingreso", color: "var(--green)" },
-  { t: "Move",      label: "Move",    color: "var(--yellow)" },
-  { t: "CompraUSD", label: "+USD",    color: "var(--yellow)" },
-  { t: "GastoUSD",  label: "-USD",    color: "var(--yellow)" },
-];
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function MovimientosPage() {
   const { user } = useAuth();
@@ -116,6 +109,16 @@ export default function MovimientosPage() {
   const { movimientos, loading, refresh } = useAllMovimientos(user?.uid);
   const { config } = useConfig(user?.uid);
   const { cotizacion } = useCotizacion();
+  const { monedaInversiones } = useAppPrefs();
+  const esEURMode = monedaInversiones === "EUR";
+
+  const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = [
+    { t: "Gasto",                             label: "Gasto",   color: "var(--red)" },
+    { t: "Ingreso",                           label: "Ingreso", color: "var(--green)" },
+    { t: "Move",                              label: "Move",    color: "var(--yellow)" },
+    { t: esEURMode ? "CompraEUR" : "CompraUSD", label: esEURMode ? "+EUR" : "+USD", color: "var(--yellow)" },
+    { t: esEURMode ? "GastoEUR"  : "GastoUSD",  label: esEURMode ? "-EUR" : "-USD", color: "var(--yellow)" },
+  ];
 
   const periodos = agruparPorPeriodo(movimientos);
   const años = useMemo(() => Array.from(new Set(periodos.map(p => p.periodoId.split("/")[2] ?? ""))).filter(Boolean), [periodos]);
@@ -170,7 +173,12 @@ export default function MovimientosPage() {
   const esMove    = tipo === "Move";
   const esCompraUSD = tipo === "CompraUSD";
   const esGastoUSD  = tipo === "GastoUSD";
-  const esUSD     = esCompraUSD || esGastoUSD;
+  const esCompraEUR = tipo === "CompraEUR";
+  const esGastoEUR  = tipo === "GastoEUR";
+  const esCompraFX  = esCompraUSD || esCompraEUR;
+  const esGastoFX   = esGastoUSD  || esGastoEUR;
+  const esUSD       = esCompraFX  || esGastoFX;
+  const fxLabel     = esCompraEUR || esGastoEUR ? "EUR" : "USD";
   const tipoColor = TIPOS.find(tx => tx.t === tipo)?.color ?? "var(--accent)";
 
   // Fade del botón flotante: visible al cargar, desaparece tras 2.5s sin scroll
@@ -204,13 +212,13 @@ export default function MovimientosPage() {
     : [];
 
   const cotizActual = cotizManual ? parseFloat(cotizManual) : cotizacion?.blue ?? 0;
-  // GastoUSD: sólo USD, no ARS. CompraUSD: bidireccional USD↔ARS
-  const usdFinal = !esUSD ? 0 : esGastoUSD
+  // GastoFX: sólo divisa, no ARS. CompraFX: bidireccional divisa↔ARS
+  const usdFinal = !esUSD ? 0 : esGastoFX
     ? parseFloat(cantidadUSD || "0")
     : modoCarga === "USD"
     ? parseFloat(cantidadUSD || "0")
     : (cotizActual ? parseFloat(montoARSInput || "0") / cotizActual : 0);
-  const arsCompraUSD = !esCompraUSD ? 0 : modoCarga === "USD"
+  const arsCompraUSD = !esCompraFX ? 0 : modoCarga === "USD"
     ? parseFloat(cantidadUSD || "0") * cotizActual
     : parseFloat(montoARSInput || "0");
 
@@ -247,20 +255,20 @@ export default function MovimientosPage() {
     try {
       if (!user?.uid) throw new Error("No autenticado");
       if (!esMove && !esUSD && !categoria) throw new Error("Seleccioná una categoría");
-      const montoFinal = esCompraUSD ? arsCompraUSD : esGastoUSD ? 0 : parseFloat(monto);
-      if (!esGastoUSD && (!montoFinal || montoFinal <= 0)) throw new Error("Monto inválido");
-      if (esUSD && (!usdFinal || usdFinal <= 0)) throw new Error("Cantidad USD inválida");
+      const montoFinal = esCompraFX ? arsCompraUSD : esGastoFX ? 0 : parseFloat(monto);
+      if (!esGastoFX && (!montoFinal || montoFinal <= 0)) throw new Error("Monto inválido");
+      if (esUSD && (!usdFinal || usdFinal <= 0)) throw new Error(`Cantidad ${fxLabel} inválida`);
       if (!periodoActual) throw new Error("No hay período activo");
       await crearMovimiento(user.uid, {
         timestampCarga: new Date(), fecha, tipo,
-        categoria: esMove ? "Move" : esCompraUSD ? "CompraUSD" : esGastoUSD ? "GastoUSD" : categoria,
-        descripcion: esMove ? "Move a disponible" : esCompraUSD ? "Compra USD" : esGastoUSD ? "Gasto USD" : descripcion.trim(),
+        categoria: esMove ? "Move" : esCompraFX ? tipo : esGastoFX ? tipo : categoria,
+        descripcion: esMove ? "Move a disponible" : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : descripcion.trim(),
         monto: montoFinal,
-        medioPago: esMove || esCompraUSD ? "Mercado Pago" : esGastoUSD ? "—" : medioPago,
+        medioPago: esMove || esCompraFX ? "Mercado Pago" : esGastoFX ? "—" : medioPago,
         observaciones, periodoId: periodoActual.periodoId, userId: user.uid,
         ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
-        ...(esCompraUSD ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
-        ...(esGastoUSD ? { cantidadUSD: usdFinal } : {}),
+        ...(esCompraFX ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
+        ...(esGastoFX ? { cantidadUSD: usdFinal } : {}),
       });
       resetAdd(); closeModal(); refresh();
     } catch (err: unknown) {
@@ -364,7 +372,7 @@ export default function MovimientosPage() {
       ) : (
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           {movsFiltrados.map((m, i) => {
-            const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD";
+            const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
             return (
               <div key={m.id} style={{
                 display: "flex", alignItems: "flex-start", gap: 10, padding: "13px 14px",
@@ -403,7 +411,7 @@ export default function MovimientosPage() {
       aria-label="Nuevo movimiento"
       style={{
         position: "fixed",
-        bottom: "calc(var(--nav-h) + 14px)",
+        bottom: "calc(var(--nav-h) - 8px)",
         left: 0, right: 0, margin: "0 auto",
         width: 54, height: 54,
         borderRadius: "50%",
@@ -489,36 +497,40 @@ export default function MovimientosPage() {
               </div>
             )}
 
-            {esCompraUSD && (
+            {esCompraFX && (
               <div style={{ marginBottom: 18 }}>
-                {/* Modo de carga: ingresar en USD o en ARS */}
                 <div className="label">Ingresar en</div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                  {(["USD", "ARS"] as const).map(mo => (
-                    <button key={mo} type="button" onClick={() => setModoCarga(mo)} className="pill" style={{
+                  {([fxLabel, "ARS"] as const).map(mo => (
+                    <button key={mo} type="button" onClick={() => setModoCarga(mo === "ARS" ? "ARS" : "USD")} className="pill" style={{
                       flex: 1,
-                      borderColor: modoCarga === mo ? "var(--yellow)" : "var(--border)",
-                      background: modoCarga === mo ? "var(--yellow-dim)" : "transparent",
-                      color: modoCarga === mo ? "var(--yellow)" : "var(--muted)",
+                      borderColor: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow)" : "var(--border)",
+                      background: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow-dim)" : "transparent",
+                      color: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow)" : "var(--muted)",
                     }}>{mo}</button>
                   ))}
                 </div>
 
                 <div className="label">Cotización</div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
-                  {cotizacion ? (["blue", "oficial"] as const).map(t => (
-                    <button key={t} type="button" onClick={() => setCotizManual(String(cotizacion[t]))}
-                      className="pill" style={{
-                        borderColor: (cotizManual === String(cotizacion[t]) || (!cotizManual && t === "blue")) ? "var(--yellow)" : "var(--border)",
-                        background: (cotizManual === String(cotizacion[t]) || (!cotizManual && t === "blue")) ? "var(--yellow-dim)" : "transparent",
-                        color: (cotizManual === String(cotizacion[t]) || (!cotizManual && t === "blue")) ? "var(--yellow)" : "var(--muted)",
-                      }}>{t} ${cotizacion[t].toLocaleString("es-AR")}</button>
-                  )) : <span style={{ fontSize: 12, color: "var(--muted)" }}>Sin cotización</span>}
+                  {cotizacion ? (["blue", "oficial"] as const).map(t => {
+                    const val = esCompraEUR
+                      ? (t === "oficial" ? cotizacion.oficial_euro : cotizacion.blue_euro) ?? cotizacion[t]
+                      : cotizacion[t];
+                    return (
+                      <button key={t} type="button" onClick={() => setCotizManual(String(val))}
+                        className="pill" style={{
+                          borderColor: (cotizManual === String(val) || (!cotizManual && t === "blue")) ? "var(--yellow)" : "var(--border)",
+                          background: (cotizManual === String(val) || (!cotizManual && t === "blue")) ? "var(--yellow-dim)" : "transparent",
+                          color: (cotizManual === String(val) || (!cotizManual && t === "blue")) ? "var(--yellow)" : "var(--muted)",
+                        }}>{t} ${val.toLocaleString("es-AR")}</button>
+                    );
+                  }) : <span style={{ fontSize: 12, color: "var(--muted)" }}>Sin cotización</span>}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
-                    <div className="label">{modoCarga}</div>
+                    <div className="label">{modoCarga === "USD" ? fxLabel : "ARS"}</div>
                     {modoCarga === "USD" ? (
                       <input className="input" type="number" value={cantidadUSD} onChange={e => setCantidadUSD(e.target.value)} placeholder="0" />
                     ) : (
@@ -531,22 +543,22 @@ export default function MovimientosPage() {
                   </div>
                 </div>
 
-                <div className="label">{modoCarga === "USD" ? "Total ARS" : "Equivale a"}</div>
+                <div className="label">{modoCarga === "USD" ? "Total ARS" : `Equivale a ${fxLabel}`}</div>
                 <div style={{ padding: "12px 14px", background: "var(--yellow-dim)", border: "1px solid var(--yellow)33", borderRadius: "var(--radius-sm)", fontSize: 14, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
                   {modoCarga === "USD"
                     ? (arsCompraUSD > 0 ? formatARS(arsCompraUSD) : "—")
-                    : (usdFinal > 0 ? `U$D ${usdFinal.toFixed(2)}` : "—")}
+                    : (usdFinal > 0 ? `${fxLabel} ${usdFinal.toFixed(2)}` : "—")}
                 </div>
               </div>
             )}
 
-            {esGastoUSD && (
+            {esGastoFX && (
               <div style={{ marginBottom: 18 }}>
-                <div className="label">Cantidad USD gastada</div>
+                <div className="label">Cantidad {fxLabel} gastada</div>
                 <input className="input" type="number" value={cantidadUSD} onChange={e => setCantidadUSD(e.target.value)} placeholder="0" style={{ fontFamily: "var(--font-mono)" }} />
                 {usdFinal > 0 && (
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
-                    Total: U$D {usdFinal.toFixed(2)}
+                    Total: {fxLabel} {usdFinal.toFixed(2)}
                   </div>
                 )}
               </div>

@@ -24,8 +24,10 @@ CRUD completo de movimientos. Tipos soportados:
 | `Gasto` | Egreso en pesos |
 | `Ingreso` | Entrada de dinero (sueldo u otros) |
 | `Move` | Transferencia interna entre cuentas |
-| `CompraUSD` | Compra de divisas (registra cantidad USD + cotización) |
-| `GastoUSD` | Gasto en moneda extranjera |
+| `CompraUSD` | Compra de dólares (registra cantidad + cotización) |
+| `GastoUSD` | Gasto en dólares |
+| `CompraEUR` | Compra de euros (registra cantidad + cotización) |
+| `GastoEUR` | Gasto en euros |
 
 Cada movimiento tiene: fecha, categoría, descripción, monto, medio de pago, observaciones y período al que pertenece.
 
@@ -93,4 +95,4 @@ Vercel deploya automáticamente desde `main`. El rollback se hace desde el dashb
 
 ## Versión actual
 
-`v1.1.0` — ver [CHANGELOG.md](./CHANGELOG.md) para el historial completo.
+`v1.2.0` — ver [CHANGELOG.md](./CHANGELOG.md) para el historial completo.

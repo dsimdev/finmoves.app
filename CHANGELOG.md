@@ -5,6 +5,30 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.2.0] — 2026-06-07
+
+### Added
+- Soporte dual USD/EUR en Inversión: nuevos tipos `CompraEUR` / `GastoEUR`
+- Dos hero cards independientes (Reserva USD + Reserva EUR) con sus cotizaciones separadas
+- Cotización USD y EUR con selector independiente (podés tener oficial en uno y blue en el otro)
+- Título dinámico "Dólares | Euros" cuando hay datos de ambas monedas visibles
+- Eliminación de categorías, medios de pago y orígenes de ahorro con confirmación inline
+- Pills Gasto/Ingreso en lugar del select nativo al agregar categorías
+- Inputs de carga movidos al tope de cada lista (Categorías, Medios, Orígenes)
+- Botón "Guardar" inline en la tab Inversión de Config, visible solo con cambios pendientes
+
+### Changed
+- Toggles de Reportes y Movimientos guardan al instante (auto-save, sin botón flotante)
+- FAB de guardar eliminado — reemplazado por auto-save + botón inline en Inversión
+- Bug fix: estado de toggles de Reportes se perdía al navegar entre páginas
+- Bug fix: "Total ingresado" en Reportes/Ingresos ahora se oculta correctamente con KPIs
+- Bug fix: Reserva actual y monto objetivo en Config muestran la moneda correcta (USD o EUR)
+- FAB de nuevo movimiento reposicionado más cerca del navbar
+- Botón "ver más" del Dashboard con mismo estilo SVG que el FAB de Movimientos (en azul)
+- Mensaje de confirmación de guardado eliminado (solo aparece en caso de error)
+
+---
+
 ## [1.1.0] — 2026-06-07
 
 ### Added
