@@ -108,6 +108,13 @@ export function formatARS(n: number): string {
   return "$" + n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+export function formatMoney(n: number, moneda: "ARS" | "USD" | "EUR" = "ARS"): string {
+  const formatted = n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (moneda === "USD") return "U$D " + formatted;
+  if (moneda === "EUR") return "€" + formatted;
+  return "$" + formatted;
+}
+
 // Fecha corta para mostrar al lado de la categoría (el año ya está en el período)
 // "YYYY-MM-DD" → "dd/MM"  ·  también tolera "D/M/YYYY"
 export function fechaCorta(fecha: string): string {

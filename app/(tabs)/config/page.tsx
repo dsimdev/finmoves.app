@@ -57,7 +57,7 @@ export default function ConfigPage() {
   const router = useRouter();
 
   const { dark, toggle: toggleTheme } = useTheme();
-  const { showReportes, showAhorros, monedaInversiones, set: setPref, setMoneda } = useAppPrefs();
+  const { showReportes, showAhorros, monedaInversiones, monedaPrincipal, set: setPref, setMoneda, setMonedaPrincipal } = useAppPrefs();
   const TABS = ALL_TABS.filter((t) => {
     if (t.id === "reportes" && !showReportes) return false;
     if (t.id === "ahorros" && !showAhorros) return false;
@@ -199,6 +199,12 @@ export default function ConfigPage() {
       setMetaMonto(config.meta.metaMonto?.toString() ?? "");
     }
   }, [config?.meta.metaFecha, config?.meta.metaMonto]);
+
+  useEffect(() => {
+    if (config?.meta.monedaPrincipal) {
+      setMonedaPrincipal(config.meta.monedaPrincipal);
+    }
+  }, [config?.meta.monedaPrincipal]);
 
   // ── Helpers ──
   const saveConfig = async (newConfig: typeof config) => {
@@ -399,6 +405,29 @@ export default function ConfigPage() {
                 </div>
               </div>
             </div>
+            <div style={{ padding: "10px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: "var(--accent-dim)",
+                  border: "1px solid var(--accent)44",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
+                    {monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$"}
+                  </span>
+                </div>
+                <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda principal</div>
+                  <span className="badge" style={{
+                    background: "var(--accent-dim)",
+                    color: "var(--accent)",
+                    border: "1px solid var(--accent)44",
+                  }}>{monedaPrincipal}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="card">
@@ -526,7 +555,7 @@ export default function ConfigPage() {
                   flexShrink: 0,
                 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
-                    {monedaInversiones === "EUR" ? "€" : "$"}
+                    {monedaPrincipal === "USD" ? "€" : monedaPrincipal === "EUR" ? "U$D" : (monedaInversiones === "EUR" ? "€" : "$")}
                   </span>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -534,19 +563,25 @@ export default function ConfigPage() {
                     <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda de inversiones</div>
                     {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>meta activa</span>}
                   </div>
-                  {config?.meta.metaMonto ? (
-                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                      No se puede cambiar mientras haya una meta de ahorro activa.
-                    </div>
+                  {monedaPrincipal === "ARS" ? (
+                    config?.meta.metaMonto ? (
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                        No se puede cambiar mientras haya una meta de ahorro activa.
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {(["USD", "EUR"] as const).map((m) => (
+                          <button key={m} onClick={() => setMoneda(m)} className="pill" style={{
+                            borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)",
+                            background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent",
+                            color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)",
+                          }}>{m}</button>
+                        ))}
+                      </div>
+                    )
                   ) : (
-                    <div style={{ display: "flex", gap: 6 }}>
-                      {(["USD", "EUR"] as const).map((m) => (
-                        <button key={m} onClick={() => setMoneda(m)} className="pill" style={{
-                          borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)",
-                          background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent",
-                          color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)",
-                        }}>{m}</button>
-                      ))}
+                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                      {monedaPrincipal === "USD" ? "Inversión en EUR" : "Inversión en USD"}
                     </div>
                   )}
                 </div>

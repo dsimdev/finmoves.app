@@ -77,5 +77,6 @@ export interface ConfigUsuario {
     metaMonto?: number;
     metaPorPeriodo?: number;
     ahorrosAcumSeedPeriodoId?: string;
+    monedaPrincipal?: "ARS" | "USD" | "EUR";
   };
 }

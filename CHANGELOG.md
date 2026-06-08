@@ -5,6 +5,22 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.3.0] — 2026-06-07
+
+### Added
+- Moneda principal por cuenta: ARS / USD / EUR (almacenada en Firestore, default ARS)
+- `formatMoney(n, moneda)` — símbolo correcto según moneda (`$`, `U$D`, `€`)
+- Toda la app adapta automáticamente el símbolo de moneda sin cambios adicionales
+- Config > Cuenta muestra badge con la moneda principal seleccionada
+- Inversión: si moneda principal es USD solo puede invertir en EUR (y viceversa)
+- Movimientos: +/- FX excluye la moneda principal automáticamente
+
+### Changed
+- `monedaInversiones` solo visible para usuarios con moneda principal ARS
+- Para USD/EUR primary, la moneda de inversión es fija y no requiere selector
+
+---
+
 ## [1.2.0] — 2026-06-07
 
 ### Added

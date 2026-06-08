@@ -51,12 +51,16 @@ export default function DolaresPage() {
 
   useEffect(() => { refresh(); }, []);
   const { oculto, toggle, m: money } = useMoney();
-  const { monedaInversiones } = useAppPrefs();
+  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
 
   const [tipoCambioSelUSD, setTipoCambioSelUSD] = useState<"blue" | "oficial" | null>(null);
   const [tipoCambioSelEUR, setTipoCambioSelEUR] = useState<"blue" | "oficial" | null>(null);
 
-  const esEUR = monedaInversiones === "EUR";
+  const monedaInversionesEfectiva: "USD" | "EUR" =
+    monedaPrincipal === "USD" ? "EUR" :
+    monedaPrincipal === "EUR" ? "USD" :
+    monedaInversiones;
+  const esEUR = monedaInversionesEfectiva === "EUR";
   const simbolo = esEUR ? "€" : "U$D";
 
   const savedRef: "blue" | "oficial" = config?.meta.tipoCambioRef === "blue" ? "blue" : "oficial";

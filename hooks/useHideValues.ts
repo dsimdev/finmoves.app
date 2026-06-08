@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { formatARS } from "@/utils/periodo";
+import { formatARS, formatMoney } from "@/utils/periodo";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 
 const KEY = "finmoves_hide";
 export const MASK = "$ ••••";
@@ -35,6 +36,8 @@ export function useHideValues() {
 // Igual que useHideValues pero además expone m(): formatea ARS u oculta según el estado.
 export function useMoney() {
   const { oculto, toggle } = useHideValues();
-  const m = (n: number) => (oculto ? MASK : formatARS(n));
+  const { monedaPrincipal } = useAppPrefs();
+  const mask = monedaPrincipal === "USD" ? "U$D ••••" : monedaPrincipal === "EUR" ? "€ ••••" : "$ ••••";
+  const m = (n: number) => (oculto ? mask : formatMoney(n, monedaPrincipal));
   return { oculto, toggle, m };
 }

@@ -109,8 +109,12 @@ export default function MovimientosPage() {
   const { movimientos, loading, refresh } = useAllMovimientos(user?.uid);
   const { config } = useConfig(user?.uid);
   const { cotizacion } = useCotizacion();
-  const { monedaInversiones } = useAppPrefs();
-  const esEURMode = monedaInversiones === "EUR";
+  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
+  const monedaInversionesEfectiva: "USD" | "EUR" =
+    monedaPrincipal === "USD" ? "EUR" :
+    monedaPrincipal === "EUR" ? "USD" :
+    monedaInversiones;
+  const esEURMode = monedaInversionesEfectiva === "EUR";
 
   const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = [
     { t: "Gasto",                             label: "Gasto",   color: "var(--red)" },
