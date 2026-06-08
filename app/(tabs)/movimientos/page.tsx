@@ -21,14 +21,14 @@ const PencilIcon = () => (
   </svg>
 );
 const SaveIcon = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
     <path d="M8 3v5h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     <rect x="7.5" y="13" width="9" height="6" rx="1" stroke="currentColor" strokeWidth="1.7" />
   </svg>
 );
 const TrashIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
   </svg>
@@ -79,9 +79,8 @@ function Modal({ open, onClose, title, children }: {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <span style={{ fontSize: 16, fontWeight: 700 }}>{title}</span>
             <button onClick={onClose} style={{
-              background: "var(--surface-alt)", border: "none", color: "var(--muted)",
-              width: 32, height: 32, borderRadius: "50%", fontSize: 18, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+              background: "none", border: "none", color: "var(--red)",
+              fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4,
             }}>×</button>
           </div>
         </div>
@@ -171,6 +170,12 @@ export default function MovimientosPage() {
   const [eMedio, setEMedio] = useState("");
   const [eObs, setEObs] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  const isDirtyEdit = !!movSel && (
+    eMonto !== String(movSel.monto) ||
+    eDesc !== (movSel.descripcion ?? "") ||
+    eMedio !== (movSel.medioPago ?? "") ||
+    eObs !== (movSel.observaciones ?? "")
+  );
 
   const esSueldo  = tipo === "Ingreso" && categoria === "Sueldo";
   const esAhorros = tipo === "Ingreso" && categoria === "Ahorros";
@@ -225,6 +230,13 @@ export default function MovimientosPage() {
   const arsCompraUSD = !esCompraFX ? 0 : modoCarga === "USD"
     ? parseFloat(cantidadUSD || "0") * cotizActual
     : parseFloat(montoARSInput || "0");
+
+  const canSubmit = !!periodoActual && (
+    esGastoFX ? usdFinal > 0 :
+    esCompraFX ? usdFinal > 0 && arsCompraUSD > 0 :
+    esMove ? true :
+    !!categoria && parseFloat(monto || "0") > 0
+  );
 
   const movsFiltrados = useMemo(() =>
     [...(periodoActual?.movimientos ?? [])].sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime()),
@@ -609,9 +621,23 @@ export default function MovimientosPage() {
                 {addError}
               </div>
             )}
-            <button type="submit" disabled={addLoading} className="btn" style={{ width: "100%", background: "var(--green)", color: "var(--bg)" }}>
-              {addLoading ? "Guardando..." : "Confirmar"}
-            </button>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
+              <button type="submit" disabled={!canSubmit || addLoading} style={{
+                width: 56, height: 56, borderRadius: "50%",
+                background: canSubmit ? "var(--green)" : "transparent",
+                border: `2px solid ${canSubmit ? "var(--green)" : "var(--border)"}`,
+                color: canSubmit ? "var(--bg)" : "var(--border)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: canSubmit ? "pointer" : "default",
+                transition: "background 0.2s, border-color 0.2s, color 0.2s",
+                boxShadow: canSubmit ? "0 4px 20px var(--green)55" : "none",
+              }}>
+                {addLoading
+                  ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
+                  : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                }
+              </button>
+            </div>
           </form>
         )}
 
@@ -656,12 +682,14 @@ export default function MovimientosPage() {
               <input className="input" value={eObs} onChange={e => setEObs(e.target.value)} />
             </div>
 
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={handleEdit} disabled={editLoading} aria-label="Guardar" className="btn" style={{ flex: 1, background: "var(--green)", color: "var(--bg)" }}>
-                {editLoading ? "..." : <SaveIcon />}
-              </button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8, position: "relative", height: 48 }}>
+              {isDirtyEdit && (
+                <button onClick={handleEdit} disabled={editLoading} aria-label="Guardar" style={{ background: "none", border: "none", color: "var(--green)", cursor: editLoading ? "default" : "pointer", padding: 8, opacity: editLoading ? 0.5 : 1 }}>
+                  {editLoading ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg> : <SaveIcon />}
+                </button>
+              )}
               {!isLocked && (
-                <button onClick={() => setModal("delete")} aria-label="Eliminar" className="btn" style={{ flex: 1, background: "transparent", border: "1px solid var(--red)", color: "var(--red)" }}>
+                <button onClick={() => setModal("delete")} aria-label="Eliminar" style={{ position: "absolute", right: 0, background: "none", border: "none", color: "var(--red)", cursor: "pointer", padding: 8 }}>
                   <TrashIcon />
                 </button>
               )}
