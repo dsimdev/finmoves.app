@@ -5,6 +5,29 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.6.0] — 2026-06-08
+
+### Added
+- Confirmación de cierre de sesión (dos pasos)
+- Botón eliminar meta de ahorro (tacho rojo) en Config > Inversión
+- Dirty state en edición de movimientos: diskette solo se habilita con cambios
+
+### Changed
+- Config > Cuenta reordenado: Generales → Sincronización → Cuenta → App
+- Generales reordenado: Moneda principal → Inversión → Moneda de inversión → Reportes → Modo oscuro
+- "Preferencias generales" renombrado a "Generales"; "Moneda de inversiones" a "Moneda de inversión"
+- Botones + en Config: solo símbolo verde sin fondo
+- Botones ✕ en Config: solo X roja sin fondo
+- Botón Confirmar en nuevo movimiento: tilde centrado, verde cuando los campos están completos
+- Botones guardar/eliminar en edición de movimiento: íconos minimalistas (diskette verde, tacho rojo)
+- Tacho a la derecha, diskette centrado en edición de movimiento
+- X de cierre en modales: solo X roja sin fondo
+- Números en modal "Todas las descripciones": gradient azul→verde
+- LoadingSpinner: ring de colores orbita alrededor del logo, centrado en pantalla
+- Link GitHub actualizado a finmoves-app
+
+---
+
 ## [1.5.0] — 2026-06-07
 
 ### Added

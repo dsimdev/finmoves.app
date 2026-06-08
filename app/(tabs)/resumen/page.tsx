@@ -890,14 +890,13 @@ export default function ReportesPage() {
                 {modalTop === "gastos" ? "Top 20 gastos" : "Todas las descripciones"}
               </span>
               <button onClick={() => setModalTop(null)} style={{
-                background: "var(--surface-alt)", border: "none", width: 32, height: 32,
-                borderRadius: "50%", color: "var(--muted)", cursor: "pointer", fontSize: 18,
+                background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1,
               }}>×</button>
             </div>
             {modalTop === "descs" && descsModal.map((d, i) => (
               <div key={d.nombre} className="row" style={{ padding: "12px 0" }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-                  <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "var(--font-mono)", width: 14 }}>{i + 1}</span>
+                  <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", width: 14, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{i + 1}</span>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 13 }}>{d.nombre || "—"}</div>
                   </div>

@@ -76,6 +76,7 @@ export default function ConfigPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -657,22 +658,31 @@ export default function ConfigPage() {
           </div>
 
           <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
-            <button
-              onClick={async () => { await signOut(auth); router.push("/login"); }}
-              aria-label="Cerrar sesión"
-              style={{
+            {confirmLogout ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <button onClick={() => setConfirmLogout(false)} style={{
+                  background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
+                  color: "var(--muted)", fontSize: 13, padding: "8px 16px", cursor: "pointer",
+                }}>Cancelar</button>
+                <button onClick={async () => { await signOut(auth); router.push("/login"); }} style={{
+                  background: "var(--red-dim)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
+                  color: "var(--red)", fontSize: 13, fontWeight: 700, padding: "8px 16px", cursor: "pointer",
+                }}>Confirmar</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmLogout(true)} aria-label="Cerrar sesión" style={{
                 background: "transparent", border: "none", cursor: "pointer",
                 color: "var(--red)", display: "flex", alignItems: "center", justifyContent: "center",
                 width: 54, height: 54, borderRadius: "50%",
                 filter: "drop-shadow(0 2px 10px var(--red)88)",
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </button>
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -716,7 +726,7 @@ export default function ConfigPage() {
                   <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
                     placeholder="Nueva categoría" className="input" style={{ flex: 1 }} />
                   <button onClick={agregarCategoriaLocal}
-                    style={{ background: "var(--green)", color: "var(--bg)", border: "none", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                    style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>
                     +
                   </button>
                 </div>
@@ -732,7 +742,7 @@ export default function ConfigPage() {
                       </>
                     ) : (
                       <>
-                        <button onClick={() => setConfirmDelete(`cat_${c.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--muted)", lineHeight: 1, fontSize: 14, flexShrink: 0 }}>✕</button>
+                        <button onClick={() => setConfirmDelete(`cat_${c.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--red)", lineHeight: 1, fontSize: 12, flexShrink: 0 }}>✕</button>
                         <span style={{ fontSize: 12, color: c.activa ? "var(--text)" : "var(--muted)" }}>{c.nombre}</span>
                         <span className="badge" style={{
                           background: c.tipo === "Gasto" ? "var(--red-dim)" : "var(--green-dim)",
@@ -755,7 +765,7 @@ export default function ConfigPage() {
                 <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
                   placeholder="Nuevo medio" className="input" style={{ flex: 1 }} />
                 <button onClick={agregarMedioLocal}
-                  style={{ background: "var(--green)", color: "var(--bg)", border: "none", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>
                   +
                 </button>
               </div>
@@ -770,7 +780,7 @@ export default function ConfigPage() {
                       </>
                     ) : (
                       <>
-                        <button onClick={() => setConfirmDelete(`med_${m.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--muted)", lineHeight: 1, fontSize: 14, flexShrink: 0 }}>✕</button>
+                        <button onClick={() => setConfirmDelete(`med_${m.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--red)", lineHeight: 1, fontSize: 12, flexShrink: 0 }}>✕</button>
                         <span style={{ fontSize: 12, color: m.activo ? "var(--text)" : "var(--muted)" }}>{m.nombre}</span>
                       </>
                     )}
@@ -789,7 +799,7 @@ export default function ConfigPage() {
                 <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
                   placeholder="Nuevo origen" className="input" style={{ flex: 1 }} />
                 <button onClick={agregarOrigenLocal}
-                  style={{ background: "var(--green)", color: "var(--bg)", border: "none", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>
                   +
                 </button>
               </div>
@@ -804,7 +814,7 @@ export default function ConfigPage() {
                       </>
                     ) : (
                       <>
-                        <button onClick={() => setConfirmDelete(`ori_${o.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--muted)", lineHeight: 1, fontSize: 14, flexShrink: 0 }}>✕</button>
+                        <button onClick={() => setConfirmDelete(`ori_${o.nombre}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--red)", lineHeight: 1, fontSize: 12, flexShrink: 0 }}>✕</button>
                         <span style={{ fontSize: 12, color: o.activo ? "var(--text)" : "var(--muted)" }}>{o.nombre}</span>
                       </>
                     )}
@@ -874,16 +884,28 @@ export default function ConfigPage() {
               </div>
             </div>
 
-            {isDirtyAhorros && (
-              <button onClick={guardarMetaAhorro} disabled={guardando} style={{
-                width: "100%", padding: "13px 0", borderRadius: "var(--radius-sm)",
-                background: "var(--accent)", color: "#fff",
-                border: "none", fontSize: 13, fontWeight: 700, cursor: guardando ? "default" : "pointer",
-                opacity: guardando ? 0.6 : 1,
-              }}>
-                {guardando ? "Guardando…" : "Guardar"}
-              </button>
-            )}
+            <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 8 }}>
+              {(metaFecha || metaMonto) && (
+                <button onClick={async () => {
+                  if (!config) return;
+                  const newMeta = { ...config.meta };
+                  delete newMeta.metaFecha; delete newMeta.metaMonto; delete newMeta.metaPorPeriodo;
+                  await saveConfig({ ...config, meta: newMeta });
+                  setMetaFecha(""); setMetaMonto("");
+                }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", padding: 8 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
+              )}
+              {isDirtyAhorros && (
+                <button onClick={guardarMetaAhorro} disabled={guardando} style={{ background: "none", border: "none", cursor: guardando ? "default" : "pointer", color: "var(--green)", padding: 8, opacity: guardando ? 0.5 : 1 }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                </button>
+              )}
+            </div>
 
           </div>
         </div>
