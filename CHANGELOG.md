@@ -5,6 +5,19 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.4.0] — 2026-06-07
+
+### Added
+- Exportar movimientos a CSV desde Config > Cuenta (mismo formato que Google Sheets)
+- Logo GitHub con link al CHANGELOG en la card App de Configuraciones
+
+### Changed
+- Config > Preferencias generales reordenado: Modo oscuro → Moneda principal → Inversión → Moneda de inversiones → Reportes
+- Moneda principal movida de la card Cuenta a Preferencias generales
+- Barra y badge de disponible en Dashboard cambian de color dinámicamente (verde ≥50%, amarillo <50%, rojo <10%)
+
+---
+
 ## [1.3.0] — 2026-06-07
 
 ### Added

@@ -12,6 +12,7 @@ import { db, auth } from "@/services/firebase/firebase";
 import { signOut, getIdToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { ConfigUsuario } from "@/types";
+import { formatTimestampAR, isoToFechaAR } from "@/lib/sheet-format";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -222,6 +223,31 @@ export default function ConfigPage() {
     }
   };
 
+  const exportCSV = () => {
+    const header = ["Timestamp", "Fecha", "Tipo", "Categoría", "Descripción", "Monto", "Medio de Pago", "Observaciones", "Período"];
+    const rows = [...movimientos]
+      .sort((a, b) => a.timestampCarga.getTime() - b.timestampCarga.getTime())
+      .map(m => [
+        formatTimestampAR(m.timestampCarga),
+        isoToFechaAR(m.fecha),
+        m.tipo,
+        m.categoria,
+        m.descripcion ?? "",
+        m.monto,
+        m.medioPago ?? "",
+        m.observaciones ?? "",
+        m.periodoId,
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    const csv = [header.join(","), ...rows].join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `finmoves_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSync = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
@@ -386,13 +412,11 @@ export default function ConfigPage() {
           <div className="card">
             <div className="label">Cuenta</div>
             <div className="row" style={{ padding: "10px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
-                  background: "var(--surface-alt)",
-                  border: "1px solid var(--border)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
+                  background: "var(--surface-alt)", border: "1px solid var(--border)",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="8" r="4" stroke="var(--muted)" strokeWidth="1.7" />
@@ -404,29 +428,18 @@ export default function ConfigPage() {
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{user?.email}</div>
                 </div>
               </div>
-            </div>
-            <div style={{ padding: "10px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: "var(--accent-dim)",
-                  border: "1px solid var(--accent)44",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
-                    {monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$"}
-                  </span>
-                </div>
-                <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda principal</div>
-                  <span className="badge" style={{
-                    background: "var(--accent-dim)",
-                    color: "var(--accent)",
-                    border: "1px solid var(--accent)44",
-                  }}>{monedaPrincipal}</span>
-                </div>
-              </div>
+              <button onClick={exportCSV} title="Exportar CSV" style={{
+                background: "var(--surface-alt)", border: "1px solid var(--border)",
+                borderRadius: 10, width: 36, height: 36,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", flexShrink: 0, color: "var(--muted)",
+              }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -502,35 +515,32 @@ export default function ConfigPage() {
               </div>
               <Toggle activo={dark} onClick={toggleTheme} />
             </div>
-            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: showReportes ? "var(--green-dim)" : "var(--red-dim)",
-                  border: `1px solid ${showReportes ? "var(--green)44" : "var(--red)44"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="18" height="18" rx="2" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
-                    <path d="M3 9h18M9 3v18" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Reportes</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de reportes</div>
-                </div>
+
+            {/* Moneda principal */}
+            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: "var(--accent-dim)", border: "1px solid var(--accent)44",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
+                  {monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$"}
+                </span>
               </div>
-              <Toggle activo={showReportes} onClick={() => setPref("showReportes", !showReportes)} />
+              <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda principal</div>
+                <span className="badge" style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)44" }}>{monedaPrincipal}</span>
+              </div>
             </div>
+
+            {/* Inversión */}
             <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
                   background: showAhorros ? "var(--green-dim)" : "var(--red-dim)",
                   border: `1px solid ${showAhorros ? "var(--green)44" : "var(--red)44"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <polyline points="22 7 13.5 15.5 8.5 10.5 1 18" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -544,15 +554,15 @@ export default function ConfigPage() {
               </div>
               <Toggle activo={showAhorros} onClick={() => setPref("showAhorros", !showAhorros)} />
             </div>
+
+            {/* Moneda de inversiones */}
             {showAhorros && (
             <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
-                  background: "var(--yellow-dim)",
-                  border: "1px solid var(--yellow)44",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
+                  background: "var(--yellow-dim)", border: "1px solid var(--yellow)44",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
                     {monedaPrincipal === "USD" ? "€" : monedaPrincipal === "EUR" ? "U$D" : (monedaInversiones === "EUR" ? "€" : "$")}
@@ -565,9 +575,7 @@ export default function ConfigPage() {
                   </div>
                   {monedaPrincipal === "ARS" ? (
                     config?.meta.metaMonto ? (
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                        No se puede cambiar mientras haya una meta de ahorro activa.
-                      </div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>No se puede cambiar mientras haya una meta de ahorro activa.</div>
                     ) : (
                       <div style={{ display: "flex", gap: 6 }}>
                         {(["USD", "EUR"] as const).map((m) => (
@@ -588,13 +596,44 @@ export default function ConfigPage() {
               </div>
             </div>
             )}
+
+            {/* Reportes */}
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: showReportes ? "var(--green-dim)" : "var(--red-dim)",
+                  border: `1px solid ${showReportes ? "var(--green)44" : "var(--red)44"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="18" height="18" rx="2" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
+                    <path d="M3 9h18M9 3v18" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Reportes</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de reportes</div>
+                </div>
+              </div>
+              <Toggle activo={showReportes} onClick={() => setPref("showReportes", !showReportes)} />
+            </div>
           </div>
 
           <div className="card">
             <div className="label">App</div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "8px 0" }}>
               <img src="/logo5-cropped.png" alt="FinMoves" style={{ width: 100, borderRadius: 12, objectFit: "contain", flexShrink: 0 }} />
-              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>v{process.env.NEXT_PUBLIC_APP_VERSION}</div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>v{process.env.NEXT_PUBLIC_APP_VERSION}</div>
+                <a href="https://github.com/dsimdev/moves-app/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer"
+                  style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--muted)", textDecoration: "none", fontSize: 11 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--muted)">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                  </svg>
+                  changelog
+                </a>
+              </div>
             </div>
           </div>
 
