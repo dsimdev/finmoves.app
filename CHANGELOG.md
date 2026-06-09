@@ -1,188 +1,195 @@
 # Changelog
 
-Todos los cambios notables de FinMoves se documentan aquí.
-Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
+All notable changes to FinMoves are documented here.
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
+
+## [1.10.1] — 2026-06-08
+
+### Fixed
+- Reports and Dollars: header and content hidden during load, only spinner visible
 
 ---
 
 ## [1.10.0] — 2026-06-08
 
 ### Added
-- Nube de palabras en Reportes > Gastos: palabras de observaciones con tamaño proporcional a frecuencia y gradient azul→verde
+- Word cloud in Reports > Expenses: words from movement observations sized by frequency, blue→green gradient
 
 ### Changed
-- Cotización en nuevo movimiento +USD: oficial seleccionado por defecto
-- Toggle: knob blanco con sombra, glow en activo, animación spring
-- Cotización USD/EUR en dólares: contraste suave entre oficial y blue
+- Exchange rate in new +USD movement: official selected by default
+- Toggle: white knob with shadow, glow on active, spring animation
+- USD/EUR exchange rate in Dollars: softer contrast between official and blue
 
 ---
 
 ## [1.9.1] — 2026-06-08
 
 ### Changed
-- Botón editar (lápiz) en lista de movimientos: sin recuadro
-- Botón ocultar valores (ojo) en Dashboard: sin recuadro
+- Edit button (pencil) in movement list: no background box
+- Hide values button (eye) in Dashboard: no background box
 
 ---
 
 ## [1.9.0] — 2026-06-08
 
 ### Changed
-- Toggle redesñado: knob blanco con sombra, glow en activo, animación spring
-- Cotización USD/EUR: contraste entre oficial/blue más suave (mismo fondo, diferencia por borde y color)
-- Orden cotización en nuevo movimiento +USD: oficial primero, blue después
-- Barra "Meta por período": color amarillo
+- Toggle redesigned: white knob with shadow, glow on active, spring animation
+- USD/EUR exchange rate: softer contrast between official/blue (same background, differentiated by border and color)
+- Exchange rate order in new +USD movement: official first, blue second
+- "Goal per period" progress bar: yellow color
 
 ---
 
 ## [1.8.0] — 2026-06-08
 
 ### Added
-- Desactivar todas las pills de Reportes oculta la sección automáticamente (navbar + config)
-- Reactivar Reportes desde Generales resetea todas las pills a habilitadas
-- Redirige al tab Cuenta si el usuario estaba en Reportes al desactivarlo todo
+- Disabling all Reports pills automatically hides the section (navbar + config)
+- Re-enabling Reports from General settings resets all pills to enabled
+- Redirects to Account tab if user was in Reports when disabling all pills
 
 ### Changed
-- Botón guardar en Meta de Ahorro: tilde circular (igual que nuevo movimiento), tacho a la derecha
-- Botón guardar en Editar movimiento: tilde circular en vez de diskette
-- Barra de progreso "Meta por período": color amarillo (consistente con sección Inversión)
-- Dashboard y Movimientos: header y contenido ocultos durante carga, solo spinner visible
+- Save button in Savings Goal: circular checkmark (same as new movement), trash icon on the right
+- Save button in Edit movement: circular checkmark instead of floppy disk
+- "Goal per period" progress bar: yellow color (consistent with Investment section)
+- Dashboard and Movements: header and content hidden during load, only spinner visible
 
 ---
 
 ## [1.7.0] — 2026-06-08
 
 ### Fixed
-- Bug en carga de Ahorros: descripción mostraba "Ahorros" en vez del origen (ej. "Osansi")
-- Bug en edición de movimiento Ahorros: descripción aparecía vacía en el modal de edición
-- Fecha del formulario de nuevo movimiento usaba UTC en vez de hora local, causando salto de día a partir de las 21hs
-- Timestamps en toda la app convertidos a formato 24hs (sin AM/PM)
+- Savings movement bug: description showed "Ahorros" instead of origin name (e.g. "Osansi")
+- Edit modal for Savings movements: description appeared empty
+- New movement form date used UTC instead of local time, causing day rollover at 21:00
+- All timestamps across the app converted to 24h format (no AM/PM)
 
 ### Changed
-- Timestamp "Último movimiento" movido al Dashboard, debajo de "Últimos movimientos"
-- Gradients de fondo aplicados a: cards KPI del Dashboard, Últimos movimientos, card de movimientos, card Disponible (color dinámico según porcentaje)
+- "Last movement" timestamp moved to Dashboard, below "Latest movements"
+- Background gradients applied to: Dashboard KPI cards, Latest movements, movements list card, Available card (dynamic color by percentage)
 
 ---
 
 ## [1.6.0] — 2026-06-08
 
 ### Added
-- Confirmación de cierre de sesión (dos pasos)
-- Botón eliminar meta de ahorro (tacho rojo) en Config > Inversión
-- Dirty state en edición de movimientos: diskette solo se habilita con cambios
+- Two-step logout confirmation
+- Delete savings goal button (red trash) in Config > Investment
+- Dirty state in movement editing: save only enabled when there are changes
 
 ### Changed
-- Config > Cuenta reordenado: Generales → Sincronización → Cuenta → App
-- Generales reordenado: Moneda principal → Inversión → Moneda de inversión → Reportes → Modo oscuro
-- "Preferencias generales" renombrado a "Generales"; "Moneda de inversiones" a "Moneda de inversión"
-- Botones + en Config: solo símbolo verde sin fondo
-- Botones ✕ en Config: solo X roja sin fondo
-- Botón Confirmar en nuevo movimiento: tilde centrado, verde cuando los campos están completos
-- Botones guardar/eliminar en edición de movimiento: íconos minimalistas (diskette verde, tacho rojo)
-- Tacho a la derecha, diskette centrado en edición de movimiento
-- X de cierre en modales: solo X roja sin fondo
-- Números en modal "Todas las descripciones": gradient azul→verde
-- LoadingSpinner: ring de colores orbita alrededor del logo, centrado en pantalla
-- Link GitHub actualizado a finmoves-app
+- Config sections reordered: General → Sync → Account → App
+- General section reordered: Main currency → Investment → Investment currency → Reports → Dark mode
+- "General preferences" renamed to "General"; "Investment currencies" to "Investment currency"
+- + buttons in Config: green symbol only, no background
+- ✕ buttons in Config: red X only, no background
+- Confirm button in new movement: centered checkmark, green when required fields are filled
+- Save/delete buttons in movement editing: minimalist icons (green floppy, red trash)
+- Trash on the right, floppy centered in movement editing
+- Modal close button: red X only, no background
+- Numbers in "All descriptions" modal: blue→green gradient
+- LoadingSpinner: colored ring orbits around logo, centered on screen
+- GitHub link updated to finmoves-app
 
 ---
 
 ## [1.5.0] — 2026-06-07
 
 ### Added
-- Modal de changelog en Config > App — sin salir de la app
-- Logo GitHub (izquierda del logo FinMoves) con link al repositorio
+- Changelog modal in Config > App — without leaving the app
+- GitHub logo (left of FinMoves logo) with link to repository
 
 ### Changed
-- El link "changelog" abre modal inline en lugar de redirigir a GitHub
+- The "changelog" link opens an inline modal instead of redirecting to GitHub
 
 ---
 
 ## [1.4.0] — 2026-06-07
 
 ### Added
-- Exportar movimientos a CSV desde Config > Cuenta (mismo formato que Google Sheets)
-- Logo GitHub con link al CHANGELOG en la card App de Configuraciones
+- Export movements to CSV from Config > Account (same format as Google Sheets)
+- GitHub logo with link to CHANGELOG in the App card of Settings
 
 ### Changed
-- Config > Preferencias generales reordenado: Modo oscuro → Moneda principal → Inversión → Moneda de inversiones → Reportes
-- Moneda principal movida de la card Cuenta a Preferencias generales
-- Barra y badge de disponible en Dashboard cambian de color dinámicamente (verde ≥50%, amarillo <50%, rojo <10%)
+- Config > General preferences reordered: Dark mode → Main currency → Investment → Investment currency → Reports
+- Main currency moved from Account card to General preferences
+- Available bar and badge in Dashboard change color dynamically (green ≥50%, yellow <50%, red <10%)
 
 ---
 
 ## [1.3.0] — 2026-06-07
 
 ### Added
-- Moneda principal por cuenta: ARS / USD / EUR (almacenada en Firestore, default ARS)
-- `formatMoney(n, moneda)` — símbolo correcto según moneda (`$`, `U$D`, `€`)
-- Toda la app adapta automáticamente el símbolo de moneda sin cambios adicionales
-- Config > Cuenta muestra badge con la moneda principal seleccionada
-- Inversión: si moneda principal es USD solo puede invertir en EUR (y viceversa)
-- Movimientos: +/- FX excluye la moneda principal automáticamente
+- Main currency per account: ARS / USD / EUR (stored in Firestore, default ARS)
+- `formatMoney(n, currency)` — correct symbol based on currency (`$`, `U$D`, `€`)
+- Entire app adapts currency symbol automatically without additional changes
+- Config > Account shows badge with selected main currency
+- Investment: if main currency is USD, can only invest in EUR (and vice versa)
+- Movements: +/- FX automatically excludes the main currency
 
 ### Changed
-- `monedaInversiones` solo visible para usuarios con moneda principal ARS
-- Para USD/EUR primary, la moneda de inversión es fija y no requiere selector
+- `investmentCurrency` only visible for users with ARS as main currency
+- For USD/EUR primary, investment currency is fixed and requires no selector
 
 ---
 
 ## [1.2.0] — 2026-06-07
 
 ### Added
-- Soporte dual USD/EUR en Inversión: nuevos tipos `CompraEUR` / `GastoEUR`
-- Dos hero cards independientes (Reserva USD + Reserva EUR) con sus cotizaciones separadas
-- Cotización USD y EUR con selector independiente (podés tener oficial en uno y blue en el otro)
-- Título dinámico "Dólares | Euros" cuando hay datos de ambas monedas visibles
-- Eliminación de categorías, medios de pago y orígenes de ahorro con confirmación inline
-- Pills Gasto/Ingreso en lugar del select nativo al agregar categorías
-- Inputs de carga movidos al tope de cada lista (Categorías, Medios, Orígenes)
-- Botón "Guardar" inline en la tab Inversión de Config, visible solo con cambios pendientes
+- Dual USD/EUR support in Investment: new types `CompraEUR` / `GastoEUR`
+- Two independent hero cards (USD Reserve + EUR Reserve) with separate exchange rates
+- USD and EUR exchange rates with independent selector (can have official on one and blue on the other)
+- Dynamic title "Dollars | Euros" when data for both currencies is visible
+- Delete categories, payment methods and savings origins with inline confirmation
+- Expense/Income pills instead of native select when adding categories
+- Input fields moved to top of each list (Categories, Methods, Origins)
+- Inline "Save" button in Investment tab of Config, visible only with pending changes
 
 ### Changed
-- Toggles de Reportes y Movimientos guardan al instante (auto-save, sin botón flotante)
-- FAB de guardar eliminado — reemplazado por auto-save + botón inline en Inversión
-- Bug fix: estado de toggles de Reportes se perdía al navegar entre páginas
-- Bug fix: "Total ingresado" en Reportes/Ingresos ahora se oculta correctamente con KPIs
-- Bug fix: Reserva actual y monto objetivo en Config muestran la moneda correcta (USD o EUR)
-- FAB de nuevo movimiento reposicionado más cerca del navbar
-- Botón "ver más" del Dashboard con mismo estilo SVG que el FAB de Movimientos (en azul)
-- Mensaje de confirmación de guardado eliminado (solo aparece en caso de error)
+- Reports and Movements toggles save instantly (auto-save, no floating button)
+- Save FAB removed — replaced by auto-save + inline button in Investment
+- Bug fix: Reports toggle state was lost when navigating between pages
+- Bug fix: "Total income" in Reports/Income now hides correctly with KPIs
+- Bug fix: Current reserve and goal amount in Config show the correct currency (USD or EUR)
+- New movement FAB repositioned closer to navbar
+- Dashboard "see more" button with same SVG style as Movements FAB (in blue)
+- Save confirmation message removed (only appears on error)
 
 ---
 
 ## [1.1.0] — 2026-06-07
 
 ### Added
-- Íconos en cada fila de Preferencias generales: Usuario, Sincronización, Reportes, Inversión y Moneda
-- Ícono de Reportes e Inversión con borde verde (activo) o rojo (inactivo)
-- Ícono de Moneda muestra `$` o `€` según la divisa seleccionada
-- Ícono de Sincronización refleja el estado: verde si synced, rojo si error, gris si nunca sincronizado
-- Navbar: iconos activos con gradiente azul→verde según posición (casita = azul, tuerca = verde)
-- Navbar: fondo adapta al tema — claro en light mode, oscuro en dark mode
+- Icons in each row of General preferences: User, Sync, Reports, Investment and Currency
+- Reports and Investment icon with green border (active) or red (inactive)
+- Currency icon shows `$` or `€` based on selected currency
+- Sync icon reflects status: green if synced, red if error, grey if never synced
+- Navbar: active icons with blue→green gradient based on position (home = blue, gear = green)
+- Navbar: background adapts to theme — light in light mode, dark in dark mode
 
 ### Changed
-- "Inversiones" renombrado a "Inversión" en toda la app (navbar, config, reportes, sección dólares)
-- Título de la sección dólares cambia dinámicamente: "Dólares" o "Euros" según moneda configurada
-- Todas las cards de la página Inversión con gradiente amarillo (Cotización, Meta por período, Meta de ahorro, Historial)
-- Cotización seleccionada resaltada con gradiente amarillo y texto amarillo
-- Orden de cotización: Oficial primero, Blue segundo
-- Color accent cambiado de cyan (`#00b4ff`) a azul (`#3f52e8`) — más contraste en light mode
-- Pills de Configuraciones en estilo outlined (borde + dim), consistente con el resto de la app
+- "Inversiones" renamed to "Investment" throughout the app (navbar, config, reports, dollars section)
+- Dollars section title changes dynamically: "Dollars" or "Euros" based on configured currency
+- All cards in the Investment page with yellow gradient (Exchange rate, Goal per period, Savings goal, History)
+- Selected exchange rate highlighted with yellow gradient and yellow text
+- Exchange rate order: Official first, Blue second
+- Accent color changed from cyan (`#00b4ff`) to blue (`#3f52e8`) — better contrast in light mode
+- Settings pills in outlined style (border + dim), consistent with the rest of the app
 
 ---
 
 ## [1.0.0] — 2026-06-06
 
 ### Added
-- Autenticación con Firebase (email/password)
-- Dashboard con resumen del período activo: disponible, barra de gasto y últimos movimientos
-- Registro de movimientos: Gasto, Ingreso, Move, CompraUSD, GastoUSD
-- Sección Inversión: reserva USD/EUR, cotización blue/oficial, meta de ahorro, historial de compras
-- Sección Reportes con toggles por sección: KPIs de gastos, ingresos, períodos y tendencias
-- Configuraciones: categorías, medios de pago, orígenes de ahorro, preferencias generales
-- Light mode por defecto con toggle a dark mode (sin flash en carga)
-- Sincronización con Google Sheets (espejo completo + rotación de hasta 5 backups)
-- Preferencias persistidas en localStorage vía Zustand: modo, sección Reportes, sección Inversión, moneda
-- PWA: instalable desde el navegador
-- Versión visible en la sección App de Configuraciones, auto-generada desde `package.json`
+- Firebase authentication (email/password)
+- Dashboard with active period summary: available, expense bar and latest movements
+- Movement tracking: Expense, Income, Move, BuyUSD, SpendUSD
+- Investment section: USD/EUR reserve, blue/official exchange rate, savings goal, purchase history
+- Reports section with toggles per section: expense, income, period and trend KPIs
+- Settings: categories, payment methods, savings origins, general preferences
+- Light mode by default with dark mode toggle (no flash on load)
+- Google Sheets sync (full mirror + rotation of up to 5 backups)
+- Preferences persisted in localStorage via Zustand: mode, Reports section, Investment section, currency
+- PWA: installable from the browser
+- Version visible in the App section of Settings, auto-generated from `package.json`

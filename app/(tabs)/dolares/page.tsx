@@ -101,17 +101,15 @@ export default function DolaresPage() {
   const metaUSD = config?.meta.metaPorPeriodo ?? config?.meta.usdMensual ?? 400;
 
   return (
-    <div className="page fade-up">
-
-      <div style={{ marginBottom: 24 }}>
-        <div className="label" style={{ marginBottom: 2 }}>Inversión</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{showUSD && showEUR ? "Dólares | Euros" : esEUR ? "Euros" : "Dólares"}</div>
-      </div>
-
+    <div className="page">
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <>
+        <div className="fade-up">
+          <div style={{ marginBottom: 24 }}>
+            <div className="label" style={{ marginBottom: 2 }}>Inversión</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{showUSD && showEUR ? "Dólares | Euros" : esEUR ? "Euros" : "Dólares"}</div>
+          </div>
           {/* ── SECCIÓN USD ── */}
           {showUSD && (<>
           <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
@@ -348,7 +346,7 @@ export default function DolaresPage() {
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

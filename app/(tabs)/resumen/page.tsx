@@ -303,40 +303,29 @@ export default function ReportesPage() {
 
   return (
     <div className="page">
-      <div style={{ marginBottom: 18 }}>
-        <div className="label fade-up-1" style={{ marginBottom: 2 }}>Análisis</div>
-        <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reportes</div>
-      </div>
-
-      {/* Sub-tabs */}
-      <div className="subtabs">
-        {SUBS.map((s) => {
-          const isActive = sub === s.id;
-          const tabColor = s.id === "gastos" ? "var(--red)" : s.id === "ingresos" ? "var(--green)" : "var(--blue)";
-          const tabDim   = s.id === "gastos" ? "var(--red-dim)" : s.id === "ingresos" ? "var(--green-dim)" : "var(--blue-dim)";
-          return (
-            <button
-              key={s.id}
-              onClick={() => setSub(s.id)}
-              className="subtab"
-              style={isActive ? {
-                background: `linear-gradient(135deg, var(--surface-alt) 0%, ${tabDim} 100%)`,
-                color: tabColor,
-                border: `1px solid ${tabColor}44`,
-              } : {}}
-            >
-              {s.label}
-            </button>
-          );
-        })}
-      </div>
-
       {loading ? (
         <LoadingSpinner />
       ) : periodos.length === 0 ? (
         <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>No hay movimientos.</div>
       ) : (
         <div key={sub} className="fade-up">
+          <div style={{ marginBottom: 18 }}>
+            <div className="label" style={{ marginBottom: 2 }}>Análisis</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reportes</div>
+          </div>
+          <div className="subtabs" style={{ marginBottom: 0 }}>
+            {SUBS.map((s) => {
+              const isActive = sub === s.id;
+              const tabColor = s.id === "gastos" ? "var(--red)" : s.id === "ingresos" ? "var(--green)" : "var(--blue)";
+              const tabDim   = s.id === "gastos" ? "var(--red-dim)" : s.id === "ingresos" ? "var(--green-dim)" : "var(--blue-dim)";
+              return (
+                <button key={s.id} onClick={() => setSub(s.id)} className="subtab"
+                  style={isActive ? { background: `linear-gradient(135deg, var(--surface-alt) 0%, ${tabDim} 100%)`, color: tabColor, border: `1px solid ${tabColor}44` } : {}}>
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
           {/* Selector de período — agrupado por año, multi-select con long press */}
           {sub !== "tendencias" && (() => {
             const subColor = sub === "gastos" ? "var(--red)" : sub === "ingresos" ? "var(--green)" : "var(--blue)";

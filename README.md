@@ -1,98 +1,96 @@
 # FinMoves
 
-Gestor de finanzas personales para Argentina. Registrá movimientos, seguí tu inversión en dólares y analizá tus tendencias por período.
+Personal finance manager for Argentina. Track movements, monitor your dollar investment and analyze trends by period.
 
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript)
-- **Firebase** — Auth (email/password) + Firestore (base de datos en tiempo real)
-- **Zustand** — estado global persistido en localStorage
-- **Tailwind v4** — estilos con CSS variables propias
-- **Google Sheets** — espejo opcional de los movimientos
-- **Vercel** — deploy automático desde `main`
+- **Firebase** — Auth (email/password) + Firestore (real-time database)
+- **Zustand** — global state persisted in localStorage
+- **Tailwind v4** — styles with custom CSS variables
+- **Google Sheets** — optional mirror of movements
+- **Vercel** — automatic deploy from `main`
 
-## Secciones
+## Sections
 
-### Inicio — Dashboard
-Resumen del período activo: disponible vs sueldo, barra de progreso de gasto, últimos movimientos y ahorros acumulados totales.
+### Home — Dashboard
+Active period summary: available vs salary, expense progress bar, latest movements and total accumulated savings.
 
-### Movimientos
-CRUD completo de movimientos. Tipos soportados:
+### Movements
+Full CRUD for movements. Supported types:
 
-| Tipo | Descripción |
+| Type | Description |
 |------|-------------|
-| `Gasto` | Egreso en pesos |
-| `Ingreso` | Entrada de dinero (sueldo u otros) |
-| `Move` | Transferencia interna entre cuentas |
-| `CompraUSD` | Compra de dólares (registra cantidad + cotización) |
-| `GastoUSD` | Gasto en dólares |
-| `CompraEUR` | Compra de euros (registra cantidad + cotización) |
-| `GastoEUR` | Gasto en euros |
+| `Gasto` | Expense in ARS |
+| `Ingreso` | Income (salary or other) |
+| `Move` | Internal transfer between accounts |
+| `CompraUSD` | USD purchase (records amount + exchange rate) |
+| `GastoUSD` | USD expense |
+| `CompraEUR` | EUR purchase (records amount + exchange rate) |
+| `GastoEUR` | EUR expense |
 
-Cada movimiento tiene: fecha, categoría, descripción, monto, medio de pago, observaciones y período al que pertenece.
+Each movement has: date, category, description, amount, payment method, notes and the period it belongs to.
 
-### Inversión
-Seguimiento de reserva en USD o EUR:
-- Reserva total y precio promedio de compra
-- Ganancia/pérdida en ARS sobre la inversión
-- Cotización blue y oficial en tiempo real (con fallback a cache)
-- Meta de ahorro con fecha objetivo y progreso
-- Meta mensual por período
-- Historial de compras
+### Investment
+USD or EUR reserve tracking:
+- Total reserve and average purchase price
+- ARS gain/loss on investment
+- Blue and official exchange rates in real time (with cache fallback)
+- Savings goal with target date and progress
+- Monthly goal per period
+- Purchase history
 
-### Reportes
-Análisis por período con toggles configurables por sección:
-- **Gastos**: KPIs (total, promedio, ritmo diario), por categoría, por descripción, por medio de pago, por fecha, comparativa entre períodos
-- **Ingresos**: total ingresado, por categoría, detalle de orígenes
-- **Períodos**: serie histórica, KPIs comparativos
-- **Tendencias**: proyección de gastos, evolución del sueldo, proyección de ahorros en USD, progreso de meta
+### Reports
+Period analysis with configurable toggles per section:
+- **Expenses**: KPIs (total, average, daily pace), by category, by description, by payment method, by date, period comparison
+- **Income**: total income, by category, origin breakdown
+- **Periods**: historical series, comparative KPIs
+- **Trends**: expense projection, salary evolution, USD savings projection, goal progress
 
-### Configuraciones
-- Categorías, medios de pago y orígenes de ahorro (CRUD)
-- Preferencias: modo oscuro/claro, habilitar sección Reportes, habilitar sección Inversión
-- Moneda de inversiones: USD o EUR
-- Sincronización manual con Google Sheets
+### Settings
+- Categories, payment methods and savings origins (CRUD)
+- Preferences: dark/light mode, enable Reports section, enable Investment section
+- Investment currency: USD or EUR
+- Manual sync with Google Sheets
 
-## Períodos
+## Periods
 
-Los movimientos se agrupan en períodos con fecha de inicio/fin y sueldo declarado. El período activo es la unidad de análisis principal. Los KPIs de Reportes comparan períodos entre sí.
+Movements are grouped into periods with a start/end date and declared salary. The active period is the main unit of analysis. Report KPIs compare periods against each other.
 
-## Sincronización con Google Sheets
+## Google Sheets Sync
 
-La app es la fuente de verdad. Al sincronizar, sobreescribe la hoja `Movimientos` del spreadsheet configurado, manteniendo hasta 5 backups automáticos como pestañas nombradas por fecha (hora Argentina).
+The app is the source of truth. On sync, it overwrites the `Movimientos` sheet of the configured spreadsheet, keeping up to 5 automatic backups as tabs named by date (Argentina time).
 
-## Tema
+## Theme
 
-Light mode por defecto, con toggle a dark. Las variables de color se aplican sin flash via script inline en `<head>`. Sin dependencia de librerías de tema.
+Light mode by default, with dark mode toggle. Color variables are applied without flash via inline script in `<head>`. No theme library dependency.
 
-## Variables de entorno
+## Environment Variables
 
-| Variable | Descripción |
+| Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_FIREBASE_*` | Configuración pública de Firebase |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | Service account de Firebase Admin (para API routes) |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | Service account de Google Sheets |
-| `GOOGLE_SPREADSHEET_ID` | ID del spreadsheet destino |
-| `NEXT_PUBLIC_APP_VERSION` | Auto-generada desde `package.json` vía `next.config.ts` |
+| `NEXT_PUBLIC_FIREBASE_*` | Firebase public configuration |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Admin service account (for API routes) |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Google Sheets service account |
+| `GOOGLE_SPREADSHEET_ID` | Target spreadsheet ID |
+| `NEXT_PUBLIC_APP_VERSION` | Auto-generated from `package.json` via `next.config.ts` |
 
 ## Deploy
 
 ```bash
-# Desarrollo local
+# Local development
 npm run dev
 
-# Release a producción
-git checkout dev
-# ... cambios ...
-git commit && git push origin dev
+# Release to production
 git checkout main
-git merge --no-ff dev -m "Merge dev → main: vX.X.X"
+# ... changes ...
+git commit && git push origin main
 git tag vX.X.X
-git push origin main --tags && git push origin dev
+git push origin main --tags
 ```
 
-Vercel deploya automáticamente desde `main`. El rollback se hace desde el dashboard de Vercel o con `git reset --hard vX.X.X` + force push.
+Vercel deploys automatically from `main`. Rollback via Vercel dashboard or `git reset --hard vX.X.X` + force push.
 
-## Versión actual
+## Current Version
 
-`v1.10.0` — ver [CHANGELOG.md](./CHANGELOG.md) para el historial completo.
+`v1.10.1` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.
