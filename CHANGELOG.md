@@ -1,7 +1,20 @@
 # Changelog
 
 All notable changes to FinMoves are documented here.
-Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
+
+## [1.10.3] — 2026-06-08
+
+### Changed
+- Word cloud in Reports: limited to top 25 words
+
+---
+
+## [1.10.2] — 2026-06-08
+
+### Fixed
+- Reports: restored spacing between section tabs and period pills
 
 ---
 

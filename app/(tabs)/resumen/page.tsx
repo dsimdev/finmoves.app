@@ -177,7 +177,7 @@ export default function ReportesPage() {
     const max = Math.max(...freq.values());
     return Array.from(freq.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 40)
+      .slice(0, 25)
       .map(([word, count]) => ({ word, count, size: 11 + Math.round((count / max) * 18) }));
   }, [periodo]);
 
