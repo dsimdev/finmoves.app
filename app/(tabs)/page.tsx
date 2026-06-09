@@ -46,20 +46,6 @@ export default function Dashboard() {
   return (
     <div className="page">
 
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <div className="label fade-up-1" style={{ marginBottom: 2 }}>Inicio</div>
-          <div className="fade-up-2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Dashboard</div>
-        </div>
-        {p && (
-          <div className="fade-up-2" style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>Período</div>
-            <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{p.periodoId}</div>
-          </div>
-        )}
-      </div>
-
       {loading ? (
         <LoadingSpinner />
       ) : !p ? (
@@ -68,6 +54,18 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="fade-up">
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <div>
+              <div className="label" style={{ marginBottom: 2 }}>Inicio</div>
+              <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Dashboard</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>Período</div>
+              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{p.periodoId}</div>
+            </div>
+          </div>
+
           {/* Hero */}
           <div className="soft" style={{ borderColor: `${barColor}44`, marginBottom: 12, background: `linear-gradient(135deg, var(--surface) 0%, ${barColorDim} 100%)` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>

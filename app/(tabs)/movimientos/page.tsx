@@ -20,13 +20,6 @@ const PencilIcon = () => (
     <path d="M13.5 6.5l3 3" stroke="currentColor" strokeWidth="1.7" />
   </svg>
 );
-const SaveIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-    <path d="M8 3v5h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    <rect x="7.5" y="13" width="9" height="6" rx="1" stroke="currentColor" strokeWidth="1.7" />
-  </svg>
-);
 const TrashIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -320,62 +313,60 @@ export default function MovimientosPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-    <div className="page fade-up">
+    <div className="page">
 
-      <div style={{ marginBottom: 20 }}>
-        <div className="label" style={{ marginBottom: 2 }}>Gestión</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Movimientos</div>
-        {periodoActual && (
-          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-            Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
-            <button onClick={toggle} aria-label="Ocultar valores" style={{
-              background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
-              width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
-            }}>
-              <EyeIcon off={oculto} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Períodos */}
-      {/* Pills año */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 8, overflowX: "auto", scrollbarWidth: "none" }}>
-        {años.map(año => (
-          <button key={año} onClick={() => { setAñoSel(año); setPeriodoSel(null); }} style={{
-            flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
-            border: `1px solid ${añoActivo === año ? "var(--blue)" : "var(--border)"}`,
-            background: añoActivo === año ? "var(--blue-dim)" : "transparent",
-            color: añoActivo === año ? "var(--blue)" : "var(--muted)",
-            transition: "all 0.15s",
-          }}>{año}</button>
-        ))}
-      </div>
-      {/* Pills período */}
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2, scrollbarWidth: "none" }}>
-        {periodosDelAño.map(p => {
-          const isSelected = activePeriodoId === p.periodoId;
-          const [d, m] = p.periodoId.split("/");
-          return (
-            <button key={p.periodoId} onClick={() => setPeriodoSel(p.periodoId)} style={{
-              flexShrink: 0, padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer",
-              border: `1px solid ${isSelected ? "var(--green)" : "var(--border)"}`,
-              background: isSelected ? "var(--green-dim)" : "transparent",
-              color: isSelected ? "var(--green)" : "var(--muted)",
-              transition: "all 0.15s",
-            }}>{d}/{m}</button>
-          );
-        })}
-      </div>
-
-      {/* Lista */}
       {loading ? (
         <LoadingSpinner />
-      ) : movsFiltrados.length === 0 ? (
-        <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
-          No hay movimientos. Usá + para agregar.
-        </div>
       ) : (
+        <div className="fade-up">
+          <div style={{ marginBottom: 20 }}>
+            <div className="label" style={{ marginBottom: 2 }}>Gestión</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Movimientos</div>
+            {periodoActual && (
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
+                <button onClick={toggle} aria-label="Ocultar valores" style={{
+                  background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
+                  width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
+                }}>
+                  <EyeIcon off={oculto} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: 4, marginBottom: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+            {años.map(año => (
+              <button key={año} onClick={() => { setAñoSel(año); setPeriodoSel(null); }} style={{
+                flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
+                border: `1px solid ${añoActivo === año ? "var(--blue)" : "var(--border)"}`,
+                background: añoActivo === año ? "var(--blue-dim)" : "transparent",
+                color: añoActivo === año ? "var(--blue)" : "var(--muted)",
+                transition: "all 0.15s",
+              }}>{año}</button>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2, scrollbarWidth: "none" }}>
+            {periodosDelAño.map(p => {
+              const isSelected = activePeriodoId === p.periodoId;
+              const [d, m] = p.periodoId.split("/");
+              return (
+                <button key={p.periodoId} onClick={() => setPeriodoSel(p.periodoId)} style={{
+                  flexShrink: 0, padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                  border: `1px solid ${isSelected ? "var(--green)" : "var(--border)"}`,
+                  background: isSelected ? "var(--green-dim)" : "transparent",
+                  color: isSelected ? "var(--green)" : "var(--muted)",
+                  transition: "all 0.15s",
+                }}>{d}/{m}</button>
+              );
+            })}
+          </div>
+
+          {movsFiltrados.length === 0 ? (
+            <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
+              No hay movimientos. Usá + para agregar.
+            </div>
+          ) : (
         <div className="card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
           {movsFiltrados.map((m, i) => {
             const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
@@ -407,12 +398,14 @@ export default function MovimientosPage() {
             );
           })}
         </div>
+          )}
+        </div>
       )}
 
     </div>
 
     {/* Botón flotante — fijo sobre el navbar, se oculta tras inactividad */}
-    <button
+    {!loading && <button
       onClick={openAdd}
       aria-label="Nuevo movimiento"
       style={{
@@ -437,7 +430,7 @@ export default function MovimientosPage() {
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
-    </button>
+    </button>}
 
     {/* ── MODAL ÚNICO — fuera del div animado para evitar stacking context ── */}
     <Modal open={modal !== null} onClose={closeModal} title={modalTitle}>
@@ -678,12 +671,23 @@ export default function MovimientosPage() {
               <input className="input" value={eObs} onChange={e => setEObs(e.target.value)} />
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8, position: "relative", height: 48 }}>
-              {isDirtyEdit && (
-                <button onClick={handleEdit} disabled={editLoading} aria-label="Guardar" style={{ background: "none", border: "none", color: "var(--green)", cursor: editLoading ? "default" : "pointer", padding: 8, opacity: editLoading ? 0.5 : 1 }}>
-                  {editLoading ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg> : <SaveIcon />}
-                </button>
-              )}
+            <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", height: 56, marginTop: 8 }}>
+              <button onClick={handleEdit} disabled={!isDirtyEdit || editLoading} aria-label="Guardar" style={{
+                width: 56, height: 56, borderRadius: "50%",
+                background: isDirtyEdit ? "var(--green)" : "transparent",
+                border: `2px solid ${isDirtyEdit ? "var(--green)" : "var(--border)"}`,
+                color: isDirtyEdit ? "var(--bg)" : "var(--border)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: isDirtyEdit ? "pointer" : "default",
+                transition: "background 0.2s, border-color 0.2s, color 0.2s",
+                boxShadow: isDirtyEdit ? "0 4px 20px var(--green)55" : "none",
+                opacity: editLoading ? 0.5 : 1,
+              }}>
+                {editLoading
+                  ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
+                  : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                }
+              </button>
               {!isLocked && (
                 <button onClick={() => setModal("delete")} aria-label="Eliminar" style={{ position: "absolute", right: 0, background: "none", border: "none", color: "var(--red)", cursor: "pointer", padding: 8 }}>
                   <TrashIcon />

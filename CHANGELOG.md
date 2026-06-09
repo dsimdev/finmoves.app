@@ -5,6 +5,21 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.8.0] — 2026-06-08
+
+### Added
+- Desactivar todas las pills de Reportes oculta la sección automáticamente (navbar + config)
+- Reactivar Reportes desde Generales resetea todas las pills a habilitadas
+- Redirige al tab Cuenta si el usuario estaba en Reportes al desactivarlo todo
+
+### Changed
+- Botón guardar en Meta de Ahorro: tilde circular (igual que nuevo movimiento), tacho a la derecha
+- Botón guardar en Editar movimiento: tilde circular en vez de diskette
+- Barra de progreso "Meta por período": color amarillo (consistente con sección Inversión)
+- Dashboard y Movimientos: header y contenido ocultos durante carga, solo spinner visible
+
+---
+
 ## [1.7.0] — 2026-06-08
 
 ### Fixed

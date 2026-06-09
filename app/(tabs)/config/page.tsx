@@ -66,6 +66,9 @@ export default function ConfigPage() {
     return true;
   });
   const [tab, setTab] = useState<Tab>("cuenta");
+  useEffect(() => {
+    if (!showReportes && tab === "reportes") setTab("cuenta");
+  }, [showReportes, tab]);
   const [guardando, setGuardando] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoTipo, setNuevoTipo] = useState<"Gasto" | "Ingreso">("Gasto");
@@ -371,6 +374,8 @@ export default function ConfigPage() {
       if (next[id] === false) delete next[id];
       else next[id] = false;
       saveReportes(next);
+      const allOff = REPORTES_TOGGLES.every(r => next[r.id] === false);
+      if (allOff) setPref("showReportes", false);
       return next;
     });
   };
@@ -529,7 +534,16 @@ export default function ConfigPage() {
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de reportes</div>
                 </div>
               </div>
-              <Toggle activo={showReportes} onClick={() => setPref("showReportes", !showReportes)} />
+              <Toggle activo={showReportes} onClick={() => {
+                const next = !showReportes;
+                setPref("showReportes", next);
+                if (next) {
+                  const reset: Record<string, boolean> = {};
+                  REPORTES_TOGGLES.forEach(r => { reset[r.id] = true; });
+                  saveReportes(reset);
+                  setLocalReportes(reset);
+                }
+              }} />
             </div>
 
             {/* Theme mode */}
@@ -884,7 +898,23 @@ export default function ConfigPage() {
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 8 }}>
+            <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", height: 56, marginTop: 8 }}>
+              <button onClick={guardarMetaAhorro} disabled={!isDirtyAhorros || guardando} style={{
+                width: 56, height: 56, borderRadius: "50%",
+                background: isDirtyAhorros ? "var(--green)" : "transparent",
+                border: `2px solid ${isDirtyAhorros ? "var(--green)" : "var(--border)"}`,
+                color: isDirtyAhorros ? "var(--bg)" : "var(--border)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: isDirtyAhorros ? "pointer" : "default",
+                transition: "background 0.2s, border-color 0.2s, color 0.2s",
+                boxShadow: isDirtyAhorros ? "0 4px 20px var(--green)55" : "none",
+                opacity: guardando ? 0.5 : 1,
+              }}>
+                {guardando
+                  ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
+                  : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                }
+              </button>
               {(metaFecha || metaMonto) && (
                 <button onClick={async () => {
                   if (!config) return;
@@ -892,16 +922,9 @@ export default function ConfigPage() {
                   delete newMeta.metaFecha; delete newMeta.metaMonto; delete newMeta.metaPorPeriodo;
                   await saveConfig({ ...config, meta: newMeta });
                   setMetaFecha(""); setMetaMonto("");
-                }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", padding: 8 }}>
+                }} style={{ position: "absolute", right: 0, background: "none", border: "none", cursor: "pointer", color: "var(--red)", padding: 8 }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                  </svg>
-                </button>
-              )}
-              {isDirtyAhorros && (
-                <button onClick={guardarMetaAhorro} disabled={guardando} style={{ background: "none", border: "none", cursor: guardando ? "default" : "pointer", color: "var(--green)", padding: 8, opacity: guardando ? 0.5 : 1 }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
                   </svg>
                 </button>
               )}

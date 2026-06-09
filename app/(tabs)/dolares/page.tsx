@@ -268,7 +268,7 @@ export default function DolaresPage() {
             <div className="progress-track">
               <div className="progress-fill" style={{
                 width: `${Math.min((totalDisplay / metaUSD) * 100, 100)}%`,
-                background: totalDisplay >= metaUSD ? "var(--green)" : "var(--accent)",
+                background: totalDisplay >= metaUSD ? "var(--green)" : "var(--yellow)",
               }} />
             </div>
           </div>
