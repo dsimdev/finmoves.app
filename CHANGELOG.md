@@ -5,6 +5,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.10.0] — 2026-06-08
+
+### Added
+- Nube de palabras en Reportes > Gastos: palabras de observaciones con tamaño proporcional a frecuencia y gradient azul→verde
+
+### Changed
+- Cotización en nuevo movimiento +USD: oficial seleccionado por defecto
+- Toggle: knob blanco con sombra, glow en activo, animación spring
+- Cotización USD/EUR en dólares: contraste suave entre oficial y blue
+
+---
+
 ## [1.9.1] — 2026-06-08
 
 ### Changed

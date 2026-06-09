@@ -160,6 +160,27 @@ export default function ReportesPage() {
   })() : null;
   const catMasCrecio = comp.filter((c) => c.deltaPct !== null && c.deltaPct > 0).sort((a, b) => (b.deltaPct ?? 0) - (a.deltaPct ?? 0))[0] ?? null;
 
+  const wordCloud = useMemo(() => {
+    if (!periodo) return [];
+    const STOP = new Set(["de","la","el","en","un","una","los","las","con","por","para","del","al","y","a","que","se","es","su","le","lo","como","más","mas","pero","fue","este","esta","esta","son","ya","mi","me","si"]);
+    const freq = new Map<string, number>();
+    for (const m of periodo.movimientos) {
+      const text = (m.observaciones ?? "").trim();
+      if (!text) continue;
+      for (const raw of text.toLowerCase().split(/\s+/)) {
+        const w = raw.replace(/[^a-záéíóúüñ0-9]/gi, "");
+        if (w.length < 3 || STOP.has(w)) continue;
+        freq.set(w, (freq.get(w) ?? 0) + 1);
+      }
+    }
+    if (freq.size === 0) return [];
+    const max = Math.max(...freq.values());
+    return Array.from(freq.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 40)
+      .map(([word, count]) => ({ word, count, size: 11 + Math.round((count / max) * 18) }));
+  }, [periodo]);
+
   // ── Ingresos ──
   // Ingresos a disponible (Sueldo + Extras). Moves son transferencias internas.
   const movIngresos = periodo
@@ -528,6 +549,30 @@ export default function ReportesPage() {
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por día</div>
                   <VBars max={Math.max(...porFecha.map((f) => f.monto), 1)} oculto={oculto} data={porFecha.map((f) => ({ label: sinAño(f.nombre), value: f.monto, color: "var(--red)" }))} />
+                </div>
+              )}
+
+              {/* Nube de palabras */}
+              {wordCloud.length > 0 && (
+                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Observaciones</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 14px", alignItems: "baseline", lineHeight: 1.3 }}>
+                    {wordCloud.map(({ word, count, size }, i) => {
+                      const t = wordCloud.length > 1 ? i / (wordCloud.length - 1) : 0;
+                      const r = Math.round(83 + (0 - 83) * t);
+                      const g = Math.round(109 + (230 - 109) * t);
+                      const b = Math.round(254 + (118 - 254) * t);
+                      return (
+                        <span key={word} title={`${count}×`} style={{
+                          fontSize: size,
+                          fontWeight: size > 22 ? 700 : size > 17 ? 600 : 400,
+                          color: `rgb(${r},${g},${b})`,
+                          letterSpacing: -0.2,
+                          cursor: "default",
+                        }}>{word}</span>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </>
