@@ -281,11 +281,24 @@ export default function ReportesPage() {
     ? (cotizacion?.oficial_euro ?? null)
     : (cotizacion?.oficial ?? null);
   const simBoloInv = monedaInversiones === "EUR" ? "€" : "U$D";
-  const ahorrosAcumActual = serie.length > 0 ? serie[serie.length - 1]!.ahorrosAcum : 0;
+
+  // Reserva real en FX — suma cantidadUSD de CompraUSD/GastoUSD (igual que página Inversión)
+  const tipoCompraFX = monedaInversiones === "EUR" ? "CompraEUR" : "CompraUSD";
+  const tipoGastoFX  = monedaInversiones === "EUR" ? "GastoEUR"  : "GastoUSD";
+  const SALDO_INICIAL = monedaInversiones === "EUR" ? 0 : 5.77;
+  const reservaFX = useMemo(() => {
+    let total = SALDO_INICIAL;
+    for (const m of movimientos) {
+      if (m.tipo === tipoCompraFX && m.cantidadUSD) total += m.cantidadUSD;
+      else if (m.tipo === tipoGastoFX && m.cantidadUSD) total -= m.cantidadUSD;
+    }
+    return Math.max(0, total);
+  }, [movimientos, tipoCompraFX, tipoGastoFX]);
+
   const metaMonto = config?.meta.metaMonto;
-  const progresoMeta = metaMonto && cotizActual ? progresoMetaUSD(ahorrosAcumActual, metaMonto, cotizActual) : null;
+  const progresoMeta = metaMonto && cotizActual ? progresoMetaUSD(reservaFX * cotizActual, metaMonto, cotizActual) : null;
   const periodosParaMetaMonto = metaMonto && cotizActual ? periodosParaMetaUSD(serie, metaMonto, cotizActual) : null;
-  const ahorrosEnUSD = cotizActual && ahorrosAcumActual > 0 ? ahorrosAcumActual / cotizActual : null;
+  const ahorrosEnUSD = reservaFX > 0 ? reservaFX : null;
   const promAhorroUSD = cotizActual && serie.length > 0
     ? (serie.reduce((s, p) => s + Math.max(0, p.ahorros), 0) / serie.length) / cotizActual : null;
   const proyUSD = cotizActual && serie.length >= 2 ? proyectarAhorros(serie, 3) / cotizActual : null;

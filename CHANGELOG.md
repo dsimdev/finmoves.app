@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.10.4] — 2026-06-09
+
+### Fixed
+- Reports > Trends: savings in USD now reads from real CompraUSD/GastoUSD movements instead of ARS savings series — fixes 0% progress and wrong values
+
+---
+
 ## [1.10.3] — 2026-06-08
 
 ### Changed
