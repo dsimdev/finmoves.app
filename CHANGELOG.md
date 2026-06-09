@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.11.0] — 2026-06-09
+
+### Added
+- Salary raise history modal in Reports > Trends: tap "Salary evolution" card to see each raise (date, from → to, %)
+
+### Changed
+- Dashboard: "Extras" renamed to "Retiros" (yellow, subtitle "desde ahorros"); available % now calculated over total income (salary + extras); last movement shows time only (no date); period label shows date without year
+- Movements: Move amounts shown in yellow in the list
+- Investment: "Goal per period" value in yellow
+- Reports > Periods: "Extras" renamed to "Retiros" with yellow color and "desde ahorros" subtitle
+- Reports > Trends: Salary evolution compares against the previous salary level (before last raise), not the historical average
+
+---
+
 ## [1.10.4] — 2026-06-09
 
 ### Fixed
