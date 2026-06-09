@@ -370,6 +370,7 @@ export default function MovimientosPage() {
         <div className="card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
           {movsFiltrados.map((m, i) => {
             const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
+            const isMove = m.tipo === "Move";
             return (
               <div key={m.id} style={{
                 display: "flex", alignItems: "flex-start", gap: 10, padding: "13px 14px",
@@ -385,7 +386,7 @@ export default function MovimientosPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : "var(--green)", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : isMove ? "var(--yellow)" : "var(--green)", fontFamily: "var(--font-mono)" }}>
                     {isGasto ? "-" : "+"}{money(m.monto)}
                   </span>
                   <button onClick={() => openEdit(m)} aria-label="Editar" style={{

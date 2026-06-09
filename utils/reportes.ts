@@ -238,20 +238,45 @@ export function promedioAhorroPeriodo(periodos: PeriodoResumen[]): number {
 
 export function evolucionSueldo(
   periodos: PeriodoResumen[]
-): { ultimo: number; promedio: number; delta: number; deltaPct: number | null; esVacaciones: boolean } | null {
+): { ultimo: number; anterior: number | null; delta: number; deltaPct: number | null; esVacaciones: boolean } | null {
   if (periodos.length < 2) return null;
   const ultimo = periodos[0]!.sueldo;
-  // Promedio excluyendo períodos de vacaciones (sueldo < 50% del max)
   const maxSueldo = Math.max(...periodos.map((p) => p.sueldo));
-  const normales = periodos.slice(1).filter((p) => p.sueldo >= maxSueldo * 0.5);
-  const promedio = normales.length > 0
-    ? normales.reduce((s, p) => s + p.sueldo, 0) / normales.length
-    : periodos[periodos.length - 1]!.sueldo;
-  // Si el período actual tiene sueldo < 50% del máximo, probablemente son vacaciones
-  const esVacaciones = ultimo < maxSueldo * 0.5;
-  const delta = ultimo - promedio;
-  const deltaPct = promedio > 0 ? Math.round((delta / promedio) * 100) : null;
-  return { ultimo, promedio, delta, deltaPct, esVacaciones };
+  const esVac = (s: number) => s < maxSueldo * 0.5;
+  const esVacaciones = esVac(ultimo);
+  // Referencia: período anterior más reciente que no sea vacaciones ni tenga el mismo sueldo
+  const refPeriodo = periodos.slice(1).find((p) => !esVac(p.sueldo) && p.sueldo !== ultimo);
+  const anterior = refPeriodo?.sueldo ?? null;
+  const delta = anterior !== null ? ultimo - anterior : 0;
+  const deltaPct = anterior ? Math.round((delta / anterior) * 100) : null;
+  return { ultimo, anterior, delta, deltaPct, esVacaciones };
+}
+
+export function historialSueldo(
+  periodos: PeriodoResumen[]
+): { cuando: string; de: number; a: number; pct: number }[] {
+  if (periodos.length < 2) return [];
+  const maxSueldo = Math.max(...periodos.map((p) => p.sueldo));
+  const esVac = (s: number) => s < maxSueldo * 0.5;
+  const nonVac = periodos.filter((p) => !esVac(p.sueldo));
+  if (nonVac.length < 2) return [];
+  // Niveles salariales distintos en orden cronológico (oldest first)
+  const chron = [...nonVac].reverse();
+  const levels: { sueldo: number; periodoId: string }[] = [];
+  for (const p of chron) {
+    if (levels.length === 0 || levels[levels.length - 1].sueldo !== p.sueldo) {
+      levels.push({ sueldo: p.sueldo, periodoId: p.periodoId });
+    }
+  }
+  if (levels.length < 2) return [];
+  // Eventos de aumento (newest first), solo subidas
+  const events: { cuando: string; de: number; a: number; pct: number }[] = [];
+  for (let i = levels.length - 1; i >= 1; i--) {
+    const de = levels[i - 1].sueldo;
+    const a = levels[i].sueldo;
+    if (a > de) events.push({ cuando: levels[i].periodoId, de, a, pct: Math.round(((a - de) / de) * 100) });
+  }
+  return events;
 }
 
 export function gastoPromedioHistorico(serie: PuntoTendencia[]): number {

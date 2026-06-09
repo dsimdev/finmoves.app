@@ -251,7 +251,7 @@ export default function DolaresPage() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <div>
                 <div className="label" style={{ marginBottom: 4 }}>Meta por período</div>
-                <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--yellow)" }}>
                   {simbolo} {oculto ? "••" : totalDisplay.toFixed(0)} <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 400, fontFamily: "var(--font)" }}>/ {metaUSD}</span>
                 </div>
               </div>

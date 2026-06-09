@@ -11,7 +11,7 @@ import {
   gastosPorMedioPago, gastosPorDescripcion, gastosPorFecha,
   kpisPeriodo, ritmoGasto, comparativaCategorias,
   serieTendencia, parsePeriodoId, diasSinGastos,
-  evolucionSueldo, proyectarAhorros,
+  evolucionSueldo, historialSueldo, proyectarAhorros,
   progresoMetaUSD, periodosParaMetaUSD,
 } from "@/utils/reportes";
 import { useCotizacion } from "@/hooks/useCotizacion";
@@ -107,6 +107,7 @@ export default function ReportesPage() {
   const [sub, setSub] = useState<Sub>("gastos");
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
   const [modalTop, setModalTop] = useState<"gastos" | "descs" | null>(null);
+  const [modalSueldo, setModalSueldo] = useState(false);
   const [proyPeriodos, setProyPeriodos] = useState(6);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggered = useRef(false);
@@ -247,6 +248,7 @@ export default function ReportesPage() {
 
   // ── Estadísticas avanzadas ──
   const evolSueldo = evolucionSueldo(periodos);
+  const suelHistorial = useMemo(() => historialSueldo(periodos), [periodos]);
 
   // ── Tendencias ──
   const seedPeriodoId = config?.meta.ahorrosAcumSeedPeriodoId;
@@ -720,7 +722,7 @@ export default function ReportesPage() {
               {reportOn("periodos_kpis") && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <Stat label="Sueldo" value={money(periodo.sueldo)} color="var(--green)" dimVar="var(--green-dim)" />
-                <Stat label="Extras" value={periodo.extras > 0 ? money(periodo.extras) : "—"} color="var(--green)" dimVar="var(--green-dim)" />
+                <Stat label="Retiros" value={periodo.extras > 0 ? money(periodo.extras) : "—"} sub="desde ahorros" color="var(--yellow)" dimVar="var(--yellow-dim)" />
                 <Stat label="Gastado" value={money(periodo.gastado)} sub={`${periodo.pct}%`} color={colorPct(periodo.pct)} danger={periodo.pct > 100} dimVar={periodo.pct > 90 ? "var(--red-dim)" : periodo.pct > 50 ? "var(--yellow-dim)" : "var(--green-dim)"} />
                 <Stat label={periodo.periodoId === periodos[0]?.periodoId ? "Disponible" : "Resto"} value={money(periodo.disponible)} color={periodo.disponible >= 0 ? "var(--green)" : "var(--red)"} dimVar={periodo.disponible >= 0 ? "var(--green-dim)" : "var(--red-dim)"} />
                 <Stat label="Ahorros acum." value={ahorrosAcumPeriodo > 0 ? money(ahorrosAcumPeriodo) : "—"} color="var(--blue)" dimVar="var(--blue-dim)" />
@@ -807,7 +809,7 @@ export default function ReportesPage() {
                 <div style={{ flex: 1, height: 1, background: "var(--faint)" }} />
               </div>
               {evolSueldo && (
-                <div className="soft" style={{ marginBottom: 12, background: evolSueldo.esVacaciones ? "linear-gradient(135deg, var(--surface), var(--yellow-dim))" : evolSueldo.delta >= 0 ? "linear-gradient(135deg, var(--surface), var(--green-dim))" : "linear-gradient(135deg, var(--surface), var(--surface-alt))", borderColor: evolSueldo.esVacaciones ? "var(--yellow)33" : evolSueldo.delta >= 0 ? "var(--green)33" : "var(--border)" }}>
+                <div className="soft" onClick={suelHistorial.length > 0 ? () => setModalSueldo(true) : undefined} style={{ marginBottom: 12, cursor: suelHistorial.length > 0 ? "pointer" : undefined, background: evolSueldo.esVacaciones ? "linear-gradient(135deg, var(--surface), var(--yellow-dim))" : evolSueldo.delta >= 0 ? "linear-gradient(135deg, var(--surface), var(--green-dim))" : "linear-gradient(135deg, var(--surface), var(--surface-alt))", borderColor: evolSueldo.esVacaciones ? "var(--yellow)33" : evolSueldo.delta >= 0 ? "var(--green)33" : "var(--border)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                     <div style={{ fontSize: 11, color: "var(--muted)" }}>Evolución sueldo</div>
                     {evolSueldo.esVacaciones && <span className="badge" style={{ background: "var(--yellow-dim)", color: "var(--yellow)", border: "1px solid var(--yellow)44", fontSize: 9 }}>VACACIONES</span>}
@@ -815,14 +817,14 @@ export default function ReportesPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                     <div>
                       <div style={{ fontSize: 22, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)", letterSpacing: -0.5 }}>{money(evolSueldo.ultimo)}</div>
-                      <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>Prom. normal: {money(evolSueldo.promedio)}</div>
+                      {evolSueldo.anterior !== null && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>Anterior: {money(evolSueldo.anterior)}</div>}
                     </div>
                     {!evolSueldo.esVacaciones && evolSueldo.deltaPct !== null && (
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: 14, fontWeight: 700, color: evolSueldo.delta >= 0 ? "var(--green)" : "var(--red)", fontFamily: "var(--font-mono)" }}>
                           {evolSueldo.delta >= 0 ? "+" : ""}{evolSueldo.deltaPct}%
                         </div>
-                        <div style={{ fontSize: 10, color: "var(--muted)" }}>vs promedio</div>
+                        <div style={{ fontSize: 10, color: "var(--muted)" }}>vs anterior</div>
                       </div>
                     )}
                   </div>
@@ -919,6 +921,35 @@ export default function ReportesPage() {
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* Modal: Historial de aumentos de sueldo */}
+      {modalSueldo && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 200,
+          display: "flex", alignItems: "flex-end", overflow: "hidden",
+        }} onClick={() => setModalSueldo(false)}>
+          <div style={{
+            width: "100%", background: "var(--bg)", borderRadius: "20px 20px 0 0",
+            padding: "20px 20px 40px", overflowY: "auto",
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 16, fontWeight: 700 }}>Historial de aumentos</span>
+              <button onClick={() => setModalSueldo(false)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
+            </div>
+            {suelHistorial.map((ev, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < suelHistorial.length - 1 ? "1px solid var(--faint)" : "none" }}>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 4 }}>{ev.cuando}</div>
+                  <div style={{ fontSize: 13, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>
+                    {money(ev.de)} → {money(ev.a)}
+                  </div>
+                </div>
+                <span style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)" }}>+{ev.pct}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

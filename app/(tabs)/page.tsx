@@ -38,8 +38,7 @@ export default function Dashboard() {
   const p = periodos[0];
   const ahorrosAcum = serie.length ? serie[serie.length - 1].ahorrosAcum : 0;
   const ultimos = p?.movimientos.slice(0, 6) ?? [];
-  // % disponible sobre el sueldo del período (cuánto queda, no lo gastado)
-  const pctDisp = p && p.sueldo > 0 ? Math.round((p.disponible / p.sueldo) * 100) : 0;
+  const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
   const barColorDim = pctDisp < 10 ? "var(--red-dim)" : pctDisp < 50 ? "var(--yellow-dim)" : "var(--green-dim)";
 
@@ -62,7 +61,7 @@ export default function Dashboard() {
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>Período</div>
-              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{p.periodoId}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{fechaCorta(p.periodoId)}</div>
             </div>
           </div>
 
@@ -99,11 +98,12 @@ export default function Dashboard() {
               { label: "Gastado", value: money(p.gastado), color: "var(--red)" },
               { label: "Ahorros", value: money(ahorrosAcum), color: "var(--blue)" },
               { label: "Sueldo", value: money(p.sueldo), color: "var(--green)" },
-              { label: "Extras", value: p.extras > 0 ? money(p.extras) : "—", color: "var(--green)" },
+              { label: "Retiros", value: p.extras > 0 ? money(p.extras) : "—", sub: "desde ahorros", color: "var(--yellow)" },
             ].map((k) => (
               <div key={k.label} className="soft" style={{ padding: 15, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7 }}>{k.label}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontFamily: "var(--font-mono)" }}>{k.value}</div>
+                {"sub" in k && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{k.sub}</div>}
               </div>
             ))}
           </div>
@@ -114,7 +114,7 @@ export default function Dashboard() {
               <div style={{ fontSize: 13, fontWeight: 600 }}>Últimos movimientos</div>
               {ultimoCargado && (
                 <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
-                  Último: {new Date(ultimoCargado).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}
+                  Último: {new Date(ultimoCargado).toLocaleString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}
                 </div>
               )}
             </div>
