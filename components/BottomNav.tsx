@@ -43,7 +43,7 @@ const TABS = [
     ),
   },
   {
-    href: "/dolares",
+    href: "/inversion",
     key: "ahorros",
     icon: ({ active, color, dim }: IconProps) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">

@@ -30,8 +30,8 @@ const ALL_TABS: { id: Tab; label: string }[] = [
 const SECCION_LABEL: Record<string, string> = {
   gastos: "Gastos",
   ingresos: "Ingresos",
+  movimientos: "Movimientos",
   periodos: "Períodos",
-  tendencias: "Tendencias",
 };
 
 function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
@@ -849,7 +849,7 @@ export default function ConfigPage() {
       {/* ── REPORTES ── */}
       {tab === "reportes" && (
         <div key="reportes" className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {(["gastos", "ingresos", "periodos"] as const).map((sec) => (
+          {(["gastos", "ingresos", "movimientos", "periodos"] as const).map((sec) => (
             <div key={sec} className="card">
               <div className="label">{SECCION_LABEL[sec]}</div>
               {REPORTES_TOGGLES.filter((r) => r.seccion === sec).map((r) => (
@@ -860,15 +860,6 @@ export default function ConfigPage() {
               ))}
             </div>
           ))}
-          <div className="card">
-            <div className="label">Tendencias</div>
-            {REPORTES_TOGGLES.filter((r) => r.seccion === "tendencias").map((r) => (
-              <div key={r.id} className="row">
-                <span style={{ fontSize: 13, color: localIsEnabled(r.id) ? "var(--text)" : "var(--muted)" }}>{r.label}</span>
-                <Toggle activo={localIsEnabled(r.id)} onClick={() => toggleLocalReporte(r.id)} />
-              </div>
-            ))}
-          </div>
         </div>
       )}
 

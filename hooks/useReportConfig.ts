@@ -5,19 +5,18 @@ import { useState, useEffect, useCallback } from "react";
 export interface ReporteToggle {
   id: string;
   label: string;
-  seccion: "gastos" | "ingresos" | "periodos" | "tendencias";
+  seccion: "gastos" | "ingresos" | "movimientos" | "periodos";
 }
 
 export const REPORTES_TOGGLES: ReporteToggle[] = [
-  { id: "gastos_kpis",            label: "KPIs",       seccion: "gastos" },
-  { id: "gastos_otros",           label: "Otros datos", seccion: "gastos" },
-  { id: "ingresos_kpis",          label: "KPIs",       seccion: "ingresos" },
-  { id: "ingresos_otros",         label: "Otros datos", seccion: "ingresos" },
-  { id: "periodos_kpis",          label: "KPIs",       seccion: "periodos" },
-  { id: "periodos_otros",         label: "Otros datos", seccion: "periodos" },
-  { id: "tendencias_gastos",      label: "Gastos",     seccion: "tendencias" },
-  { id: "tendencias_ingresos",    label: "Ingresos",   seccion: "tendencias" },
-  { id: "tendencias_inversiones", label: "Inversión", seccion: "tendencias" },
+  { id: "gastos_kpis",        label: "KPIs",        seccion: "gastos" },
+  { id: "gastos_otros",       label: "Otros datos",  seccion: "gastos" },
+  { id: "ingresos_kpis",      label: "KPIs",        seccion: "ingresos" },
+  { id: "ingresos_otros",     label: "Otros datos",  seccion: "ingresos" },
+  { id: "movimientos_kpis",   label: "KPIs",        seccion: "movimientos" },
+  { id: "movimientos_otros",  label: "Otros datos",  seccion: "movimientos" },
+  { id: "periodos_kpis",      label: "KPIs",        seccion: "periodos" },
+  { id: "periodos_otros",     label: "Otros datos",  seccion: "periodos" },
 ];
 
 const LS_KEY = "finmoves_report_config";

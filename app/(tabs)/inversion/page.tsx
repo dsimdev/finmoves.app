@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useCotizacion } from "@/hooks/useCotizacion";
@@ -18,6 +18,8 @@ function fechaCortaConAnio(fecha: string): string {
   }
   return fecha;
 }
+import { agruparPorPeriodo } from "@/utils/periodo";
+import { serieTendencia, proyectarAhorros, periodosParaMetaUSD } from "@/utils/reportes";
 import { actualizarTipoCambio } from "@/services/firebase/config";
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -99,6 +101,16 @@ export default function DolaresPage() {
   // ── Meta — aplica a la moneda primaria configurada ──
   const totalDisplay = esEUR ? totalEUR : totalUSD;
   const metaUSD = config?.meta.metaPorPeriodo ?? config?.meta.usdMensual ?? 400;
+
+  // ── Tendencias de inversión ──
+  const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
+  const serie = useMemo(() => serieTendencia(periodos), [periodos]);
+  const cotizOficial = cotizacion?.oficial ?? null;
+  const metaMonto = config?.meta.metaMonto ?? null;
+  const promAhorroUSD = cotizOficial && serie.length > 0
+    ? (serie.reduce((s, p) => s + Math.max(0, p.ahorros), 0) / serie.length) / cotizOficial : null;
+  const periodosParaMeta = metaMonto && cotizOficial ? periodosParaMetaUSD(serie, metaMonto, cotizOficial) : null;
+  const proyUSD = cotizOficial && serie.length >= 2 ? proyectarAhorros(serie, 3) / cotizOficial : null;
 
   return (
     <div className="page">
@@ -302,6 +314,27 @@ export default function DolaresPage() {
                   </>
                 );
               })()}
+            </div>
+          )}
+
+          {/* Tendencias inversión */}
+          {(proyUSD !== null || periodosParaMeta !== null) && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              {proyUSD !== null && cotizOficial && (
+                <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)" }}>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Proyección · 3 períodos</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>{simbolo} {oculto ? "••••" : proyUSD.toFixed(0)}</div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>a oficial ${cotizOficial.toLocaleString("es-AR")}</div>
+                </div>
+              )}
+              {periodosParaMeta !== null && (
+                <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)" }}>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Períodos para alcanzar meta</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
+                    {periodosParaMeta === 0 ? "¡Alcanzada!" : `${periodosParaMeta}p`}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
