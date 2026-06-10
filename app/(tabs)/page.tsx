@@ -95,9 +95,9 @@ export default function Dashboard() {
           {/* KPIs */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
             {[
+              { label: "Sueldo", value: money(p.sueldo), color: "var(--green)" },
               { label: "Gastado", value: money(p.gastado), color: "var(--red)" },
               { label: "Ahorros", value: money(ahorrosAcum), color: "var(--blue)" },
-              { label: "Sueldo", value: money(p.sueldo), color: "var(--green)" },
               { label: "Retiros", value: p.extras > 0 ? money(p.extras) : "—", sub: "desde ahorros", color: "var(--yellow)" },
             ].map((k) => (
               <div key={k.label} className="soft" style={{ padding: 15, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
