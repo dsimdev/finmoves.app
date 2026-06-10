@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.14.0] — 2026-06-10
+
+### Added
+- Settings > General: **Auto-savings** toggle — when enabled, every qualifying Gasto automatically creates an `Ingreso / Ahorros` movement for a fixed amount configured by the user (respects main currency)
+- Settings > General: payment method filter for auto-savings — select one, several, or all methods that trigger the rule (defaults to all active methods on first enable)
+- Settings > Sync: clock icon opens a **sync history modal** — each entry shows status color (green/red), date and time, message, and badge (Manual/Auto)
+- Movements: when auto-savings applies to the current payment method, the add-movement form shows a preview label with the amount going to savings
+
+---
+
 ## [1.13.1] — 2026-06-10
 
 ### Changed

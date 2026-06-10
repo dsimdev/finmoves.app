@@ -86,10 +86,12 @@ export default function ConfigPage() {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showSyncLog, setShowSyncLog] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncError, setSyncError] = useState<{ message: string; at: Date } | null>(null);
+  const [syncLogs, setSyncLogs] = useState<{ status: "ok" | "error"; type: "manual" | "auto"; at: Date; message: string }[]>([]);
 
   // ── Movimientos local state ──
   const [localCats, setLocalCats] = useState<ConfigUsuario["categorias"]>([]);
@@ -128,6 +130,9 @@ export default function ConfigPage() {
   );
 
   const localIsEnabled = (id: string) => localReportes[id] !== false;
+
+  // ── Auto-ahorro state ──
+  const [autoAhorroMonto, setAutoAhorroMonto] = useState("");
 
   // ── Ahorros state ──
   const [metaFecha, setMetaFecha] = useState("");
@@ -197,6 +202,8 @@ export default function ConfigPage() {
       if (ts?.toDate) setLastSync(ts.toDate());
       const err = data?.lastError;
       if (err?.at?.toDate) setSyncError({ message: err.message, at: err.at.toDate() });
+      const rawLogs: { status: "ok" | "error"; type: "manual" | "auto"; at: { toDate?: () => Date }; message: string }[] = data?.logs ?? [];
+      setSyncLogs(rawLogs.map(l => ({ ...l, at: l.at?.toDate?.() ?? new Date() })));
     });
   }, [user?.uid]);
 
@@ -219,6 +226,10 @@ export default function ConfigPage() {
       setMonedaPrincipal(config.meta.monedaPrincipal);
     }
   }, [config?.meta.monedaPrincipal]);
+
+  useEffect(() => {
+    if (config) setAutoAhorroMonto(config.meta.autoAhorro?.monto?.toString() ?? "");
+  }, [config?.meta.autoAhorro?.monto]);
 
   // ── Helpers ──
   const saveConfig = async (newConfig: typeof config) => {
@@ -270,6 +281,12 @@ export default function ConfigPage() {
     URL.revokeObjectURL(url);
   };
 
+  const appendSyncLog = async (uid: string, entry: { status: "ok" | "error"; type: "manual" | "auto"; at: Date; message: string }, prev: typeof syncLogs) => {
+    const updated = [entry, ...prev].slice(0, 30);
+    setSyncLogs(updated);
+    await setDoc(doc(db, `users/${uid}/config/syncMeta`), { logs: updated }, { merge: true });
+  };
+
   const handleSync = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
@@ -283,13 +300,17 @@ export default function ConfigPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error");
-      setLastSync(new Date());
+      const now = new Date();
+      setLastSync(now);
       setSyncError(null);
       setSyncMsg({ ok: true, text: data.message });
+      await appendSyncLog(currentUser.uid, { status: "ok", type: "manual", at: now, message: data.message ?? "Sincronizado" }, syncLogs);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error al sincronizar";
-      setSyncError({ message, at: new Date() });
+      const now = new Date();
+      setSyncError({ message, at: now });
       setSyncMsg({ ok: false, text: message });
+      await appendSyncLog(currentUser.uid, { status: "error", type: "manual", at: now, message }, syncLogs);
     } finally {
       setSyncing(false);
       setTimeout(() => setSyncMsg(null), 4000);
@@ -369,6 +390,29 @@ export default function ConfigPage() {
   const guardarMovimientos = () => {
     if (!config) return;
     saveConfig({ ...config, categorias: localCats, mediosPago: localMedios, origenesAhorro: localOrigenes });
+  };
+
+  const toggleAutoAhorro = () => {
+    if (!config) return;
+    const activo = !(config.meta.autoAhorro?.activo ?? false);
+    const monto = config.meta.autoAhorro?.monto ?? 0;
+    const mediosPago = config.meta.autoAhorro?.mediosPago
+      ?? (activo ? config.mediosPago.filter(m => m.activo).map(m => m.nombre) : []);
+    saveConfig({ ...config, meta: { ...config.meta, autoAhorro: { activo, monto, mediosPago } } });
+  };
+
+  const toggleAutoAhorroMedio = (nombre: string) => {
+    if (!config) return;
+    const current = config.meta.autoAhorro?.mediosPago ?? [];
+    const mediosPago = current.includes(nombre) ? current.filter(m => m !== nombre) : [...current, nombre];
+    saveConfig({ ...config, meta: { ...config.meta, autoAhorro: { activo: config.meta.autoAhorro?.activo ?? true, monto: config.meta.autoAhorro?.monto ?? 0, mediosPago } } });
+  };
+
+  const saveAutoAhorroMonto = () => {
+    if (!config) return;
+    const monto = parseFloat(autoAhorroMonto) || 0;
+    if (monto <= 0) return;
+    saveConfig({ ...config, meta: { ...config.meta, autoAhorro: { activo: config.meta.autoAhorro?.activo ?? true, monto, mediosPago: config.meta.autoAhorro?.mediosPago ?? [] } } });
   };
 
   // ── Reportes handlers (auto-save) ──
@@ -580,6 +624,69 @@ export default function ConfigPage() {
               </div>
               <Toggle activo={dark} onClick={toggleTheme} />
             </div>
+
+            {/* Auto-ahorro */}
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: config.meta.autoAhorro?.activo ? "var(--blue-dim)" : "var(--surface-alt)",
+                  border: `1px solid ${config.meta.autoAhorro?.activo ? "var(--blue)44" : "var(--border)"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9" stroke={config.meta.autoAhorro?.activo ? "var(--blue)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" />
+                    <path d="M16 3h5v5" stroke={config.meta.autoAhorro?.activo ? "var(--blue)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 8v4l3 3" stroke={config.meta.autoAhorro?.activo ? "var(--blue)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Auto-ahorro</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                    {config.meta.autoAhorro?.activo && config.meta.autoAhorro.monto > 0
+                      ? `$${config.meta.autoAhorro.monto.toLocaleString("es-AR")} por gasto`
+                      : "Destina un monto fijo por cada gasto"}
+                  </div>
+                </div>
+              </div>
+              <Toggle activo={config.meta.autoAhorro?.activo ?? false} onClick={toggleAutoAhorro} />
+            </div>
+            {config.meta.autoAhorro?.activo && (
+              <div style={{ padding: "12px 0 4px", borderTop: "1px solid var(--faint)", display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <div className="label" style={{ margin: 0 }}>
+                    Monto ({monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$"})
+                  </div>
+                  <input
+                    type="number" value={autoAhorroMonto} placeholder="0"
+                    onChange={e => setAutoAhorroMonto(e.target.value)}
+                    onBlur={saveAutoAhorroMonto}
+                    style={{
+                      width: 110, fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700,
+                      background: "var(--surface-alt)", border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-sm)", padding: "6px 10px",
+                      color: "var(--text)", outline: "none", textAlign: "right",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div className="label" style={{ margin: 0, flexShrink: 0, paddingTop: 4 }}>Medios que aplican</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", flex: 1 }}>
+                    {config.mediosPago.filter(m => m.activo).map(m => {
+                      const sel = config.meta.autoAhorro?.mediosPago?.includes(m.nombre) ?? false;
+                      return (
+                        <button key={m.nombre} type="button" onClick={() => toggleAutoAhorroMedio(m.nombre)}
+                          className="pill" style={{
+                            borderColor: sel ? "var(--blue)" : "var(--border)",
+                            background: sel ? "var(--blue-dim)" : "transparent",
+                            color: sel ? "var(--blue)" : "var(--muted)",
+                          }}>{m.nombre}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sincronización */}
@@ -611,16 +718,31 @@ export default function ConfigPage() {
                   </div>
                 </div>
               </div>
-              {syncError && (
-                <button onClick={handleSync} disabled={syncing} style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  background: "var(--red-dim)", color: "var(--red)",
-                  border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
-                  padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
-                }}>
-                  {syncing ? "Reintentando..." : "Reintentar"}
-                </button>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {syncError && (
+                  <button onClick={handleSync} disabled={syncing} style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: "var(--red-dim)", color: "var(--red)",
+                    border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
+                    padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
+                  }}>
+                    {syncing ? "Reintentando..." : "Reintentar"}
+                  </button>
+                )}
+                {syncLogs.length > 0 && (
+                  <button onClick={() => setShowSyncLog(true)} title="Ver historial" style={{
+                    background: "var(--surface-alt)", border: "1px solid var(--border)",
+                    borderRadius: 10, width: 36, height: 36,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", color: "var(--muted)", flexShrink: 0,
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="9"/>
+                      <polyline points="12 7 12 12 15 15"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -953,6 +1075,50 @@ export default function ConfigPage() {
         }}>
           {syncMsg.text}
         </div>
+      )}
+
+      {showSyncLog && mounted && createPortal(
+        <div onClick={() => setShowSyncLog(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>Historial de sync</span>
+              <button onClick={() => setShowSyncLog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
+            </div>
+            <div style={{ overflowY: "auto", padding: "12px 20px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+              {syncLogs.length === 0 ? (
+                <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: 24 }}>Sin registros</div>
+              ) : syncLogs.map((log, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  background: log.status === "ok" ? "var(--green-dim)" : "var(--red-dim)",
+                  border: `1px solid ${log.status === "ok" ? "var(--green)33" : "var(--red)33"}`,
+                }}>
+                  <div style={{
+                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 4,
+                    background: log.status === "ok" ? "var(--green)" : "var(--red)",
+                  }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: log.status === "ok" ? "var(--green)" : "var(--red)" }}>
+                      {log.message}
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 3, display: "flex", gap: 8 }}>
+                      <span>{log.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}</span>
+                      <span style={{
+                        padding: "1px 6px", borderRadius: 4,
+                        background: log.type === "auto" ? "var(--blue-dim)" : "var(--surface-alt)",
+                        color: log.type === "auto" ? "var(--blue)" : "var(--muted)",
+                        border: `1px solid ${log.type === "auto" ? "var(--blue)33" : "var(--border)"}`,
+                        fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
+                      }}>{log.type === "auto" ? "Auto" : "Manual"}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {showChangelog && mounted && createPortal(

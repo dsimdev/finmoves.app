@@ -287,6 +287,17 @@ export default function MovimientosPage() {
         ...(esCompraFX ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
         ...(esGastoFX ? { cantidadUSD: usdFinal } : {}),
       });
+      const autoAhorroMedios = config?.meta.autoAhorro?.mediosPago;
+      if (tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
+          (!autoAhorroMedios?.length || autoAhorroMedios.includes(medioPago))) {
+        await crearMovimiento(user.uid, {
+          timestampCarga: new Date(), fecha, tipo: "Ingreso",
+          categoria: "Ahorros", descripcion: "Auto-ahorro",
+          monto: config.meta.autoAhorro.monto,
+          medioPago: "—", observaciones: "",
+          periodoId: periodoActual.periodoId, userId: user.uid,
+        });
+      }
       resetAdd(); closeModal(); refresh();
     } catch (err: unknown) {
       setAddError(err instanceof Error ? err.message : "Error inesperado");
@@ -621,6 +632,16 @@ export default function MovimientosPage() {
               <div className="label">Observaciones (opcional)</div>
               <input className="input" type="text" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
             </div>
+
+            {tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
+             (!config.meta.autoAhorro.mediosPago?.length || config.meta.autoAhorro.mediosPago.includes(medioPago)) && (
+              <div style={{ background: "var(--blue-dim)", border: "1px solid var(--blue)33", borderRadius: "var(--radius-sm)", padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "var(--blue)", display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {money(config.meta.autoAhorro.monto)} a ahorros
+              </div>
+            )}
 
             {addError && (
               <div style={{ background: "var(--red-dim)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: 12, marginBottom: 14, fontSize: 12, color: "var(--red)" }}>

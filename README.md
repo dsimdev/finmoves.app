@@ -50,6 +50,7 @@ Period analysis with configurable toggles per section. Tabs:
 ### Settings (`/config`)
 - Categories, payment methods and savings origins (CRUD)
 - Preferences: dark/light mode, enable Reports section, enable Investment section
+- **Auto-savings**: toggle + fixed ARS amount; when active, every Gasto automatically creates an `Ingreso / Ahorros` movement for the configured amount
 - Investment currency: USD or EUR
 - Manual sync with Google Sheets
 
