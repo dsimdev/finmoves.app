@@ -288,8 +288,10 @@ export default function MovimientosPage() {
         ...(esGastoFX ? { cantidadUSD: usdFinal } : {}),
       });
       const autoAhorroMedios = config?.meta.autoAhorro?.mediosPago;
+      const autoAhorroOmitir = config?.meta.autoAhorro?.omitirDescripciones ?? [];
       if (tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
-          (!autoAhorroMedios?.length || autoAhorroMedios.includes(medioPago))) {
+          (!autoAhorroMedios?.length || autoAhorroMedios.includes(medioPago)) &&
+          !autoAhorroOmitir.some(d => d.toLowerCase() === descripcion.trim().toLowerCase())) {
         await crearMovimiento(user.uid, {
           timestampCarga: new Date(), fecha, tipo: "Ingreso",
           categoria: "Ahorros", descripcion: "Auto-ahorro",
@@ -345,7 +347,7 @@ export default function MovimientosPage() {
         <div className="fade-up">
           <div style={{ marginBottom: 20 }}>
             <div className="label" style={{ marginBottom: 2 }}>Gestión</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Movimientos</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Movements</div>
             {periodoActual && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
                 Disponible: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>

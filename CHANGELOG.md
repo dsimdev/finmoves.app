@@ -4,6 +4,24 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.14.5] — 2026-06-10
+
+### Added
+- Auto-savings: "Descripciones a omitir" — add descriptions that skip the auto-savings rule (case-insensitive match); shown in the row subtitle when configured
+- Auto-savings confirm button now only enables when there are actual changes vs. saved config
+
+### Changed
+- Settings: Sync card moved above Personalization card
+- Settings > General tab renamed to "General" (pill)
+- Reports > Gastos > Por día bars are now tappable — opens a bottom-sheet with all expenses for that day (swipe up to expand)
+- Reports > Movimientos: Por categoría shows top 5 and opens full modal on tap; Por medio de pago removed
+- Reports > Ingresos: Sueldo + Retiros cards now appear above Total ingresado card
+- Page titles changed to English: Movements, Dollars/Euros, Reports, Settings
+- App routes renamed: /movimientos → /movements, /inversion → /investments, /reportes → /reports, /config → /settings
+- favicon updated
+
+---
+
 ## [1.14.4] — 2026-06-10
 
 ### Changed

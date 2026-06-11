@@ -21,7 +21,7 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 type Tab = "cuenta" | "movimientos" | "reportes" | "ahorros";
 
 const ALL_TABS: { id: Tab; label: string }[] = [
-  { id: "cuenta",      label: "Cuenta" },
+  { id: "cuenta",      label: "General" },
   { id: "movimientos", label: "Movimientos" },
   { id: "ahorros",     label: "Inversión" },
   { id: "reportes",    label: "Reportes" },
@@ -144,6 +144,8 @@ export default function ConfigPage() {
   const [showGithubConfirm, setShowGithubConfirm] = useState(false);
   const [localAutoMonto, setLocalAutoMonto] = useState("");
   const [localAutoMedios, setLocalAutoMedios] = useState<string[]>([]);
+  const [localAutoOmitir, setLocalAutoOmitir] = useState<string[]>([]);
+  const [localAutoOmitirInput, setLocalAutoOmitirInput] = useState("");
 
   // ── Ahorros state ──
   const [metaFecha, setMetaFecha] = useState("");
@@ -424,6 +426,8 @@ export default function ConfigPage() {
       config.meta.autoAhorro?.mediosPago ??
       config.mediosPago.filter(m => m.activo).map(m => m.nombre)
     );
+    setLocalAutoOmitir(config.meta.autoAhorro?.omitirDescripciones ?? []);
+    setLocalAutoOmitirInput("");
     setShowAutoAhorroModal(true);
   };
 
@@ -440,11 +444,19 @@ export default function ConfigPage() {
     if (!config) return;
     const monto = parseFloat(localAutoMonto) || 0;
     if (monto <= 0 || localAutoMedios.length === 0) return;
-    saveConfig({ ...config, meta: { ...config.meta, autoAhorro: { activo: true, monto, mediosPago: localAutoMedios } } });
+    saveConfig({ ...config, meta: { ...config.meta, autoAhorro: { activo: true, monto, mediosPago: localAutoMedios, omitirDescripciones: localAutoOmitir } } });
     setShowAutoAhorroModal(false);
   };
 
-  const canConfirmAutoAhorro = parseFloat(localAutoMonto) > 0 && localAutoMedios.length > 0;
+  const canConfirmAutoAhorro = (() => {
+    const monto = parseFloat(localAutoMonto) || 0;
+    if (monto <= 0 || localAutoMedios.length === 0) return false;
+    const saved = config?.meta.autoAhorro;
+    const montoChanged = monto !== (saved?.monto ?? 0);
+    const mediosChanged = JSON.stringify([...localAutoMedios].sort()) !== JSON.stringify([...(saved?.mediosPago ?? [])].sort());
+    const omitirChanged = JSON.stringify([...localAutoOmitir].sort()) !== JSON.stringify([...(saved?.omitirDescripciones ?? [])].sort());
+    return montoChanged || mediosChanged || omitirChanged || !saved?.activo;
+  })();
 
   // ── Reportes handlers (auto-save) ──
   const toggleLocalReporte = (id: string) => {
@@ -486,7 +498,7 @@ export default function ConfigPage() {
 
       <div style={{ marginBottom: 24 }}>
         <div className="label" style={{ marginBottom: 2 }}>Preferencias</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Configuraciones</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Settings</div>
       </div>
 
       {/* Pills principales */}
@@ -509,7 +521,64 @@ export default function ConfigPage() {
       {tab === "cuenta" && (
         <div key="cuenta" className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {/* Generales */}
+          {/* Sync */}
+          <div className="card">
+            <div className="label">Sincronización</div>
+            <div className="row" style={{ padding: "10px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: syncError ? "var(--red-dim)" : lastSync ? "var(--green-dim)" : "var(--surface-alt)",
+                  border: `1px solid ${syncError ? "var(--red)44" : lastSync ? "var(--green)44" : "var(--border)"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <svg className={syncing ? "spin" : ""} width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
+                      stroke={syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)"}
+                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13 }}>Google Sheets</div>
+                  <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
+                    {syncError
+                      ? `Error de sync: ${syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}`
+                      : lastSync
+                        ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}`
+                        : "Nunca sincronizado"}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {syncError && (
+                  <button onClick={handleSync} disabled={syncing} style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: "var(--red-dim)", color: "var(--red)",
+                    border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
+                    padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
+                  }}>
+                    {syncing ? "Reintentando..." : "Reintentar"}
+                  </button>
+                )}
+                {syncLogs.length > 0 && (
+                  <button onClick={() => setShowSyncLog(true)} title="Ver historial" style={{
+                    background: "var(--surface-alt)", border: "1px solid var(--border)",
+                    borderRadius: 10, width: 36, height: 36,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", color: "var(--muted)", flexShrink: 0,
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="9"/>
+                      <polyline points="12 7 12 12 15 15"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Personalization */}
           <div className="card">
             <div className="label" style={{ marginBottom: 16 }}>Generales</div>
 
@@ -685,69 +754,14 @@ export default function ConfigPage() {
                       const mediosStr = medios.length === 0 || medios.length === allActive.length
                         ? "todos los medios"
                         : medios.join(" + ");
-                      return `${monto} · ${mediosStr}`;
+                      const omitir = config.meta.autoAhorro.omitirDescripciones ?? [];
+                      const omitirStr = omitir.length > 0 ? ` · omite: ${omitir.join(", ")}` : "";
+                      return `${monto} · ${mediosStr}${omitirStr}`;
                     })() : "Destina un monto fijo por cada gasto"}
                   </div>
                 </div>
               </div>
               <Toggle activo={config.meta.autoAhorro?.activo ?? false} onClick={handleToggleAutoAhorro} />
-            </div>
-          </div>
-
-          {/* Sincronización */}
-          <div className="card">
-            <div className="label">Sincronización</div>
-            <div className="row" style={{ padding: "10px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: syncError ? "var(--red-dim)" : lastSync ? "var(--green-dim)" : "var(--surface-alt)",
-                  border: `1px solid ${syncError ? "var(--red)44" : lastSync ? "var(--green)44" : "var(--border)"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <svg className={syncing ? "spin" : ""} width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
-                      stroke={syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)"}
-                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13 }}>Google Sheets</div>
-                  <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
-                    {syncError
-                      ? `Error de sync: ${syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}`
-                      : lastSync
-                        ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}`
-                        : "Nunca sincronizado"}
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {syncError && (
-                  <button onClick={handleSync} disabled={syncing} style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    background: "var(--red-dim)", color: "var(--red)",
-                    border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
-                    padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
-                  }}>
-                    {syncing ? "Reintentando..." : "Reintentar"}
-                  </button>
-                )}
-                {syncLogs.length > 0 && (
-                  <button onClick={() => setShowSyncLog(true)} title="Ver historial" style={{
-                    background: "var(--surface-alt)", border: "1px solid var(--border)",
-                    borderRadius: 10, width: 36, height: 36,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", color: "var(--muted)", flexShrink: 0,
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="9"/>
-                      <polyline points="12 7 12 12 15 15"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
             </div>
           </div>
 
@@ -1119,6 +1133,39 @@ export default function ConfigPage() {
                     );
                   })}
                 </div>
+              </div>
+              <div>
+                <div className="label" style={{ marginBottom: 8 }}>Descripciones a omitir</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <input
+                    value={localAutoOmitirInput}
+                    onChange={e => setLocalAutoOmitirInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && localAutoOmitirInput.trim()) {
+                        const val = localAutoOmitirInput.trim();
+                        if (!localAutoOmitir.includes(val)) setLocalAutoOmitir([...localAutoOmitir, val]);
+                        setLocalAutoOmitirInput("");
+                      }
+                    }}
+                    placeholder="ej. Peajes"
+                    style={{ flex: 1, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", fontSize: 13, color: "var(--text)" }}
+                  />
+                  <button type="button" onClick={() => {
+                    const val = localAutoOmitirInput.trim();
+                    if (val && !localAutoOmitir.includes(val)) setLocalAutoOmitir([...localAutoOmitir, val]);
+                    setLocalAutoOmitirInput("");
+                  }} style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>+</button>
+                </div>
+                {localAutoOmitir.length > 0 && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {localAutoOmitir.map(d => (
+                      <div key={d} style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--red-dim)", border: "1px solid var(--red)33", borderRadius: 999, padding: "3px 10px" }}>
+                        <span style={{ fontSize: 12 }}>{d}</span>
+                        <button type="button" onClick={() => setLocalAutoOmitir(localAutoOmitir.filter(x => x !== d))} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1 }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
                 <button onClick={confirmAutoAhorro} disabled={!canConfirmAutoAhorro || guardando} style={{

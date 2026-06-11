@@ -30,8 +30,8 @@ const TABS = [
     ),
   },
   {
-    href: "/movimientos",
-    key: "movimientos",
+    href: "/movements",
+    key: "movements",
     icon: ({ active, color, dim: _dim }: IconProps) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <rect x="3" y="6" width="18" height="2.5" rx="1.25" fill={active ? color : "var(--muted)"} />
@@ -43,8 +43,8 @@ const TABS = [
     ),
   },
   {
-    href: "/inversion",
-    key: "ahorros",
+    href: "/investments",
+    key: "investments",
     icon: ({ active, color, dim }: IconProps) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="9" stroke={active ? color : "var(--muted)"} strokeWidth="1.8" fill={active ? dim : "none"} />
@@ -55,8 +55,8 @@ const TABS = [
     ),
   },
   {
-    href: "/reportes",
-    key: "reportes",
+    href: "/reports",
+    key: "reports",
     icon: ({ active, color, dim }: IconProps) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <rect x="3" y="3" width="18" height="18" rx="3" stroke={active ? color : "var(--muted)"} strokeWidth="1.8" fill={active ? dim : "none"} />
@@ -65,8 +65,8 @@ const TABS = [
     ),
   },
   {
-    href: "/config",
-    key: "config",
+    href: "/settings",
+    key: "settings",
     icon: ({ active, color, dim }: IconProps) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke={active ? color : "var(--muted)"} strokeWidth="1.8" fill={active ? dim : "none"} />
@@ -82,8 +82,8 @@ export function BottomNav() {
   const { showReportes, showAhorros } = useAppPrefs();
 
   const visible = TABS.filter((t) => {
-    if (t.key === "reportes" && !showReportes) return false;
-    if (t.key === "ahorros" && !showAhorros) return false;
+    if (t.key === "reports" && !showReportes) return false;
+    if (t.key === "investments" && !showAhorros) return false;
     return true;
   });
 

@@ -133,7 +133,7 @@ export default function Dashboard() {
                 </span>
               </div>
             ))}
-            <Link href="/movimientos" aria-label="Ver todos los movimientos" style={{
+            <Link href="/movements" aria-label="Ver todos los movimientos" style={{
               display: "flex", alignItems: "center", justifyContent: "center",
               margin: "16px auto 2px", width: 48, height: 48, borderRadius: "50%",
               background: "transparent", border: "none", color: "var(--accent)",

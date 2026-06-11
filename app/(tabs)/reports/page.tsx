@@ -70,11 +70,11 @@ function Stat({ label, value, sub, color, danger, dimVar }: { label: string; val
   );
 }
 
-function VBars({ data, max, oculto }: { data: { label: string; value: number; color: string; hi?: boolean }[]; max: number; oculto?: boolean }) {
+function VBars({ data, max, oculto, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean }[]; max: number; oculto?: boolean; onBarClick?: (label: string) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
       {data.map((d, i) => (
-        <div key={i} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+        <div key={i} onClick={() => onBarClick?.(d.label)} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: onBarClick ? "pointer" : "default" }}>
           <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "•" : abbr(d.value)}</div>
           <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
             <div style={{ width: "100%", height: `${max > 0 ? Math.round((d.value / max) * 100) : 0}%`, background: d.color, borderRadius: 7, transition: "height .5s ease" }} />
@@ -106,10 +106,12 @@ export default function ReportesPage() {
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const [sub, setSub] = useState<Sub>("gastos");
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
-  const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movdescs" | null>(null);
+  const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movdescs" | "movcat" | null>(null);
   const [modalTopExpanded, setModalTopExpanded] = useState(false);
   const [modalSueldo, setModalSueldo] = useState(false);
   const [modalSueldoExpanded, setModalSueldoExpanded] = useState(false);
+  const [diaModal, setDiaModal] = useState<string | null>(null);
+  const [diaModalExpanded, setDiaModalExpanded] = useState(false);
   const sheetDragY = useRef<number | null>(null);
   const [proyPeriodos, setProyPeriodos] = useState(6);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -371,7 +373,7 @@ export default function ReportesPage() {
         <div key={sub} className="fade-up">
           <div style={{ marginBottom: 18 }}>
             <div className="label" style={{ marginBottom: 2 }}>Análisis</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reportes</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reports</div>
           </div>
           <div className="subtabs">
             {SUBS.map((s) => {
@@ -610,7 +612,7 @@ export default function ReportesPage() {
               {reportOn("gastos_otros") && porFecha.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por día</div>
-                  <VBars max={Math.max(...porFecha.map((f) => f.monto), 1)} oculto={oculto} data={porFecha.map((f) => ({ label: sinAño(f.nombre), value: f.monto, color: "var(--red)" }))} />
+                  <VBars max={Math.max(...porFecha.map((f) => f.monto), 1)} oculto={oculto} data={porFecha.map((f) => ({ label: sinAño(f.nombre), value: f.monto, color: "var(--red)" }))} onBarClick={(label) => { setDiaModal(label); setDiaModalExpanded(false); }} />
                 </div>
               )}
 
@@ -643,6 +645,25 @@ export default function ReportesPage() {
                 )}
               </div>
 
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                {evolSueldo ? (
+                  <div className="soft" onClick={suelHistorial.length > 0 ? () => setModalSueldo(true) : undefined} style={{ padding: 15, cursor: suelHistorial.length > 0 ? "pointer" : undefined, background: evolSueldo.esVacaciones ? "linear-gradient(135deg, var(--surface), var(--yellow-dim))" : "linear-gradient(135deg, var(--surface), var(--green-dim))", borderColor: evolSueldo.esVacaciones ? "var(--yellow)33" : "var(--green)33" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>Sueldo</div>
+                      {evolSueldo.esVacaciones && <span className="badge" style={{ background: "var(--yellow-dim)", color: "var(--yellow)", border: "1px solid var(--yellow)44", fontSize: 9 }}>VACACIONES</span>}
+                      {!evolSueldo.esVacaciones && evolSueldo.deltaPct !== null && (
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)" }}>{evolSueldo.deltaPct >= 0 ? "+" : ""}{evolSueldo.deltaPct}%</div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 19, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)", lineHeight: 1.05 }}>{money(evolSueldo.ultimo)}</div>
+                    {evolSueldo.anterior !== null && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>Anterior: {money(evolSueldo.anterior)}</div>}
+                  </div>
+                ) : (
+                  <Stat label="Sueldo" value={money(periodo.sueldo)} color="var(--green)" dimVar="var(--green-dim)" />
+                )}
+                {periodo.moveTotal > 0 && <Stat label="Retiros" value={money(periodo.moveTotal)} sub="desde ahorros" color="var(--yellow)" dimVar="var(--yellow-dim)" />}
+              </div>
+
               {/* Total ingresado */}
               {reportOn("ingresos_kpis") && totalAhorradoDirecto > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--green-dim))", borderColor: "var(--green)22" }}>
@@ -665,25 +686,6 @@ export default function ReportesPage() {
                   </div>
                 </div>
               )}
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                {evolSueldo ? (
-                  <div className="soft" onClick={suelHistorial.length > 0 ? () => setModalSueldo(true) : undefined} style={{ padding: 15, cursor: suelHistorial.length > 0 ? "pointer" : undefined, background: evolSueldo.esVacaciones ? "linear-gradient(135deg, var(--surface), var(--yellow-dim))" : "linear-gradient(135deg, var(--surface), var(--green-dim))", borderColor: evolSueldo.esVacaciones ? "var(--yellow)33" : "var(--green)33" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>Sueldo</div>
-                      {evolSueldo.esVacaciones && <span className="badge" style={{ background: "var(--yellow-dim)", color: "var(--yellow)", border: "1px solid var(--yellow)44", fontSize: 9 }}>VACACIONES</span>}
-                      {!evolSueldo.esVacaciones && evolSueldo.deltaPct !== null && (
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)" }}>{evolSueldo.deltaPct >= 0 ? "+" : ""}{evolSueldo.deltaPct}%</div>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 19, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)", lineHeight: 1.05 }}>{money(evolSueldo.ultimo)}</div>
-                    {evolSueldo.anterior !== null && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>Anterior: {money(evolSueldo.anterior)}</div>}
-                  </div>
-                ) : (
-                  <Stat label="Sueldo" value={money(periodo.sueldo)} color="var(--green)" dimVar="var(--green-dim)" />
-                )}
-                {periodo.moveTotal > 0 && <Stat label="Retiros" value={money(periodo.moveTotal)} sub="desde ahorros" color="var(--yellow)" dimVar="var(--yellow-dim)" />}
-              </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <div className="soft" style={{ padding: 15, background: "linear-gradient(135deg, var(--surface), var(--blue-dim))", borderColor: "var(--blue)22" }}>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7 }}>Ahorros acum.</div>
@@ -915,9 +917,10 @@ export default function ReportesPage() {
 
               {/* Por categoría (frecuencia) */}
               {movCounts.porCat.length > 0 && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))", cursor: movCounts.porCat.length > 5 ? "pointer" : undefined }}
+                  onClick={movCounts.porCat.length > 5 ? () => setModalTop("movcat") : undefined}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por categoría</div>
-                  {movCounts.porCat.map(({ cat, count, color }) => (
+                  {movCounts.porCat.slice(0, 5).map(({ cat, count, color }) => (
                     <div key={cat} style={{ marginBottom: 10 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                         <div style={{ fontSize: 12 }}>{cat}</div>
@@ -972,23 +975,6 @@ export default function ReportesPage() {
                 })()}
               </div>
 
-              {/* Por medio de pago */}
-              {movCounts.porMedio.length > 0 && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por medio de pago</div>
-                  {movCounts.porMedio.map(({ medio, count, color }) => (
-                    <div key={medio} style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <div style={{ fontSize: 12 }}>{medio}</div>
-                        <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{count}</div>
-                      </div>
-                      <div style={{ height: 4, background: "var(--faint)", borderRadius: 2 }}>
-                        <div style={{ height: "100%", width: `${Math.round((count / movCounts.total) * 100)}%`, background: color, borderRadius: 2, transition: "width .5s ease" }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
               </>
               )}
             </>
@@ -1059,7 +1045,7 @@ export default function ReportesPage() {
             />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>
-                {modalTop === "gastos" ? "Top 20 gastos" : modalTop === "movdescs" ? "Todas las descripciones" : "Todas las descripciones"}
+                {modalTop === "gastos" ? "Top 20 gastos" : modalTop === "movdescs" ? "Todas las descripciones" : modalTop === "movcat" ? "Todas las categorías" : "Todas las descripciones"}
               </span>
               <button onClick={() => setModalTop(null)} style={{
                 background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1,
@@ -1088,9 +1074,56 @@ export default function ReportesPage() {
                 <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "var(--font-mono)" }}>{count}×</div>
               </div>
             ))}
+            {modalTop === "movcat" && movCounts && movCounts.porCat.map(({ cat, count, color }, i) => (
+              <div key={cat} className="row" style={{ padding: "12px 0" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
+                  <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", width: 14, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{i + 1}</span>
+                  <div style={{ fontSize: 13, flex: 1, minWidth: 0 }}>{cat || "—"}</div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "var(--font-mono)" }}>{count}×</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
+
+      {diaModal && (() => {
+        const fechaOriginal = porFecha.find((f) => sinAño(f.nombre) === diaModal)?.nombre ?? diaModal;
+        const movsDia = (periodo?.movimientos ?? []).filter((m) => m.tipo === "Gasto" && (sinAño(m.fecha) === diaModal || m.fecha === fechaOriginal)).sort((a, b) => b.monto - a.monto);
+        const totalDia = movsDia.reduce((s, m) => s + m.monto, 0);
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+            onClick={() => { setDiaModal(null); setDiaModalExpanded(false); }}>
+            <div style={{ width: "100%", background: "var(--bg)", borderRadius: "20px 20px 0 0", maxHeight: diaModalExpanded ? "90dvh" : "50dvh", overflowY: "auto", padding: 20, paddingBottom: 40, transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1)" }}
+              onClick={(e) => e.stopPropagation()}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 16px", cursor: "grab", touchAction: "none" }}
+                onPointerDown={(e) => { sheetDragY.current = e.clientY; (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
+                onPointerMove={(e) => {
+                  if (sheetDragY.current === null) return;
+                  const dy = sheetDragY.current - e.clientY;
+                  if (dy > 30) { setDiaModalExpanded(true); sheetDragY.current = null; }
+                  else if (dy < -30 && diaModalExpanded) { setDiaModalExpanded(false); sheetDragY.current = null; }
+                }}
+                onPointerUp={() => { sheetDragY.current = null; }}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <span style={{ fontSize: 16, fontWeight: 700 }}>{diaModal}</span>
+                <button onClick={() => setDiaModal(null)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16 }}>{money(totalDia)} · {movsDia.length} gasto{movsDia.length !== 1 ? "s" : ""}</div>
+              {movsDia.map((m, i) => (
+                <div key={i} className="row" style={{ padding: "11px 0" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{m.descripcion || "—"}</div>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{m.categoria} · {m.medioPago}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(m.monto)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

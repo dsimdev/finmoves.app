@@ -120,7 +120,7 @@ export default function DolaresPage() {
         <div className="fade-up">
           <div style={{ marginBottom: 24 }}>
             <div className="label" style={{ marginBottom: 2 }}>Inversión</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{showUSD && showEUR ? "Dólares | Euros" : esEUR ? "Euros" : "Dólares"}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{showUSD && showEUR ? "Dollars | Euros" : esEUR ? "Euros" : "Dollars"}</div>
           </div>
           {/* ── SECCIÓN USD ── */}
           {showUSD && (<>
