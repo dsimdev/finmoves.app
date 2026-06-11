@@ -235,6 +235,40 @@ export const es = {
   newVersionAvailable: "Nueva versión disponible",
   updateToSeeLatest: "Actualizá para ver las últimas mejoras",
   update: "Actualizar",
+
+  // Login
+  loginEmail: "Email",
+  loginPassword: "Contraseña",
+  loginEmailPlaceholder: "tu@email.com",
+  loginSignIn: "Ingresar",
+  loginSigningIn: "Ingresando...",
+
+  // Auth errors (mapeo de códigos Firebase)
+  authInvalidCredential: "Email o contraseña incorrectos",
+  authInvalidEmail: "El email no es válido",
+  authUserDisabled: "Esta cuenta está deshabilitada",
+  authTooManyRequests: "Demasiados intentos. Probá de nuevo en unos minutos",
+  authNetwork: "Sin conexión. Revisá tu internet",
+  authGeneric: "No se pudo iniciar sesión. Intentá de nuevo",
+
+  // DB / guardado
+  errPermission: "No tenés permisos para esta acción",
+  errUnavailable: "Sin conexión con el servidor. Reintentá",
+  errSaveGeneric: "No se pudo guardar. Intentá de nuevo",
+
+  // Offline
+  offline: "Sin conexión",
+
+  // Error boundary
+  errorTitle: "Algo salió mal",
+  errorBody: "Ocurrió un error inesperado.",
+  errorRetry: "Reintentar",
+  errorHome: "Volver al inicio",
+
+  // 404
+  notFoundTitle: "Página no encontrada",
+  notFoundBody: "La página que buscás no existe o fue movida.",
+  notFoundHome: "Volver al inicio",
 };
 
 export type AppLocale = typeof es;

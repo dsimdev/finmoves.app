@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.16.0] — 2026-06-11
+
+### Added
+- **Redesigned login** — modern minimalist look: icon + placeholder fields (no labels), taller inputs, blue/green background glows, glassmorphism card, show/hide password toggle, gradient sign-in button. Submits on Enter. Fully bilingual (ES/EN)
+- **Human-readable auth errors** — Firebase error codes are mapped to clear messages ("Incorrect email or password", "Too many attempts…", "No connection…") instead of raw `Firebase: Error (auth/...)` strings; technical detail still logged to console
+- **Session auto-logout** — the session now closes after 8 hours of inactivity (resets on any interaction), persisted across reloads and PWA restarts via localStorage
+- **Error & 404 safety net** — added `error.tsx` (in-app error boundary with retry + visible technical detail), `global-error.tsx` (root-layout fallback), `not-found.tsx` (branded 404), and an **offline banner** that appears when the network drops
+- Settings save errors now use the same human-readable mapping
+
+### Notes
+- True offline support (app opening without network via a service worker) is not included yet — the offline banner only signals the disconnection
+- Passkey / biometric unlock is planned as a follow-up
+
+---
+
 ## [1.15.2] — 2026-06-11
 
 ### Security

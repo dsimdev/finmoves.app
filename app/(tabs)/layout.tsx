@@ -6,10 +6,14 @@ import { useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 
 export default function TabsLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+
+  useInactivityLogout(!!user);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -28,6 +32,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       {children}
       <BottomNav />
       <UpdateBanner />
+      <OfflineBanner />
     </>
   );
 }

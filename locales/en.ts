@@ -237,4 +237,38 @@ export const en: AppLocale = {
   newVersionAvailable: "New version available",
   updateToSeeLatest: "Update to see the latest improvements",
   update: "Update",
+
+  // Login
+  loginEmail: "Email",
+  loginPassword: "Password",
+  loginEmailPlaceholder: "you@email.com",
+  loginSignIn: "Sign in",
+  loginSigningIn: "Signing in...",
+
+  // Auth errors (Firebase code mapping)
+  authInvalidCredential: "Incorrect email or password",
+  authInvalidEmail: "Invalid email address",
+  authUserDisabled: "This account is disabled",
+  authTooManyRequests: "Too many attempts. Try again in a few minutes",
+  authNetwork: "No connection. Check your internet",
+  authGeneric: "Could not sign in. Please try again",
+
+  // DB / saving
+  errPermission: "You don't have permission for this action",
+  errUnavailable: "No connection to the server. Retry",
+  errSaveGeneric: "Could not save. Please try again",
+
+  // Offline
+  offline: "No connection",
+
+  // Error boundary
+  errorTitle: "Something went wrong",
+  errorBody: "An unexpected error occurred.",
+  errorRetry: "Retry",
+  errorHome: "Back home",
+
+  // 404
+  notFoundTitle: "Page not found",
+  notFoundBody: "The page you're looking for doesn't exist or was moved.",
+  notFoundHome: "Back home",
 };

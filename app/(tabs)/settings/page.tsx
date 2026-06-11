@@ -14,6 +14,7 @@ import { signOut, getIdToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { ConfigUsuario } from "@/types";
 import { formatTimestampAR, isoToFechaAR, sanitizeCell } from "@/lib/sheet-format";
+import { dbErrorMessage } from "@/lib/firebase-error";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -280,8 +281,8 @@ export default function ConfigPage() {
       await setDoc(doc(db, `users/${user.uid}/config/meta`), newConfig);
       refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t.errorSaving;
-      setSaveMsg({ ok: false, text: msg });
+      console.error("saveConfig:", err);
+      setSaveMsg({ ok: false, text: dbErrorMessage(err, t) });
       setTimeout(() => setSaveMsg(null), 3000);
     } finally {
       setGuardando(false);
