@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.15.1] — 2026-06-11
+
+### Changed
+- Investments → "Periods to reach goal" card: trimmed the redundant "periods" word from the subtitle (now "at the pace of the last 3")
+
+---
+
 ## [1.15.0] — 2026-06-11
 
 ### Added

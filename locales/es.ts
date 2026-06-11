@@ -85,7 +85,7 @@ export const es = {
   projection3periods: "Proyección · 3 períodos",
   atOfficial: "a oficial",
   periodsToGoal: "Períodos para alcanzar meta",
-  paceOfLast3: "al ritmo de los últimos 3 períodos",
+  paceOfLast3: "al ritmo de los últimos 3",
   usdHistory: "Historial compras USD",
   eurHistory: "Historial compras EUR",
 

@@ -87,7 +87,7 @@ export const en: AppLocale = {
   projection3periods: "Projection · 3 periods",
   atOfficial: "at official",
   periodsToGoal: "Periods to reach goal",
-  paceOfLast3: "at the pace of the last 3 periods",
+  paceOfLast3: "at the pace of the last 3",
   usdHistory: "USD purchase history",
   eurHistory: "EUR purchase history",
 
