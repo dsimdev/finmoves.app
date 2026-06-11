@@ -13,7 +13,7 @@ import { db, auth } from "@/services/firebase/firebase";
 import { signOut, getIdToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { ConfigUsuario } from "@/types";
-import { formatTimestampAR, isoToFechaAR } from "@/lib/sheet-format";
+import { formatTimestampAR, isoToFechaAR, sanitizeCell } from "@/lib/sheet-format";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -311,7 +311,7 @@ export default function ConfigPage() {
         m.medioPago ?? "",
         m.observaciones ?? "",
         m.periodoId,
-      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+      ].map(v => `"${String(sanitizeCell(v)).replace(/"/g, '""')}"`).join(","));
     const csv = [header.join(","), ...rows].join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

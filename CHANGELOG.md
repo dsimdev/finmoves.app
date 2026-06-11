@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.15.2] — 2026-06-11
+
+### Security
+- **Formula/CSV injection hardening** — movement text fields starting with `= + - @` are now neutralized (prefixed with `'`) before being written to Google Sheets and to the CSV backup, so they can't execute as formulas
+- **Versioned Firestore security rules** — `firestore.rules` is now tracked in the repo (per-user isolation: `request.auth.uid == userId`)
+- **Server-only owner UID** — the daily cron now reads `OWNER_UID` instead of exposing it as a `NEXT_PUBLIC_` client variable
+- **HTTP security headers** — added `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and HSTS across all routes
+
+---
+
 ## [1.15.1] — 2026-06-11
 
 ### Changed

@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const uid = process.env.NEXT_PUBLIC_OWNER_UID;
+  const uid = process.env.OWNER_UID ?? process.env.NEXT_PUBLIC_OWNER_UID;
   if (!uid) {
-    return NextResponse.json({ error: "NEXT_PUBLIC_OWNER_UID not set" }, { status: 500 });
+    return NextResponse.json({ error: "OWNER_UID not set" }, { status: 500 });
   }
 
   const syncMetaRef = adminDb().doc(`users/${uid}/config/syncMeta`);

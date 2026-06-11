@@ -1,5 +1,13 @@
 import type { Movimiento } from "@/types";
 
+// Neutraliza inyección de fórmulas (Sheets/Excel/CSV): un valor de texto que
+// empieza con = + - @ (o tab/CR) sería interpretado como fórmula. Se le antepone
+// un apóstrofo para forzar que el motor de planillas lo trate como texto literal.
+export function sanitizeCell(v: string | number): string | number {
+  if (typeof v !== "string") return v;
+  return /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+}
+
 // Argentina = UTC-3 (sin horario de verano)
 // El form de Google escribe la hora SIN padding (9:48:43), minutos y segundos con padding.
 export function formatTimestampAR(date: Date): string {
@@ -20,12 +28,12 @@ export function movimientoToRow(m: Movimiento): (string | number)[] {
   return [
     formatTimestampAR(m.timestampCarga),
     isoToFechaAR(m.fecha),
-    m.tipo,
-    m.categoria,
-    m.descripcion ?? "",
+    sanitizeCell(m.tipo),
+    sanitizeCell(m.categoria),
+    sanitizeCell(m.descripcion ?? ""),
     m.monto,
-    m.medioPago ?? "",
-    m.observaciones ?? "",
-    m.periodoId,
+    sanitizeCell(m.medioPago ?? ""),
+    sanitizeCell(m.observaciones ?? ""),
+    sanitizeCell(m.periodoId),
   ];
 }
