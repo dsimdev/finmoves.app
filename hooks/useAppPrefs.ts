@@ -8,9 +8,11 @@ interface AppPrefs {
   showAhorros: boolean;
   monedaInversiones: "USD" | "EUR";
   monedaPrincipal: "ARS" | "USD" | "EUR";
+  lang: "es" | "en";
   set: (key: "showReportes" | "showAhorros", value: boolean) => void;
   setMoneda: (m: "USD" | "EUR") => void;
   setMonedaPrincipal: (m: "ARS" | "USD" | "EUR") => void;
+  setLang: (l: "es" | "en") => void;
 }
 
 export const useAppPrefs = create<AppPrefs>()(
@@ -20,9 +22,11 @@ export const useAppPrefs = create<AppPrefs>()(
       showAhorros: false,
       monedaInversiones: "USD",
       monedaPrincipal: "ARS",
+      lang: "es",
       set: (key, value) => set({ [key]: value }),
       setMoneda: (m) => set({ monedaInversiones: m }),
       setMonedaPrincipal: (m) => set({ monedaPrincipal: m }),
+      setLang: (l) => set({ lang: l }),
     }),
     { name: "finmoves_app_prefs" }
   )

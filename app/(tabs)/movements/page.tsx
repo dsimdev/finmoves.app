@@ -12,6 +12,7 @@ import { useMoney } from "@/hooks/useHideValues";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { Movimiento, TipoMovimiento } from "@/types";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useT } from "@/hooks/useTranslation";
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
 const PencilIcon = () => (
@@ -102,6 +103,7 @@ export default function MovimientosPage() {
   const { config } = useConfig(user?.uid);
   const { cotizacion } = useCotizacion();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
+  const t = useT();
   const monedaInversionesEfectiva: "USD" | "EUR" =
     monedaPrincipal === "USD" ? "EUR" :
     monedaPrincipal === "EUR" ? "USD" :
@@ -109,9 +111,9 @@ export default function MovimientosPage() {
   const esEURMode = monedaInversionesEfectiva === "EUR";
 
   const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = [
-    { t: "Gasto",                             label: "Gasto",   color: "var(--red)" },
-    { t: "Ingreso",                           label: "Ingreso", color: "var(--green)" },
-    { t: "Move",                              label: "Move",    color: "var(--yellow)" },
+    { t: "Gasto",                             label: t.tipoDisplay["Gasto"],   color: "var(--red)" },
+    { t: "Ingreso",                           label: t.tipoDisplay["Ingreso"], color: "var(--green)" },
+    { t: "Move",                              label: t.tipoDisplay["Move"],    color: "var(--yellow)" },
     { t: esEURMode ? "CompraEUR" : "CompraUSD", label: esEURMode ? "+EUR" : "+USD", color: "var(--yellow)" },
     { t: esEURMode ? "GastoEUR"  : "GastoUSD",  label: esEURMode ? "-EUR" : "-USD", color: "var(--yellow)" },
   ];
@@ -270,12 +272,12 @@ export default function MovimientosPage() {
     setAddError("");
     setAddLoading(true);
     try {
-      if (!user?.uid) throw new Error("No autenticado");
-      if (!esMove && !esUSD && !categoria) throw new Error("Seleccioná una categoría");
+      if (!user?.uid) throw new Error(t.errNotAuth);
+      if (!esMove && !esUSD && !categoria) throw new Error(t.errSelectCat);
       const montoFinal = esCompraFX ? arsCompraUSD : esGastoFX ? 0 : parseFloat(monto);
-      if (!esGastoFX && (!montoFinal || montoFinal <= 0)) throw new Error("Monto inválido");
-      if (esUSD && (!usdFinal || usdFinal <= 0)) throw new Error(`Cantidad ${fxLabel} inválida`);
-      if (!periodoActual) throw new Error("No hay período activo");
+      if (!esGastoFX && (!montoFinal || montoFinal <= 0)) throw new Error(t.errInvalidAmount);
+      if (esUSD && (!usdFinal || usdFinal <= 0)) throw new Error(t.errInvalidFX(fxLabel));
+      if (!periodoActual) throw new Error(t.errNoActivePeriod);
       await crearMovimiento(user.uid, {
         timestampCarga: new Date(), fecha, tipo,
         categoria: esMove ? "Move" : esCompraFX ? tipo : esGastoFX ? tipo : categoria,
@@ -334,7 +336,7 @@ export default function MovimientosPage() {
   const isLocked = movSel ? movSel.tipo === "Ingreso" && movSel.categoria === "Sueldo" : false;
 
   // ── Títulos del modal ──────────────────────────────────────────────────────
-  const modalTitle = modal === "add" ? "Nuevo movimiento" : modal === "delete" ? "Eliminar" : "Editar movimiento";
+  const modalTitle = modal === "add" ? t.newMovement : modal === "delete" ? t.delete : t.editMovement;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -346,12 +348,12 @@ export default function MovimientosPage() {
       ) : (
         <div className="fade-up">
           <div style={{ marginBottom: 20 }}>
-            <div className="label" style={{ marginBottom: 2 }}>Gestión</div>
+            <div className="label" style={{ marginBottom: 2 }}>{t.management}</div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Movements</div>
             {periodoActual && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                {activePeriodoId === periodos[0]?.periodoId ? "Disponible" : "Resto"}: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
-                <button onClick={toggle} aria-label="Ocultar valores" style={{
+                {activePeriodoId === periodos[0]?.periodoId ? t.available : t.remaining}: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
+                <button onClick={toggle} aria-label={t.hideValues} style={{
                   background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
                   width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
                 }}>
@@ -390,7 +392,7 @@ export default function MovimientosPage() {
 
           {movsFiltrados.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
-              No hay movimientos. Usá + para agregar.
+              No movements. Tap + to add one.
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -443,7 +445,7 @@ export default function MovimientosPage() {
     {/* Botón flotante — fijo sobre el navbar, se oculta tras inactividad */}
     {!loading && <button
       onClick={openAdd}
-      aria-label="Nuevo movimiento"
+      aria-label="New movement"
       style={{
         position: "fixed",
         bottom: "calc(var(--nav-h) - 8px)",
@@ -475,7 +477,7 @@ export default function MovimientosPage() {
         {modal === "add" && (
           <form onSubmit={handleAdd}>
             <div style={{ marginBottom: 18 }}>
-              <div className="label">Tipo</div>
+              <div className="label">Type</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {TIPOS.map(({ t, label, color }) => (
                   <button key={t} type="button" onClick={() => { setTipo(t); resetAdd(); }}
@@ -490,19 +492,19 @@ export default function MovimientosPage() {
 
             {esSueldo && (
               <div style={{ background: "var(--yellow-dim)", border: "1px solid var(--yellow)44", borderRadius: "var(--radius-sm)", padding: 12, marginBottom: 16, fontSize: 12, color: "var(--yellow)", lineHeight: 1.7 }}>
-                Cierra el período actual, mueve el resto a Ahorros y abre uno nuevo.
+                Closes the current period, moves remaining balance to Savings and opens a new one.
               </div>
             )}
             {esMove && (
               <div style={{ background: "var(--yellow-dim)", border: "1px solid var(--yellow)44", borderRadius: "var(--radius-sm)", padding: 12, marginBottom: 16, fontSize: 12, color: "var(--yellow)" }}>
-                Mueve saldo de Ahorros → Disponible
-                {periodoActual && <div style={{ color: "var(--muted)", marginTop: 4 }}>Ahorros: {money(ahorrosAcumActivo)}</div>}
+                Moves balance from Savings → Available
+                {periodoActual && <div style={{ color: "var(--muted)", marginTop: 4 }}>Savings: {money(ahorrosAcumActivo)}</div>}
               </div>
             )}
 
             {!esMove && !esUSD && (
               <div style={{ marginBottom: 18 }}>
-                <div className="label">Categoría</div>
+                <div className="label">Category</div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {categoriasFiltradas.map(c => (
                     <button key={c.nombre} type="button" onClick={() => setCategoria(c.nombre)}
@@ -518,7 +520,7 @@ export default function MovimientosPage() {
 
             {esAhorros && (
               <div style={{ marginBottom: 18 }}>
-                <div className="label">Origen</div>
+                <div className="label">Origin</div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {config?.origenesAhorro.filter(o => o.activo).map(o => (
                     <button key={o.nombre} type="button" onClick={() => setOrigenAhorro(o.nombre)}
@@ -534,7 +536,7 @@ export default function MovimientosPage() {
 
             {esCompraFX && (
               <div style={{ marginBottom: 18 }}>
-                <div className="label">Ingresar en</div>
+                <div className="label">Add to</div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                   {([fxLabel, "ARS"] as const).map(mo => (
                     <button key={mo} type="button" onClick={() => setModoCarga(mo === "ARS" ? "ARS" : "USD")} className="pill" style={{
@@ -546,7 +548,7 @@ export default function MovimientosPage() {
                   ))}
                 </div>
 
-                <div className="label">Cotización</div>
+                <div className="label">Exchange rate</div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
                   {cotizacion ? (["oficial", "blue"] as const).map(t => {
                     const val = esCompraEUR
@@ -560,7 +562,7 @@ export default function MovimientosPage() {
                           color: (cotizManual === String(val) || (!cotizManual && t === "oficial")) ? "var(--yellow)" : "var(--muted)",
                         }}>{t} ${val.toLocaleString("es-AR")}</button>
                     );
-                  }) : <span style={{ fontSize: 12, color: "var(--muted)" }}>Sin cotización</span>}
+                  }) : <span style={{ fontSize: 12, color: "var(--muted)" }}>No exchange rate</span>}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
@@ -573,12 +575,12 @@ export default function MovimientosPage() {
                     )}
                   </div>
                   <div>
-                    <div className="label">Cotización</div>
+                    <div className="label">Exchange rate</div>
                     <input className="input" type="number" value={cotizManual || String(cotizacion?.oficial ?? "")} onChange={e => setCotizManual(e.target.value)} placeholder="0" />
                   </div>
                 </div>
 
-                <div className="label">{modoCarga === "USD" ? "Total ARS" : `Equivale a ${fxLabel}`}</div>
+                <div className="label">{modoCarga === "USD" ? "Total ARS" : `Equal to ${fxLabel}`}</div>
                 <div style={{ padding: "12px 14px", background: "var(--yellow-dim)", border: "1px solid var(--yellow)33", borderRadius: "var(--radius-sm)", fontSize: 14, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
                   {modoCarga === "USD"
                     ? (arsCompraUSD > 0 ? formatARS(arsCompraUSD) : "—")
@@ -589,7 +591,7 @@ export default function MovimientosPage() {
 
             {esGastoFX && (
               <div style={{ marginBottom: 18 }}>
-                <div className="label">Cantidad {fxLabel} gastada</div>
+                <div className="label">{fxLabel} amount spent</div>
                 <input className="input" type="number" value={cantidadUSD} onChange={e => setCantidadUSD(e.target.value)} placeholder="0" style={{ fontFamily: "var(--font-mono)" }} />
                 {usdFinal > 0 && (
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
@@ -601,23 +603,23 @@ export default function MovimientosPage() {
 
             {!esMove && !esUSD && !esAhorros && !esSueldo && (
               <div style={{ marginBottom: 14 }}>
-                <div className="label">Descripción</div>
+                <div className="label">Description</div>
                 <input className="input" type="text" value={descripcion} onChange={e => setDescripcion(e.target.value)} />
               </div>
             )}
             {!esUSD && (
               <div style={{ marginBottom: 14 }}>
-                <div className="label">Monto</div>
+                <div className="label">Amount</div>
                 <input className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" value={monto} onChange={e => setMonto(e.target.value)} placeholder="0" />
               </div>
             )}
             <div style={{ marginBottom: 14 }}>
-              <div className="label">Fecha</div>
+              <div className="label">Date</div>
               <input className="input" type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
             </div>
             {!esMove && !esUSD && (
               <div style={{ marginBottom: 14 }}>
-                <div className="label">Medio de pago</div>
+                <div className="label">Payment method</div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {config?.mediosPago.filter(m => m.activo).map(m => (
                     <button key={m.nombre} type="button" onClick={() => setMedioPago(m.nombre)}
@@ -631,7 +633,7 @@ export default function MovimientosPage() {
               </div>
             )}
             <div style={{ marginBottom: 20 }}>
-              <div className="label">Observaciones (opcional)</div>
+              <div className="label">Notes (optional)</div>
               <input className="input" type="text" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
             </div>
 
@@ -641,7 +643,7 @@ export default function MovimientosPage() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                {money(config.meta.autoAhorro.monto)} a ahorros
+                {money(config.meta.autoAhorro.monto)} to savings
               </div>
             )}
 
@@ -674,7 +676,7 @@ export default function MovimientosPage() {
         {modal === "edit" && movSel && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-              {[{ l: "Tipo", v: movSel.tipo }, { l: "Categoría", v: movSel.categoria }, { l: "Fecha", v: fechaCorta(movSel.fecha) }].map(f => (
+              {[{ l: "Type", v: movSel.tipo }, { l: "Category", v: movSel.categoria }, { l: "Date", v: fechaCorta(movSel.fecha) }].map(f => (
                 <div key={f.l} style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 12px" }}>
                   <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{f.l}</div>
                   <div style={{ fontSize: 12, fontWeight: 600 }}>{f.v}</div>
@@ -685,15 +687,15 @@ export default function MovimientosPage() {
             {!isLocked && (
               <>
                 <div style={{ marginBottom: 14 }}>
-                  <div className="label">Descripción</div>
+                  <div className="label">Description</div>
                   <input className="input" value={eDesc} onChange={e => setEDesc(e.target.value)} />
                 </div>
                 <div style={{ marginBottom: 14 }}>
-                  <div className="label">Monto</div>
+                  <div className="label">Amount</div>
                   <input className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" value={eMonto} onChange={e => setEMonto(e.target.value)} />
                 </div>
                 <div style={{ marginBottom: 14 }}>
-                  <div className="label">Medio de pago</div>
+                  <div className="label">Payment method</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {["Mercado Pago", "Débito", "Efectivo"].map(m => (
                       <button key={m} type="button" onClick={() => setEMedio(m)} className="pill" style={{
@@ -708,17 +710,17 @@ export default function MovimientosPage() {
             )}
             {isLocked && (
               <div style={{ marginBottom: 14 }}>
-                <div className="label">Monto</div>
+                <div className="label">Amount</div>
                 <input className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" value={eMonto} onChange={e => setEMonto(e.target.value)} />
               </div>
             )}
             <div style={{ marginBottom: 24 }}>
-              <div className="label">Observaciones</div>
+              <div className="label">Notes</div>
               <input className="input" value={eObs} onChange={e => setEObs(e.target.value)} />
             </div>
 
             <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", height: 56, marginTop: 8 }}>
-              <button onClick={handleEdit} disabled={!isDirtyEdit || editLoading} aria-label="Guardar" style={{
+              <button onClick={handleEdit} disabled={!isDirtyEdit || editLoading} aria-label="Save" style={{
                 width: 56, height: 56, borderRadius: "50%",
                 background: isDirtyEdit ? "var(--green)" : "transparent",
                 border: `2px solid ${isDirtyEdit ? "var(--green)" : "var(--border)"}`,
@@ -735,7 +737,7 @@ export default function MovimientosPage() {
                 }
               </button>
               {!isLocked && (
-                <button onClick={() => setModal("delete")} aria-label="Eliminar" style={{ position: "absolute", right: 0, background: "none", border: "none", color: "var(--red)", cursor: "pointer", padding: 8 }}>
+                <button onClick={() => setModal("delete")} aria-label="Delete" style={{ position: "absolute", right: 0, background: "none", border: "none", color: "var(--red)", cursor: "pointer", padding: 8 }}>
                   <TrashIcon />
                 </button>
               )}
@@ -746,15 +748,15 @@ export default function MovimientosPage() {
         {/* DELETE */}
         {modal === "delete" && movSel && (
           <div style={{ textAlign: "center", paddingTop: 8 }}>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>¿Eliminar este movimiento?</div>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>Delete this movement?</div>
             <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>{movSel.descripcion || movSel.categoria}</div>
             <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 28 }}>
               {money(movSel.monto)}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setModal("edit")} className="btn btn-ghost" style={{ flex: 1 }}>Cancelar</button>
+              <button onClick={() => setModal("edit")} className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
               <button onClick={handleDelete} disabled={editLoading} className="btn btn-danger" style={{ flex: 1 }}>
-                {editLoading ? "..." : "Sí, eliminar"}
+                {editLoading ? "..." : "Yes, delete"}
               </button>
             </div>
           </div>

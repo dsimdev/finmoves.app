@@ -11,6 +11,7 @@ import { serieTendencia } from "@/utils/reportes";
 import { EyeIcon } from "@/components/EyeIcon";
 import { Movimiento } from "@/types";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useT } from "@/hooks/useTranslation";
 
 function TipoColor(m: Movimiento) {
   if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const { movimientos, loading } = useAllMovimientos(user?.uid);
   const { config } = useConfig(user?.uid);
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
+  const t = useT();
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const ultimoCargado = useMemo(() => {
@@ -49,18 +51,18 @@ export default function Dashboard() {
         <LoadingSpinner />
       ) : !p ? (
         <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
-          No hay datos. Cargá el primer movimiento.
+          {t.noData}
         </div>
       ) : (
         <div className="fade-up">
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div>
-              <div className="label" style={{ marginBottom: 2 }}>Inicio</div>
+              <div className="label" style={{ marginBottom: 2 }}>{t.home}</div>
               <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Dashboard</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>Período</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>{t.period}</div>
               <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{fechaCorta(p.periodoId)}</div>
             </div>
           </div>
@@ -69,7 +71,7 @@ export default function Dashboard() {
           <div className="soft" style={{ borderColor: `${barColor}44`, marginBottom: 12, background: `linear-gradient(135deg, var(--surface) 0%, ${barColorDim} 100%)` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 7 }}>Disponible</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 7 }}>{t.available}</div>
                 <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -1, color: "var(--text)", lineHeight: 1, fontFamily: "var(--font-mono)" }}>
                   {money(p.disponible)}
                 </div>
@@ -79,7 +81,7 @@ export default function Dashboard() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, flexShrink: 0 }}>
                 <span className="badge" style={{ background: barColor + "20", color: barColor, border: `1px solid ${barColor}44` }}>{pctDisp}%</span>
-                <button onClick={toggleOculto} aria-label="Ocultar valores" style={{
+                <button onClick={toggleOculto} aria-label={t.hideValues} style={{
                   background: "none", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
                   display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 6,
                 }}>
@@ -95,10 +97,10 @@ export default function Dashboard() {
           {/* KPIs */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
             {[
-              { label: "Sueldo", value: money(p.sueldo), color: "var(--green)" },
-              { label: "Gastado", value: money(p.gastado), color: "var(--red)" },
-              { label: "Ahorros", value: money(ahorrosAcum), color: "var(--blue)" },
-              { label: "Retiros", value: p.extras > 0 ? money(p.extras) : "—", sub: "desde ahorros", color: "var(--yellow)" },
+              { label: t.salary, value: money(p.sueldo), color: "var(--green)" },
+              { label: t.spent, value: money(p.gastado), color: "var(--red)" },
+              { label: t.savings, value: money(ahorrosAcum), color: "var(--blue)" },
+              { label: t.withdrawals, value: p.extras > 0 ? money(p.extras) : "—", sub: t.fromSavings, color: "var(--yellow)" },
             ].map((k) => (
               <div key={k.label} className="soft" style={{ padding: 15, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7 }}>{k.label}</div>
@@ -108,18 +110,18 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Últimos movimientos */}
+          {/* Latest movements */}
           <div className="soft" style={{ background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>Últimos movimientos</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{t.latestMovements}</div>
               {ultimoCargado && (
                 <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
-                  Último: {new Date(ultimoCargado).toLocaleString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}
+                  {t.last} {new Date(ultimoCargado).toLocaleString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}
                 </div>
               )}
             </div>
             {ultimos.length === 0 ? (
-              <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>Sin movimientos</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noMovements}</div>
             ) : ultimos.map((m) => (
               <div key={m.id} className="row" style={{ padding: "11px 0" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -138,7 +140,7 @@ export default function Dashboard() {
               color: "var(--muted)", fontSize: 12, fontStyle: "italic",
               textDecoration: "none",
             }}>
-              ver más
+              {t.seeMore}
             </Link>
           </div>
         </div>

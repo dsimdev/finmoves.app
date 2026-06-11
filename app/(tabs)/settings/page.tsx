@@ -17,22 +17,9 @@ import { formatTimestampAR, isoToFechaAR } from "@/lib/sheet-format";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { useT } from "@/hooks/useTranslation";
 
 type Tab = "cuenta" | "movimientos" | "reportes" | "ahorros";
-
-const ALL_TABS: { id: Tab; label: string }[] = [
-  { id: "cuenta",      label: "General" },
-  { id: "movimientos", label: "Movimientos" },
-  { id: "ahorros",     label: "Inversión" },
-  { id: "reportes",    label: "Reportes" },
-];
-
-const SECCION_LABEL: Record<string, string> = {
-  gastos: "Gastos",
-  ingresos: "Ingresos",
-  movimientos: "Movimientos",
-  periodos: "Períodos",
-};
 
 function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
   return (
@@ -63,10 +50,26 @@ export default function ConfigPage() {
   const router = useRouter();
 
   const { dark, toggle: toggleTheme } = useTheme();
-  const { showReportes, showAhorros, monedaInversiones, monedaPrincipal, set: setPref, setMoneda, setMonedaPrincipal } = useAppPrefs();
-  const TABS = ALL_TABS.filter((t) => {
-    if (t.id === "reportes" && !showReportes) return false;
-    if (t.id === "ahorros" && !showAhorros) return false;
+  const { showReportes, showAhorros, monedaInversiones, monedaPrincipal, set: setPref, setMoneda, setMonedaPrincipal, lang, setLang } = useAppPrefs();
+  const t = useT();
+
+  const ALL_TABS: { id: Tab; label: string }[] = [
+    { id: "cuenta",      label: "General" },
+    { id: "movimientos", label: t.settingsTabMovements },
+    { id: "ahorros",     label: t.settingsTabInvestments },
+    { id: "reportes",    label: t.settingsTabReports },
+  ];
+
+  const SECCION_LABEL: Record<string, string> = {
+    gastos: t.sectionExpenses,
+    ingresos: t.sectionIncome,
+    movimientos: t.sectionMovements,
+    periodos: t.sectionPeriods,
+  };
+
+  const TABS = ALL_TABS.filter((tab) => {
+    if (tab.id === "reportes" && !showReportes) return false;
+    if (tab.id === "ahorros" && !showAhorros) return false;
     return true;
   });
   const [tab, setTab] = useState<Tab>("cuenta");
@@ -248,7 +251,7 @@ export default function ConfigPage() {
       await setDoc(doc(db, `users/${user.uid}/config/meta`), newConfig);
       refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error al guardar";
+      const msg = err instanceof Error ? err.message : t.errorSaving;
       setSaveMsg({ ok: false, text: msg });
       setTimeout(() => setSaveMsg(null), 3000);
     } finally {
@@ -266,7 +269,7 @@ export default function ConfigPage() {
   };
 
   const exportCSV = () => {
-    const header = ["Timestamp", "Fecha", "Tipo", "Categoría", "Descripción", "Monto", "Medio de Pago", "Observaciones", "Período"];
+    const header = ["Timestamp", t.csvDate, t.csvType, t.csvCategory, t.csvDescription, t.csvAmount, t.csvPaymentMethod, t.csvNotes, t.csvPeriod];
     const rows = [...movimientos]
       .sort((a, b) => a.timestampCarga.getTime() - b.timestampCarga.getTime())
       .map(m => [
@@ -308,14 +311,14 @@ export default function ConfigPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error");
+      if (!res.ok) throw new Error(data.error ?? t.errorSyncing);
       const now = new Date();
       setLastSync(now);
       setSyncError(null);
       setSyncMsg({ ok: true, text: data.message });
-      await appendSyncLog(currentUser.uid, { status: "ok", type: "manual", at: now, message: data.message ?? "Sincronizado" }, syncLogs);
+      await appendSyncLog(currentUser.uid, { status: "ok", type: "manual", at: now, message: data.message ?? t.synced }, syncLogs);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error al sincronizar";
+      const message = err instanceof Error ? err.message : t.errorSyncing;
       const now = new Date();
       setSyncError({ message, at: now });
       setSyncMsg({ ok: false, text: message });
@@ -497,22 +500,22 @@ export default function ConfigPage() {
     <div className="page fade-up">
 
       <div style={{ marginBottom: 24 }}>
-        <div className="label" style={{ marginBottom: 2 }}>Preferencias</div>
+        <div className="label" style={{ marginBottom: 2 }}>{t.preferences}</div>
         <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Settings</div>
       </div>
 
       {/* Pills principales */}
       <div style={{ display: "flex", gap: 6, marginBottom: 20, overflowX: "auto", scrollbarWidth: "none" }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => { setTab(t.id); setNuevoNombre(""); }}
+        {TABS.map(tabItem => (
+          <button key={tabItem.id} onClick={() => { setTab(tabItem.id); setNuevoNombre(""); }}
             className="pill"
             style={{
               flexShrink: 0,
-              borderColor: tab === t.id ? "var(--accent)" : "var(--border)",
-              background: tab === t.id ? "var(--accent-dim)" : "transparent",
-              color: tab === t.id ? "var(--accent)" : "var(--muted)",
+              borderColor: tab === tabItem.id ? "var(--accent)" : "var(--border)",
+              background: tab === tabItem.id ? "var(--accent-dim)" : "transparent",
+              color: tab === tabItem.id ? "var(--accent)" : "var(--muted)",
             }}>
-            {t.label}
+            {tabItem.label}
           </button>
         ))}
       </div>
@@ -523,7 +526,7 @@ export default function ConfigPage() {
 
           {/* Sync */}
           <div className="card">
-            <div className="label">Sincronización</div>
+            <div className="label">{t.sync}</div>
             <div className="row" style={{ padding: "10px 0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{
@@ -543,10 +546,10 @@ export default function ConfigPage() {
                   <div style={{ fontSize: 13 }}>Google Sheets</div>
                   <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
                     {syncError
-                      ? `Error de sync: ${syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}`
+                      ? t.syncErrorMsg(syncError.at.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" }))
                       : lastSync
-                        ? `Última sync: ${lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" })}`
-                        : "Nunca sincronizado"}
+                        ? t.lastSyncMsg(lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" }))
+                        : t.neverSynced}
                   </div>
                 </div>
               </div>
@@ -558,11 +561,11 @@ export default function ConfigPage() {
                     border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
                     padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
                   }}>
-                    {syncing ? "Reintentando..." : "Reintentar"}
+                    {syncing ? t.retrying : t.retry}
                   </button>
                 )}
                 {syncLogs.length > 0 && (
-                  <button onClick={() => setShowSyncLog(true)} title="Ver historial" style={{
+                  <button onClick={() => setShowSyncLog(true)} title={t.viewHistory} style={{
                     background: "var(--surface-alt)", border: "1px solid var(--border)",
                     borderRadius: 10, width: 36, height: 36,
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -580,7 +583,7 @@ export default function ConfigPage() {
 
           {/* Personalization */}
           <div className="card">
-            <div className="label" style={{ marginBottom: 16 }}>Generales</div>
+            <div className="label" style={{ marginBottom: 16 }}>{t.general}</div>
 
             {/* Theme mode */}
             <div className="row" style={{ padding: "12px 0" }}>
@@ -604,13 +607,35 @@ export default function ConfigPage() {
                   )}
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Modo oscuro</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.darkMode}</div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                    {dark ? "Cambiá a tema claro" : "Cambiá a tema oscuro"}
+                    {dark ? t.switchToLight : t.switchToDark}
                   </div>
                 </div>
               </div>
               <Toggle activo={dark} onClick={toggleTheme} />
+            </div>
+
+            {/* Language */}
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 13 }}>{t.language}</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {(["es", "en"] as const).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLang(l)}
+                    style={{
+                      padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700,
+                      border: `1px solid ${lang === l ? "var(--accent)" : "var(--border)"}`,
+                      background: lang === l ? "var(--accent-dim)" : "transparent",
+                      color: lang === l ? "var(--accent)" : "var(--muted)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {l === "es" ? "🇦🇷 ES" : "🇬🇧 EN"}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Moneda principal */}
@@ -625,7 +650,7 @@ export default function ConfigPage() {
                 </span>
               </div>
               <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda principal</div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{t.mainCurrency}</div>
                 <span className="badge" style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)44" }}>{monedaPrincipal}</span>
               </div>
             </div>
@@ -645,8 +670,8 @@ export default function ConfigPage() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Reportes</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de reportes</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.reportsSection}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showReportsLabel}</div>
                 </div>
               </div>
               <Toggle activo={showReportes} onClick={() => {
@@ -676,8 +701,8 @@ export default function ConfigPage() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Inversión</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Mostrar sección de inversión</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentsSection}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showInvestmentsLabel}</div>
                 </div>
               </div>
               <Toggle activo={showAhorros} onClick={() => setPref("showAhorros", !showAhorros)} />
@@ -698,12 +723,12 @@ export default function ConfigPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>Moneda de inversión</div>
-                    {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>meta activa</span>}
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentCurrency}</div>
+                    {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>{t.activeGoal}</span>}
                   </div>
                   {monedaPrincipal === "ARS" ? (
                     config?.meta.metaMonto ? (
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>No se puede cambiar mientras haya una meta de ahorro activa.</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.cantChangeWithGoal}</div>
                     ) : (
                       <div style={{ display: "flex", gap: 6 }}>
                         {(["USD", "EUR"] as const).map((m) => (
@@ -717,7 +742,7 @@ export default function ConfigPage() {
                     )
                   ) : (
                     <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {monedaPrincipal === "USD" ? "Inversión en EUR" : "Inversión en USD"}
+                      {monedaPrincipal === "USD" ? t.eurInvestments : t.usdInvestments}
                     </div>
                   )}
                 </div>
@@ -752,12 +777,12 @@ export default function ConfigPage() {
                       const medios = config.meta.autoAhorro.mediosPago ?? [];
                       const allActive = config.mediosPago.filter(m => m.activo).map(m => m.nombre);
                       const mediosStr = medios.length === 0 || medios.length === allActive.length
-                        ? "todos los medios"
+                        ? t.allMethods
                         : medios.join(" + ");
                       const omitir = config.meta.autoAhorro.omitirDescripciones ?? [];
-                      const omitirStr = omitir.length > 0 ? ` · omite: ${omitir.join(", ")}` : "";
+                      const omitirStr = omitir.length > 0 ? ` · ${t.skipPrefix} ${omitir.join(", ")}` : "";
                       return `${monto} · ${mediosStr}${omitirStr}`;
-                    })() : "Destina un monto fijo por cada gasto"}
+                    })() : t.setsFixedAmount}
                   </div>
                 </div>
               </div>
@@ -767,7 +792,7 @@ export default function ConfigPage() {
 
           {/* Cuenta */}
           <div className="card">
-            <div className="label">Cuenta</div>
+            <div className="label">{t.account}</div>
             <div className="row" style={{ padding: "10px 0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
                 <div style={{
@@ -781,7 +806,7 @@ export default function ConfigPage() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13 }}>Usuario</div>
+                  <div style={{ fontSize: 13 }}>{t.user}</div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{user?.email}</div>
                 </div>
               </div>
@@ -806,7 +831,7 @@ export default function ConfigPage() {
                 <span style={{ fontSize: 9, letterSpacing: 0.4, textTransform: "uppercase", fontWeight: 600 }}>GitHub</span>
               </button>
               {/* 4. Export CSV */}
-              <button onClick={() => setShowExportConfirm(true)} aria-label="Exportar CSV" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", flexShrink: 0, padding: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <button onClick={() => setShowExportConfirm(true)} aria-label={t.exportCSV} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", flexShrink: 0, padding: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/>
@@ -823,14 +848,14 @@ export default function ConfigPage() {
                 <button onClick={() => setConfirmLogout(false)} style={{
                   background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
                   color: "var(--muted)", fontSize: 13, padding: "8px 16px", cursor: "pointer",
-                }}>Cancelar</button>
+                }}>{t.cancel}</button>
                 <button onClick={async () => { await signOut(auth); router.push("/login"); }} style={{
                   background: "var(--red-dim)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
                   color: "var(--red)", fontSize: 13, fontWeight: 700, padding: "8px 16px", cursor: "pointer",
-                }}>Confirmar</button>
+                }}>{t.confirm}</button>
               </div>
             ) : (
-              <button onClick={() => setConfirmLogout(true)} aria-label="Cerrar sesión" style={{
+              <button onClick={() => setConfirmLogout(true)} aria-label={t.signOut} style={{
                 background: "transparent", border: "none", cursor: "pointer",
                 color: "var(--red)", display: "flex", alignItems: "center", justifyContent: "center",
                 width: 54, height: 54, borderRadius: "50%",
@@ -853,9 +878,9 @@ export default function ConfigPage() {
 
           <div style={{ display: "flex", gap: 6 }}>
             {([
-              { id: "categorias", label: "Categorías" },
-              { id: "medios",     label: "Medios" },
-              { id: "origenes",   label: "Orígenes" },
+              { id: "categorias", label: t.categories },
+              { id: "medios",     label: t.methods },
+              { id: "origenes",   label: t.originsLabel },
             ] as const).map(s => (
               <button key={s.id} onClick={() => { setMovSub(s.id); setNuevoNombre(""); }}
                 className="pill"
@@ -871,20 +896,20 @@ export default function ConfigPage() {
 
           {movSub === "categorias" && (
             <div className="card">
-              <div className="label">Categorías</div>
+              <div className="label">{t.categories}</div>
               <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {(["Gasto", "Ingreso"] as const).map(t => (
-                    <button key={t} onClick={() => setNuevoTipo(t)} className="pill" style={{
-                      borderColor: nuevoTipo === t ? (t === "Gasto" ? "var(--red)" : "var(--green)") : "var(--border)",
-                      background: nuevoTipo === t ? (t === "Gasto" ? "var(--red-dim)" : "var(--green-dim)") : "transparent",
-                      color: nuevoTipo === t ? (t === "Gasto" ? "var(--red)" : "var(--green)") : "var(--muted)",
-                    }}>{t}</button>
+                  {(["Gasto", "Ingreso"] as const).map(tipo => (
+                    <button key={tipo} onClick={() => setNuevoTipo(tipo)} className="pill" style={{
+                      borderColor: nuevoTipo === tipo ? (tipo === "Gasto" ? "var(--red)" : "var(--green)") : "var(--border)",
+                      background: nuevoTipo === tipo ? (tipo === "Gasto" ? "var(--red-dim)" : "var(--green-dim)") : "transparent",
+                      color: nuevoTipo === tipo ? (tipo === "Gasto" ? "var(--red)" : "var(--green)") : "var(--muted)",
+                    }}>{tipo === "Gasto" ? t.expenseType : t.incomeType}</button>
                   ))}
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
-                    placeholder="Nueva categoría" className="input" style={{ flex: 1 }} />
+                    placeholder={t.newCategory} className="input" style={{ flex: 1 }} />
                   <button onClick={agregarCategoriaLocal}
                     style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>
                     +
@@ -896,9 +921,9 @@ export default function ConfigPage() {
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
                     {confirmDelete === `cat_${c.nombre}` ? (
                       <>
-                        <span style={{ fontSize: 11, color: "var(--red)" }}>¿Eliminar?</span>
-                        <button onClick={() => eliminarCategoriaLocal(c.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>Sí</button>
-                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>No</button>
+                        <span style={{ fontSize: 11, color: "var(--red)" }}>{t.deleteQ}</span>
+                        <button onClick={() => eliminarCategoriaLocal(c.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>{t.yes}</button>
+                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>{t.no}</button>
                       </>
                     ) : (
                       <>
@@ -920,10 +945,10 @@ export default function ConfigPage() {
 
           {movSub === "medios" && (
             <div className="card">
-              <div className="label">Medios de pago</div>
+              <div className="label">{t.paymentMethods}</div>
               <div style={{ marginBottom: 14, display: "flex", gap: 8 }}>
                 <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
-                  placeholder="Nuevo medio" className="input" style={{ flex: 1 }} />
+                  placeholder={t.newMethod} className="input" style={{ flex: 1 }} />
                 <button onClick={agregarMedioLocal}
                   style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>
                   +
@@ -934,9 +959,9 @@ export default function ConfigPage() {
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
                     {confirmDelete === `med_${m.nombre}` ? (
                       <>
-                        <span style={{ fontSize: 11, color: "var(--red)" }}>¿Eliminar?</span>
-                        <button onClick={() => eliminarMedioLocal(m.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>Sí</button>
-                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>No</button>
+                        <span style={{ fontSize: 11, color: "var(--red)" }}>{t.deleteQ}</span>
+                        <button onClick={() => eliminarMedioLocal(m.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>{t.yes}</button>
+                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>{t.no}</button>
                       </>
                     ) : (
                       <>
@@ -953,11 +978,11 @@ export default function ConfigPage() {
 
           {movSub === "origenes" && (
             <div className="card">
-              <div className="label">Orígenes de ahorro</div>
-              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12, marginTop: -6 }}>Aparecen al cargar Ingreso → Ahorros</div>
+              <div className="label">{t.savingsOrigins}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12, marginTop: -6 }}>{t.shownWhenAddingIncomeSavings}</div>
               <div style={{ marginBottom: 14, display: "flex", gap: 8 }}>
                 <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
-                  placeholder="Nuevo origen" className="input" style={{ flex: 1 }} />
+                  placeholder={t.newOrigin} className="input" style={{ flex: 1 }} />
                 <button onClick={agregarOrigenLocal}
                   style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>
                   +
@@ -968,9 +993,9 @@ export default function ConfigPage() {
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
                     {confirmDelete === `ori_${o.nombre}` ? (
                       <>
-                        <span style={{ fontSize: 11, color: "var(--red)" }}>¿Eliminar?</span>
-                        <button onClick={() => eliminarOrigenLocal(o.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>Sí</button>
-                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>No</button>
+                        <span style={{ fontSize: 11, color: "var(--red)" }}>{t.deleteQ}</span>
+                        <button onClick={() => eliminarOrigenLocal(o.nombre)} style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>{t.yes}</button>
+                        <button onClick={() => setConfirmDelete(null)} style={{ background: "var(--surface-alt)", color: "var(--muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "2px 8px", fontSize: 11, cursor: "pointer" }}>{t.no}</button>
                       </>
                     ) : (
                       <>
@@ -1009,17 +1034,17 @@ export default function ConfigPage() {
       {tab === "ahorros" && (
         <div key="ahorros" className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="card">
-            <div className="label">Meta de ahorro</div>
+            <div className="label">{t.savingsGoalSettings}</div>
             <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 16, marginTop: -4 }}>
-              Reserva actual: <strong>{simboloReserva} {totalReserva.toFixed(2)}</strong>
+              {t.currentReserve(simboloReserva, totalReserva.toFixed(2))}
             </div>
             <div style={{ marginBottom: 12 }}>
-              <div className="label" style={{ marginBottom: 6 }}>Fecha objetivo</div>
+              <div className="label" style={{ marginBottom: 6 }}>{t.targetDate}</div>
               <input type="date" value={metaFecha}
                 onChange={(e) => setMetaFecha(e.target.value)} className="input" />
             </div>
             <div style={{ marginBottom: 16 }}>
-              <div className="label" style={{ marginBottom: 6 }}>Monto objetivo ({monedaInversiones})</div>
+              <div className="label" style={{ marginBottom: 6 }}>{t.targetAmount(monedaInversiones)}</div>
               <input type="number" value={metaMonto} placeholder="0"
                 onChange={(e) => setMetaMonto(e.target.value)} className="input" />
             </div>
@@ -1029,7 +1054,7 @@ export default function ConfigPage() {
               background: "var(--surface-alt)", border: "1px solid var(--border)",
               marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>Por período estimado</div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.estimatedPerPeriod}</div>
               <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: sugeridoPorPeriodo != null ? "var(--green)" : "var(--muted)" }}>
                 {sugeridoPorPeriodo != null ? `U$D ${sugeridoPorPeriodo.toLocaleString("es-AR")}` : "—"}
               </div>
@@ -1109,7 +1134,7 @@ export default function ConfigPage() {
             </div>
             <div style={{ padding: "0 16px 40px", display: "flex", flexDirection: "column", gap: 20 }}>
               <div>
-                <div className="label" style={{ marginBottom: 8 }}>Monto por gasto ({monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$"})</div>
+                <div className="label" style={{ marginBottom: 8 }}>{t.autoSavingsAmountPerExpense(monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$")}</div>
                 <input
                   type="number" value={localAutoMonto} placeholder="0" className="input"
                   style={{ fontFamily: "var(--font-mono)", fontSize: 15 }}
@@ -1118,7 +1143,7 @@ export default function ConfigPage() {
                 />
               </div>
               <div>
-                <div className="label" style={{ marginBottom: 8 }}>Medios que aplican</div>
+                <div className="label" style={{ marginBottom: 8 }}>{t.appliedPaymentMethods}</div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {config.mediosPago.filter(m => m.activo).map(m => {
                     const sel = localAutoMedios.includes(m.nombre);
@@ -1135,7 +1160,7 @@ export default function ConfigPage() {
                 </div>
               </div>
               <div>
-                <div className="label" style={{ marginBottom: 8 }}>Descripciones a omitir</div>
+                <div className="label" style={{ marginBottom: 8 }}>{t.descriptionsToSkip}</div>
                 <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <input
                     value={localAutoOmitirInput}
@@ -1147,7 +1172,7 @@ export default function ConfigPage() {
                         setLocalAutoOmitirInput("");
                       }
                     }}
-                    placeholder="ej. Peajes"
+                    placeholder={t.egPlaceholder}
                     style={{ flex: 1, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", fontSize: 13, color: "var(--text)" }}
                   />
                   <button type="button" onClick={() => {
@@ -1195,12 +1220,12 @@ export default function ConfigPage() {
         <div onClick={() => setShowSyncLog(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 15 }}>Historial de sync</span>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>{t.syncHistory}</span>
               <button onClick={() => setShowSyncLog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
             </div>
             <div style={{ overflowY: "auto", padding: "12px 20px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
               {syncLogs.length === 0 ? (
-                <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: 24 }}>Sin registros</div>
+                <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: 24 }}>{t.noRecords}</div>
               ) : syncLogs.map((log, i) => (
                 <div key={i} style={{
                   display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px",
@@ -1250,7 +1275,7 @@ export default function ConfigPage() {
                 if (line.startsWith("---")) return <hr key={i} style={{ border: "none", borderTop: "1px solid var(--border)", margin: "10px 0" }} />;
                 if (line.startsWith("# ") || line.trim() === "" || line.startsWith("Todos los cambios") || line.startsWith("Formato basado") || line.startsWith("https://keep")) return null;
                 return <div key={i}>{line}</div>;
-              }) : <div style={{ color: "var(--muted)" }}>Cargando…</div>}
+              }) : <div style={{ color: "var(--muted)" }}>Loading…</div>}
             </div>
           </div>
         </div>,
@@ -1261,11 +1286,11 @@ export default function ConfigPage() {
         <div onClick={() => setShowExportConfirm(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px" }}>
             <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Exportar CSV</div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>Se descargará un archivo con todos tus movimientos.</div>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t.exportCSV}</div>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.exportCSVBody}</div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowExportConfirm(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
-              <button onClick={() => { exportCSV(); setShowExportConfirm(false); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Descargar</button>
+              <button onClick={() => setShowExportConfirm(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
+              <button onClick={() => { exportCSV(); setShowExportConfirm(false); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.download}</button>
             </div>
           </div>
         </div>,
@@ -1276,11 +1301,11 @@ export default function ConfigPage() {
         <div onClick={() => setShowGithubConfirm(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px" }}>
             <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Abrir GitHub</div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>Vas a salir de la app hacia el repositorio en GitHub.</div>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t.openGitHub}</div>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.goToGitHubBody}</div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowGithubConfirm(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
-              <button onClick={() => { window.open("https://github.com/dsimdev/finmoves-app/blob/main/README.md", "_blank", "noopener,noreferrer"); setShowGithubConfirm(false); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Ir a GitHub</button>
+              <button onClick={() => setShowGithubConfirm(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
+              <button onClick={() => { window.open("https://github.com/dsimdev/finmoves-app/blob/main/README.md", "_blank", "noopener,noreferrer"); setShowGithubConfirm(false); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.goToGitHub}</button>
             </div>
           </div>
         </div>,

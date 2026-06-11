@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useConfig } from "@/hooks/useConfig";
+import { useT } from "@/hooks/useTranslation";
 
 function fechaCortaConAnio(fecha: string): string {
   if (!fecha) return "";
@@ -52,6 +53,7 @@ export default function DolaresPage() {
   const { config } = useConfig(user?.uid);
 
   useEffect(() => { refresh(); }, []);
+  const t = useT();
   const { oculto, toggle, m: money } = useMoney();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
 
@@ -119,15 +121,15 @@ export default function DolaresPage() {
       ) : (
         <div className="fade-up">
           <div style={{ marginBottom: 24 }}>
-            <div className="label" style={{ marginBottom: 2 }}>Inversión</div>
+            <div className="label" style={{ marginBottom: 2 }}>{t.portfolio}</div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{showUSD && showEUR ? "Dollars | Euros" : esEUR ? "Euros" : "Dollars"}</div>
           </div>
           {/* ── SECCIÓN USD ── */}
           {showUSD && (<>
           <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>Reserva USD</div>
-              <button onClick={toggle} aria-label="Ocultar valores" style={{
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.usdReserve}</div>
+              <button onClick={toggle} aria-label={t.hideValues} style={{
                 background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
                 width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
               }}>
@@ -139,17 +141,17 @@ export default function DolaresPage() {
             </div>
             {reservaUSDenARS && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-                ≈ {money(reservaUSDenARS)} · {tipoCambioRef} ${cotizacionUSD?.toLocaleString("es-AR")}
+                ≈ {money(reservaUSDenARS)} · {tipoCambioRef} {t.rate} ${cotizacionUSD?.toLocaleString("es-AR")}
               </div>
             )}
             {gananciaUSD !== null && (
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
                 <div>
-                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 4 }}>PRECIO PROM.</div>
+                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 4 }}>{t.avgPrice}</div>
                   <div style={{ fontSize: 13, fontWeight: 700 }}>{oculto ? MASK : "$" + costoPromedioUSD.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 4 }}>GANANCIA</div>
+                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 4 }}>{t.profit}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: gananciaUSD >= 0 ? "var(--green)" : "var(--red)" }}>
                     {gananciaUSD >= 0 ? "+" : ""}{money(gananciaUSD)}
                     {gananciaPctUSD !== null && <span style={{ fontSize: 10, marginLeft: 4 }}>({gananciaPctUSD.toFixed(1)}%)</span>}
@@ -165,9 +167,9 @@ export default function DolaresPage() {
           {showEUR && (<>
           <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>Reserva EUR</div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.eurReserve}</div>
               {!showUSD && (
-                <button onClick={toggle} aria-label="Ocultar valores" style={{
+                <button onClick={toggle} aria-label={t.hideValues} style={{
                   background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
                   width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
                 }}>
@@ -180,17 +182,17 @@ export default function DolaresPage() {
             </div>
             {reservaEURenARS && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-                ≈ {money(reservaEURenARS)} · {tipoCambioRef} ${cotizacionEUR?.toLocaleString("es-AR")}
+                ≈ {money(reservaEURenARS)} · {tipoCambioRef} {t.rate} ${cotizacionEUR?.toLocaleString("es-AR")}
               </div>
             )}
             {gananciaEUR !== null && (
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
                 <div>
-                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 4 }}>PRECIO PROM.</div>
+                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 4 }}>{t.avgPrice}</div>
                   <div style={{ fontSize: 13, fontWeight: 700 }}>{oculto ? MASK : "$" + costoPromedioEUR.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 4 }}>GANANCIA</div>
+                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 2, marginBottom: 4 }}>{t.profit}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: gananciaEUR >= 0 ? "var(--green)" : "var(--red)" }}>
                     {gananciaEUR >= 0 ? "+" : ""}{money(gananciaEUR)}
                     {gananciaPctEUR !== null && <span style={{ fontSize: 10, marginLeft: 4 }}>({gananciaPctEUR.toFixed(1)}%)</span>}
@@ -206,7 +208,7 @@ export default function DolaresPage() {
           {config?.meta.metaMonto && (
             <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div className="label" style={{ marginBottom: 0 }}>Meta de ahorro</div>
+                <div className="label" style={{ marginBottom: 0 }}>{t.savingsGoal}</div>
                 {config.meta.metaFecha && <div style={{ fontSize: 9, color: "var(--muted)" }}>{fechaCortaConAnio(config.meta.metaFecha)}</div>}
               </div>
               {(() => {
@@ -218,13 +220,13 @@ export default function DolaresPage() {
                   <>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 14 }}>
                       <div>
-                        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Objetivo {monedaInversiones}</div>
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{t.goal} {monedaInversiones}</div>
                         <div style={{ fontSize: 22, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
                           {simbolo} {config.meta.metaMonto.toLocaleString("es-AR")}
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Faltan</div>
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{t.remainingLabel}</div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: metaAlcanzada ? "var(--green)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
                           {simbolo} {oculto ? "••" : (metaAlcanzada ? "0.00" : falta.toFixed(2))}
                         </div>
@@ -247,7 +249,7 @@ export default function DolaresPage() {
           <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <div>
-                <div className="label" style={{ marginBottom: 4 }}>Meta por período</div>
+                <div className="label" style={{ marginBottom: 4 }}>{t.goalPerPeriod}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--yellow)" }}>
                   {simbolo} {oculto ? "••" : totalDisplay.toFixed(0)} <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 400, fontFamily: "var(--font)" }}>/ {metaUSD}</span>
                 </div>
@@ -257,7 +259,7 @@ export default function DolaresPage() {
                 color: totalDisplay >= metaUSD ? "var(--green)" : "var(--yellow)",
                 border: `1px solid ${totalDisplay >= metaUSD ? "var(--green)" : "var(--yellow)"}44`,
               }}>
-                {totalDisplay >= metaUSD ? "ALCANZADA" : `${((totalDisplay / metaUSD) * 100).toFixed(0)}%`}
+                {totalDisplay >= metaUSD ? t.reachedBadge : `${((totalDisplay / metaUSD) * 100).toFixed(0)}%`}
               </span>
             </div>
             <div className="progress-track">
@@ -274,18 +276,18 @@ export default function DolaresPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               {proyUSD !== null && cotizOficial && (
                 <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Proyección · 3 períodos</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{t.projection3periods}</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>{simbolo} {oculto ? "••••" : proyUSD.toFixed(0)}</div>
-                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>a oficial ${cotizOficial.toLocaleString("es-AR")}</div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{t.atOfficial} ${cotizOficial.toLocaleString("es-AR")}</div>
                 </div>
               )}
               {periodosParaMeta !== null && (
                 <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Períodos para alcanzar meta</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{t.periodsToGoal}</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
-                    {periodosParaMeta === 0 ? "¡Alcanzada!" : `${periodosParaMeta}`}
+                    {periodosParaMeta === 0 ? t.reached : `${periodosParaMeta}`}
                   </div>
-                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>al ritmo de los últimos 3 períodos</div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{t.paceOfLast3}</div>
                 </div>
               )}
             </div>
@@ -294,12 +296,12 @@ export default function DolaresPage() {
           {/* Historial USD */}
           {showUSD && historialUSD.length > 0 && (
             <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
-              <div className="label">Historial compras USD</div>
+              <div className="label">{t.usdHistory}</div>
               {historialUSD.map((m) => (
                 <div key={m.id} className="row">
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{fechaCortaConAnio(m.fecha)}</div>
-                    {m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>cotiz. ${m.cotizacion.toLocaleString("es-AR")}</div>}
+                    {m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
@@ -315,12 +317,12 @@ export default function DolaresPage() {
           {/* Historial EUR */}
           {showEUR && historialEUR.length > 0 && (
             <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)" }}>
-              <div className="label">Historial compras EUR</div>
+              <div className="label">{t.eurHistory}</div>
               {historialEUR.map((m) => (
                 <div key={m.id} className="row">
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{fechaCortaConAnio(m.fecha)}</div>
-                    {m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>cotiz. ${m.cotizacion.toLocaleString("es-AR")}</div>}
+                    {m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>

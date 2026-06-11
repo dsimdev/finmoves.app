@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
+import { useT } from "@/hooks/useTranslation";
 
 export function UpdateBanner() {
   const hasUpdate = useVersionCheck();
+  const t = useT();
   if (!hasUpdate) return null;
 
   return (
@@ -33,8 +35,8 @@ export function UpdateBanner() {
           }} />
         </div>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Nueva versión disponible</div>
-          <div style={{ fontSize: 12, color: "var(--muted)" }}>Actualizá para ver las últimas mejoras</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{t.newVersionAvailable}</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.updateToSeeLatest}</div>
         </div>
         <button
           onClick={() => window.location.reload()}
@@ -43,7 +45,7 @@ export function UpdateBanner() {
             background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
           }}
         >
-          Actualizar
+          {t.update}
         </button>
       </div>
     </div>
