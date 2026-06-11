@@ -273,17 +273,17 @@ export default function DolaresPage() {
           {(proyUSD !== null || periodosParaMeta !== null) && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               {proyUSD !== null && cotizOficial && (
-                <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)" }}>
+                <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Proyección · 3 períodos</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>{simbolo} {oculto ? "••••" : proyUSD.toFixed(0)}</div>
                   <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>a oficial ${cotizOficial.toLocaleString("es-AR")}</div>
                 </div>
               )}
               {periodosParaMeta !== null && (
-                <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)" }}>
+                <div className="card" style={{ borderColor: "var(--yellow)44", background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Períodos para alcanzar meta</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
-                    {periodosParaMeta === 0 ? "¡Alcanzada!" : `${periodosParaMeta}p`}
+                    {periodosParaMeta === 0 ? "¡Alcanzada!" : `${periodosParaMeta}`}
                   </div>
                   <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>al ritmo de los últimos 3 períodos</div>
                 </div>

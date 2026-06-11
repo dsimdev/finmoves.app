@@ -37,7 +37,7 @@ export default function Dashboard() {
   const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const p = periodos[0];
   const ahorrosAcum = serie.length ? serie[serie.length - 1].ahorrosAcum : 0;
-  const ultimos = p?.movimientos.slice(0, 6) ?? [];
+  const ultimos = p?.movimientos.slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
   const barColorDim = pctDisp < 10 ? "var(--red-dim)" : pctDisp < 50 ? "var(--yellow-dim)" : "var(--green-dim)";
@@ -133,16 +133,12 @@ export default function Dashboard() {
                 </span>
               </div>
             ))}
-            <Link href="/movements" aria-label="Ver todos los movimientos" style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "16px auto 2px", width: 48, height: 48, borderRadius: "50%",
-              background: "transparent", border: "none", color: "var(--accent)",
-              textDecoration: "none", filter: "drop-shadow(0 2px 10px var(--accent)88)",
+            <Link href="/movements" style={{
+              display: "block", textAlign: "center", margin: "14px auto 2px",
+              color: "var(--muted)", fontSize: 12, fontStyle: "italic",
+              textDecoration: "none",
             }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
+              ver más
             </Link>
           </div>
         </div>

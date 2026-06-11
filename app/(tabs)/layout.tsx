@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
 export default function TabsLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -26,6 +27,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
     <>
       {children}
       <BottomNav />
+      <UpdateBanner />
     </>
   );
 }

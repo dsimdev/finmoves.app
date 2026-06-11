@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.14.6] — 2026-06-10
+
+### Added
+- Update banner: when Vercel deploys a new version, a full-screen overlay appears with the app logo, spinner, and an "Actualizar" button — prompts the user to reload
+- Version polling: `/api/version` endpoint checked every 60s; banner shows when build version differs from server version
+
+### Changed
+- Dashboard: last 5 movements shown (was 6); "+" button replaced with italic "ver más" link to /movements
+- Movements: header shows "Resto" instead of "Disponible" for closed (past) periods
+- Investments: projection and meta-period cards are now center-aligned; "p" suffix removed from periods count
+- Auto-ahorro: generated movement now has observation "por gasto"
+- LoadingSpinner: ring colors updated to blue/green gradient; container enlarged to 260×260
+
+---
+
 ## [1.14.5] — 2026-06-10
 
 ### Added
