@@ -1,6 +1,12 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  type Firestore,
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,4 +19,16 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// En el cliente: caché persistente en IndexedDB → los datos quedan disponibles
+// sin conexión y las escrituras se encolan hasta reconectar. En el server (SSR)
+// no hay IndexedDB, así que se usa la instancia estándar en memoria.
+let _db: Firestore;
+if (typeof window !== "undefined") {
+  _db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  });
+} else {
+  _db = getFirestore(app);
+}
+export const db = _db;

@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.17.0] — 2026-06-11
+
+### Added
+- **Offline support** — the app now works without a connection:
+  - Firestore persistent cache (IndexedDB): your movements stay available offline and writes are queued until you reconnect
+  - Service worker caches the app shell so FinMoves opens with no network (network-first when online, cache when offline)
+- Redesigned **update banner**: glassmorphism card, blue glow, properly proportioned spinner (no longer overlaps the logo), gradient action button
+
+### Changed
+- App icon (`favicon.png`) regenerated from the source logo — sharper, square, text-free
+
+### Notes
+- Offline behavior only activates in production (requires HTTPS + a real build); the service worker takes effect after the first deploy that includes it
+
+---
+
 ## [1.16.0] — 2026-06-11
 
 ### Added

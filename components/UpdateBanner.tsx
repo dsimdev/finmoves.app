@@ -12,37 +12,56 @@ export function UpdateBanner() {
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 99999,
-      background: "rgba(0,0,0,0.75)",
-      display: "flex", alignItems: "center", justifyContent: "center",
+      background: "rgba(0,0,0,0.6)",
+      backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
     }}>
-      <div style={{
-        background: "var(--bg)", borderRadius: 24, padding: "36px 32px",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 20,
-        maxWidth: 300, width: "90%", textAlign: "center",
-        boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
+      <div className="fade-up" style={{
+        position: "relative", overflow: "hidden",
+        background: "color-mix(in srgb, var(--surface) 80%, transparent)",
+        backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid var(--border-hi, var(--border))",
+        borderRadius: 28, padding: "40px 32px 32px",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 22,
+        maxWidth: 320, width: "100%", textAlign: "center",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
       }}>
-        <div style={{ position: "relative", width: 120, height: 120 }}>
+        {/* Glow superior */}
+        <div aria-hidden style={{
+          position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)",
+          width: 260, height: 200,
+          background: "radial-gradient(ellipse, var(--blue) 0%, transparent 70%)",
+          opacity: 0.22, filter: "blur(30px)", pointerEvents: "none",
+        }} />
+
+        {/* Logo + spinner — misma proporción que la pantalla de carga (logo ≈ 0.43 del ring) */}
+        <div style={{ position: "relative", width: 150, height: 150 }}>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Image src="/favicon.png" alt="FinMoves" width={72} height={72} style={{ opacity: 0.95 }} />
+            <Image src="/favicon.png" alt="FinMoves" width={64} height={64} style={{ opacity: 0.95 }} />
           </div>
           <div className="spin" style={{
             position: "absolute", inset: 0, borderRadius: "50%",
-            border: "3px solid transparent",
+            border: "4px solid transparent",
             borderTopColor: "#536dfe",
             borderRightColor: "#3d8ef8",
             borderBottomColor: "#00c896",
             borderLeftColor: "#00e676",
           }} />
         </div>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{t.newVersionAvailable}</div>
-          <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.updateToSeeLatest}</div>
+
+        <div style={{ position: "relative" }}>
+          <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 7, letterSpacing: -0.3 }}>{t.newVersionAvailable}</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.5 }}>{t.updateToSeeLatest}</div>
         </div>
+
         <button
           onClick={() => window.location.reload()}
+          className="btn"
           style={{
-            width: "100%", padding: "14px 0", borderRadius: 12, border: "none",
-            background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
+            position: "relative", width: "100%", height: 50, borderRadius: 14, border: "none",
+            background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)",
+            color: "#fff", fontSize: 14.5, fontWeight: 700, cursor: "pointer",
+            boxShadow: "0 8px 24px color-mix(in srgb, var(--blue) 40%, transparent)",
           }}
         >
           {t.update}
