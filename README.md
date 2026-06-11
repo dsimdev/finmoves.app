@@ -94,4 +94,4 @@ Vercel deploys automatically from `main`. Rollback via Vercel dashboard or `git 
 
 ## Current Version
 
-`v1.13.1` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.
+`v1.14.3` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.

@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.14.3] — 2026-06-10
+
+### Changed
+- Settings > App: CSV export button moved from Account card to App card (next to changelog button); click shows confirmation modal before downloading
+- Settings > App: GitHub icon now shows "GitHub" label below; click shows confirmation modal before opening the link in a new tab
+
+---
+
 ## [1.14.2] — 2026-06-10
 
 ### Fixed
