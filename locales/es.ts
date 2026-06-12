@@ -284,6 +284,7 @@ export const es = {
 
   // Biometría
   notifications: "Notificaciones",
+  testNotification: "Probar",
   notificationsSub: "Avisos de sync, nueva versión y dólar",
   notificationsDenied: "Permiso de notificaciones bloqueado",
   notificationsError: "No se pudieron activar las notificaciones",

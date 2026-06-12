@@ -286,6 +286,7 @@ export const en: AppLocale = {
 
   // Biometrics
   notifications: "Notifications",
+  testNotification: "Test",
   notificationsSub: "Sync, new version and dollar alerts",
   notificationsDenied: "Notification permission is blocked",
   notificationsError: "Could not enable notifications",

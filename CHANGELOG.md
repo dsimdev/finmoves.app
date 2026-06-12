@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.21.1] — 2026-06-12
+
+### Added
+- **Test notification** — `/api/push-test` endpoint (auth-protected) and a "Test" button next to the Notifications toggle to fire a sample push on demand
+
+---
+
 ## [1.21.0] — 2026-06-12
 
 ### Added

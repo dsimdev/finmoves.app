@@ -241,6 +241,14 @@ export default function ConfigPage() {
       setPushBusy(false);
     }
   };
+  const testPush = async () => {
+    const u = auth.currentUser;
+    if (!u) return;
+    try {
+      const token = await getIdToken(u);
+      await fetch("/api/push-test", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    } catch { /* ignore */ }
+  };
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
   const [showSyncLog, setShowSyncLog] = useState(false);
@@ -777,7 +785,12 @@ export default function ConfigPage() {
                     <div style={{ fontSize: 11, color: pushError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{pushError || t.notificationsSub}</div>
                   </div>
                 </div>
-                <Toggle activo={pushOn} onClick={togglePush} />
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  {pushOn && (
+                    <button onClick={testPush} style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--muted)", fontSize: 11, fontWeight: 700, padding: "5px 10px", cursor: "pointer" }}>{t.testNotification}</button>
+                  )}
+                  <Toggle activo={pushOn} onClick={togglePush} />
+                </div>
               </div>
             )}
 
