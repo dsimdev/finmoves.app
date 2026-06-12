@@ -448,7 +448,7 @@ export default function MovimientosPage() {
       aria-label="New movement"
       style={{
         position: "fixed",
-        bottom: "calc(var(--nav-h) - 8px)",
+        bottom: "calc(var(--nav-h) + 8px)",
         left: 0, right: 0, margin: "0 auto",
         width: 54, height: 54,
         borderRadius: "50%",

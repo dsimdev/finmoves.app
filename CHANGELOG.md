@@ -4,6 +4,27 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.22.0] — 2026-06-12
+
+### Added
+- **Invite-code access** — new accounts are created via a single-use code. The login has a "Create account" form (email + password + code); `/api/register` validates the code with the Admin SDK and seeds a generic starter config. Firebase public signup stays closed.
+- **Invite-code generator** (owner only) — Settings → Account → "Code" → Generate; opens a modal with the code and a copy button.
+- **Password recovery** — "Forgot your password?" on the login (Firebase reset email).
+- **Onboarding wizard** (bilingual) for new users: Welcome → How it works → Main currency → Investing? → Done. Redirects there automatically until completed (`onboardingCompleto` flag).
+- **PWA manifest completed** — added 192/512 icons, a separate maskable icon with safe zone, apple-touch-icon, plus `id`, `scope`, `orientation`, `lang`, `categories`.
+
+### Changed
+- New users get a **generic default config** (neutral categories/methods) instead of the owner's personal data.
+- Movements "+" FAB raised a bit so it no longer overlaps the bottom nav.
+
+### Fixed
+- LCP warning: the loading spinner image now uses `priority`.
+
+### Notes
+- Requires `NEXT_PUBLIC_OWNER_EMAIL` in Vercel for the invite-code generator to appear in production.
+
+---
+
 ## [1.21.1] — 2026-06-12
 
 ### Added

@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.22.0] — 2026-06-12
+
+### Novedades
+- **Invitá a otros con un código**: ahora se puede crear cuenta con un código de un solo uso. Generá el tuyo desde Configuración → Cuenta → Código.
+- **Guía de bienvenida** para usuarios nuevos: una pantalla simple que explica cómo funciona la app y deja todo listo en un minuto.
+- **¿Olvidaste tu contraseña?** en el ingreso, para recuperarla por email.
+
+### Mejoras
+- La app quedó lista como aplicación instalable (íconos y detalles de PWA).
+- Pequeños ajustes visuales.
+
+---
+
 ## [1.21.0] — 2026-06-12
 
 ### Novedades

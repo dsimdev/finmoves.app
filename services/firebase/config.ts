@@ -1,42 +1,7 @@
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { ConfigUsuario, Categoria, MedioPago, OrigenAhorro } from "@/types";
-
-const TEMPLATE_CONFIG = {
-  categorias: [
-    { nombre: "Daily", tipo: "Gasto", activa: true },
-    { nombre: "Services", tipo: "Gasto", activa: true },
-    { nombre: "Car", tipo: "Gasto", activa: true },
-    { nombre: "Health", tipo: "Gasto", activa: true },
-    { nombre: "Games", tipo: "Gasto", activa: true },
-    { nombre: "Others", tipo: "Gasto", activa: true },
-    { nombre: "Loki", tipo: "Gasto", activa: true },
-    { nombre: "Extras", tipo: "Ingreso", activa: true },
-    { nombre: "Ahorros", tipo: "Ingreso", activa: true },
-  ] as Categoria[],
-  mediosPago: [
-    { nombre: "Mercado Pago", activo: true },
-    { nombre: "Débito", activo: true },
-    { nombre: "Efectivo", activo: true },
-  ] as MedioPago[],
-  tipos: [
-    { nombre: "Gasto", activo: true },
-    { nombre: "Ingreso", activo: true },
-    { nombre: "Move", activo: true },
-    { nombre: "CompraUSD", activo: true },
-  ],
-  origenesAhorro: [
-    { nombre: "Intereses", activo: true },
-    { nombre: "Bono", activo: true },
-    { nombre: "Vacaciones", activo: true },
-    { nombre: "María", activo: true },
-    { nombre: "Osansi", activo: true },
-  ] as OrigenAhorro[],
-  meta: {
-    usdMensual: 400,
-    tipoCambioRef: "blue" as const,
-  },
-};
+import { ConfigUsuario } from "@/types";
+import { TEMPLATE_CONFIG } from "@/lib/default-config";
 
 export async function obtenerConfig(userId: string): Promise<ConfigUsuario> {
   const ref = doc(db, `users/${userId}/config/meta`);

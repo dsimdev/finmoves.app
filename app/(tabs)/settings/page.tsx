@@ -249,6 +249,26 @@ export default function ConfigPage() {
       await fetch("/api/push-test", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     } catch { /* ignore */ }
   };
+  // Códigos de invitación (solo dueño)
+  const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
+  const [inviteCode, setInviteCode] = useState("");
+  const [genBusy, setGenBusy] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const generateInviteCode = async () => {
+    const u = auth.currentUser;
+    if (!u || genBusy) return;
+    setGenBusy(true); setCodeCopied(false);
+    try {
+      const token = await getIdToken(u);
+      const res = await fetch("/api/invite-codes", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok && data.code) { setInviteCode(data.code); setShowInviteModal(true); }
+    } catch { /* ignore */ } finally { setGenBusy(false); }
+  };
+  const copyInviteCode = async () => {
+    try { await navigator.clipboard.writeText(inviteCode); setCodeCopied(true); setTimeout(() => setCodeCopied(false), 2000); } catch { /* ignore */ }
+  };
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
   const [showSyncLog, setShowSyncLog] = useState(false);
@@ -808,6 +828,23 @@ export default function ConfigPage() {
                 </div>
               </div>
             </button>
+
+            {/* Códigos de invitación (solo dueño) */}
+            {isOwner && (
+              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--surface-alt)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="7.5" cy="15.5" r="4.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.inviteCodesTitle}</div>
+                  </div>
+                </div>
+                <button onClick={generateInviteCode} disabled={genBusy} style={{ background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 11, fontWeight: 700, padding: "6px 12px", cursor: "pointer", flexShrink: 0, opacity: genBusy ? 0.5 : 1 }}>{t.generateCode}</button>
+              </div>
+            )}
 
             </div>)}
           </div>
@@ -1477,6 +1514,26 @@ export default function ConfigPage() {
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setConfirmLogout(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
               <button onClick={async () => { await signOut(auth); router.push("/login"); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--red)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.signOut}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showInviteModal && mounted && createPortal(
+        <div onClick={() => setShowInviteModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 36px" }}>
+            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>{t.inviteCodeModalTitle}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 18px" }}>
+              <span style={{ flex: 1, fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 4, color: "var(--accent)", textAlign: "center" }}>{inviteCode}</span>
+              <button onClick={copyInviteCode} aria-label="Copiar" style={{ background: codeCopied ? "var(--green-dim)" : "var(--accent-dim)", border: `1px solid ${codeCopied ? "var(--green)" : "var(--accent)"}44`, borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: codeCopied ? "var(--green)" : "var(--accent)", flexShrink: 0 }}>
+                {codeCopied ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                )}
+              </button>
             </div>
           </div>
         </div>,

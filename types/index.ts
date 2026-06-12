@@ -79,5 +79,6 @@ export interface ConfigUsuario {
     ahorrosAcumSeedPeriodoId?: string;
     monedaPrincipal?: "ARS" | "USD" | "EUR";
     autoAhorro?: { activo: boolean; monto: number; mediosPago?: string[]; omitirDescripciones?: string[] };
+    onboardingCompleto?: boolean;
   };
 }

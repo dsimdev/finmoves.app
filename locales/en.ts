@@ -240,6 +240,24 @@ export const en: AppLocale = {
   csvNotes: "Notes",
   csvPeriod: "Period",
 
+  // Onboarding
+  obNext: "Next",
+  obBack: "Back",
+  obStart: "Get started",
+  obFinish: "Done, let's go!",
+  obWelcomeTitle: "Welcome to FinMoves",
+  obWelcomeBody: "Your period-based finance manager. Give us a minute to set it up.",
+  obHowTitle: "How it works",
+  obHowBody: "Your salary opens a period. Your expenses draw it down. Whatever you don't use moves to Savings and opens the next period.",
+  obCurrencyTitle: "Which currency do you use day to day?",
+  obCurrencyBody: "You can change it later in Settings.",
+  obInvestTitle: "Do you invest or save in dollars or euros?",
+  obInvestBody: "Enable the Investments section to track your reserves and goals. If not, we'll keep it hidden.",
+  obInvestYes: "Yes, enable",
+  obInvestNo: "Not now",
+  obDoneTitle: "All set!",
+  obDoneBody: "Add your first movement with the + button. In Settings you can turn on fingerprint unlock and notifications.",
+
   // UpdateBanner
   newVersionAvailable: "New version available",
   updateToSeeLatest: "Update to see the latest improvements",
@@ -251,6 +269,23 @@ export const en: AppLocale = {
   loginEmailPlaceholder: "you@email.com",
   loginSignIn: "Sign in",
   loginSigningIn: "Signing in...",
+
+  // Registration / recovery
+  createAccount: "Create account",
+  signUp: "Sign up",
+  signingUp: "Creating account...",
+  noAccountCreate: "No account? Create one",
+  haveAccountSignIn: "Already have an account? Sign in",
+  inviteCodeLabel: "Invite code",
+  forgotPassword: "Forgot your password?",
+  resetSent: "We sent you a password reset email.",
+  resetError: "Could not send the email. Check the address.",
+  enterEmailFirst: "Enter your email first.",
+  regInvalidCode: "Invalid or already used code.",
+  regEmailInUse: "That email is already registered.",
+  regWeakPassword: "Password must be at least 6 characters.",
+  regInvalidEmail: "Invalid email.",
+  regGeneric: "Could not create the account. Please try again.",
 
   // Auth errors (Firebase code mapping)
   authInvalidCredential: "Incorrect email or password",
@@ -287,6 +322,12 @@ export const en: AppLocale = {
   // Biometrics
   notifications: "Notifications",
   testNotification: "Test",
+  inviteCodesTitle: "Code",
+  inviteCodeModalTitle: "Code generated",
+  inviteCodesSub: "Generate a single-use code to invite someone",
+  generateCode: "Generate",
+  inviteCodeReady: "Tap to copy · single use",
+  inviteCodeCopied: "Copied!",
   notificationsSub: "Sync, new version and dollar alerts",
   notificationsDenied: "Notification permission is blocked",
   notificationsError: "Could not enable notifications",

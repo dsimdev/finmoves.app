@@ -238,6 +238,24 @@ export const es = {
   csvNotes: "Observaciones",
   csvPeriod: "Período",
 
+  // Onboarding
+  obNext: "Siguiente",
+  obBack: "Atrás",
+  obStart: "Empezar",
+  obFinish: "Listo, ¡vamos!",
+  obWelcomeTitle: "Bienvenido a FinMoves",
+  obWelcomeBody: "Tu gestor de finanzas por período. Te tomamos un minuto para dejarlo listo.",
+  obHowTitle: "¿Cómo funciona?",
+  obHowBody: "Tu sueldo abre un período. Tus gastos lo van descontando. Lo que no usás se mueve a Ahorros y abre el período siguiente.",
+  obCurrencyTitle: "¿En qué moneda manejás tu día a día?",
+  obCurrencyBody: "Podés cambiarla después en Configuración.",
+  obInvestTitle: "¿Invertís o ahorrás en dólares o euros?",
+  obInvestBody: "Activá la sección Inversión para seguir tus reservas y metas. Si no, la dejamos oculta.",
+  obInvestYes: "Sí, activar",
+  obInvestNo: "Ahora no",
+  obDoneTitle: "¡Todo listo!",
+  obDoneBody: "Cargá tu primer movimiento con el botón +. En Configuración podés activar la huella y las notificaciones.",
+
   // UpdateBanner
   newVersionAvailable: "Nueva versión disponible",
   updateToSeeLatest: "Actualizá para ver las últimas mejoras",
@@ -249,6 +267,23 @@ export const es = {
   loginEmailPlaceholder: "tu@email.com",
   loginSignIn: "Ingresar",
   loginSigningIn: "Ingresando...",
+
+  // Registro / recuperación
+  createAccount: "Crear cuenta",
+  signUp: "Registrarme",
+  signingUp: "Creando cuenta...",
+  noAccountCreate: "¿No tenés cuenta? Crear una",
+  haveAccountSignIn: "¿Ya tenés cuenta? Ingresar",
+  inviteCodeLabel: "Código de invitación",
+  forgotPassword: "¿Olvidaste tu contraseña?",
+  resetSent: "Te enviamos un email para restablecer la contraseña.",
+  resetError: "No se pudo enviar el email. Revisá la dirección.",
+  enterEmailFirst: "Ingresá tu email primero.",
+  regInvalidCode: "Código inválido o ya usado.",
+  regEmailInUse: "Ese email ya está registrado.",
+  regWeakPassword: "La contraseña debe tener al menos 6 caracteres.",
+  regInvalidEmail: "El email no es válido.",
+  regGeneric: "No se pudo crear la cuenta. Intentá de nuevo.",
 
   // Auth errors (mapeo de códigos Firebase)
   authInvalidCredential: "Email o contraseña incorrectos",
@@ -285,6 +320,12 @@ export const es = {
   // Biometría
   notifications: "Notificaciones",
   testNotification: "Probar",
+  inviteCodesTitle: "Código",
+  inviteCodeModalTitle: "Código generado",
+  inviteCodesSub: "Generá un código de un solo uso para invitar",
+  generateCode: "Generar",
+  inviteCodeReady: "Tocá para copiar · un solo uso",
+  inviteCodeCopied: "¡Copiado!",
   notificationsSub: "Avisos de sync, nueva versión y dólar",
   notificationsDenied: "Permiso de notificaciones bloqueado",
   notificationsError: "No se pudieron activar las notificaciones",

@@ -11,7 +11,7 @@ export function LoadingSpinner() {
           position: "absolute", inset: 0, display: "flex",
           alignItems: "center", justifyContent: "center",
         }}>
-          <Image src="/favicon.png" alt="" width={110} height={110} style={{ opacity: 0.9 }} />
+          <Image src="/favicon.png" alt="" width={110} height={110} priority style={{ opacity: 0.9 }} />
         </div>
         <div className="spin" style={{
           position: "absolute", inset: 0,
