@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.18.1] — 2026-06-11
+
+### Fixed
+- **Sync history** now records automatic daily syncs too — previously the cron only stored "last sync / last error", so the history modal looked almost empty. Each cron run (success or failure) is now logged (last 30 entries)
+
+### Added
+- **Sync failure indicator** — a red dot appears on the Settings icon in the bottom nav when the latest sync failed, visible from any screen, so you know to take action
+
+---
+
 ## [1.18.0] — 2026-06-11
 
 ### Added

@@ -20,6 +20,15 @@ export async function GET(req: NextRequest) {
 
   const syncMetaRef = adminDb().doc(`users/${uid}/config/syncMeta`);
 
+  // Prepend una entrada al historial (máx. 30), igual que la sync manual.
+  const appendLog = async (entry: { status: "ok" | "error"; type: "auto"; at: Timestamp; message: string }) => {
+    try {
+      const snap = await syncMetaRef.get();
+      const prev = (snap.data()?.logs ?? []) as unknown[];
+      await syncMetaRef.set({ logs: [entry, ...prev].slice(0, 30) }, { merge: true });
+    } catch { /* ignore */ }
+  };
+
   try {
     const snap = await adminDb()
       .collection(`users/${uid}/movimientos`)
@@ -41,14 +50,18 @@ export async function GET(req: NextRequest) {
     await backupAndRotate(sheets);
     await overwriteData(sheets, sheetName, rows);
 
-    await syncMetaRef.set({ lastSync: Timestamp.now(), lastError: null }, { merge: true });
+    const now = Timestamp.now();
+    await syncMetaRef.set({ lastSync: now, lastError: null }, { merge: true });
+    await appendLog({ status: "ok", type: "auto", at: now, message: `Sync automática · ${rows.length} movimientos` });
 
     return NextResponse.json({ synced: rows.length, ok: true });
   } catch (err) {
     console.error("[cron/sync-sheets]", err);
     const message = err instanceof Error ? err.message : String(err);
+    const now = Timestamp.now();
     try {
-      await syncMetaRef.set({ lastError: { message, at: Timestamp.now() } }, { merge: true });
+      await syncMetaRef.set({ lastError: { message, at: now } }, { merge: true });
+      await appendLog({ status: "error", type: "auto", at: now, message });
     } catch { /* ignore */ }
     return NextResponse.json({ error: message }, { status: 500 });
   }

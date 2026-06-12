@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { useSyncError } from "@/hooks/useSyncError";
 
 function navGradColor(index: number, total: number) {
   const t = total <= 1 ? 0 : index / (total - 1);
@@ -80,6 +81,7 @@ const TABS = [
 export function BottomNav() {
   const pathname = usePathname();
   const { showReportes, showAhorros } = useAppPrefs();
+  const syncError = useSyncError();
 
   const visible = TABS.filter((t) => {
     if (t.key === "reports" && !showReportes) return false;
@@ -108,7 +110,17 @@ export function BottomNav() {
             alignItems: "center", justifyContent: "center",
             gap: 0, textDecoration: "none", paddingTop: 0,
           }}>
-            {tab.icon({ active, color, dim })}
+            <span style={{ position: "relative", display: "flex" }}>
+              {tab.icon({ active, color, dim })}
+              {tab.key === "settings" && syncError && (
+                <span style={{
+                  position: "absolute", top: -2, right: -3,
+                  width: 9, height: 9, borderRadius: "50%",
+                  background: "var(--red)", border: "1.5px solid var(--nav-bg)",
+                  boxShadow: "0 0 0 1px var(--red)",
+                }} />
+              )}
+            </span>
           </Link>
         );
       })}
