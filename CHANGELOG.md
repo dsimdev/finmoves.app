@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.22.4] — 2026-06-12
+
+### Fixed
+- Reports → Expenses: mini-stats now use a flex-wrap layout so the last incomplete row stretches to fill the width (no more empty black gap).
+
+---
+
 ## [1.22.3] — 2026-06-12
 
 ### Fixed
