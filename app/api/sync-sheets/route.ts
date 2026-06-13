@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb, adminAuth } from "@/lib/firebase-admin";
-import { getSheetsClient, getSheetName, backupAndRotate, overwriteData } from "@/lib/google-sheets";
-import { movimientoToRow } from "@/lib/sheet-format";
-import { Timestamp } from "firebase-admin/firestore";
-import type { Movimiento } from "@/types";
+import { adminAuth } from "@/lib/firebase-admin";
+import { syncUserMovimientosToSheet } from "@/lib/sync-sheets";
 
+// Sync manual disparado por el dueño desde Configuración.
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
@@ -20,41 +18,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  const syncMetaRef = adminDb().doc(`users/${uid}/config/syncMeta`);
-
   try {
-    const snap = await adminDb()
-      .collection(`users/${uid}/movimientos`)
-      .orderBy("timestampCarga", "asc")
-      .get();
-
-    const rows = snap.docs.map((doc) => {
-      const data = doc.data();
-      const m = {
-        ...data,
-        id: doc.id,
-        timestampCarga: (data.timestampCarga as Timestamp).toDate(),
-      } as Movimiento;
-      return movimientoToRow(m);
-    });
-
-    const sheets = await getSheetsClient();
-    const sheetName = await getSheetName(sheets);
-    await backupAndRotate(sheets);
-    await overwriteData(sheets, sheetName, rows);
-
-    await syncMetaRef.set({ lastSync: Timestamp.now(), lastError: null }, { merge: true });
-
-    return NextResponse.json({
-      synced: rows.length,
-      message: `Sync completa · ${rows.length} movimientos`,
-    });
+    const { synced } = await syncUserMovimientosToSheet(uid);
+    return NextResponse.json({ synced, message: `Sync completa · ${synced} movimientos` });
   } catch (err) {
     console.error("Sync error:", err);
     const message = err instanceof Error ? err.message : String(err);
-    try {
-      await syncMetaRef.set({ lastError: { message, at: Timestamp.now() } }, { merge: true });
-    } catch { /* ignore */ }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

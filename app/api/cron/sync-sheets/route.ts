@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
-import { getSheetsClient, getSheetName, backupAndRotate, overwriteData } from "@/lib/google-sheets";
-import { movimientoToRow } from "@/lib/sheet-format";
+import { syncUserMovimientosToSheet } from "@/lib/sync-sheets";
 import { sendPushToUser } from "@/lib/web-push";
 import { Timestamp } from "firebase-admin/firestore";
-import type { Movimiento } from "@/types";
 
 const DOLAR_THRESHOLD_PCT = 3;
 
@@ -69,34 +67,14 @@ export async function GET(req: NextRequest) {
   let result: { ok: boolean; synced?: number; error?: string };
 
   try {
-    const snap = await adminDb()
-      .collection(`users/${uid}/movimientos`)
-      .orderBy("timestampCarga", "asc")
-      .get();
-
-    const rows = snap.docs.map((doc) => {
-      const data = doc.data();
-      const m = { ...data, id: doc.id, timestampCarga: (data.timestampCarga as Timestamp).toDate() } as Movimiento;
-      return movimientoToRow(m);
-    });
-
-    const sheets = await getSheetsClient();
-    const sheetName = await getSheetName(sheets);
-    await backupAndRotate(sheets);
-    await overwriteData(sheets, sheetName, rows);
-
-    const now = Timestamp.now();
-    await syncMetaRef.set({ lastSync: now, lastError: null }, { merge: true });
-    await appendLog({ status: "ok", type: "auto", at: now, message: `Sync automática · ${rows.length} movimientos` });
-    result = { ok: true, synced: rows.length };
+    // syncUserMovimientosToSheet ya actualiza syncMeta (lastSync / lastError).
+    const { synced } = await syncUserMovimientosToSheet(uid);
+    await appendLog({ status: "ok", type: "auto", at: Timestamp.now(), message: `Sync automática · ${synced} movimientos` });
+    result = { ok: true, synced };
   } catch (err) {
     console.error("[cron/sync-sheets]", err);
     const message = err instanceof Error ? err.message : String(err);
-    const now = Timestamp.now();
-    try {
-      await syncMetaRef.set({ lastError: { message, at: now } }, { merge: true });
-      await appendLog({ status: "error", type: "auto", at: now, message });
-    } catch { /* ignore */ }
+    await appendLog({ status: "error", type: "auto", at: Timestamp.now(), message });
     // Trigger 1: aviso de fallo de sync
     await sendPushToUser(uid, { title: "FinMoves", body: "Falló la sincronización con Google Sheets", tag: "sync-error", url: "/settings" });
     result = { ok: false, error: message };
