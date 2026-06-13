@@ -335,12 +335,12 @@ export default function ConfigPage() {
   // ── Ahorros state ──
   const [metaFecha, setMetaFecha] = useState("");
   const [metaMonto, setMetaMonto] = useState("");
+  const [metaSaldo, setMetaSaldo] = useState("");
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
 
   const totalUSD = useMemo(() => {
-    const SALDO_INICIAL_USD = 5.77;
-    let total = SALDO_INICIAL_USD;
+    let total = config?.meta.saldoUSD ?? 0;
     for (const m of movimientos) {
       if (m.tipo === "CompraUSD" && m.cantidadUSD) total += m.cantidadUSD;
       else if (m.tipo === "GastoUSD" && m.cantidadUSD) total -= m.cantidadUSD;
@@ -387,8 +387,8 @@ export default function ConfigPage() {
       if (d && m && y) savedIso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       else savedIso = "";
     }
-    return metaFecha !== savedIso || metaMonto !== (config.meta.metaMonto?.toString() ?? "");
-  }, [metaFecha, metaMonto, config]);
+    return metaFecha !== savedIso || metaMonto !== (config.meta.metaMonto?.toString() ?? "") || metaSaldo !== (config.meta.saldoUSD?.toString() ?? "");
+  }, [metaFecha, metaMonto, metaSaldo, config]);
 
   // ── Effects ──
   useEffect(() => {
@@ -416,6 +416,7 @@ export default function ConfigPage() {
       }
       setMetaFecha(iso);
       setMetaMonto(config.meta.metaMonto?.toString() ?? "");
+      setMetaSaldo(config.meta.saldoUSD?.toString() ?? "");
     }
   }, [config?.meta.metaFecha, config?.meta.metaMonto]);
 
@@ -668,6 +669,8 @@ export default function ConfigPage() {
     else delete newMeta.metaMonto;
     if (sugeridoPorPeriodo != null) newMeta.metaPorPeriodo = sugeridoPorPeriodo;
     else delete newMeta.metaPorPeriodo;
+    if (metaSaldo && parseFloat(metaSaldo) > 0) newMeta.saldoUSD = parseFloat(metaSaldo);
+    else delete newMeta.saldoUSD;
     newMeta.metaMoneda = "USD";
     await saveConfig({ ...config, meta: newMeta });
   };
@@ -840,6 +843,7 @@ export default function ConfigPage() {
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13 }}>{t.inviteCodesTitle}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.inviteCodesSub}</div>
                   </div>
                 </div>
                 <button onClick={generateInviteCode} disabled={genBusy} style={{ background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 11, fontWeight: 700, padding: "6px 12px", cursor: "pointer", flexShrink: 0, opacity: genBusy ? 0.5 : 1 }}>{t.generateCode}</button>
@@ -1165,6 +1169,11 @@ export default function ConfigPage() {
             {isOpen("ahorros") && (<div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
               {t.currentReserve(simboloReserva, totalReserva.toFixed(2))}
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div className="label" style={{ marginBottom: 6 }}>{t.initialReserve}</div>
+              <input type="number" value={metaSaldo} placeholder="0"
+                onChange={(e) => setMetaSaldo(e.target.value)} className="input" style={{ width: "100%" }} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
               <div>

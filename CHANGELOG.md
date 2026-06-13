@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.22.1] — 2026-06-12
+
+### Fixed
+- **New users couldn't add their first movement** — there was no active period, and the form required one. Now the first Salary opens the period using its own date.
+- Salary description box no longer shows the Move text (it was hardcoded in English); now correctly says "The salary opens a new period" / first-period variant, translated.
+
+### Changed
+- **USD initial reserve is now per-user config** (`saldoUSD`) instead of a hardcoded 5.77 — new users start at 0. Added an "Initial reserve (USD)" field in Settings → Investments to set it.
+- New movement modal fully translated (labels, texts, aria-labels) via i18n.
+- Reports → Expenses redesigned: Hero (Spent) + compact neutral mini-stats.
+- Reverted the "Code" row back to its full title + subtitle.
+
+---
+
 ## [1.22.0] — 2026-06-12
 
 ### Added

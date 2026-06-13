@@ -71,6 +71,17 @@ function Stat({ label, value, sub, color, danger, dimVar }: { label: string; val
   );
 }
 
+// Mini-stat compacto, fondo neutro, color sólo en el número.
+function MiniStat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "11px 12px", minWidth: 0 }}>
+      <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
+      {sub && <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>}
+    </div>
+  );
+}
+
 function VBars({ data, max, oculto, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean }[]; max: number; oculto?: boolean; onBarClick?: (label: string) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
@@ -282,7 +293,7 @@ export default function ReportesPage() {
   // Reserva real en FX — suma cantidadUSD de CompraUSD/GastoUSD (igual que página Inversión)
   const tipoCompraFX = monedaInversiones === "EUR" ? "CompraEUR" : "CompraUSD";
   const tipoGastoFX  = monedaInversiones === "EUR" ? "GastoEUR"  : "GastoUSD";
-  const SALDO_INICIAL = monedaInversiones === "EUR" ? 0 : 5.77;
+  const SALDO_INICIAL = monedaInversiones === "EUR" ? 0 : (config?.meta.saldoUSD ?? 0);
   const reservaFX = useMemo(() => {
     let total = SALDO_INICIAL;
     for (const m of movimientos) {
@@ -492,33 +503,37 @@ export default function ReportesPage() {
           {/* ══ GASTOS ══ */}
           {sub === "gastos" && periodo && kpis && (
             <>
-              {/* Ritmo de gasto (sólo para período individual) */}
-              {ritmo && reportOn("gastos_kpis") && (
-              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--red-dim))", borderColor: "var(--red)22" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.spendingPace}</div>
-                  <button onClick={toggle} aria-label={t.hideValues} style={{
-                    background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
-                    width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
-                  }}>
-                    <EyeIcon off={oculto} />
-                  </button>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                  <div>
-                    <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{money(ritmo.gastadoPorDia)}<span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 400 }}>{t.perDay}</span></div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>{t.projection30days(money(ritmo.proyeccionCierre))}</div>
+              {/* Hero: Gastado */}
+              {reportOn("gastos_kpis") && (() => {
+                const pctColor = colorPct(periodo.pct);
+                return (
+                  <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.spent}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {ritmo?.enCurso && <span className="badge" style={{ background: "var(--green-dim)", color: "var(--green)", border: "1px solid var(--green)44" }}>{t.ongoing}</span>}
+                        <button onClick={toggle} aria-label={t.hideValues} style={{ background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}>
+                          <EyeIcon off={oculto} />
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 30, fontWeight: 700, color: pctColor, fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{money(periodo.gastado)}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, marginBottom: 10 }}>{t.ofTotal(periodo.pct)}</div>
+                    <div className="bar-track"><div className="bar-fill" style={{ width: `${Math.min(periodo.pct, 100)}%`, background: pctColor }} /></div>
                   </div>
-                  {ritmo.enCurso && <span className="badge" style={{ background: "var(--green-dim)", color: "var(--green)", border: "1px solid var(--green)44" }}>{t.ongoing}</span>}
-                </div>
-              </div>
-              )}
+                );
+              })()}
 
-              {/* KPIs fila 1: Gastado + Prom/día */}
+              {/* Mini-stats */}
               {reportOn("gastos_kpis") && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                <Stat label={t.spent} value={money(periodo.gastado)} sub={t.ofTotal(periodo.pct)} color={colorPct(periodo.pct)} danger={periodo.pct > 100} dimVar={periodo.pct > 90 ? "var(--red-dim)" : periodo.pct > 50 ? "var(--yellow-dim)" : "var(--green-dim)"} />
-                {ritmo && <Stat label={t.avgDayWithExpense} value={money(kpis.promedioDiario)} sub={t.daysWithExpenses(kpis.diasConGasto)} color="var(--red)" dimVar="var(--red-dim)" />}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 18 }}>
+                {ritmo && <MiniStat label={t.spendingPace} value={`${money(ritmo.gastadoPorDia)}${t.perDay}`} sub={t.projection30days(money(ritmo.proyeccionCierre))} color="var(--red)" />}
+                {ritmo && <MiniStat label={t.avgDayWithExpense} value={money(kpis.promedioDiario)} sub={t.daysWithExpenses(kpis.diasConGasto)} color="var(--red)" />}
+                <MiniStat label={t.highestSpendingDay} value={kpis.diaMayorGasto ? money(kpis.diaMayorGasto.monto) : "—"} sub={kpis.diaMayorGasto ? sinAño(kpis.diaMayorGasto.fecha) : undefined} color="var(--red)" />
+                {diasLibres && <MiniStat label={t.expenseFreeDays} value={String(diasLibres.sinGasto)} sub={t.ofDays(diasLibres.total)} color="var(--green)" />}
+                {tendenciaGasto !== null && <MiniStat label={t.trend} value={`${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`} sub={t.last3vsPrev3} color={tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"} />}
+                {promPorMov !== null && <MiniStat label={t.avgPerExpense} value={money(promPorMov)} sub={t.transactions(kpis.cantGastos)} color="var(--red)" />}
+                {proyeccionGasto !== null && <MiniStat label={t.nextPeriodProjection} value={money(proyeccionGasto)} sub={t.avgLast3} color="var(--red)" />}
                 {activos.length > 1 && (() => {
                   const oldest = periodosActivos[periodosActivos.length - 1];
                   const newest = periodosActivos[0];
@@ -527,25 +542,8 @@ export default function ReportesPage() {
                   const startDate = parsePeriodoId(oldest?.periodoId || "");
                   const dias = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
                   const rango = `${shortPer(oldest?.periodoId || "")} → ${shortPer(newest?.periodoId || "")}`;
-                  return <Stat label={t.days} value={String(Math.abs(dias))} sub={rango} color="var(--blue)" dimVar="var(--blue-dim)" />;
+                  return <MiniStat label={t.days} value={String(Math.abs(dias))} sub={rango} color="var(--blue)" />;
                 })()}
-              </div>
-              )}
-
-              {/* KPIs fila 2: Mayor gasto 50% | Movimientos 25% | Días sin gastos 25% */}
-              {reportOn("gastos_kpis") && (
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
-                <Stat label={t.highestSpendingDay} value={kpis.diaMayorGasto ? money(kpis.diaMayorGasto.monto) : "—"} sub={kpis.diaMayorGasto ? sinAño(kpis.diaMayorGasto.fecha) : undefined} color="var(--red)" dimVar="var(--red-dim)" />
-                {diasLibres && <Stat label={t.expenseFreeDays} value={String(diasLibres.sinGasto)} sub={t.ofDays(diasLibres.total)} color="var(--green)" dimVar="var(--green-dim)" />}
-                {tendenciaGasto !== null && <Stat label={t.trend} value={`${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`} sub={t.last3vsPrev3} color={tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"} dimVar={tendenciaGasto > 10 ? "var(--red-dim)" : tendenciaGasto < -10 ? "var(--green-dim)" : "var(--yellow-dim)"} />}
-              </div>
-              )}
-
-              {/* KPIs fila 3: Prom. por gasto | Proyección */}
-              {reportOn("gastos_kpis") && (promPorMov !== null || proyeccionGasto !== null) && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
-                {promPorMov !== null && <Stat label={t.avgPerExpense} value={money(promPorMov)} sub={t.transactions(kpis.cantGastos)} color="var(--red)" dimVar="var(--red-dim)" />}
-                {proyeccionGasto !== null && <Stat label={t.nextPeriodProjection} value={money(proyeccionGasto)} sub={t.avgLast3} color="var(--red)" dimVar="var(--red-dim)" />}
               </div>
               )}
 

@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.22.1] — 2026-06-12
+
+### Mejoras
+- Arreglamos el arranque para cuentas nuevas: ahora el primer sueldo abre tu primer período sin trabas.
+- Podés cargar tu **reserva inicial en USD** desde Configuración → Inversión.
+- La pantalla de cargar movimiento quedó toda traducida.
+- Reportes (Gastos) más limpio y fácil de leer.
+
+---
+
 ## [1.22.0] — 2026-06-12
 
 ### Novedades

@@ -28,8 +28,6 @@ import { EyeIcon } from "@/components/EyeIcon";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Movimiento } from "@/types";
 
-const SALDO_INICIAL_USD = 5.77;
-
 function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
   const tipoCompra = moneda === "USD" ? "CompraUSD" : "CompraEUR";
   const tipoGasto  = moneda === "USD" ? "GastoUSD"  : "GastoEUR";
@@ -80,7 +78,7 @@ export default function DolaresPage() {
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
   const historialUSD = comprasUSD.filter(m => m.tipo === "CompraUSD");
   const { total: desdeMovimientosUSD, costoPromedio: costoPromedioUSD } = calcularReserva(comprasUSD, "USD");
-  const totalUSD = SALDO_INICIAL_USD + desdeMovimientosUSD;
+  const totalUSD = (config?.meta.saldoUSD ?? 0) + desdeMovimientosUSD;
   const reservaUSDenARS = cotizacionUSD ? totalUSD * cotizacionUSD : null;
   const gananciaUSD = reservaUSDenARS && costoPromedioUSD > 0 ? reservaUSDenARS - desdeMovimientosUSD * costoPromedioUSD : null;
   const gananciaPctUSD = gananciaUSD && desdeMovimientosUSD * costoPromedioUSD > 0 ? (gananciaUSD / (desdeMovimientosUSD * costoPromedioUSD)) * 100 : null;
