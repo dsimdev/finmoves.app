@@ -344,6 +344,7 @@ export const es = {
 
   // Offline
   offline: "Sin conexión",
+  offlineBody: "No hay conexión a internet. Algunos datos pueden estar desactualizados; volvé a intentar cuando tengas señal.",
 
   // Cambio de idioma
   changeLanguageTitle: "¿Cambiar idioma?",

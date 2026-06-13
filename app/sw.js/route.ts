@@ -12,18 +12,31 @@ export function GET() {
   const sw = `
 const VERSION = ${JSON.stringify(version)};
 const CACHE = "finmoves-" + VERSION;
-const PRECACHE = ["/", "/login", "/favicon.png", "/logo5-cropped.png", "/manifest.json"];
+const PRECACHE = [
+  "/", "/login", "/offline", "/manifest.json",
+  "/favicon.png", "/logo5-cropped.png",
+  "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png",
+];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)));
+  // addAll falla entero si un recurso 404ea; cacheamos best-effort uno por uno.
+  event.waitUntil(caches.open(CACHE).then((c) =>
+    Promise.all(PRECACHE.map((u) => c.add(u).catch(() => {})))
+  ));
   // NO skipWaiting: el SW nuevo queda en espera hasta que el usuario confirme.
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+    (async () => {
+      // Navigation preload: arranca la request de navegación en paralelo al SW.
+      if (self.registration.navigationPreload) {
+        try { await self.registration.navigationPreload.enable(); } catch (e) {}
+      }
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+      await self.clients.claim();
+    })()
   );
 });
 
@@ -66,9 +79,18 @@ self.addEventListener("fetch", (event) => {
 
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req)
-        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); return res; })
-        .catch(() => caches.match(req).then((hit) => hit || caches.match("/")))
+      (async () => {
+        try {
+          // Usar la respuesta del navigation preload si está disponible.
+          const preload = await event.preloadResponse;
+          const res = preload || await fetch(req);
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+          return res;
+        } catch (e) {
+          return (await caches.match(req)) || (await caches.match("/")) || (await caches.match("/offline"));
+        }
+      })()
     );
     return;
   }
