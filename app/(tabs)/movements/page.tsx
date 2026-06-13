@@ -321,7 +321,7 @@ export default function MovimientosPage() {
       }
       resetAdd(); closeModal(); refresh();
     } catch (err: unknown) {
-      setAddError(err instanceof Error ? err.message : "Error inesperado");
+      setAddError(err instanceof Error ? err.message : t.unexpectedError);
     } finally {
       setAddLoading(false);
     }
@@ -366,7 +366,7 @@ export default function MovimientosPage() {
         <div className="fade-up">
           <div style={{ marginBottom: 20 }}>
             <div className="label" style={{ marginBottom: 2 }}>{t.management}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Movements</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleMovements}</div>
             {periodoActual && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
                 {activePeriodoId === periodos[0]?.periodoId ? t.available : t.remaining}: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
@@ -440,11 +440,11 @@ export default function MovimientosPage() {
                             <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : isMove ? "var(--yellow)" : "var(--green)", fontFamily: "var(--font-mono)" }}>
                               {isGasto ? "-" : "+"}{money(m.monto)}
                             </span>
-                            <button onClick={() => openEdit(m)} aria-label="Editar" style={{
+                            <button onClick={() => openEdit(m)} style={{
                               background: "none", border: "none",
                               color: "var(--muted)", cursor: "pointer", padding: 6, flexShrink: 0,
                               display: "flex", alignItems: "center", justifyContent: "center",
-                            }}><PencilIcon /></button>
+                            }} aria-label={t.edit}><PencilIcon /></button>
                           </div>
                         </div>
                       );
@@ -650,7 +650,7 @@ export default function MovimientosPage() {
               </div>
             )}
             <div style={{ marginBottom: 20 }}>
-              <div className="label">Notes (optional)</div>
+              <div className="label">{t.notesOptional}</div>
               <input className="input" type="text" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
             </div>
 
@@ -693,7 +693,7 @@ export default function MovimientosPage() {
         {modal === "edit" && movSel && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-              {[{ l: "Type", v: movSel.tipo }, { l: "Category", v: movSel.categoria }, { l: "Date", v: fechaCorta(movSel.fecha) }].map(f => (
+              {[{ l: t.type, v: movSel.tipo }, { l: t.category, v: movSel.categoria }, { l: t.date, v: fechaCorta(movSel.fecha) }].map(f => (
                 <div key={f.l} style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 12px" }}>
                   <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{f.l}</div>
                   <div style={{ fontSize: 12, fontWeight: 600 }}>{f.v}</div>
@@ -771,7 +771,7 @@ export default function MovimientosPage() {
               {money(movSel.monto)}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setModal("edit")} className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={() => setModal("edit")} className="btn btn-ghost" style={{ flex: 1 }}>{t.cancel}</button>
               <button onClick={handleDelete} disabled={editLoading} className="btn btn-danger" style={{ flex: 1 }}>
                 {editLoading ? "..." : t.yesDelete}
               </button>

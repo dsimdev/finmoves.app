@@ -120,7 +120,7 @@ export default function DolaresPage() {
         <div className="fade-up">
           <div style={{ marginBottom: 24 }}>
             <div className="label" style={{ marginBottom: 2 }}>{t.portfolio}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{showUSD && showEUR ? "Dollars | Euros" : esEUR ? "Euros" : "Dollars"}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{showUSD && showEUR ? `${t.currencyDollars} | ${t.currencyEuros}` : esEUR ? t.currencyEuros : t.currencyDollars}</div>
           </div>
           {/* ── SECCIÓN USD ── */}
           {showUSD && (<>
@@ -139,7 +139,7 @@ export default function DolaresPage() {
             </div>
             {reservaUSDenARS && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-                ≈ {money(reservaUSDenARS)} · {tipoCambioRef} {t.rate} ${cotizacionUSD?.toLocaleString("es-AR")}
+                ≈ {money(reservaUSDenARS)} · {tipoCambioRef === "oficial" ? t.rateOfficial : t.rateBlue} {t.rate} ${cotizacionUSD?.toLocaleString("es-AR")}
               </div>
             )}
             {gananciaUSD !== null && (
@@ -180,7 +180,7 @@ export default function DolaresPage() {
             </div>
             {reservaEURenARS && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-                ≈ {money(reservaEURenARS)} · {tipoCambioRef} {t.rate} ${cotizacionEUR?.toLocaleString("es-AR")}
+                ≈ {money(reservaEURenARS)} · {tipoCambioRef === "oficial" ? t.rateOfficial : t.rateBlue} {t.rate} ${cotizacionEUR?.toLocaleString("es-AR")}
               </div>
             )}
             {gananciaEUR !== null && (

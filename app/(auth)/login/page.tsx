@@ -107,7 +107,7 @@ export default function LoginPage() {
             <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="input"
               style={{ paddingLeft: 46, paddingRight: 46, height: 52 }} placeholder={t.loginPassword} disabled={loading}
               autoComplete={mode === "signup" ? "new-password" : "current-password"} />
-            <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw ? "Ocultar" : "Mostrar"}
+            <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw ? t.hide : t.show}
               style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 6, display: "flex" }}>
               {showPw ? (
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">

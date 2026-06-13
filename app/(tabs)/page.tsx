@@ -59,7 +59,7 @@ export default function Dashboard() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div>
               <div className="label" style={{ marginBottom: 2 }}>{t.home}</div>
-              <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Dashboard</div>
+              <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleDashboard}</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>{t.period}</div>
@@ -76,7 +76,7 @@ export default function Dashboard() {
                   {money(p.disponible)}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 7 }}>
-                  de {money(p.total)} · {p.movimientos.length} mov.
+                  {t.of} {money(p.total)} · {p.movimientos.length} {t.movementsShort}
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, flexShrink: 0 }}>

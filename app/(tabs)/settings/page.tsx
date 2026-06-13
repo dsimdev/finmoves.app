@@ -731,7 +731,7 @@ export default function ConfigPage() {
 
       <div style={{ marginBottom: 24 }}>
         <div className="label" style={{ marginBottom: 2 }}>{t.preferences}</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Settings</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleSettings}</div>
       </div>
 
       {/* ── Acordeón unificado ── */}
@@ -1280,7 +1280,7 @@ export default function ConfigPage() {
                 }
               </button>
               {(metaFecha || metaMonto) && (
-                <button onClick={() => { setMetaFecha(""); setMetaMonto(""); }} aria-label="Limpiar" style={{ position: "absolute", right: 0, background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 8 }}>
+                <button onClick={() => { setMetaFecha(""); setMetaMonto(""); }} aria-label={t.clear} style={{ position: "absolute", right: 0, background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 8 }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="20" y1="4" x2="12" y2="12" />
                     <path d="M12.5 11.5 6 18l3 3 6.5-6.5z" />
@@ -1627,7 +1627,7 @@ export default function ConfigPage() {
                   </div>
                   <div style={{ position: "relative" }}>
                     <input type={passVisible ? "text" : "password"} value={passInput} onChange={(e) => setPassInput(e.target.value)} className="input" style={{ width: "100%", paddingRight: 40 }} placeholder={t.newPasswordPlaceholder} autoComplete="new-password" autoFocus />
-                    <button onClick={() => setPassVisible(v => !v)} aria-label={passVisible ? "Ocultar" : "Mostrar"} style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--muted)", display: "flex" }}>
+                    <button onClick={() => setPassVisible(v => !v)} aria-label={passVisible ? t.hide : t.show} style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--muted)", display: "flex" }}>
                       {passVisible
                         ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                         : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
@@ -1691,7 +1691,7 @@ export default function ConfigPage() {
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>{t.inviteCodeModalTitle}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 18px" }}>
               <span style={{ flex: 1, fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 4, color: "var(--accent)", textAlign: "center" }}>{inviteCode}</span>
-              <button onClick={copyInviteCode} aria-label="Copiar" style={{ background: codeCopied ? "var(--green-dim)" : "var(--accent-dim)", border: `1px solid ${codeCopied ? "var(--green)" : "var(--accent)"}44`, borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: codeCopied ? "var(--green)" : "var(--accent)", flexShrink: 0 }}>
+              <button onClick={copyInviteCode} aria-label={t.copy} style={{ background: codeCopied ? "var(--green-dim)" : "var(--accent-dim)", border: `1px solid ${codeCopied ? "var(--green)" : "var(--accent)"}44`, borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: codeCopied ? "var(--green)" : "var(--accent)", flexShrink: 0 }}>
                 {codeCopied ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                 ) : (

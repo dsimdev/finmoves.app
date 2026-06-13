@@ -386,7 +386,7 @@ export default function ReportesPage() {
         <div key={sub} className="fade-up">
           <div style={{ marginBottom: 18 }}>
             <div className="label" style={{ marginBottom: 2 }}>{t.analysis}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Reports</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleReports}</div>
           </div>
           <div className="subtabs">
             {SUBS.map((s) => {
@@ -610,7 +610,7 @@ export default function ReportesPage() {
               {/* Medios de pago */}
               {reportOn("gastos_otros") && (
               <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Por medio de pago</div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byPaymentMethod}</div>
                 {medios.map((m) => <Bar key={m.nombre} nombre={m.nombre} monto={m.monto} pct={m.pct} color="var(--blue)" oculto={oculto} />)}
               </div>
               )}

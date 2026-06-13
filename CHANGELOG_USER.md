@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.25.0] — 2026-06-13
+
+### Mejoras
+- **Idioma completo**: ahora toda la app cambia de idioma de punta a punta, incluidos los títulos grandes de cada pantalla (Tablero, Movimientos, Reportes, Configuración, Dólares/Euros) y varios textos que antes quedaban fijos. Tus datos no se modifican: el cambio es solo visual.
+
+---
+
 ## [1.24.2] — 2026-06-13
 
 ### Mejoras

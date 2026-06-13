@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.25.0] — 2026-06-13
+
+### Added (i18n — Bloque 2)
+- Full i18n sweep of remaining hardcoded UI strings; no database values were altered.
+- Page gradient titles now translate (Dashboard/Movements/Reports/Settings + Dollars/Euros).
+- New common keys: `edit`, `copy`, `clear`, `show`, `hide`, `of`, `movementsShort`, `unexpectedError`, `byPaymentMethod`, `rateOfficial`/`rateBlue`, `pageTitle*`, `currencyDollars`/`currencyEuros`.
+
+### Changed
+- Dashboard "de … · N mov.", Movements editor labels (Type/Category/Date), "Notes (optional)", delete "Cancel", aria-labels (Edit/Clear/Copy/Show/Hide), Reports "Por medio de pago", Investments rate name (oficial/blue) — all now go through the translation layer.
+
+### Notes
+- Brand/technical terms left as-is by design: Google Sheets, GitHub, Backup, Changelog.
+
+---
+
 ## [1.24.2] — 2026-06-13
 
 ### Added
