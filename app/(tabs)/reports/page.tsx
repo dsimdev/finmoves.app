@@ -127,10 +127,7 @@ export default function ReportesPage() {
   const [diaModalExpanded, setDiaModalExpanded] = useState(false);
   const sheetDragY = useRef<number | null>(null);
   const [proyPeriodos, setProyPeriodos] = useState(3);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTriggered = useRef(false);
-  const longPressTimerYear = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTriggeredYear = useRef(false);
+  const [compareMode, setCompareMode] = useState(false);
 
   // Multi-select: si no hay selección, usa el primero
   const activos = periodosSelIds.length > 0 ? periodosSelIds : [periodos[0]?.periodoId].filter(Boolean);
@@ -401,102 +398,97 @@ export default function ReportesPage() {
               );
             })}
           </div>
-          {/* Selector de período — agrupado por año, multi-select con long press.
+          {/* Selector de período — tap simple selecciona uno; toggle "Comparar" suma/quita.
               No aplica a Períodos (es una vista histórica de todos). */}
           {sub !== "periodos" && (() => {
             const subColor = sub === "gastos" ? "var(--red)" : sub === "ingresos" ? "var(--green)" : "var(--blue)";
             const subDim   = sub === "gastos" ? "var(--red-dim)" : sub === "ingresos" ? "var(--green-dim)" : "var(--blue-dim)";
             const años = Array.from(new Set(periodos.map((p) => periodoAnio(p.periodoId))));
-            // Todos los años que tienen al menos un período seleccionado
             const añosActivos = new Set(activos.map((id) => periodoAnio(id)));
-            // Pills: si hay multi-año, mostrar todos los activos; si no, solo el del primer seleccionado
+            // En comparar multi-año mostramos todos los activos; si no, los del año en vista.
             const añoVista = periodoAnio(activos[0] ?? periodos[0]?.periodoId ?? "");
             const pilisAMostrar = añosActivos.size > 1
               ? periodos.filter((p) => añosActivos.has(periodoAnio(p.periodoId)))
               : periodos.filter((p) => periodoAnio(p.periodoId) === añoVista);
+
+            const togglePill = (id: string) => {
+              if (!compareMode) { setPeriodosSelIds([id]); return; }
+              setPeriodosSelIds((prev) => {
+                const current = prev.length > 0 ? prev : [periodos[0]?.periodoId].filter(Boolean) as string[];
+                if (current.includes(id)) {
+                  const next = current.filter((x) => x !== id);
+                  return next.length > 0 ? next : current; // nunca dejar 0
+                }
+                return [...current, id];
+              });
+            };
+            const selectYear = (año: string) => {
+              if (compareMode) {
+                const ids = periodos.filter((p) => periodoAnio(p.periodoId) === año).map((p) => p.periodoId);
+                setPeriodosSelIds((prev) => {
+                  const current = prev.length > 0 ? prev : [periodos[0]?.periodoId].filter(Boolean) as string[];
+                  const todos = ids.every((id) => current.includes(id));
+                  const next = todos ? current.filter((id) => !ids.includes(id)) : Array.from(new Set([...current, ...ids]));
+                  return next.length > 0 ? next : current;
+                });
+              } else {
+                const primero = periodos.find((p) => periodoAnio(p.periodoId) === año);
+                if (primero) setPeriodosSelIds([primero.periodoId]);
+              }
+            };
+
             return (
               <div style={{ marginBottom: 16 }}>
-                {/* Tabs de año — click: selecciona primer período; long press: toggle todos los del año */}
-                <div style={{ display: "flex", gap: 4, overflowX: "auto", padding: "3px 3px 4px", marginBottom: 4, scrollbarWidth: "none", touchAction: "pan-x" }}>
-                  {años.map((año) => {
-                    const isAñoActivo = añosActivos.has(año);
-                    return (
-                      <button
-                        key={año}
-                        onPointerDown={() => {
-                          longPressTriggeredYear.current = false;
-                          longPressTimerYear.current = setTimeout(() => {
-                            longPressTriggeredYear.current = true;
-                            const idsDelAño = periodos.filter((p) => periodoAnio(p.periodoId) === año).map((p) => p.periodoId);
-                            setPeriodosSelIds((prev) => {
-                              const current = prev.length > 0 ? prev : [periodos[0]?.periodoId].filter(Boolean) as string[];
-                              const todosSeleccionados = idsDelAño.every((id) => current.includes(id));
-                              return todosSeleccionados
-                                ? current.filter((id) => !idsDelAño.includes(id))
-                                : Array.from(new Set([...current, ...idsDelAño]));
-                            });
-                          }, 400);
-                        }}
-                        onPointerUp={() => { if (longPressTimerYear.current) clearTimeout(longPressTimerYear.current); }}
-                        onPointerCancel={() => { if (longPressTimerYear.current) clearTimeout(longPressTimerYear.current); }}
-                        onClick={() => {
-                          if (longPressTriggeredYear.current) { longPressTriggeredYear.current = false; return; }
-                          const primero = periodos.find((p) => periodoAnio(p.periodoId) === año);
-                          if (primero) setPeriodosSelIds([primero.periodoId]);
-                        }}
-                        style={{
-                          flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
-                          border: `1px solid ${isAñoActivo ? subColor : "var(--border)"}`,
-                          background: isAñoActivo ? subDim : "transparent",
-                          color: isAñoActivo ? subColor : "var(--muted)",
-                          transition: "all 0.15s",
-                          boxShadow: añosActivos.size > 1 && isAñoActivo ? `0 0 0 2px ${subColor}` : "none",
-                        }}
-                      >{año}</button>
-                    );
-                  })}
+                {/* Fila de años + toggle Comparar */}
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ display: "flex", gap: 4, overflowX: "auto", padding: "3px 3px 4px", scrollbarWidth: "none", touchAction: "pan-x", flex: 1 }}>
+                    {años.map((año) => {
+                      const isAñoActivo = añosActivos.has(año);
+                      return (
+                        <button key={año} onClick={() => selectYear(año)}
+                          style={{
+                            flexShrink: 0, padding: "5px 13px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                            border: `1px solid ${isAñoActivo ? subColor : "var(--border)"}`,
+                            background: isAñoActivo ? subDim : "transparent",
+                            color: isAñoActivo ? subColor : "var(--muted)",
+                            transition: "all 0.15s",
+                          }}
+                        >{año}</button>
+                      );
+                    })}
+                  </div>
+                  {periodos.length > 1 && (
+                    <button onClick={() => setCompareMode((v) => { const nv = !v; if (!nv) setPeriodosSelIds((p) => p.slice(0, 1)); return nv; })}
+                      style={{
+                        flexShrink: 0, display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 999,
+                        fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                        border: `1px solid ${compareMode ? subColor : "var(--border)"}`,
+                        background: compareMode ? subDim : "transparent",
+                        color: compareMode ? subColor : "var(--muted)",
+                      }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 10h14M7 10l-4 4 4 4"/><path d="M17 14H3M17 14l4-4-4-4" transform="translate(0 -4)"/>
+                      </svg>
+                      {compareMode && activos.length > 1 ? `${activos.length}×` : t.compare}
+                    </button>
+                  )}
                 </div>
                 {/* Pills de períodos */}
                 <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "3px 3px 4px", scrollbarWidth: "none", alignItems: "center", touchAction: "pan-x" }}>
                   {pilisAMostrar.map((p) => {
                     const isSelected = activos.includes(p.periodoId);
                     return (
-                      <button
-                        key={p.periodoId}
-                        onPointerDown={() => {
-                          longPressTriggered.current = false;
-                          longPressTimer.current = setTimeout(() => {
-                            longPressTriggered.current = true;
-                            setPeriodosSelIds(prev => {
-                              const current = prev.length > 0 ? prev : [periodos[0]?.periodoId].filter(Boolean) as string[];
-                              return current.includes(p.periodoId)
-                                ? current.filter((id) => id !== p.periodoId)
-                                : [...current, p.periodoId];
-                            });
-                          }, 400);
-                        }}
-                        onPointerUp={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
-                        onPointerCancel={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
-                        onClick={() => {
-                          if (longPressTriggered.current) return;
-                          setPeriodosSelIds([p.periodoId]);
-                        }}
+                      <button key={p.periodoId} onClick={() => togglePill(p.periodoId)}
                         style={{
-                          flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
+                          flexShrink: 0, padding: "6px 14px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
                           border: `1px solid ${isSelected ? subColor : "var(--border)"}`,
                           background: isSelected ? subDim : "transparent",
                           color: isSelected ? subColor : "var(--muted)",
                           transition: "all 0.15s",
-                          boxShadow: periodosSelIds.length > 1 && isSelected ? `0 0 0 2px ${subColor}` : "none",
                         }}
                       >{shortPer(p.periodoId)}</button>
                     );
                   })}
-                  {activos.length > 1 && (
-                    <span style={{ fontSize: 10, color: "var(--muted)", marginLeft: 6, whiteSpace: "nowrap" }}>
-                      {activos.length}×
-                    </span>
-                  )}
                 </div>
               </div>
             );
@@ -542,16 +534,6 @@ export default function ReportesPage() {
                 {promPorMov !== null && <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} sub={t.transactions(kpis.cantGastos)} color="var(--red)" />}
                 {ritmo && <MiniStat center basis="1 1 45%" label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} sub={t.projection30days(oculto ? "••" : abbr(ritmo.proyeccionCierre))} color="var(--red)" />}
                 {proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} sub={t.avgLast3} color="var(--red)" />}
-                {activos.length > 1 && (() => {
-                  const oldest = periodosActivos[periodosActivos.length - 1];
-                  const newest = periodosActivos[0];
-                  const idxNewest = periodos.findIndex((p) => p.periodoId === newest?.periodoId);
-                  const endDate = idxNewest > 0 ? parsePeriodoId(periodos[idxNewest - 1].periodoId) : new Date();
-                  const startDate = parsePeriodoId(oldest?.periodoId || "");
-                  const dias = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-                  const rango = `${shortPer(oldest?.periodoId || "")} → ${shortPer(newest?.periodoId || "")}`;
-                  return <MiniStat basis="1 1 45%" label={t.days} value={String(Math.abs(dias))} sub={rango} color="var(--blue)" />;
-                })()}
               </div>
               )}
 
@@ -586,7 +568,7 @@ export default function ReportesPage() {
 
               {/* Categoría que más creció */}
               {catMasCrecio && reportOn("gastos_otros") && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--red-dim, var(--surface-alt)))", borderColor: "var(--red)22" }}>
+                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--red-dim, var(--surface-alt)))" }}>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{t.fastestGrowingCat}</div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 14, fontWeight: 700 }}>{catMasCrecio.categoria}</span>

@@ -772,16 +772,13 @@ export default function ConfigPage() {
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
                 </div>
               </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" style={{ flexShrink: 0 }}>
-                <polyline points="9 18 15 12 9 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
             </button>
             ); })()}
 
-            {/* Sincronización (solo dueño) */}
+            {/* Sincronización (solo dueño) — la fila abre el historial */}
             {isOwner && (
-            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button onClick={() => syncLogs.length > 0 && setShowSyncLog(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: syncLogs.length > 0 ? "pointer" : "default", textAlign: "left" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
                   background: syncError ? "var(--red-dim)" : lastSync ? "var(--green-dim)" : "var(--surface-alt)",
@@ -794,7 +791,7 @@ export default function ConfigPage() {
                       strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13 }}>Google Sheets</div>
                   <div style={{ fontSize: 11, marginTop: 2, color: syncError ? "var(--red)" : lastSync ? "var(--green)" : "var(--muted)" }}>
                     {syncError
@@ -805,32 +802,17 @@ export default function ConfigPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {syncError && (
-                  <button onClick={handleSync} disabled={syncing} style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    background: "var(--red-dim)", color: "var(--red)",
-                    border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
-                    padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
-                  }}>
-                    {syncing ? t.retrying : t.retry}
-                  </button>
-                )}
-                {syncLogs.length > 0 && (
-                  <button onClick={() => setShowSyncLog(true)} title={t.viewHistory} style={{
-                    background: "var(--surface-alt)", border: "1px solid var(--border)",
-                    borderRadius: 10, width: 36, height: 36,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", color: "var(--muted)", flexShrink: 0,
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="9"/>
-                      <polyline points="12 7 12 12 15 15"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
+              {syncError && (
+                <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); if (!syncing) handleSync(); }} style={{
+                  display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+                  background: "var(--red-dim)", color: "var(--red)",
+                  border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)",
+                  padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
+                }}>
+                  {syncing ? t.retrying : t.retry}
+                </span>
+              )}
+            </button>
             )}
 
             {/* Desbloqueo con huella */}
@@ -879,8 +861,8 @@ export default function ConfigPage() {
             {/* Backup */}
             <button onClick={() => setShowExportConfirm(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--surface-alt)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-dim)", border: "1px solid var(--accent)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--accent)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
                 </div>
@@ -909,7 +891,6 @@ export default function ConfigPage() {
                     <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.inviteCodesSub}</div>
                   </div>
                 </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             )}
 
@@ -1617,7 +1598,6 @@ export default function ConfigPage() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <span style={{ fontSize: 13, fontWeight: 600 }}>{t.changePassword}</span>
                   </div>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
               ) : (
                 <div style={{ padding: "14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)" }}>

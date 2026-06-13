@@ -12,6 +12,7 @@ export const es = {
   movementsShort: "mov.",
   unexpectedError: "Error inesperado",
   byPaymentMethod: "Por medio de pago",
+  compare: "Comparar",
   rateOfficial: "oficial",
   rateBlue: "blue",
   pageTitleDashboard: "Tablero",

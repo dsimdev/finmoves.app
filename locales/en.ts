@@ -14,6 +14,7 @@ export const en: AppLocale = {
   movementsShort: "mov.",
   unexpectedError: "Unexpected error",
   byPaymentMethod: "By payment method",
+  compare: "Compare",
   rateOfficial: "official",
   rateBlue: "blue",
   pageTitleDashboard: "Dashboard",

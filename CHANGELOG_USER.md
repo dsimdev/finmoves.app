@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.25.1] — 2026-06-13
+
+### Mejoras
+- Ajustes visuales en Configuración: el icono de Backup quedó del mismo color que el de códigos de invitación, y sacamos las flechitas de la derecha en las filas donde el propio icono ya hace la acción.
+- Sincronización con Google Sheets: ahora tocás la fila para ver el historial (sacamos el botón del relojito), igual que el resto de las opciones.
+- Reportes: la selección de períodos es más cómoda al tacto. Ahora un toque elige un período, y con el botón **Comparar** sumás o sacás varios para compararlos (antes había que mantener apretado). Botones más grandes y fáciles de tocar.
+
+---
+
 ## [1.25.0] — 2026-06-13
 
 ### Mejoras

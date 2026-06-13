@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.25.1] — 2026-06-13
+
+### Changed
+- Settings: Backup icon now uses the accent color (matches the invite-code row).
+- Removed redundant right-pointing chevrons on action rows (profile, invite code, change-password) — the icon/row itself performs the action.
+- Sync (Google Sheets): removed the separate clock button; the whole row now opens the sync history (consistent with other config rows). Retry-on-error button kept.
+- Reports/Expenses: "fastest-growing category" card now uses the standard border (gradient kept); removed the multi-period "Días" mini-stat.
+- Reports period selector reworked for touch: replaced long-press multi-select with an explicit "Comparar" toggle (single tap selects one; in compare mode taps add/remove periods, year tap toggles the whole year); larger tap targets.
+
+---
+
 ## [1.25.0] — 2026-06-13
 
 ### Added (i18n — Bloque 2)
