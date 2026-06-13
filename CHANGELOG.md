@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.24.2] — 2026-06-13
+
+### Added
+- Profile modal: **change-password** is now a collapsible row (lock icon → reveals field with show/hide eye + 6-char hint); no empty input dangling.
+- Active-state colors: **biometric** and **notifications** icons turn green when enabled.
+
+### Changed
+- Invite code: removed the "Generate" button; the whole row is the action and the icon shows a spinner while generating (owner only).
+- Profile "Save" button is disabled until there are actual changes (name edited or new password typed).
+- Reports/Income: "Evolución ingresos" chart now uses the standard card border (removed the green tint) for visual consistency.
+- Reports savings projection now defaults to **3 periods** (was 6).
+
+### Fixed
+- Biometric lock no longer hides the update prompt: `UpdateBanner` is now mounted on the lock screen, so a new version can be applied without unlocking first.
+
+---
+
 ## [1.24.1] — 2026-06-13
 
 ### Added

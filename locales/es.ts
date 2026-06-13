@@ -197,6 +197,8 @@ export const es = {
   nameLabel: "Nombre",
   namePlaceholder: "Tu nombre",
   newPasswordLabel: "Nueva contraseña",
+  changePassword: "Cambiar contraseña",
+  passwordHint: "Mínimo 6 caracteres.",
   newPasswordPlaceholder: "Dejar vacío para no cambiar",
   saveProfile: "Guardar",
   profileSaved: "Datos actualizados",

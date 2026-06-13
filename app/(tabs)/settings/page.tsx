@@ -188,11 +188,15 @@ export default function ConfigPage() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [passInput, setPassInput] = useState("");
+  const [changingPass, setChangingPass] = useState(false);
+  const [passVisible, setPassVisible] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [profileBusy, setProfileBusy] = useState(false);
   const openUserModal = () => {
     setNameInput(config?.meta.nombre ?? "");
     setPassInput("");
+    setChangingPass(false);
+    setPassVisible(false);
     setProfileMsg(null);
     setShowUserModal(true);
   };
@@ -204,7 +208,7 @@ export default function ConfigPage() {
       if (nombre !== (config.meta.nombre ?? "")) {
         await saveConfig({ ...config, meta: { ...config.meta, nombre: nombre || undefined } });
       }
-      if (passInput) {
+      if (changingPass && passInput) {
         if (passInput.length < 6) { setProfileMsg({ ok: false, text: t.regWeakPassword }); return; }
         try {
           await updatePassword(auth.currentUser!, passInput);
@@ -833,8 +837,8 @@ export default function ConfigPage() {
             {bioAvailable && (
               <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--surface-alt)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: bioEnabled ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${bioEnabled ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={bioEnabled ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 11c0 3 0 6-1 8.5" /><path d="M8 11a4 4 0 0 1 8 0c0 3.5-.5 6-1.5 8" />
                       <path d="M5 11a7 7 0 0 1 14 0c0 1.5 0 3-.3 4.5" /><path d="M3 9a9 9 0 0 1 4-3.5M21 9a9 9 0 0 0-4-3.5" />
                     </svg>
@@ -852,8 +856,8 @@ export default function ConfigPage() {
             {pushAvailable && (
               <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--surface-alt)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: pushOn ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${pushOn ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pushOn ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
                       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                     </svg>
@@ -889,20 +893,24 @@ export default function ConfigPage() {
 
             {/* Códigos de invitación (solo dueño) */}
             {isOwner && (
-              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <button onClick={generateInviteCode} disabled={genBusy} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: genBusy ? "default" : "pointer", textAlign: "left", opacity: genBusy ? 0.6 : 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--surface-alt)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="7.5" cy="15.5" r="4.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
-                    </svg>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-dim)", border: "1px solid var(--accent)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--accent)" }}>
+                    {genBusy ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="7.5" cy="15.5" r="4.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
+                      </svg>
+                    )}
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13 }}>{t.inviteCodesTitle}</div>
                     <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.inviteCodesSub}</div>
                   </div>
                 </div>
-                <button onClick={generateInviteCode} disabled={genBusy} style={{ background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 11, fontWeight: 700, padding: "6px 12px", cursor: "pointer", flexShrink: 0, opacity: genBusy ? 0.5 : 1 }}>{t.generateCode}</button>
-              </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
             )}
 
             </div>)}
@@ -1603,8 +1611,31 @@ export default function ConfigPage() {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <div className="label" style={{ marginBottom: 6 }}>{t.newPasswordLabel}</div>
-              <input type="password" value={passInput} onChange={(e) => setPassInput(e.target.value)} className="input" style={{ width: "100%" }} placeholder={t.newPasswordPlaceholder} autoComplete="new-password" />
+              {!changingPass ? (
+                <button onClick={() => setChangingPass(true)} className="row" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)", cursor: "pointer", textAlign: "left" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{t.changePassword}</span>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              ) : (
+                <div style={{ padding: "14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div className="label" style={{ margin: 0 }}>{t.newPasswordLabel}</div>
+                    <button onClick={() => { setChangingPass(false); setPassInput(""); setPassVisible(false); }} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 12, cursor: "pointer", padding: 0 }}>{t.cancel}</button>
+                  </div>
+                  <div style={{ position: "relative" }}>
+                    <input type={passVisible ? "text" : "password"} value={passInput} onChange={(e) => setPassInput(e.target.value)} className="input" style={{ width: "100%", paddingRight: 40 }} placeholder={t.newPasswordPlaceholder} autoComplete="new-password" autoFocus />
+                    <button onClick={() => setPassVisible(v => !v)} aria-label={passVisible ? "Ocultar" : "Mostrar"} style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--muted)", display: "flex" }}>
+                      {passVisible
+                        ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.passwordHint}</div>
+                </div>
+              )}
             </div>
 
             {/* Idioma */}
@@ -1624,9 +1655,15 @@ export default function ConfigPage() {
               <div style={{ fontSize: 12, color: profileMsg.ok ? "var(--green)" : "var(--red)", marginBottom: 12, lineHeight: 1.5 }}>{profileMsg.text}</div>
             )}
 
-            <button onClick={saveProfile} disabled={profileBusy} style={{ width: "100%", padding: "13px 0", borderRadius: 12, border: "none", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: profileBusy ? 0.6 : 1 }}>
-              {t.saveProfile}
-            </button>
+            {(() => {
+              const hasChanges = nameInput.trim() !== (config.meta.nombre ?? "") || (changingPass && passInput.length > 0);
+              const disabled = profileBusy || !hasChanges;
+              return (
+                <button onClick={saveProfile} disabled={disabled} style={{ width: "100%", padding: "13px 0", borderRadius: 12, border: "none", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1, transition: "opacity 0.15s" }}>
+                  {t.saveProfile}
+                </button>
+              );
+            })()}
           </div>
         </div>,
         document.body

@@ -48,10 +48,13 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
 
   if (lockState === "locked") {
     return (
-      <LockScreen
-        onUnlock={() => setLockState("unlocked")}
-        onUsePassword={async () => { await signOut(auth); }}
-      />
+      <>
+        <LockScreen
+          onUnlock={() => setLockState("unlocked")}
+          onUsePassword={async () => { await signOut(auth); }}
+        />
+        <UpdateBanner />
+      </>
     );
   }
 

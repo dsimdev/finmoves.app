@@ -126,7 +126,7 @@ export default function ReportesPage() {
   const [diaModal, setDiaModal] = useState<string | null>(null);
   const [diaModalExpanded, setDiaModalExpanded] = useState(false);
   const sheetDragY = useRef<number | null>(null);
-  const [proyPeriodos, setProyPeriodos] = useState(6);
+  const [proyPeriodos, setProyPeriodos] = useState(3);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggered = useRef(false);
   const longPressTimerYear = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -831,7 +831,7 @@ export default function ReportesPage() {
 
               {/* Evolución ingresos */}
               {evolucionIngresos.length > 1 && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))", borderColor: "var(--green)22" }}>
+                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{t.incomeEvolution}</div>
                   <VBars
                     max={Math.max(...evolucionIngresos.map((p) => p.sueldo + p.moveTotal), 1)}

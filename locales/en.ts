@@ -199,6 +199,8 @@ export const en: AppLocale = {
   nameLabel: "Name",
   namePlaceholder: "Your name",
   newPasswordLabel: "New password",
+  changePassword: "Change password",
+  passwordHint: "At least 6 characters.",
   newPasswordPlaceholder: "Leave empty to keep it",
   saveProfile: "Save",
   profileSaved: "Profile updated",

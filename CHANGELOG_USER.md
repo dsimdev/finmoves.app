@@ -4,6 +4,21 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.24.2] — 2026-06-13
+
+### Mejoras
+- **Cambiar contraseña** más prolijo: ahora es una opción que se despliega solo si la tocás, con un ojito para ver lo que escribís. Ya no aparece un campo vacío colgado.
+- Los iconos de **huella** y **notificaciones** se ponen en **verde** cuando están activos.
+- **Código de invitación**: se genera tocando la fila directamente (sin botón aparte), con un spinner mientras se crea.
+- El botón **Guardar** del perfil se activa solo si hay cambios.
+- En Reportes, el gráfico "Evolución ingresos" ahora tiene el mismo borde que el resto.
+- La proyección de ahorros arranca en **3 períodos** por defecto.
+
+### Correcciones
+- Si tenés el desbloqueo por huella activo, el aviso de **nueva versión** ya aparece aunque la app esté bloqueada.
+
+---
+
 ## [1.24.1] — 2026-06-13
 
 ### Novedades
