@@ -4,6 +4,15 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.30.0] — 2026-06-13
+
+### Added (notifications)
+- Cron now notifies **all users** with a push subscription (was owner-only): new version + dollar change, plus two new triggers — **savings-goal milestones** (50/75/100%) and a **salary reminder** when a period is overdue (>33 days).
+- Sheets sync + sync-failure alert remain **owner-only**.
+- All notification triggers are **idempotent** (deduped via `config/notifyMeta`), so the Cloud Scheduler job can run more than once a day without spamming. New `lib/notifications.ts`.
+
+---
+
 ## [1.29.2] — 2026-06-13
 
 ### Removed

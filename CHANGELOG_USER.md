@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.30.0] — 2026-06-13
+
+### Novedades
+- **Nuevas notificaciones**: te avisamos cuando alcanzás un hito de tu meta de ahorro (50/75/100%) y te recordamos cargar el sueldo cuando arranca un período nuevo.
+
+---
+
 ## [1.29.0] — 2026-06-13
 
 ### Mejoras
