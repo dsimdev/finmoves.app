@@ -72,9 +72,9 @@ function Stat({ label, value, sub, color, danger, dimVar }: { label: string; val
 }
 
 // Mini-stat compacto, fondo neutro, color sólo en el número.
-function MiniStat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+function MiniStat({ label, value, sub, color, basis = "1 1 28%", center }: { label: string; value: string; sub?: string; color?: string; basis?: string; center?: boolean }) {
   return (
-    <div style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "11px 12px", minWidth: 0, flex: "1 1 28%" }}>
+    <div style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "11px 12px", minWidth: 0, flex: basis, textAlign: center ? "center" : undefined }}>
       <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
       <div style={{ fontSize: 15, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
       {sub && <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>}
@@ -524,16 +524,22 @@ export default function ReportesPage() {
                 );
               })()}
 
-              {/* Mini-stats */}
+              {/* Mini-stats fila 1: 3 columnas */}
+              {reportOn("gastos_kpis") && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                {diasLibres && <MiniStat center label={t.expenseFreeDays} value={String(diasLibres.sinGasto)} sub={t.ofDays(diasLibres.total)} color="var(--green)" />}
+                {tendenciaGasto !== null && <MiniStat center label={t.trend} value={`${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`} sub={t.last3vsPrev3} color={tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"} />}
+                <MiniStat center label={t.highestSpendingDay} value={kpis.diaMayorGasto ? (oculto ? "••" : abbr(kpis.diaMayorGasto.monto)) : "—"} sub={kpis.diaMayorGasto ? sinAño(kpis.diaMayorGasto.fecha) : undefined} color="var(--red)" />
+              </div>
+              )}
+
+              {/* Mini-stats fila 2: 2 columnas */}
               {reportOn("gastos_kpis") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
-                {ritmo && <MiniStat label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} sub={t.projection30days(oculto ? "••" : abbr(ritmo.proyeccionCierre))} color="var(--red)" />}
-                {ritmo && <MiniStat label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} sub={t.daysWithExpenses(kpis.diasConGasto)} color="var(--red)" />}
-                <MiniStat label={t.highestSpendingDay} value={kpis.diaMayorGasto ? (oculto ? "••" : abbr(kpis.diaMayorGasto.monto)) : "—"} sub={kpis.diaMayorGasto ? sinAño(kpis.diaMayorGasto.fecha) : undefined} color="var(--red)" />
-                {diasLibres && <MiniStat label={t.expenseFreeDays} value={String(diasLibres.sinGasto)} sub={t.ofDays(diasLibres.total)} color="var(--green)" />}
-                {tendenciaGasto !== null && <MiniStat label={t.trend} value={`${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`} sub={t.last3vsPrev3} color={tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"} />}
-                {promPorMov !== null && <MiniStat label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} sub={t.transactions(kpis.cantGastos)} color="var(--red)" />}
-                {proyeccionGasto !== null && <MiniStat label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} sub={t.avgLast3} color="var(--red)" />}
+                {ritmo && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} sub={t.daysWithExpenses(kpis.diasConGasto)} color="var(--red)" />}
+                {promPorMov !== null && <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} sub={t.transactions(kpis.cantGastos)} color="var(--red)" />}
+                {ritmo && <MiniStat center basis="1 1 45%" label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} sub={t.projection30days(oculto ? "••" : abbr(ritmo.proyeccionCierre))} color="var(--red)" />}
+                {proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} sub={t.avgLast3} color="var(--red)" />}
                 {activos.length > 1 && (() => {
                   const oldest = periodosActivos[periodosActivos.length - 1];
                   const newest = periodosActivos[0];
@@ -542,7 +548,7 @@ export default function ReportesPage() {
                   const startDate = parsePeriodoId(oldest?.periodoId || "");
                   const dias = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
                   const rango = `${shortPer(oldest?.periodoId || "")} → ${shortPer(newest?.periodoId || "")}`;
-                  return <MiniStat label={t.days} value={String(Math.abs(dias))} sub={rango} color="var(--blue)" />;
+                  return <MiniStat basis="1 1 45%" label={t.days} value={String(Math.abs(dias))} sub={rango} color="var(--blue)" />;
                 })()}
               </div>
               )}

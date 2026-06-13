@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.22.5] — 2026-06-12
+
+### Changed
+- Reports → Expenses mini-stats polished: top row in 3 columns (centered), second row in 2 columns (centered), reordered, and labels shortened to remove the repeated "expense/gasto" (Daily pace, Daily average, Peak day, Avg. per item, Free days).
+
+---
+
 ## [1.22.4] — 2026-06-12
 
 ### Fixed
