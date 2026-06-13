@@ -4,9 +4,11 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [1.26.1] — 2026-06-13
+## [1.27.0] — 2026-06-13
 
 ### Mejoras
+- **Inicio renovado**: los datos (Sueldo, Gastado, Ahorros, Retiros) se ven en tarjetitas parejas con el resto de la app, y sumamos **atajos** para crear un movimiento o ir a Reportes/Inversión de un toque.
+- Desde Inicio, tocá un movimiento de "Últimos movimientos" y se abre directo para editarlo.
 - En Movimientos ya no hace falta el lapicito: tocás cualquier parte del movimiento y se abre para editarlo.
 
 ---

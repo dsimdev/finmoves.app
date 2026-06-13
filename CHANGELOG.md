@@ -4,10 +4,15 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [1.26.1] — 2026-06-13
+## [1.27.0] — 2026-06-13
 
-### Changed
-- Movements list: removed the per-row pencil button; tapping anywhere on a movement now opens the edit modal (larger tap target).
+### Changed (Dashboard redesign)
+- KPIs (Salary/Spent/Savings/Withdrawals) restyled as consistent `MiniStat` cards.
+- Added a quick-actions row: New movement · Reports · Investments.
+- Latest-movements rows are now tappable; tapping deep-links to Movements and opens that movement in the edit modal (`/movements?m=<id>`).
+
+### Changed (Movements / Investments)
+- Movements list: removed the per-row pencil button; tapping anywhere on a movement opens the edit modal (larger tap target).
 - Investments mini-stats: restored the standard border (matches Reports) now that the Goal card is neutral.
 
 ---
