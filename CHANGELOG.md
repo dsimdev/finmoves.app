@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.26.1] — 2026-06-13
+
+### Changed
+- Movements list: removed the per-row pencil button; tapping anywhere on a movement now opens the edit modal (larger tap target).
+- Investments mini-stats: restored the standard border (matches Reports) now that the Goal card is neutral.
+
+---
+
 ## [1.26.0] — 2026-06-13
 
 ### Changed (Investments redesign)

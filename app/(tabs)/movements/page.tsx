@@ -15,12 +15,6 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useT } from "@/hooks/useTranslation";
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
-const PencilIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-    <path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-    <path d="M13.5 6.5l3 3" stroke="currentColor" strokeWidth="1.7" />
-  </svg>
-);
 const TrashIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -423,9 +417,10 @@ export default function MovimientosPage() {
                       const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
                       const isMove = m.tipo === "Move";
                       return (
-                        <div key={m.id} style={{
+                        <button key={m.id} onClick={() => openEdit(m)} aria-label={t.edit} style={{
+                          width: "100%", textAlign: "left", background: "none", cursor: "pointer",
                           display: "flex", alignItems: "flex-start", gap: 10, padding: "13px 14px",
-                          borderBottom: i < movs.length - 1 ? "1px solid var(--faint)" : "none",
+                          border: "none", borderBottom: i < movs.length - 1 ? "1px solid var(--faint)" : "none",
                         }}>
                           <TipoDot tipo={m.tipo} categoria={m.categoria} />
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -436,17 +431,10 @@ export default function MovimientosPage() {
                               {m.categoria}{m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}
                             </div>
                           </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : isMove ? "var(--yellow)" : "var(--green)", fontFamily: "var(--font-mono)" }}>
-                              {isGasto ? "-" : "+"}{money(m.monto)}
-                            </span>
-                            <button onClick={() => openEdit(m)} style={{
-                              background: "none", border: "none",
-                              color: "var(--muted)", cursor: "pointer", padding: 6, flexShrink: 0,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                            }} aria-label={t.edit}><PencilIcon /></button>
-                          </div>
-                        </div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : isMove ? "var(--yellow)" : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
+                            {isGasto ? "-" : "+"}{money(m.monto)}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>

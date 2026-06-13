@@ -47,7 +47,7 @@ function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
 // Mini-stat compacta, mismo estilo que en Reportes.
 function MiniStat({ label, value, sub, color, center }: { label: string; value: string; sub?: string; color?: string; center?: boolean }) {
   return (
-    <div style={{ background: "var(--surface-alt)", border: "none", borderRadius: "var(--radius-sm)", padding: "11px 12px", minWidth: 0, flex: "1 1 0", textAlign: center ? "center" : undefined }}>
+    <div style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "11px 12px", minWidth: 0, flex: "1 1 0", textAlign: center ? "center" : undefined }}>
       <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
       <div style={{ fontSize: 15, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
       {sub && <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>}

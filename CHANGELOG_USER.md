@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.26.1] — 2026-06-13
+
+### Mejoras
+- En Movimientos ya no hace falta el lapicito: tocás cualquier parte del movimiento y se abre para editarlo.
+
+---
+
 ## [1.26.0] — 2026-06-13
 
 ### Mejoras
