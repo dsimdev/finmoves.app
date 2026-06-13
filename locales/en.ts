@@ -149,6 +149,8 @@ export const en: AppLocale = {
   expensesVsSalary: "Expenses vs salary",
   incomeEvolution: "Income evolution",
   totalMovements: "Total movements",
+  avgMovsPerDay: "Avg. per day",
+  biggestMov: "Biggest movement",
   activeDays: (n: number) => `${n} active days`,
   mostActiveDay: "Most active day",
   movCount: (n: number) => `${n} mov.`,

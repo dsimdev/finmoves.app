@@ -851,42 +851,47 @@ export default function ReportesPage() {
           {/* ══ MOVIMIENTOS ══ */}
           {sub === "movimientos" && periodo && movCounts && (
             <>
-              {reportOn("movimientos_kpis") && (
-              <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                <Stat label={t.totalMovements} value={String(movCounts.total)} sub={t.activeDays(movCounts.diasActivos)} color="var(--accent)" dimVar="var(--blue-dim)" />
-                <Stat label={t.mostActiveDay} value={sinAño(movCounts.diaMasActivo)} sub={t.movCount(movCounts.diaMasActivoN)} color="var(--accent)" dimVar="var(--blue-dim)" />
-              </div>
-              </>
-              )}
+              {reportOn("movimientos_kpis") && (() => {
+                const tipoColor: Record<string, string> = {
+                  Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--yellow)",
+                  CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)", GastoUSD: "var(--red)", GastoEUR: "var(--red)",
+                };
+                const promDia = movCounts.diasActivos > 0 ? (movCounts.total / movCounts.diasActivos).toFixed(1) : "0";
+                const mayor = periodo.movimientos.filter(m => m.categoria !== "Sueldo" && m.categoria !== "RESTO").reduce<(typeof periodo.movimientos)[number] | null>((mx, m) => (m.monto > (mx?.monto ?? -1) ? m : mx), null);
+                return (
+                  <>
+                  {/* Hero: total + distribución por tipo */}
+                  <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--blue-dim))" }}>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t.totalMovements}</div>
+                    <div style={{ fontSize: 30, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{movCounts.total}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, marginBottom: 12 }}>{t.activeDays(movCounts.diasActivos)}</div>
+                    <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", gap: 2 }}>
+                      {movCounts.porTipo.map(([tipo, count]) => (
+                        <div key={tipo} style={{ flex: count, background: tipoColor[tipo] ?? "var(--accent)" }} />
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 10 }}>
+                      {movCounts.porTipo.map(([tipo, count]) => (
+                        <span key={tipo} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)" }}>
+                          <span style={{ width: 8, height: 8, borderRadius: 2, background: tipoColor[tipo] ?? "var(--accent)" }} />
+                          {t.tipoDisplay[tipo] ?? tipo} <b style={{ color: "var(--text)", fontFamily: "var(--font-mono)" }}>{count}</b>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mini-stats */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                    <MiniStat center label={t.mostActiveDay} value={sinAño(movCounts.diaMasActivo)} sub={t.movCount(movCounts.diaMasActivoN)} color="var(--accent)" />
+                    <MiniStat center label={t.avgMovsPerDay} value={promDia} sub={t.activeDays(movCounts.diasActivos)} color="var(--accent)" />
+                    <MiniStat center label={t.biggestMov} value={mayor ? (oculto ? "••" : abbr(mayor.monto)) : "—"} sub={mayor ? (mayor.descripcion || mayor.categoria) : undefined} color="var(--accent)" />
+                  </div>
+                  </>
+                );
+              })()}
 
               {reportOn("movimientos_otros") && (
               <>
-              {/* Por tipo — cards */}
-              {(() => {
-                const colorMap: Record<string, [string, string]> = {
-                  Gasto:      ["var(--red)",    "var(--red-dim)"],
-                  Ingreso:    ["var(--green)",  "var(--green-dim)"],
-                  Move:       ["var(--yellow)", "var(--yellow-dim)"],
-                  CompraUSD:  ["var(--yellow)", "var(--yellow-dim)"],
-                  CompraEUR:  ["var(--yellow)", "var(--yellow-dim)"],
-                  GastoUSD:   ["var(--red)",    "var(--red-dim)"],
-                  GastoEUR:   ["var(--red)",    "var(--red-dim)"],
-                };
-                return (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
-                    {movCounts.porTipo.map(([tipo, count]) => {
-                      const [color, dim] = colorMap[tipo] ?? ["var(--accent)", "var(--blue-dim)"];
-                      return (
-                        <div key={tipo} className="soft" style={{ padding: 14, background: `linear-gradient(135deg, var(--surface), ${dim})`, borderColor: `${color}33` }}>
-                          <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6 }}>{t.tipoDisplay[tipo] ?? tipo}</div>
-                          <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "var(--font-mono)", lineHeight: 1 }}>{count}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
 
               {/* Por categoría (frecuencia) */}
               {movCounts.porCat.length > 0 && (

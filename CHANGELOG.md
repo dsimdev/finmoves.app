@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.23.1] — 2026-06-13
+
+### Changed
+- Reports → Movements redesigned: hero with total + per-type distribution bar/legend, plus mini-stats (most active day, avg per day, biggest movement — excluding salary/remainder).
+
+---
+
 ## [1.23.0] — 2026-06-13
 
 ### Changed

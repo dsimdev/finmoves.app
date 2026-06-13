@@ -147,6 +147,8 @@ export const es = {
   expensesVsSalary: "Gastos vs sueldo",
   incomeEvolution: "Evolución ingresos",
   totalMovements: "Total movimientos",
+  avgMovsPerDay: "Prom. por día",
+  biggestMov: "Mayor movimiento",
   activeDays: (n: number) => `${n} días activos`,
   mostActiveDay: "Día más activo",
   movCount: (n: number) => `${n} movs.`,
