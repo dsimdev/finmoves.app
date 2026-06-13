@@ -8,9 +8,10 @@ import { useConfig } from "@/hooks/useConfig";
 import { useMoney } from "@/hooks/useHideValues";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
-import { EyeIcon } from "@/components/EyeIcon";
+import { EyeIcon } from "@/components/ui/EyeIcon";
 import { Movimiento } from "@/types";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { MiniStat } from "@/components/ui/MiniStat";
 import { useT } from "@/hooks/useTranslation";
 
 function TipoColor(m: Movimiento) {
@@ -20,17 +21,6 @@ function TipoColor(m: Movimiento) {
 }
 function TipoPrefix(m: Movimiento) {
   return m.tipo === "Gasto" || m.tipo === "CompraUSD" ? "-" : "+";
-}
-
-// Mini-stat compacta, mismo estilo que en Reportes/Inversión.
-function MiniStat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
-  return (
-    <div style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "12px 13px", minWidth: 0, flex: "1 1 45%" }}>
-      <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
-      {sub && <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>}
-    </div>
-  );
 }
 
 export default function Dashboard() {
@@ -107,10 +97,10 @@ export default function Dashboard() {
 
           {/* KPIs */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-            <MiniStat label={t.salary} value={money(p.sueldo)} color="var(--green)" />
-            <MiniStat label={t.spent} value={money(p.gastado)} color="var(--red)" />
-            <MiniStat label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
-            <MiniStat label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} sub={t.fromSavings} color="var(--yellow)" />
+            <MiniStat basis="1 1 45%" label={t.salary} value={money(p.sueldo)} color="var(--green)" />
+            <MiniStat basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)" />
+            <MiniStat basis="1 1 45%" label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
+            <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} sub={t.fromSavings} color="var(--yellow)" />
           </div>
 
           {/* Atajos */}

@@ -18,7 +18,7 @@ import { dbErrorMessage } from "@/lib/firebase-error";
 import { platformAuthenticatorAvailable, isBiometricEnabledFor, registerBiometric, clearBiometric } from "@/lib/biometric";
 import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/push-client";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useT } from "@/hooks/useTranslation";

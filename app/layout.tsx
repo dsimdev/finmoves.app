@@ -1,8 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { themeInitScript } from "@/lib/theme-init";
 import "./globals.css";
+
+// Color de barra del navegador / status bar. El default es el tema oscuro;
+// el script de init lo ajusta al claro cuando corresponde (tema en localStorage).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#07090f",
+};
 
 export const metadata: Metadata = {
   title: "FinMoves",
@@ -32,9 +42,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#08080f" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem('finmoves-theme')!=='dark'){var s=document.documentElement.style;s.setProperty('--bg','#c8c8c8');s.setProperty('--surface','#f4f4f4');s.setProperty('--surface-alt','#e4e4e4');s.setProperty('--border','#b8b8b8');s.setProperty('--border-hi','#909090');s.setProperty('--accent-dim','#3f52e828');s.setProperty('--green','#007a38');s.setProperty('--green-dim','#007a3822');s.setProperty('--red-dim','#ff525222');s.setProperty('--yellow','#a06200');s.setProperty('--yellow-dim','#a0620022');s.setProperty('--blue-dim','#536dfe22');s.setProperty('--text','#0d1524');s.setProperty('--muted','#4a5060');s.setProperty('--faint','#d0d0d0');s.setProperty('--nav-bg','rgba(244,244,244,0.92)');document.documentElement.setAttribute('data-theme','light');}}catch(e){}` }} />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
         {children}

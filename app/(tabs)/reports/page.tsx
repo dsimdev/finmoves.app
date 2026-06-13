@@ -19,8 +19,9 @@ import { useCotizacion } from "@/hooks/useCotizacion";
 import { useConfig } from "@/hooks/useConfig";
 import { useReportConfig } from "@/hooks/useReportConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
-import { EyeIcon } from "@/components/EyeIcon";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { EyeIcon } from "@/components/ui/EyeIcon";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { MiniStat } from "@/components/ui/MiniStat";
 
 type Sub = "gastos" | "ingresos" | "movimientos" | "periodos";
 
@@ -72,16 +73,6 @@ function Stat({ label, value, sub, color, danger, dimVar }: { label: string; val
 }
 
 // Mini-stat compacto, fondo neutro, color sólo en el número.
-function MiniStat({ label, value, sub, color, basis = "1 1 28%", center, onClick }: { label: string; value: string; sub?: string; color?: string; basis?: string; center?: boolean; onClick?: () => void }) {
-  return (
-    <div onClick={onClick} style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "11px 12px", minWidth: 0, flex: basis, textAlign: center ? "center" : undefined, cursor: onClick ? "pointer" : undefined }}>
-      <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
-      {sub && <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>}
-    </div>
-  );
-}
-
 function VBars({ data, max, oculto, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean }[]; max: number; oculto?: boolean; onBarClick?: (label: string) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>

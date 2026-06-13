@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.28.0] — 2026-06-13
+
+### Mejoras
+- **Mejor experiencia como app instalada**: la barra del navegador toma el color correcto según el tema (claro/oscuro) y, si te quedás sin internet, ves una pantalla de "Sin conexión" en vez de un error.
+- Mejoras internas de rendimiento y orden del código (sin cambios visibles en el uso diario).
+
+---
+
 ## [1.27.1] — 2026-06-13
 
 ### Mejoras

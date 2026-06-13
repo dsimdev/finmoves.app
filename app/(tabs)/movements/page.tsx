@@ -11,7 +11,8 @@ import { serieTendencia } from "@/utils/reportes";
 import { useMoney } from "@/hooks/useHideValues";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { Movimiento, TipoMovimiento } from "@/types";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { EyeIcon } from "@/components/ui/EyeIcon";
 import { useT } from "@/hooks/useTranslation";
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
@@ -19,22 +20,6 @@ const TrashIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-  </svg>
-);
-const EyeIcon = ({ off }: { off: boolean }) => (
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
-    {off ? (
-      <>
-        <path d="M2 12s3.5-7 10-7c1.6 0 3 .4 4.3 1M22 12s-3.5 7-10 7c-1.6 0-3-.4-4.3-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-        <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      </>
-    ) : (
-      <>
-        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
-      </>
-    )}
   </svg>
 );
 

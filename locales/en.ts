@@ -346,6 +346,7 @@ export const en: AppLocale = {
 
   // Offline
   offline: "No connection",
+  offlineBody: "There's no internet connection. Some data may be out of date; try again once you're back online.",
 
   // Language change
   changeLanguageTitle: "Change language?",

@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.28.0] — 2026-06-13
+
+### PWA standard
+- Unified, theme-aware `theme-color` (dark `#07090f` / light `#c8c8c8`) kept in sync by `applyTheme`; migrated `<head>` `theme-color`/`viewport` to Next's `viewport` export.
+- Added a real cached `/offline` fallback page (shown by the SW when offline and the route isn't cached).
+- Service worker: precache the offline page + core icons (best-effort `cache.add`), enabled **navigation preload**, navigation fallback now `req → / → /offline`.
+
+### Refactor / cleanup
+- Extracted the duplicated Sheets-sync core into `lib/sync-sheets.ts` (`syncUserMovimientosToSheet`); manual and cron routes now share it.
+- Single reusable `components/ui/MiniStat` (was duplicated in Reports, Investments and Dashboard); Movements now uses the shared `EyeIcon`.
+- Extracted the inline theme bootstrap to `lib/theme-init.ts` (single source for light vars + theme colors, used by `useTheme` too).
+- Removed the unused `/api/version` route.
+- Reorganized `components/` into `ui/`, `pwa/`, `nav/`.
+- `.gitignore`: ignore local `/scripts/`.
+
+---
+
 ## [1.27.1] — 2026-06-13
 
 ### Changed

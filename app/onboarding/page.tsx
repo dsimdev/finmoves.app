@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useConfig } from "@/hooks/useConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useT } from "@/hooks/useTranslation";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 type Moneda = "ARS" | "USD" | "EUR";
 
