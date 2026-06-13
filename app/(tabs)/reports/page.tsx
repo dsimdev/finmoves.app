@@ -401,8 +401,9 @@ export default function ReportesPage() {
               );
             })}
           </div>
-          {/* Selector de período — agrupado por año, multi-select con long press */}
-          {(() => {
+          {/* Selector de período — agrupado por año, multi-select con long press.
+              No aplica a Períodos (es una vista histórica de todos). */}
+          {sub !== "periodos" && (() => {
             const subColor = sub === "gastos" ? "var(--red)" : sub === "ingresos" ? "var(--green)" : "var(--blue)";
             const subDim   = sub === "gastos" ? "var(--red-dim)" : sub === "ingresos" ? "var(--green-dim)" : "var(--blue-dim)";
             const años = Array.from(new Set(periodos.map((p) => periodoAnio(p.periodoId))));

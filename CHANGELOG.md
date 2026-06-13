@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.23.3] — 2026-06-13
+
+### Changed
+- Reports → Periods: hide the period selector (year + period pills) since it's a historical view of all periods, not a single one.
+
+---
+
 ## [1.23.2] — 2026-06-13
 
 ### Changed
