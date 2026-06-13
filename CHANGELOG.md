@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.22.3] — 2026-06-12
+
+### Fixed
+- Reports → Expenses: mini-stat values were getting cut off; amounts now use a compact format ($1,6M / $109k) so they fit.
+
+---
+
 ## [1.22.2] — 2026-06-12
 
 ### Changed

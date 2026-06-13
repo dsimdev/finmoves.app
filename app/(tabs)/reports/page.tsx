@@ -527,13 +527,13 @@ export default function ReportesPage() {
               {/* Mini-stats */}
               {reportOn("gastos_kpis") && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 18 }}>
-                {ritmo && <MiniStat label={t.spendingPace} value={`${money(ritmo.gastadoPorDia)}${t.perDay}`} sub={t.projection30days(money(ritmo.proyeccionCierre))} color="var(--red)" />}
-                {ritmo && <MiniStat label={t.avgDayWithExpense} value={money(kpis.promedioDiario)} sub={t.daysWithExpenses(kpis.diasConGasto)} color="var(--red)" />}
-                <MiniStat label={t.highestSpendingDay} value={kpis.diaMayorGasto ? money(kpis.diaMayorGasto.monto) : "—"} sub={kpis.diaMayorGasto ? sinAño(kpis.diaMayorGasto.fecha) : undefined} color="var(--red)" />
+                {ritmo && <MiniStat label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} sub={t.projection30days(oculto ? "••" : abbr(ritmo.proyeccionCierre))} color="var(--red)" />}
+                {ritmo && <MiniStat label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} sub={t.daysWithExpenses(kpis.diasConGasto)} color="var(--red)" />}
+                <MiniStat label={t.highestSpendingDay} value={kpis.diaMayorGasto ? (oculto ? "••" : abbr(kpis.diaMayorGasto.monto)) : "—"} sub={kpis.diaMayorGasto ? sinAño(kpis.diaMayorGasto.fecha) : undefined} color="var(--red)" />
                 {diasLibres && <MiniStat label={t.expenseFreeDays} value={String(diasLibres.sinGasto)} sub={t.ofDays(diasLibres.total)} color="var(--green)" />}
                 {tendenciaGasto !== null && <MiniStat label={t.trend} value={`${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`} sub={t.last3vsPrev3} color={tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"} />}
-                {promPorMov !== null && <MiniStat label={t.avgPerExpense} value={money(promPorMov)} sub={t.transactions(kpis.cantGastos)} color="var(--red)" />}
-                {proyeccionGasto !== null && <MiniStat label={t.nextPeriodProjection} value={money(proyeccionGasto)} sub={t.avgLast3} color="var(--red)" />}
+                {promPorMov !== null && <MiniStat label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} sub={t.transactions(kpis.cantGastos)} color="var(--red)" />}
+                {proyeccionGasto !== null && <MiniStat label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} sub={t.avgLast3} color="var(--red)" />}
                 {activos.length > 1 && (() => {
                   const oldest = periodosActivos[periodosActivos.length - 1];
                   const newest = periodosActivos[0];
