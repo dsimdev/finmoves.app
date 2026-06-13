@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
-import { useAllMovimientos } from "@/hooks/useAllMovimientos";
+import { useData } from "../data-context";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
 import { agruparPorPeriodo, gastosPorCategoria, formatARS } from "@/utils/periodo";
@@ -16,7 +16,6 @@ import {
   progresoMetaUSD, periodosParaMetaUSD,
 } from "@/utils/reportes";
 import { useCotizacion } from "@/hooks/useCotizacion";
-import { useConfig } from "@/hooks/useConfig";
 import { useReportConfig } from "@/hooks/useReportConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -100,9 +99,8 @@ export default function ReportesPage() {
   ];
   const { user } = useAuth();
   const { oculto, toggle, m: money } = useMoney();
-  const { movimientos, loading } = useAllMovimientos(user?.uid);
+  const { movimientos, loading, config } = useData();
   const { cotizacion } = useCotizacion();
-  const { config } = useConfig(user?.uid);
   const { isEnabled: reportOn } = useReportConfig();
   const { monedaInversiones } = useAppPrefs();
 

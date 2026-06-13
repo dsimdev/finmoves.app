@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.29.0] — 2026-06-13
+
+### Added
+- Reusable `components/movements/MovementModal` (add/edit/delete) extracted from the Movements page.
+- Dashboard now opens the New movement and Edit modals **in place** (no navigation): the "New movement" shortcut and tapping a recent movement open the modal on Home.
+- App icon **badge** (Badging API) showing the current period's movement count on the installed app.
+
+### Performance
+- Single shared `DataProvider` (movimientos + config) at the tabs layout: data is fetched **once per session** and reused across tabs instead of re-fetching the whole collection on every tab switch — large cut in Firestore reads.
+
+### Infra
+- Added `apphosting.yaml` for Firebase App Hosting (scale-to-zero, env via Secret Manager). Cron must move to Cloud Scheduler (vercel.json is inert on Firebase).
+
+---
+
 ## [1.28.0] — 2026-06-13
 
 ### PWA standard

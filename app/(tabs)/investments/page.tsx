@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useAllMovimientos } from "@/hooks/useAllMovimientos";
+import { useData } from "../data-context";
 import { useCotizacion } from "@/hooks/useCotizacion";
-import { useConfig } from "@/hooks/useConfig";
 import { useT } from "@/hooks/useTranslation";
 
 function fechaCortaConAnio(fecha: string): string {
@@ -21,7 +19,6 @@ function fechaCortaConAnio(fecha: string): string {
 }
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { serieTendencia, periodosParaMetaUSD } from "@/utils/reportes";
-import { actualizarTipoCambio } from "@/services/firebase/config";
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -46,10 +43,8 @@ function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
 }
 
 export default function DolaresPage() {
-  const { user } = useAuth();
-  const { movimientos, loading } = useAllMovimientos(user?.uid);
+  const { movimientos, loading, config } = useData();
   const { cotizacion, minutosDesdeActualizacion, refresh } = useCotizacion();
-  const { config } = useConfig(user?.uid);
 
   useEffect(() => { refresh(); }, []);
   const t = useT();

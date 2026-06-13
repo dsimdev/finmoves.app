@@ -3,8 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useConfig } from "@/hooks/useConfig";
-import { useAllMovimientos } from "@/hooks/useAllMovimientos";
+import { useData } from "../data-context";
 import { useReportConfig, REPORTES_TOGGLES } from "@/hooks/useReportConfig";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
@@ -148,8 +147,7 @@ function SectionHeader({ title, open, onClick, danger }: { title: string; open: 
 
 export default function ConfigPage() {
   const { user } = useAuth();
-  const { config, loading, refresh } = useConfig(user?.uid);
-  const { movimientos } = useAllMovimientos(user?.uid);
+  const { config, configLoading: loading, refreshConfig: refresh, movimientos } = useData();
   const { overrides, saveAll: saveReportes } = useReportConfig();
   const router = useRouter();
 

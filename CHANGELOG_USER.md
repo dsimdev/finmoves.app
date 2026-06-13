@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [1.29.0] — 2026-06-13
+
+### Mejoras
+- Desde **Inicio** ahora podés crear un movimiento o tocar uno reciente para editarlo, y se abre ahí mismo (ya no te lleva a la pestaña de Movimientos).
+- La app instalada muestra un **contador** en su ícono con los movimientos del período.
+
+---
+
 ## [1.28.0] — 2026-06-13
 
 ### Mejoras

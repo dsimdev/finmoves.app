@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/hooks/useAuth";
-import { useAllMovimientos } from "@/hooks/useAllMovimientos";
-import { useConfig } from "@/hooks/useConfig";
+import { useData } from "./data-context";
 import { useMoney } from "@/hooks/useHideValues";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
@@ -12,6 +10,8 @@ import { EyeIcon } from "@/components/ui/EyeIcon";
 import { Movimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
+import { MovementModal } from "@/components/movements/MovementModal";
+import { useAppBadge } from "@/hooks/useAppBadge";
 import { useT } from "@/hooks/useTranslation";
 
 function TipoColor(m: Movimiento) {
@@ -24,11 +24,12 @@ function TipoPrefix(m: Movimiento) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
-  const { movimientos, loading } = useAllMovimientos(user?.uid);
-  const { config } = useConfig(user?.uid);
+  const { movimientos, loading, refresh, config } = useData();
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
   const t = useT();
+
+  // Modal de alta/edición abierto desde el propio inicio (sin navegar).
+  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento } | null>(null);
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const ultimoCargado = useMemo(() => {
@@ -41,6 +42,8 @@ export default function Dashboard() {
   const p = periodos[0];
   const ahorrosAcum = serie.length ? serie[serie.length - 1].ahorrosAcum : 0;
   const ultimos = p?.movimientos.slice(0, 5) ?? [];
+  // Badge en el ícono de la app: cantidad de movimientos del período actual.
+  useAppBadge(p?.movimientos.length);
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
   const barColorDim = pctDisp < 10 ? "var(--red-dim)" : pctDisp < 50 ? "var(--yellow-dim)" : "var(--green-dim)";
@@ -104,22 +107,34 @@ export default function Dashboard() {
           </div>
 
           {/* Atajos */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            {[
-              { href: "/movements", label: t.newMovement, color: "var(--green)", icon: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></> },
-              { href: "/reports", label: t.pageTitleReports, color: "var(--red)", icon: <><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 4-6"/></> },
-              { href: "/investments", label: t.portfolio, color: "var(--yellow)", icon: <><circle cx="12" cy="12" r="9"/><path d="M12 7v10M14.5 9.5C14.5 8.4 13.4 8 12 8s-3 .8-3 2 1.2 1.7 3 2 3 .8 3 2-1.3 2-3 2"/></> },
-            ].map((a) => (
-              <Link key={a.href} href={a.href} style={{
-                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
-                padding: "12px 8px", textDecoration: "none", color: "var(--muted)",
-              }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{a.icon}</svg>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{a.label}</span>
-              </Link>
-            ))}
-          </div>
+          {(() => {
+            const chip: React.CSSProperties = {
+              flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+              background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
+              padding: "12px 8px", textDecoration: "none", color: "var(--muted)", cursor: "pointer",
+            };
+            const lbl: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" };
+            const svg = (color: string, children: React.ReactNode) => (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+            );
+            return (
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                {/* Nuevo movimiento → abre el modal acá mismo */}
+                <button onClick={() => setModalState({ mode: "add" })} style={{ ...chip, border: "1px solid var(--border)" }}>
+                  {svg("var(--green)", <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>)}
+                  <span style={lbl}>{t.newMovement}</span>
+                </button>
+                <Link href="/reports" style={chip}>
+                  {svg("var(--red)", <><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 4-6"/></>)}
+                  <span style={lbl}>{t.pageTitleReports}</span>
+                </Link>
+                <Link href="/investments" style={chip}>
+                  {svg("var(--yellow)", <><circle cx="12" cy="12" r="9"/><path d="M12 7v10M14.5 9.5C14.5 8.4 13.4 8 12 8s-3 .8-3 2 1.2 1.7 3 2 3 .8 3 2-1.3 2-3 2"/></>)}
+                  <span style={lbl}>{t.portfolio}</span>
+                </Link>
+              </div>
+            );
+          })()}
 
           {/* Latest movements */}
           <div className="soft" style={{ background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
@@ -134,7 +149,7 @@ export default function Dashboard() {
             {ultimos.length === 0 ? (
               <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noMovements}</div>
             ) : ultimos.map((m) => (
-              <Link key={m.id} href={`/movements?m=${m.id}`} className="row" style={{ padding: "11px 0", textDecoration: "none", color: "inherit" }}>
+              <button key={m.id} onClick={() => setModalState({ mode: "edit", mov: m })} className="row" style={{ width: "100%", padding: "11px 0", background: "none", border: "none", textAlign: "left", color: "inherit", cursor: "pointer" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {m.descripcion || m.categoria}
@@ -144,7 +159,7 @@ export default function Dashboard() {
                 <span style={{ fontSize: 13, fontWeight: 700, color: TipoColor(m), marginLeft: 12, whiteSpace: "nowrap", fontFamily: "var(--font-mono)" }}>
                   {TipoPrefix(m)}{money(m.monto)}
                 </span>
-              </Link>
+              </button>
             ))}
             {p.movimientos.length > 5 && (
               <Link href="/movements" style={{
@@ -158,6 +173,16 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <MovementModal
+        open={modalState !== null}
+        mode={modalState?.mode ?? "add"}
+        movimiento={modalState?.mov ?? null}
+        movimientos={movimientos}
+        activePeriodoId={p?.periodoId}
+        onClose={() => setModalState(null)}
+        onChanged={refresh}
+      />
     </div>
   );
 }

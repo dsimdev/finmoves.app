@@ -12,17 +12,11 @@ import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { LockScreen } from "@/components/pwa/LockScreen";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { isBiometricEnabledFor } from "@/lib/biometric";
-import { useConfig } from "@/hooks/useConfig";
+import { DataProvider } from "./data-context";
 
 export default function TabsLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const { config } = useConfig(user?.uid);
   const router = useRouter();
-
-  // Usuario nuevo sin onboarding completado → al wizard.
-  useEffect(() => {
-    if (config && config.meta.onboardingCompleto === false) router.replace("/onboarding");
-  }, [config, router]);
 
   // Si hay desbloqueo biométrico configurado para este usuario, la app arranca
   // bloqueada hasta verificar la huella (gate de UI sobre la sesión activa).
@@ -59,11 +53,11 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <>
+    <DataProvider>
       {children}
       <BottomNav />
       <UpdateBanner />
       <OfflineBanner />
-    </>
+    </DataProvider>
   );
 }
