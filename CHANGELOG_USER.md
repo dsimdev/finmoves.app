@@ -4,6 +4,12 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.0.0] — 2026-06-13
+
+¡Llegamos a la **versión 2.0**! 🎉 Un hito que junta todo lo último: crear y editar movimientos desde Inicio, contador en el ícono de la app, Reportes e Inversión renovados, notificaciones nuevas (metas de ahorro y recordatorio de sueldo), idioma completo ES/EN y una app más rápida. Por dentro también se mudó a una base más sólida. Nada cambia en cómo la usás: todo sigue donde estaba, mejor.
+
+---
+
 ## [1.30.0] — 2026-06-13
 
 ### Novedades

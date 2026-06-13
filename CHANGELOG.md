@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.0.0] — 2026-06-13
+
+Milestone release marking the move to **Firebase** as the single home for the app
+(frontend on App Hosting + Firestore + Google Cloud). No breaking changes for users;
+the major bump marks the platform/infra shift and the body of work shipped in the 1.2x–1.30 line.
+
+### Highlights since 1.2x
+- **Platform**: migrated hosting from Vercel to **Firebase App Hosting** (`apphosting.yaml`, secrets via Secret Manager, scale-to-zero); daily cron moved to **Cloud Scheduler**.
+- **PWA standard**: adaptive theme-color via `viewport` export, real `/offline` page, SW precache + navigation preload, install button, manifest shortcuts.
+- **UX**: New/Edit movement modals open from Home; app icon badge; reusable `MiniStat`; touch-friendly Reports period selector; investments & dashboard redesign.
+- **Performance**: single shared `DataProvider` (movimientos + config fetched once per session).
+- **Notifications**: all-users push with savings-goal milestones and salary reminders (idempotent).
+- **i18n**: full ES/EN sweep including page titles.
+
+---
+
 ## [1.30.0] — 2026-06-13
 
 ### Added (notifications)
