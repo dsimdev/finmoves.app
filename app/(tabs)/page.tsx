@@ -22,6 +22,17 @@ function TipoPrefix(m: Movimiento) {
   return m.tipo === "Gasto" || m.tipo === "CompraUSD" ? "-" : "+";
 }
 
+// Mini-stat compacta, mismo estilo que en Reportes/Inversión.
+function MiniStat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "12px 13px", minWidth: 0, flex: "1 1 45%" }}>
+      <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
+      {sub && <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { movimientos, loading } = useAllMovimientos(user?.uid);
@@ -95,18 +106,28 @@ export default function Dashboard() {
           </div>
 
           {/* KPIs */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+            <MiniStat label={t.salary} value={money(p.sueldo)} color="var(--green)" />
+            <MiniStat label={t.spent} value={money(p.gastado)} color="var(--red)" />
+            <MiniStat label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
+            <MiniStat label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} sub={t.fromSavings} color="var(--yellow)" />
+          </div>
+
+          {/* Atajos */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
             {[
-              { label: t.salary, value: money(p.sueldo), color: "var(--green)" },
-              { label: t.spent, value: money(p.gastado), color: "var(--red)" },
-              { label: t.savings, value: money(ahorrosAcum), color: "var(--blue)" },
-              { label: t.withdrawals, value: p.extras > 0 ? money(p.extras) : "—", sub: t.fromSavings, color: "var(--yellow)" },
-            ].map((k) => (
-              <div key={k.label} className="soft" style={{ padding: 15, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7 }}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontFamily: "var(--font-mono)" }}>{k.value}</div>
-                {"sub" in k && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{k.sub}</div>}
-              </div>
+              { href: "/movements", label: t.newMovement, color: "var(--green)", icon: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></> },
+              { href: "/reports", label: t.pageTitleReports, color: "var(--red)", icon: <><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 4-6"/></> },
+              { href: "/investments", label: t.portfolio, color: "var(--yellow)", icon: <><circle cx="12" cy="12" r="9"/><path d="M12 7v10M14.5 9.5C14.5 8.4 13.4 8 12 8s-3 .8-3 2 1.2 1.7 3 2 3 .8 3 2-1.3 2-3 2"/></> },
+            ].map((a) => (
+              <Link key={a.href} href={a.href} style={{
+                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
+                padding: "12px 8px", textDecoration: "none", color: "var(--muted)",
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{a.icon}</svg>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{a.label}</span>
+              </Link>
             ))}
           </div>
 
@@ -123,7 +144,7 @@ export default function Dashboard() {
             {ultimos.length === 0 ? (
               <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noMovements}</div>
             ) : ultimos.map((m) => (
-              <div key={m.id} className="row" style={{ padding: "11px 0" }}>
+              <Link key={m.id} href={`/movements?m=${m.id}`} className="row" style={{ padding: "11px 0", textDecoration: "none", color: "inherit" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {m.descripcion || m.categoria}
@@ -133,7 +154,7 @@ export default function Dashboard() {
                 <span style={{ fontSize: 13, fontWeight: 700, color: TipoColor(m), marginLeft: 12, whiteSpace: "nowrap", fontFamily: "var(--font-mono)" }}>
                   {TipoPrefix(m)}{money(m.monto)}
                 </span>
-              </div>
+              </Link>
             ))}
             {p.movimientos.length > 5 && (
               <Link href="/movements" style={{

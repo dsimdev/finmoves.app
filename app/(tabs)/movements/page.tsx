@@ -275,6 +275,16 @@ export default function MovimientosPage() {
 
   const closeModal = () => { setModal(null); setMovSel(null); };
 
+  // Si llegamos con ?m=<id> (desde el dashboard), abrir ese movimiento para editar.
+  useEffect(() => {
+    if (loading || movimientos.length === 0) return;
+    const id = new URLSearchParams(window.location.search).get("m");
+    if (!id) return;
+    const mov = movimientos.find((x) => x.id === id);
+    if (mov) openEdit(mov);
+    window.history.replaceState(null, "", "/movements");
+  }, [loading, movimientos]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
