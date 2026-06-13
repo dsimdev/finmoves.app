@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useSwUpdate } from "@/hooks/useSwUpdate";
 
 export function ServiceWorkerRegister() {
-  const setWaiting = useSwUpdate((s) => s.setWaiting);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
@@ -17,21 +14,9 @@ export function ServiceWorkerRegister() {
       try {
         reg = await navigator.serviceWorker.register("/sw.js");
 
-        // Si ya hay un SW esperando al cargar, avisar de una.
-        if (reg.waiting && navigator.serviceWorker.controller) setWaiting(reg.waiting);
-
-        // Cuando aparece un SW nuevo, esperar a que termine de instalarse.
-        reg.addEventListener("updatefound", () => {
-          const nw = reg!.installing;
-          if (!nw) return;
-          nw.addEventListener("statechange", () => {
-            if (nw.state === "installed" && navigator.serviceWorker.controller) {
-              setWaiting(nw);
-            }
-          });
-        });
-
-        // Buscar actualizaciones cada 60s y al volver a foco.
+        // Buscar actualizaciones periódicamente y al volver a foco. Sin banner:
+        // el SW nuevo queda en espera y se activa solo en el próximo arranque
+        // en frío (cuando se cierran todas las ventanas de la app).
         const check = () => reg?.update().catch(() => {});
         const id = setInterval(check, 60_000);
         const onVisible = () => { if (document.visibilityState === "visible") check(); };
@@ -53,7 +38,7 @@ export function ServiceWorkerRegister() {
 
     window.addEventListener("load", onLoad);
     return () => window.removeEventListener("load", onLoad);
-  }, [setWaiting]);
+  }, []);
 
   return null;
 }

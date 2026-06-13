@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [1.29.2] — 2026-06-13
+
+### Removed
+- Update banner ("new version available"). The service worker now applies updates silently on the next cold start; removed `UpdateBanner` + `useSwUpdate`.
+
+---
+
 ## [1.29.1] — 2026-06-13
 
 ### Fixed

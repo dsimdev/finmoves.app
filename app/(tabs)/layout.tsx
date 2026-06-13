@@ -7,7 +7,6 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebase/firebase";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { UpdateBanner } from "@/components/pwa/UpdateBanner";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { LockScreen } from "@/components/pwa/LockScreen";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
@@ -42,13 +41,10 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
 
   if (lockState === "locked") {
     return (
-      <>
-        <LockScreen
-          onUnlock={() => setLockState("unlocked")}
-          onUsePassword={async () => { await signOut(auth); }}
-        />
-        <UpdateBanner />
-      </>
+      <LockScreen
+        onUnlock={() => setLockState("unlocked")}
+        onUsePassword={async () => { await signOut(auth); }}
+      />
     );
   }
 
@@ -56,7 +52,6 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
     <DataProvider>
       {children}
       <BottomNav />
-      <UpdateBanner />
       <OfflineBanner />
     </DataProvider>
   );
