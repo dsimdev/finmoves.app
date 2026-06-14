@@ -12,7 +12,7 @@ const CSP = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "connect-src 'self' https: wss:",
-  "frame-src 'self' https://*.firebaseapp.com",
+  "frame-src 'self' https://*.firebaseapp.com https://firebasestorage.googleapis.com",
   "worker-src 'self'",
   "manifest-src 'self'",
   "object-src 'none'",

@@ -8,6 +8,7 @@ import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
 import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
+import { MediaViewer } from "@/components/ui/MediaViewer";
 import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
@@ -109,6 +110,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
   const [comprobantePreview, setComprobantePreview] = useState<string | null>(null);
   const [comprobanteRemoved, setComprobanteRemoved] = useState(false);
+  const [viewer, setViewer] = useState<{ src: string; isPdf: boolean } | null>(null);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -355,8 +357,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       return (
         <div style={{ position: "relative", flexShrink: 0 }}>
           {newIsPdf
-            ? <a href={comprobantePreview} target="_blank" rel="noreferrer" style={box}>📄</a>
-            : <a href={comprobantePreview} target="_blank" rel="noreferrer"><img src={comprobantePreview} alt="" style={thumbImg} /></a>}
+            ? <button type="button" onClick={() => setViewer({ src: comprobantePreview, isPdf: true })} style={{ ...box, cursor: "pointer" }}>📄</button>
+            : <button type="button" onClick={() => setViewer({ src: comprobantePreview, isPdf: false })} style={{ padding: 0, border: "none", background: "none", cursor: "pointer" }}><img src={comprobantePreview} alt="" style={thumbImg} /></button>}
           <button type="button" onClick={clearComprobante} aria-label={t.removeReceipt} style={removeBtn}>×</button>
         </div>
       );
@@ -365,8 +367,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       return (
         <div style={{ position: "relative", flexShrink: 0 }}>
           {existingIsPdf
-            ? <a href={existingUrl} target="_blank" rel="noreferrer" style={box}>📄</a>
-            : <a href={existingUrl} target="_blank" rel="noreferrer"><img src={existingUrl} alt="" style={thumbImg} /></a>}
+            ? <button type="button" onClick={() => setViewer({ src: existingUrl!, isPdf: true })} style={{ ...box, cursor: "pointer" }}>📄</button>
+            : <button type="button" onClick={() => setViewer({ src: existingUrl!, isPdf: false })} style={{ padding: 0, border: "none", background: "none", cursor: "pointer" }}><img src={existingUrl} alt="" style={thumbImg} /></button>}
           <button type="button" onClick={clearComprobante} aria-label={t.removeReceipt} style={removeBtn}>×</button>
         </div>
       );
@@ -380,6 +382,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   };
 
   return (
+    <>
     <Sheet open={open} onClose={onClose} title={title}>
       {/* ADD */}
       {mode === "add" && (
@@ -721,9 +724,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           )}
           {movimiento.comprobanteUrl && (
-            <a href={movimiento.comprobanteUrl} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 13, textDecoration: "none", marginBottom: 8 }}>
+            <button type="button" onClick={() => setViewer({ src: movimiento.comprobanteUrl!, isPdf: !!movimiento.comprobantePath?.toLowerCase().endsWith(".pdf") })}
+              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer", marginBottom: 8 }}>
               📎 {t.receipt}
-            </a>
+            </button>
           )}
         </div>
       )}
@@ -832,5 +836,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         </div>
       )}
     </Sheet>
+    {viewer && <MediaViewer src={viewer.src} isPdf={viewer.isPdf} onClose={() => setViewer(null)} />}
+    </>
   );
 }

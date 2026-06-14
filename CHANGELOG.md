@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.9.1] — 2026-06-14
+
+### Added
+- **In-app media viewer for receipts**: tapping a receipt opens a full-screen viewer inside the app instead of the raw Storage URL. Images support **pinch-zoom**, double-tap zoom and drag-to-pan; PDFs open in an embedded iframe. Close with ×, tap-outside or Escape. New `MediaViewer` component (no external deps).
+
+### Fixed
+- CSP `frame-src` now allows `firebasestorage.googleapis.com` so the PDF iframe isn't blocked in production.
+
+---
+
 ## [2.9.0] — 2026-06-14
 
 ### Added

@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.9.1] — 2026-06-14
+
+### Novedades
+- **Los comprobantes se abren dentro de la app**: al tocar una foto se abre un visor a pantalla completa con **zoom de dos dedos**, doble-toque para acercar y arrastrar para moverla. Los PDF se ven embebidos. Se cierra con ×, tocando afuera o Escape. Ya no te manda a esa dirección web fea.
+
+---
+
 ## [2.9.0] — 2026-06-14
 
 ### Novedades
