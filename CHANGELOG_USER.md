@@ -4,6 +4,20 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.9.0] — 2026-06-14
+
+### Novedades
+- **Cargá tu reserva desde Inversión**: un **+** verde abre un modal **+Reserva / −Reserva** en tu moneda (USD/EUR), rápido y compacto (tipo + fecha en una fila, "ingresar en" + cotización juntos). Cargás en pocos toques.
+- **Disponible y restante en vivo**: al comprar reserva ves cuánto te queda del período a medida que cargás, con semáforo (verde / amarillo / rojo) según cuánto gastás.
+- **El historial ahora muestra también los retiros** (−Reserva), en rojo, además de las compras.
+- **Tocá un movimiento del historial** para ver su **detalle completo** (cantidad, cotización, etc.). Editar sigue siendo desde Movimientos.
+- El historial muestra los **últimos 5** con "ver más".
+
+### Cambios
+- Las cargas a la reserva (+/−) salieron del modal de movimientos: ahora se hacen desde la pantalla de Inversión.
+
+---
+
 ## [2.8.1] — 2026-06-14
 
 ### Arreglos

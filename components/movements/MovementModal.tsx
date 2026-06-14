@@ -48,16 +48,20 @@ interface MovementModalProps {
   activePeriodoId?: string;
   /** Vista inicial en edición: "delete" abre directo la confirmación de borrado (long-press). */
   initialView?: "form" | "delete";
+  /** Modo reserva (abierto desde Inversión): solo carga +Reserva / -Reserva (FX). */
+  reserveMode?: boolean;
+  /** Solo lectura (detalle desde el historial de Inversión): muestra el detalle sin editar. */
+  readOnly?: boolean;
   onClose: () => void;
   /** Avisar al padre para que refresque sus datos tras alta/edición/borrado. */
   onChanged: () => void;
 }
 
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
-export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, onClose, onChanged }: MovementModalProps) {
+export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged }: MovementModalProps) {
   const { user } = useAuth();
   const { cotizacion } = useCotizacion();
-  const { monedaInversiones, monedaPrincipal, showAhorros } = useAppPrefs();
+  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const { m: money } = useMoney();
   const t = useT();
 
@@ -65,15 +69,15 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     monedaPrincipal === "USD" ? "EUR" : monedaPrincipal === "EUR" ? "USD" : monedaInversiones;
   const esEURMode = monedaInversionesEfectiva === "EUR";
 
-  const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = [
+  // En modo reserva (desde Inversión) solo se cargan +Reserva / -Reserva (FX).
+  // En modo normal, las cargas a la reserva ya no se ofrecen acá.
+  const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = reserveMode ? [
+    { t: (esEURMode ? "CompraEUR" : "CompraUSD") as TipoMovimiento, label: t.addReserve, color: "var(--green)" },
+    { t: (esEURMode ? "GastoEUR" : "GastoUSD") as TipoMovimiento, label: t.removeReserve, color: "var(--red)" },
+  ] : [
     { t: "Gasto", label: t.tipoDisplay["Gasto"], color: "var(--red)" },
     { t: "Ingreso", label: t.tipoDisplay["Ingreso"], color: "var(--green)" },
     { t: "Move", label: t.tipoDisplay["Move"], color: "var(--yellow)" },
-    // Cargas a la reserva: solo si la sección Inversión está activa.
-    ...(showAhorros ? [
-      { t: (esEURMode ? "CompraEUR" : "CompraUSD") as TipoMovimiento, label: esEURMode ? "+EUR" : "+USD", color: "var(--yellow)" },
-      { t: (esEURMode ? "GastoEUR" : "GastoUSD") as TipoMovimiento, label: esEURMode ? "-EUR" : "-USD", color: "var(--yellow)" },
-    ] : []),
   ];
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
@@ -147,7 +151,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     if (mode === "add") {
       setView("form");
       resetAdd();
-      if (sinPeriodos) { setTipo("Ingreso"); setCategoria("Sueldo"); }
+      if (reserveMode) setTipo(esEURMode ? "CompraEUR" : "CompraUSD");
+      else if (sinPeriodos) { setTipo("Ingreso"); setCategoria("Sueldo"); }
       else setTipo("Gasto");
     } else if (mode === "edit" && movimiento) {
       // El sueldo que abre período (ancla) no se puede borrar → forzar vista form.
@@ -216,6 +221,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // Un sueldo que ABRE período (su fecha define el periodoId) es el ancla → no se puede
   // borrar (se chequea en el efecto de apertura). Un sueldo "sumado" al período sí.
   const isLocked = movimiento ? movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" : false;
+  // Movimiento de reserva (FX): muestra cantidad + cotización en el detalle.
+  const esFXMov = !!movimiento && ["CompraUSD", "GastoUSD", "CompraEUR", "GastoEUR"].includes(movimiento.tipo);
+  const fxMovLabel = movimiento && (movimiento.tipo === "CompraEUR" || movimiento.tipo === "GastoEUR") ? "EUR" : "USD";
   // Quién puede adjuntar comprobantes. Hoy solo el dueño; a futuro: isOwner || isPremium.
   const canComprobante = isOwner;
 
@@ -331,7 +339,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     finally { setEditLoading(false); }
   };
 
-  const title = mode === "add" ? t.newMovement : view === "delete" ? t.delete : t.editMovement;
+  const title = mode === "add" ? (reserveMode ? t.reserve : t.newMovement) : readOnly ? t.detail : view === "delete" ? t.delete : t.editMovement;
 
   // Versión compacta (ícono) del comprobante — va al lado del medio de pago (alta)
   // o de observaciones (edición). `existingUrl` = comprobante ya guardado (edición).
@@ -376,6 +384,30 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       {/* ADD */}
       {mode === "add" && (
         <form onSubmit={handleAdd}>
+          {reserveMode ? (
+            /* Reserva: TIPO + FECHA en la misma fila (compacto). */
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16, alignItems: "start" }}>
+              <div>
+                <div className="label">{t.type}</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {TIPOS.map(({ t: tt, label, color }) => (
+                    <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); }}
+                      className="pill" style={{
+                        flex: 1, height: 44, padding: "0 6px",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        borderColor: tipo === tt ? color : "var(--border)",
+                        background: tipo === tt ? color + "22" : "transparent",
+                        color: tipo === tt ? color : "var(--muted)",
+                      }}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="label">{t.date}</div>
+                <input className="input" type="date" style={{ height: 44 }} value={fecha} onChange={(e) => setFecha(e.target.value)} />
+              </div>
+            </div>
+          ) : (<>
           <div style={{ marginBottom: 18 }}>
             <div className="label">{t.type}</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -403,6 +435,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
             </div>
           </div>
+          </>)}
 
           {esMove && (
             <div style={{ marginBottom: 16 }}>
@@ -486,33 +519,40 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
           {esCompraFX && (
             <div style={{ marginBottom: 18 }}>
-              <div className="label">{t.addTo}</div>
-              <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                {([fxLabel, "ARS"] as const).map((mo) => (
-                  <button key={mo} type="button" onClick={() => setModoCarga(mo === "ARS" ? "ARS" : "USD")} className="pill" style={{
-                    flex: 1,
-                    borderColor: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow)" : "var(--border)",
-                    background: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow-dim)" : "transparent",
-                    color: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow)" : "var(--muted)",
-                  }}>{mo}</button>
-                ))}
-              </div>
-
-              <div className="label">{t.exchangeRate}</div>
-              <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
-                {cotizacion ? (["oficial", "blue"] as const).map((rt) => {
-                  const val = esCompraEUR
-                    ? (rt === "oficial" ? cotizacion.oficial_euro : cotizacion.blue_euro) ?? cotizacion[rt]
-                    : cotizacion[rt];
-                  return (
-                    <button key={rt} type="button" onClick={() => setCotizManual(String(val))}
-                      className="pill" style={{
-                        borderColor: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow)" : "var(--border)",
-                        background: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow-dim)" : "transparent",
-                        color: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow)" : "var(--muted)",
-                      }}>{rt} ${val.toLocaleString("es-AR")}</button>
-                  );
-                }) : <span style={{ fontSize: 12, color: "var(--muted)" }}>{t.noExchangeRate}</span>}
+              {/* Ingresar en + Cotización en un solo grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                <div>
+                  <div className="label">{t.addTo}</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {([fxLabel, "ARS"] as const).map((mo) => (
+                      <button key={mo} type="button" onClick={() => setModoCarga(mo === "ARS" ? "ARS" : "USD")} className="pill" style={{
+                        flex: 1,
+                        borderColor: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow)" : "var(--border)",
+                        background: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow-dim)" : "transparent",
+                        color: (mo === "ARS" ? modoCarga === "ARS" : modoCarga === "USD") ? "var(--yellow)" : "var(--muted)",
+                      }}>{mo}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="label">{t.exchangeRate}</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {cotizacion ? (["oficial", "blue"] as const).map((rt) => {
+                      const val = esCompraEUR
+                        ? (rt === "oficial" ? cotizacion.oficial_euro : cotizacion.blue_euro) ?? cotizacion[rt]
+                        : cotizacion[rt];
+                      return (
+                        <button key={rt} type="button" onClick={() => setCotizManual(String(val))}
+                          className="pill" style={{
+                            flex: 1,
+                            borderColor: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow)" : "var(--border)",
+                            background: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow-dim)" : "transparent",
+                            color: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow)" : "var(--muted)",
+                          }}>{rt}</button>
+                      );
+                    }) : <span style={{ fontSize: 12, color: "var(--muted)" }}>{t.noExchangeRate}</span>}
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
@@ -525,17 +565,28 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                   )}
                 </div>
                 <div>
-                  <div className="label">{t.exchangeRate}</div>
+                  <div className="label" style={{ visibility: "hidden" }}>{t.exchangeRate}</div>
                   <input className="input" type="number" value={cotizManual || String(cotizacion?.oficial ?? "")} onChange={(e) => setCotizManual(e.target.value)} placeholder="0" />
                 </div>
               </div>
 
               <div className="label">{modoCarga === "USD" ? "Total ARS" : t.equalTo(fxLabel)}</div>
-              <div style={{ padding: "12px 14px", background: "var(--yellow-dim)", border: "1px solid var(--yellow)33", borderRadius: "var(--radius-sm)", fontSize: 14, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
+              <div style={{ padding: "12px 14px", background: "var(--yellow-dim)", border: "1px solid var(--yellow)33", borderRadius: "var(--radius-sm)", fontSize: 14, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", marginBottom: 6 }}>
                 {modoCarga === "USD"
                   ? (arsCompraUSD > 0 ? formatARS(arsCompraUSD) : "—")
                   : (usdFinal > 0 ? `${fxLabel} ${usdFinal.toFixed(2)}` : "—")}
               </div>
+              {periodoActual && (
+                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
+                  {t.available}: <span style={{ fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
+                  {arsCompraUSD > 0 && (() => {
+                    // Color según cuánto representa la compra del disponible: <30% verde, 30-70% amarillo, >70% (o negativo) rojo.
+                    const ratio = periodoActual.disponible > 0 ? arsCompraUSD / periodoActual.disponible : 1;
+                    const restoColor = ratio < 0.30 ? "var(--green)" : ratio <= 0.70 ? "var(--yellow)" : "var(--red)";
+                    return <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color: restoColor }}>{money(periodoActual.disponible - arsCompraUSD)}</span></>;
+                  })()}
+                </div>
+              )}
             </div>
           )}
 
@@ -628,8 +679,57 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         </form>
       )}
 
+      {/* DETALLE (solo lectura — desde el historial de Inversión) */}
+      {mode === "edit" && movimiento && readOnly && (
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
+            {[{ l: t.type, v: movimiento.tipo }, { l: t.category, v: movimiento.categoria }, { l: t.date, v: fechaCorta(movimiento.fecha) }].map((f) => (
+              <div key={f.l} style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{f.l}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.v}</div>
+              </div>
+            ))}
+          </div>
+          {esFXMov && (
+            <div style={{ display: "grid", gridTemplateColumns: movimiento.cotizacion != null ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 14 }}>
+              <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px" }}>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.quantity}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{fxMovLabel} {movimiento.cantidadUSD?.toFixed(2) ?? "—"}</div>
+              </div>
+              {movimiento.cotizacion != null && (
+                <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px" }}>
+                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.exchangeRate}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>${movimiento.cotizacion.toLocaleString("es-AR")}</div>
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "30% 70%", gap: 10, marginBottom: 14 }}>
+            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
+              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.amount}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{money(movimiento.monto)}</div>
+            </div>
+            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
+              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.description}</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>{movimiento.descripcion || "—"}</div>
+            </div>
+          </div>
+          {movimiento.observaciones && (
+            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", marginBottom: 14 }}>
+              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.notes}</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>{movimiento.observaciones}</div>
+            </div>
+          )}
+          {movimiento.comprobanteUrl && (
+            <a href={movimiento.comprobanteUrl} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 13, textDecoration: "none", marginBottom: 8 }}>
+              📎 {t.receipt}
+            </a>
+          )}
+        </div>
+      )}
+
       {/* EDIT */}
-      {mode === "edit" && movimiento && view === "form" && (
+      {mode === "edit" && movimiento && !readOnly && view === "form" && (
         <>
           {/* Grid de 3: Tipo · Categoría · Fecha (solo lectura). */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
@@ -640,6 +740,21 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               </div>
             ))}
           </div>
+          {/* Detalle de reserva (FX): cantidad + cotización, solo lectura. */}
+          {esFXMov && (
+            <div style={{ display: "grid", gridTemplateColumns: movimiento.cotizacion != null ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 14 }}>
+              <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.quantity}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{fxMovLabel} {movimiento.cantidadUSD?.toFixed(2) ?? "—"}</div>
+              </div>
+              {movimiento.cotizacion != null && (
+                <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
+                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.exchangeRate}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>${movimiento.cotizacion.toLocaleString("es-AR")}</div>
+                </div>
+              )}
+            </div>
+          )}
           {/* Monto (30%) + Descripción (70%) — ambos editables (descripción también en Sueldo). */}
           <div style={{ display: "grid", gridTemplateColumns: "30% 70%", gap: 10, marginBottom: 14 }}>
             <div>

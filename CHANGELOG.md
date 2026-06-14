@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.9.0] — 2026-06-14
+
+### Added
+- **Reserve loading from the Investment screen**: a green floating "+" opens a dedicated **Reserve** modal (+Reserve / −Reserve) in the active investment currency. Reuses the FX logic (USD/ARS entry, official/blue rate). Compact ~3-tap layout: Type + Date on one row, "Enter in" + "Rate" in a single grid, rate pills without value (value shows in the editable input below).
+- **Available / Remaining preview** in a +Reserve: subtle line under "Total ARS" showing the period's available balance and what remains after the purchase, live. Color by how much the purchase consumes: <30% green, 30–70% yellow, >70% (or negative) red.
+- **Reserve history shows withdrawals too** (−Reserve), in red with a "−" sign, alongside purchases. Title is now "USD/EUR history".
+- **History detail (read-only)**: tapping a history row opens a read-only detail (Type · Category · Date, Quantity + Rate, Amount, Description, Notes, receipt link). Editing remains only from Movements.
+
+### Changed
+- **Reserve loads removed from the regular movement modal** (the +/− USD/EUR pills); they now live only in the Investment screen. Editing existing reserve movements still works from Movements.
+- Investment history limited to the **last 5** with a "see more / see less" toggle.
+
+---
+
 ## [2.8.1] — 2026-06-14
 
 ### Fixed

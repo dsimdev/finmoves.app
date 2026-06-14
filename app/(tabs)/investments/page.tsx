@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useData } from "../data-context";
+import { MovementModal } from "@/components/movements/MovementModal";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useT } from "@/hooks/useTranslation";
 
@@ -43,8 +44,30 @@ function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
 }
 
 export default function DolaresPage() {
-  const { movimientos, loading, config } = useData();
+  const { movimientos, loading, config, refresh: refreshData } = useData();
   const { cotizacion, minutosDesdeActualizacion, refresh } = useCotizacion();
+
+  // Modal: alta de reserva (+/-) desde el botón, o detalle/edición al tocar una fila del historial.
+  const [modal, setModal] = useState<{ mode: "add" } | { mode: "edit"; mov: Movimiento } | null>(null);
+  const [expandUSD, setExpandUSD] = useState(false);
+  const [expandEUR, setExpandEUR] = useState(false);
+  // Botón flotante: se oculta al hacer scroll y reaparece al detenerse (igual que en Movimientos).
+  const [btnVisible, setBtnVisible] = useState(true);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const hideThenShow = () => {
+      setBtnVisible(false);
+      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+      scrollTimer.current = setTimeout(() => setBtnVisible(true), 700);
+    };
+    document.addEventListener("scroll", hideThenShow, { passive: true });
+    document.addEventListener("touchmove", hideThenShow, { passive: true });
+    return () => {
+      document.removeEventListener("scroll", hideThenShow);
+      document.removeEventListener("touchmove", hideThenShow);
+      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    };
+  }, []);
 
   useEffect(() => { refresh(); }, []);
   const t = useT();
@@ -69,7 +92,7 @@ export default function DolaresPage() {
   const comprasUSD = movimientos
     .filter((m) => m.tipo === "CompraUSD" || m.tipo === "GastoUSD")
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
-  const historialUSD = comprasUSD.filter(m => m.tipo === "CompraUSD");
+  const historialUSD = comprasUSD; // compras (+) y retiros (−) de la reserva
   const { total: desdeMovimientosUSD, costoPromedio: costoPromedioUSD } = calcularReserva(comprasUSD, "USD");
   const totalUSD = (config?.meta.saldoUSD ?? 0) + desdeMovimientosUSD;
   const reservaUSDenARS = cotizacionUSD ? totalUSD * cotizacionUSD : null;
@@ -80,7 +103,7 @@ export default function DolaresPage() {
   const comprasEUR = movimientos
     .filter((m) => m.tipo === "CompraEUR" || m.tipo === "GastoEUR")
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
-  const historialEUR = comprasEUR.filter(m => m.tipo === "CompraEUR");
+  const historialEUR = comprasEUR; // compras (+) y retiros (−) de la reserva
   const { total: desdeMovimientosEUR, costoPromedio: costoPromedioEUR } = calcularReserva(comprasEUR, "EUR");
   const totalEUR = (config?.meta.saldoEUR ?? 0) + desdeMovimientosEUR;
   const reservaEURenARS = cotizacionEUR ? totalEUR * cotizacionEUR : null;
@@ -112,6 +135,7 @@ export default function DolaresPage() {
     ? ((serie[serie.length - 1]?.ahorrosAcum ?? 0) + promAhorroARS * 3) / cotizOficial : null;
 
   return (
+    <>
     <div className="page">
       {loading ? (
         <LoadingSpinner />
@@ -255,20 +279,29 @@ export default function DolaresPage() {
           {showUSD && historialUSD.length > 0 && (
             <div className="card" style={{ background: "linear-gradient(135deg, var(--surface), var(--surface-alt))", marginBottom: 10 }}>
               <div className="label">{t.usdHistory}</div>
-              {historialUSD.map((m) => (
-                <div key={m.id} className="row">
+              {(expandUSD ? historialUSD : historialUSD.slice(0, 5)).map((m) => {
+                const esRetiro = m.tipo === "GastoUSD";
+                return (
+                <div key={m.id} className="row" onClick={() => setModal({ mode: "edit", mov: m })} style={{ cursor: "pointer" }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{fechaCortaConAnio(m.fecha)}</div>
-                    {m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
+                    {esRetiro
+                      ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.removeReserve}</div>
+                      : m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
-                      +{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: esRetiro ? "var(--red)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
+                      {esRetiro ? "−" : "+"}{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
                     </div>
-                    <div style={{ fontSize: 10, color: "var(--muted)" }}>{money(m.monto)}</div>
+                    {!esRetiro && <div style={{ fontSize: 10, color: "var(--muted)" }}>{money(m.monto)}</div>}
                   </div>
                 </div>
-              ))}
+              );})}
+              {historialUSD.length > 5 && (
+                <button onClick={() => setExpandUSD((v) => !v)} style={{ display: "block", width: "100%", textAlign: "center", margin: "12px auto 2px", background: "none", border: "none", color: "var(--muted)", fontSize: 12, fontStyle: "italic", cursor: "pointer" }}>
+                  {expandUSD ? t.seeLess : t.seeMore}
+                </button>
+              )}
             </div>
           )}
 
@@ -276,24 +309,74 @@ export default function DolaresPage() {
           {showEUR && historialEUR.length > 0 && (
             <div className="card" style={{ background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
               <div className="label">{t.eurHistory}</div>
-              {historialEUR.map((m) => (
-                <div key={m.id} className="row">
+              {(expandEUR ? historialEUR : historialEUR.slice(0, 5)).map((m) => {
+                const esRetiro = m.tipo === "GastoEUR";
+                return (
+                <div key={m.id} className="row" onClick={() => setModal({ mode: "edit", mov: m })} style={{ cursor: "pointer" }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{fechaCortaConAnio(m.fecha)}</div>
-                    {m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
+                    {esRetiro
+                      ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.removeReserve}</div>
+                      : m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>
-                      +{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: esRetiro ? "var(--red)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
+                      {esRetiro ? "−" : "+"}{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
                     </div>
-                    <div style={{ fontSize: 10, color: "var(--muted)" }}>{money(m.monto)}</div>
+                    {!esRetiro && <div style={{ fontSize: 10, color: "var(--muted)" }}>{money(m.monto)}</div>}
                   </div>
                 </div>
-              ))}
+              );})}
+              {historialEUR.length > 5 && (
+                <button onClick={() => setExpandEUR((v) => !v)} style={{ display: "block", width: "100%", textAlign: "center", margin: "12px auto 2px", background: "none", border: "none", color: "var(--muted)", fontSize: 12, fontStyle: "italic", cursor: "pointer" }}>
+                  {expandEUR ? t.seeLess : t.seeMore}
+                </button>
+              )}
             </div>
           )}
         </div>
       )}
     </div>
+
+    {/* Botón flotante + para cargar reserva (igual estilo que Movimientos) */}
+    {!loading && <button
+      onClick={() => setModal({ mode: "add" })}
+      aria-label={t.reserve}
+      style={{
+        position: "fixed",
+        bottom: "calc(var(--nav-h) + 8px)",
+        left: 0, right: 0, margin: "0 auto",
+        width: 54, height: 54,
+        borderRadius: "50%",
+        background: "transparent",
+        color: "var(--green)",
+        border: "none",
+        cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 100,
+        filter: "drop-shadow(0 2px 12px var(--green)99)",
+        opacity: btnVisible ? 1 : 0,
+        pointerEvents: btnVisible ? "all" : "none",
+        transition: "opacity 0.4s ease",
+      }}
+    >
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>}
+
+    <MovementModal
+      open={modal !== null}
+      mode={modal?.mode === "edit" ? "edit" : "add"}
+      reserveMode={modal?.mode === "add"}
+      readOnly={modal?.mode === "edit"}
+      movimiento={modal?.mode === "edit" ? modal.mov : null}
+      movimientos={movimientos}
+      config={config}
+      onClose={() => setModal(null)}
+      onChanged={refreshData}
+    />
+    </>
   );
 }
