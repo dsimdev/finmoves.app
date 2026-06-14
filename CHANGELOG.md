@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.7.0] — 2026-06-14
+
+### Added
+- **Smart description suggestions**: the description field autocompletes from your own past expense descriptions, filtered by the selected category (top 8 by frequency, native datalist).
+- **Changelog "+"**: a button in the changelog modal opens the full `CHANGELOG_USER.md` on the web (GitHub), with a "you're leaving the site" confirmation first.
+
+### Changed (new-movement form)
+- Receipt attach moved to the bottom row — grid is now **Notes 50% / Receipt 25% / Submit 25%** — and works for all types (incl. Move/FX). The attach is just a larger 📎 icon (no dashed box).
+- **Reserve loads (+USD/-USD/+EUR/-EUR) are hidden when the Investment section is off** (`showAhorros`).
+
+### Repo
+- GitHub repository renamed to `dsimdev/finmoves.app`; local remote updated.
+
+---
+
 ## [2.6.2] — 2026-06-14
 
 ### Changed (new-movement form)

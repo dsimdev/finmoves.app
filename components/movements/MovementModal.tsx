@@ -62,7 +62,7 @@ interface MovementModalProps {
 export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, onClose, onChanged }: MovementModalProps) {
   const { user } = useAuth();
   const { cotizacion } = useCotizacion();
-  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
+  const { monedaInversiones, monedaPrincipal, showAhorros } = useAppPrefs();
   const { m: money } = useMoney();
   const t = useT();
 
@@ -74,8 +74,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     { t: "Gasto", label: t.tipoDisplay["Gasto"], color: "var(--red)" },
     { t: "Ingreso", label: t.tipoDisplay["Ingreso"], color: "var(--green)" },
     { t: "Move", label: t.tipoDisplay["Move"], color: "var(--yellow)" },
-    { t: esEURMode ? "CompraEUR" : "CompraUSD", label: esEURMode ? "+EUR" : "+USD", color: "var(--yellow)" },
-    { t: esEURMode ? "GastoEUR" : "GastoUSD", label: esEURMode ? "-EUR" : "-USD", color: "var(--yellow)" },
+    // Cargas a la reserva: solo si la sección Inversión está activa.
+    ...(showAhorros ? [
+      { t: (esEURMode ? "CompraEUR" : "CompraUSD") as TipoMovimiento, label: esEURMode ? "+EUR" : "+USD", color: "var(--yellow)" },
+      { t: (esEURMode ? "GastoEUR" : "GastoUSD") as TipoMovimiento, label: esEURMode ? "-EUR" : "-USD", color: "var(--yellow)" },
+    ] : []),
   ];
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
@@ -217,6 +220,19 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const esAperturaPeriodo = isLocked && !!movimiento && fechaAPeriodoId(movimiento.fecha) === movimiento.periodoId;
   // Quién puede adjuntar comprobantes. Hoy solo el dueño; a futuro: isOwner || isPremium.
   const canComprobante = isOwner;
+
+  // Sugerencias de descripción para Gasto: descripciones ya usadas (filtradas por
+  // la categoría elegida si hay una), ordenadas por frecuencia. Autocompletado nativo.
+  const descSuggestions = useMemo(() => {
+    if (tipo !== "Gasto") return [] as string[];
+    const counts = new Map<string, number>();
+    for (const m of movimientos) {
+      if (m.tipo === "Gasto" && m.descripcion && (!categoria || m.categoria === categoria)) {
+        counts.set(m.descripcion, (counts.get(m.descripcion) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => d).slice(0, 8);
+  }, [movimientos, categoria, tipo]);
   const isDirtyEdit = !!movimiento && (
     eMonto !== String(movimiento.monto) ||
     eDesc !== (movimiento.descripcion ?? "") ||
@@ -378,7 +394,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       );
     }
     return (
-      <label aria-label={t.attachReceipt} title={t.attachReceipt} style={{ ...box, border: "1px dashed var(--border)", color: "var(--muted)", cursor: "pointer" }}>
+      <label aria-label={t.attachReceipt} title={t.attachReceipt} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 46, height: 46, fontSize: 26, color: "var(--muted)", cursor: "pointer", flexShrink: 0 }}>
         <input type="file" accept={accept} onChange={onComprobanteSelect} style={{ display: "none" }} />
         📎
       </label>
@@ -568,24 +584,26 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           {!esMove && !esUSD && !esAhorros && (
             <div style={{ marginBottom: 14 }}>
               <div className="label">{t.description}</div>
-              <input className="input" type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+              <input className="input" type="text" list="finmoves-desc-sug" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} autoComplete="off" />
+              {descSuggestions.length > 0 && (
+                <datalist id="finmoves-desc-sug">
+                  {descSuggestions.map((d) => <option key={d} value={d} />)}
+                </datalist>
+              )}
             </div>
           )}
           {!esMove && !esUSD && (
             <div style={{ marginBottom: 14 }}>
               <div className="label">{t.paymentMethod}</div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
-                  {config?.mediosPago.filter((m) => m.activo).map((m) => (
-                    <button key={m.nombre} type="button" onClick={() => setMedioPago(m.nombre)}
-                      className="pill" style={{
-                        borderColor: medioPago === m.nombre ? "var(--accent)" : "var(--border)",
-                        background: medioPago === m.nombre ? "var(--accent-dim)" : "transparent",
-                        color: medioPago === m.nombre ? "var(--accent)" : "var(--muted)",
-                      }}>{m.nombre}</button>
-                  ))}
-                </div>
-                {canComprobante && comprobanteIcon()}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {config?.mediosPago.filter((m) => m.activo).map((m) => (
+                  <button key={m.nombre} type="button" onClick={() => setMedioPago(m.nombre)}
+                    className="pill" style={{
+                      borderColor: medioPago === m.nombre ? "var(--accent)" : "var(--border)",
+                      background: medioPago === m.nombre ? "var(--accent-dim)" : "transparent",
+                      color: medioPago === m.nombre ? "var(--accent)" : "var(--muted)",
+                    }}>{m.nombre}</button>
+                ))}
               </div>
             </div>
           )}
@@ -609,12 +627,17 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           )}
 
-          {/* Observaciones (70%) + enviar (30%) en la misma fila */}
-          <div style={{ display: "grid", gridTemplateColumns: "70% 30%", gap: 10, alignItems: "end", marginTop: 8 }}>
+          {/* Observaciones (50%) + comprobante (25%) + enviar (25%) en la misma fila */}
+          <div style={{ display: "grid", gridTemplateColumns: canComprobante ? "50% 25% 25%" : "70% 30%", gap: 10, alignItems: "end", marginTop: 8 }}>
             <div>
               <div className="label">{t.notesOptional}</div>
               <input className="input" type="text" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
             </div>
+            {canComprobante && (
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                {comprobanteIcon()}
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "center" }}>
               <button type="submit" disabled={!canSubmit || addLoading} aria-label={t.save} style={{
                 width: 52, height: 52, borderRadius: "50%",

@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.7.0] — 2026-06-14
+
+### Novedades
+- **Descripción más inteligente**: te sugiere lo que ya cargaste antes según la categoría elegida.
+- En el **changelog**, un botón **"+"** abre el historial completo en la web (te avisamos antes de salir del sitio).
+- Si no usás la sección **Inversión**, ya no aparecen las cargas a la reserva (+USD/-USD/+EUR/-EUR).
+- Ajustes en la pantalla de carga: el comprobante quedó como ícono junto a observaciones y el botón de confirmar.
+
+---
+
 ## [2.6.2] — 2026-06-14
 
 ### Mejoras

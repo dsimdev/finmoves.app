@@ -323,6 +323,8 @@ export default function ConfigPage() {
   };
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const CHANGELOG_WEB_URL = "https://github.com/dsimdev/finmoves.app/blob/main/CHANGELOG_USER.md";
   const [showSyncLog, setShowSyncLog] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -1542,7 +1544,10 @@ export default function ConfigPage() {
         <div onClick={() => setShowChangelog(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "75vh", display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 15 }}>Changelog</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontWeight: 700, fontSize: 15 }}>Changelog</span>
+                <button onClick={() => setConfirmLeave(true)} aria-label={t.viewFullChangelog} title={t.viewFullChangelog} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--accent)", fontSize: 17, lineHeight: 1, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+              </div>
               <button onClick={() => setShowChangelog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
             </div>
             <div style={{ overflowY: "auto", padding: "16px 20px 32px", fontSize: 13, lineHeight: 1.65, color: "var(--text)" }}>
@@ -1564,6 +1569,21 @@ export default function ConfigPage() {
                 if (line.startsWith("# ") || line.trim() === "" || line.startsWith("Todos los cambios") || line.startsWith("Formato basado") || line.startsWith("https://keep")) return null;
                 return <div key={i}>{line}</div>;
               }) : <div style={{ color: "var(--muted)" }}>Loading…</div>}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {confirmLeave && mounted && createPortal(
+        <div onClick={() => setConfirmLeave(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px" }}>
+            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t.leaveSiteTitle}</div>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.leaveSiteBody}</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setConfirmLeave(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
+              <button onClick={() => { window.open(CHANGELOG_WEB_URL, "_blank", "noopener,noreferrer"); setConfirmLeave(false); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.leaveSiteConfirm}</button>
             </div>
           </div>
         </div>,
