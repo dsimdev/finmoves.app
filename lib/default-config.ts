@@ -31,7 +31,7 @@ export const TEMPLATE_CONFIG = {
   ] as OrigenAhorro[],
   meta: {
     usdMensual: 0,
-    tipoCambioRef: "blue" as const,
+    tipoCambioRef: "oficial" as const,
     onboardingCompleto: false,
   },
 };

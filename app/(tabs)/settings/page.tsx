@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../data-context";
-import { useReportConfig, REPORTES_TOGGLES } from "@/hooks/useReportConfig";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -20,6 +19,7 @@ import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { useCotizacion } from "@/hooks/useCotizacion";
 import { useT } from "@/hooks/useTranslation";
 
 function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
@@ -148,7 +148,6 @@ function SectionHeader({ title, open, onClick, danger }: { title: string; open: 
 export default function ConfigPage() {
   const { user } = useAuth();
   const { config, configLoading: loading, refreshConfig: refresh, movimientos } = useData();
-  const { overrides, saveAll: saveReportes } = useReportConfig();
   const router = useRouter();
 
   const { canInstall, promptInstall } = useInstallPrompt();
@@ -156,12 +155,6 @@ export default function ConfigPage() {
   const { showReportes, showAhorros, monedaInversiones, monedaPrincipal, set: setPref, setMoneda, setMonedaPrincipal, lang, setLang } = useAppPrefs();
   const t = useT();
 
-  const SECCION_LABEL: Record<string, string> = {
-    gastos: t.sectionExpenses,
-    ingresos: t.sectionIncome,
-    movimientos: t.sectionMovements,
-    periodos: t.sectionPeriods,
-  };
 
   const [guardando, setGuardando] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
@@ -240,8 +233,8 @@ export default function ConfigPage() {
       setProfileBusy(false);
     }
   };
-  // Acordeón de secciones (pestaña General) — todas cerradas por defecto
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  // Acordeón de secciones (pestaña General) — Cuenta abierta por defecto
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ account: true });
   const isOpen = (k: string) => !!openSections[k];
   // Acordeón exclusivo: abrir una cierra las demás
   const toggleSection = (k: string) => setOpenSections((p) => (p[k] ? {} : { [k]: true }));
@@ -363,20 +356,6 @@ export default function ConfigPage() {
     );
   }, [localCats, localMedios, localOrigenes, config]);
 
-  // ── Reportes local state — siempre en sync con overrides (localStorage) ──
-  const [localReportes, setLocalReportes] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    setLocalReportes(overrides);
-  }, [overrides]);
-
-  const isDirtyReportes = useMemo(() =>
-    JSON.stringify(localReportes) !== JSON.stringify(overrides),
-    [localReportes, overrides]
-  );
-
-  const localIsEnabled = (id: string) => localReportes[id] !== false;
-
   // ── Auto-ahorro modal state ──
   const [showAutoAhorroModal, setShowAutoAhorroModal] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
@@ -390,6 +369,8 @@ export default function ConfigPage() {
   const [metaFecha, setMetaFecha] = useState("");
   const [metaMonto, setMetaMonto] = useState("");
   const [metaSaldo, setMetaSaldo] = useState("");
+  const [cotizManualOn, setCotizManualOn] = useState(false);
+  const [cotizManualVal, setCotizManualVal] = useState("");
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
 
@@ -412,7 +393,10 @@ export default function ConfigPage() {
   }, [movimientos, config?.meta.saldoEUR]);
 
   const totalReserva = monedaInversiones === "EUR" ? totalEUR : totalUSD;
-  const simboloReserva = monedaInversiones === "EUR" ? "€" : "U$D";
+  // Cotización en uso para la moneda de inversión activa: manual si está activa, si no el oficial.
+  const { cotizacion } = useCotizacion();
+  const tasaAuto = cotizacion ? (monedaInversiones === "EUR" ? cotizacion.oficial_euro ?? null : cotizacion.oficial) : null;
+  const tasaEnUso = cotizManualOn && cotizManualVal && parseFloat(cotizManualVal) > 0 ? parseFloat(cotizManualVal) : tasaAuto;
   // Seed inicial según la moneda de inversión activa (saldoUSD / saldoEUR).
   const seedGuardado = (monedaInversiones === "EUR" ? config?.meta.saldoEUR : config?.meta.saldoUSD)?.toString() ?? "";
 
@@ -443,8 +427,11 @@ export default function ConfigPage() {
       if (d && m && y) savedIso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       else savedIso = "";
     }
-    return metaFecha !== savedIso || metaMonto !== (config.meta.metaMonto?.toString() ?? "") || metaSaldo !== seedGuardado;
-  }, [metaFecha, metaMonto, metaSaldo, config]);
+    const savedManualOn = !!config.meta.cotizacionManualActiva;
+    const savedManualVal = config.meta.cotizacionManual?.toString() ?? "";
+    return metaFecha !== savedIso || metaMonto !== (config.meta.metaMonto?.toString() ?? "") || metaSaldo !== seedGuardado
+      || cotizManualOn !== savedManualOn || (cotizManualOn && cotizManualVal !== savedManualVal);
+  }, [metaFecha, metaMonto, metaSaldo, cotizManualOn, cotizManualVal, config]);
 
   // ── Effects ──
   useEffect(() => {
@@ -473,8 +460,10 @@ export default function ConfigPage() {
       setMetaFecha(iso);
       setMetaMonto(config.meta.metaMonto?.toString() ?? "");
       setMetaSaldo((monedaInversiones === "EUR" ? config.meta.saldoEUR : config.meta.saldoUSD)?.toString() ?? "");
+      setCotizManualOn(!!config.meta.cotizacionManualActiva);
+      setCotizManualVal(config.meta.cotizacionManual?.toString() ?? "");
     }
-  }, [config?.meta.metaFecha, config?.meta.metaMonto]);
+  }, [config?.meta.metaFecha, config?.meta.metaMonto, config?.meta.cotizacionManualActiva, config?.meta.cotizacionManual]);
 
   useEffect(() => {
     if (config?.meta.monedaPrincipal) {
@@ -710,21 +699,6 @@ export default function ConfigPage() {
     return montoChanged || mediosChanged || omitirChanged || !saved?.activo;
   })();
 
-  // ── Reportes handlers (auto-save) ──
-  const toggleLocalReporte = (id: string) => {
-    setLocalReportes(prev => {
-      const next = { ...prev };
-      if (next[id] === false) delete next[id];
-      else next[id] = false;
-      saveReportes(next);
-      const allOff = REPORTES_TOGGLES.every(r => next[r.id] === false);
-      if (allOff) setPref("showReportes", false);
-      return next;
-    });
-  };
-
-  const guardarReportes = () => saveReportes(localReportes);
-
   // ── Ahorros handler ──
   const guardarMetaAhorro = async () => {
     if (!config) return;
@@ -741,6 +715,14 @@ export default function ConfigPage() {
     } else {
       if (monedaInversiones === "EUR") delete newMeta.saldoEUR;
       else delete newMeta.saldoUSD;
+    }
+    // Cotización manual: si está activa y tiene valor > 0, reemplaza a bluelytics en la valuación.
+    if (cotizManualOn && cotizManualVal && parseFloat(cotizManualVal) > 0) {
+      newMeta.cotizacionManualActiva = true;
+      newMeta.cotizacionManual = parseFloat(cotizManualVal);
+    } else {
+      delete newMeta.cotizacionManualActiva;
+      delete newMeta.cotizacionManual;
     }
     newMeta.metaMoneda = "USD";
     await saveConfig({ ...config, meta: newMeta });
@@ -992,16 +974,7 @@ export default function ConfigPage() {
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showReportsLabel}</div>
                 </div>
               </div>
-              <Toggle activo={showReportes} onClick={() => {
-                const next = !showReportes;
-                setPref("showReportes", next);
-                if (next) {
-                  const reset: Record<string, boolean> = {};
-                  REPORTES_TOGGLES.forEach(r => { reset[r.id] = true; });
-                  saveReportes(reset);
-                  setLocalReportes(reset);
-                }
-              }} />
+              <Toggle activo={showReportes} onClick={() => setPref("showReportes", !showReportes)} />
             </div>
 
             {/* Inversión */}
@@ -1235,8 +1208,22 @@ export default function ConfigPage() {
             <SectionHeader title={t.settingsTabInvestments} open={isOpen("ahorros")} onClick={() => toggleSection("ahorros")} />
             {isOpen("ahorros") && (<div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
-              {t.currentReserve(simboloReserva, totalReserva.toFixed(2))}
+              {t.exchangeRate}: {tasaEnUso != null ? `$${tasaEnUso.toLocaleString("es-AR")}` : "—"} ({monedaInversiones === "EUR" ? "EUR" : "USD"})
             </div>
+
+            {/* Cotización: automática (bluelytics) o manual */}
+            <div style={{ padding: "10px 14px", borderRadius: "var(--radius-sm)", background: "var(--surface-alt)", border: "1px solid var(--border)", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{cotizManualOn ? t.rateModeManual : t.manualRateAuto}</div>
+                <Toggle activo={cotizManualOn} onClick={() => setCotizManualOn((v) => !v)} />
+              </div>
+              {cotizManualOn && (
+                <input type="number" inputMode="decimal" value={cotizManualVal} placeholder="0"
+                  onChange={(e) => setCotizManualVal(e.target.value)} className="input"
+                  style={{ width: "100%", marginTop: 10, fontFamily: "var(--font-mono)" }} />
+              )}
+            </div>
+
             <div style={{ marginBottom: 12 }}>
               <div className="label" style={{ marginBottom: 6 }}>{t.initialReserve(monedaInversiones === "EUR" ? "EUR" : "USD")}</div>
               <input type="number" value={metaSaldo} placeholder="0"
@@ -1294,35 +1281,6 @@ export default function ConfigPage() {
               )}
             </div>
 
-            </div>)}
-          </div>
-          )}
-
-          {/* ── Reportes ── */}
-          {showReportes && (
-          <div className="card">
-            <SectionHeader title={t.settingsTabReports} open={isOpen("reportes")} onClick={() => toggleSection("reportes")} />
-            {isOpen("reportes") && (<div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 16 }}>
-              {(["gastos", "ingresos", "movimientos", "periodos"] as const).map((sec) => (
-                <div key={sec}>
-                  <div className="label" style={{ marginBottom: 8 }}>{SECCION_LABEL[sec]}</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {REPORTES_TOGGLES.filter((r) => r.seccion === sec).map((r) => {
-                      const on = localIsEnabled(r.id);
-                      return (
-                        <button key={r.id} onClick={() => toggleLocalReporte(r.id)} style={{
-                          padding: "7px 14px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
-                          whiteSpace: "nowrap", transition: "all 0.15s", touchAction: "manipulation",
-                          border: `1px solid ${on ? "var(--blue)" : "var(--border)"}`,
-                          background: on ? "var(--blue-dim)" : "transparent",
-                          color: on ? "var(--blue)" : "var(--muted)",
-                          opacity: on ? 1 : 0.55,
-                        }}>{r.label}</button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
             </div>)}
           </div>
           )}
@@ -1544,10 +1502,7 @@ export default function ConfigPage() {
         <div onClick={() => setShowChangelog(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "75vh", display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontWeight: 700, fontSize: 15 }}>Changelog</span>
-                <button onClick={() => setConfirmLeave(true)} aria-label={t.viewFullChangelog} title={t.viewFullChangelog} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--accent)", fontSize: 17, lineHeight: 1, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
-              </div>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>Changelog</span>
               <button onClick={() => setShowChangelog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
             </div>
             <div style={{ overflowY: "auto", padding: "16px 20px 32px", fontSize: 13, lineHeight: 1.65, color: "var(--text)" }}>
@@ -1569,6 +1524,7 @@ export default function ConfigPage() {
                 if (line.startsWith("# ") || line.trim() === "" || line.startsWith("Todos los cambios") || line.startsWith("Formato basado") || line.startsWith("https://keep")) return null;
                 return <div key={i}>{line}</div>;
               }) : <div style={{ color: "var(--muted)" }}>Loading…</div>}
+              <button onClick={() => setConfirmLeave(true)} aria-label={t.viewFullChangelog} title={t.viewFullChangelog} style={{ display: "block", width: "100%", textAlign: "center", margin: "20px auto 2px", background: "none", border: "none", color: "var(--muted)", fontSize: 12, fontStyle: "italic", cursor: "pointer" }}>{t.seeMore}</button>
             </div>
           </div>
         </div>,

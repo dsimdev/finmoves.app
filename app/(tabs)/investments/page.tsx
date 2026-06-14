@@ -51,9 +51,6 @@ export default function DolaresPage() {
   const { oculto, toggle, m: money } = useMoney();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
 
-  const [tipoCambioSelUSD, setTipoCambioSelUSD] = useState<"blue" | "oficial" | null>(null);
-  const [tipoCambioSelEUR, setTipoCambioSelEUR] = useState<"blue" | "oficial" | null>(null);
-
   const monedaInversionesEfectiva: "USD" | "EUR" =
     monedaPrincipal === "USD" ? "EUR" :
     monedaPrincipal === "EUR" ? "USD" :
@@ -61,12 +58,12 @@ export default function DolaresPage() {
   const esEUR = monedaInversionesEfectiva === "EUR";
   const simbolo = esEUR ? "€" : "U$D";
 
-  const savedRef: "blue" | "oficial" = config?.meta.tipoCambioRef === "blue" ? "blue" : "oficial";
-  const tipoCambioRefUSD: "blue" | "oficial" = tipoCambioSelUSD ?? savedRef;
-  const tipoCambioRefEUR: "blue" | "oficial" = tipoCambioSelEUR ?? savedRef;
-  const tipoCambioRef = tipoCambioRefUSD; // kept for saveConfig calls
-  const cotizacionUSD = cotizacion ? cotizacion[tipoCambioRefUSD] : null;
-  const cotizacionEUR = cotizacion ? (tipoCambioRefEUR === "oficial" ? cotizacion.oficial_euro : cotizacion.blue_euro) ?? null : null;
+  // La cotización del usuario es SIEMPRE la oficial (el blue solo se elige en la carga).
+  // Si hay cotización manual activa, reemplaza al oficial SOLO en la moneda de inversión activa.
+  const manualOn = !!config?.meta.cotizacionManualActiva && (config?.meta.cotizacionManual ?? 0) > 0;
+  const manualVal = config?.meta.cotizacionManual ?? 0;
+  const cotizacionUSD = manualOn && !esEUR ? manualVal : (cotizacion ? cotizacion.oficial : null);
+  const cotizacionEUR = manualOn && esEUR ? manualVal : (cotizacion ? cotizacion.oficial_euro ?? null : null);
 
   // ── USD ──
   const comprasUSD = movimientos
@@ -121,8 +118,8 @@ export default function DolaresPage() {
       ) : (
         <div className="fade-up">
           <div style={{ marginBottom: 24 }}>
-            <div className="label" style={{ marginBottom: 2 }}>{t.portfolio}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{showUSD && showEUR ? `${t.currencyDollars} | ${t.currencyEuros}` : esEUR ? t.currencyEuros : t.currencyDollars}</div>
+            <div className="label" style={{ marginBottom: 2 }}>{showUSD && showEUR ? `${t.currencyDollars} · ${t.currencyEuros}` : esEUR ? t.currencyEuros : t.currencyDollars}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.portfolio}</div>
           </div>
           {/* ── SECCIÓN USD ── */}
           {showUSD && (<>
@@ -141,7 +138,7 @@ export default function DolaresPage() {
             </div>
             {reservaUSDenARS && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-                ≈ {money(reservaUSDenARS)} · {tipoCambioRef === "oficial" ? t.rateOfficial : t.rateBlue} ${cotizacionUSD?.toLocaleString("es-AR")}
+                ≈ {money(reservaUSDenARS)} · {manualOn && !esEUR ? t.rateManual : t.rateOfficial} ${cotizacionUSD?.toLocaleString("es-AR")}
               </div>
             )}
           </div>
@@ -180,7 +177,7 @@ export default function DolaresPage() {
             </div>
             {reservaEURenARS && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-                ≈ {money(reservaEURenARS)} · {tipoCambioRef === "oficial" ? t.rateOfficial : t.rateBlue} ${cotizacionEUR?.toLocaleString("es-AR")}
+                ≈ {money(reservaEURenARS)} · {manualOn && esEUR ? t.rateManual : t.rateOfficial} ${cotizacionEUR?.toLocaleString("es-AR")}
               </div>
             )}
           </div>

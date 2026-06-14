@@ -16,7 +16,6 @@ import {
   progresoMetaUSD, periodosParaMetaUSD,
 } from "@/utils/reportes";
 import { useCotizacion } from "@/hooks/useCotizacion";
-import { useReportConfig } from "@/hooks/useReportConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -101,7 +100,8 @@ export default function ReportesPage() {
   const { oculto, toggle, m: money } = useMoney();
   const { movimientos, loading, config } = useData();
   const { cotizacion } = useCotizacion();
-  const { isEnabled: reportOn } = useReportConfig();
+  // Reportes ya no son configurables: todas las secciones siempre visibles.
+  const reportOn = (_id: string) => true;
   const { monedaInversiones } = useAppPrefs();
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);

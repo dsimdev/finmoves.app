@@ -4,6 +4,25 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.8.0] — 2026-06-14
+
+### Added
+- **Manual exchange rate** (Settings → Investment): a switch toggles between automatic (bluelytics) and a manual value. When manual is on, the entered rate replaces the official rate **in the investment valuation** for the active investment currency. Stored per-user in config. The Investment section header shows `manual` instead of `oficial` when active.
+- **Delete via long-press**: long-pressing a movement (Movements list or Home) opens the delete confirmation directly (short haptic). The trash icon was removed from the edit modal. A salary that anchors a period still can't be deleted (long-press opens edit instead). New `useLongPress` hook.
+
+### Changed
+- **The user's exchange rate is now always the official one** (blue is only selectable when loading an FX purchase/expense). Default config `tipoCambioRef` changed `blue → oficial`; the dead blue/oficial selector in the Investment page was removed.
+- **Investment header**: big gradient title is now the section name (**Inversión** / Portfolio) with the currency moved to the small eyebrow.
+- **Reports are no longer configurable**: the per-section KPI/Other-data toggles were removed (along with `useReportConfig`); the Reports screen always shows everything. Only the on/off toggle in General remains.
+- **Settings → Account opens by default** when entering Settings.
+- **Edit movement** layout: read-only chips (Type · Category · Date) on one row, then an editable **Amount 30% / Description 70%** row; receipt is a compact 📎 next to **Notes 70% / Receipt 30%**. "Notes" dropped the "(optional)" suffix.
+- **Changelog modal**: the header "+" was replaced by a **"see more"** link at the bottom (italic, same pattern as Home/Reports) that opens the full web changelog with the leave-site warning.
+
+### Removed
+- **Vercel** fully removed: `@vercel/analytics` + `@vercel/speed-insights` packages and their components in `layout.tsx`, plus the `.vercel` gitignore entry. Firebase Analytics (GA4) stays.
+
+---
+
 ## [2.7.0] — 2026-06-14
 
 ### Added

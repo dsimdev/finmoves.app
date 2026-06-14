@@ -32,10 +32,10 @@ Full CRUD for movements, grouped by date. Tap a row to edit. Supported types:
 **Periods**: a `Sueldo` opens a period. For the owner (and the first-ever salary) it always opens a new one; other users choose **"Add to current / New period"**. Opening a new period carries the previous period's leftover into the new one as a `RESTO` movement (counts as Savings).
 
 ### Investment (`/investments`)
-USD or EUR reserve tracking: total reserve, average purchase price, ARS gain/loss, blue/official rates (with cache fallback), savings goal with target date and projection, purchase history.
+USD or EUR reserve tracking: total reserve, average purchase price, ARS gain/loss, official rate (with cache fallback) or a per-user **manual rate**, savings goal with target date and projection, purchase history.
 
 ### Reports (`/reports`)
-Per-period analysis with toggles. Tabs: **Gastos**, **Ingresos**, **Movimientos**, **Períodos**.
+Per-period analysis. Tabs: **Gastos**, **Ingresos**, **Movimientos**, **Períodos**.
 
 ### Settings (`/settings`)
 Profile (name, password change with reauth + relogin, language), categories/payment methods/savings origins (CRUD), dark/light, section toggles, auto-savings, biometric unlock, push notifications, investment currency, install button, Google Sheets sync, invite codes (owner), backup export.
@@ -86,4 +86,4 @@ Rollback: `git reset --hard vX.Y.Z` + push, or redeploy a previous build from th
 
 ## Current Version
 
-`v2.7.0` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.
+`v2.8.0` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.

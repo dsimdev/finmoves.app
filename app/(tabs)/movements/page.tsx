@@ -8,6 +8,7 @@ import { Movimiento, TipoMovimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { MovementModal } from "@/components/movements/MovementModal";
+import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 
 function TipoDot({ tipo, categoria }: { tipo: TipoMovimiento; categoria: string }) {
@@ -35,10 +36,11 @@ export default function MovimientosPage() {
   const activePeriodoId = periodoSel ?? periodosDelAño[0]?.periodoId;
   const periodoActual = periodos.find((p) => p.periodoId === activePeriodoId);
 
-  // Modal de alta/edición (componente compartido).
-  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento } | null>(null);
+  // Modal de alta/edición (componente compartido). `view` permite abrir directo en borrado.
+  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
   const openAdd = () => setModalState({ mode: "add" });
   const openEdit = (m: Movimiento) => setModalState({ mode: "edit", mov: m });
+  const bindLongPress = useLongPress();
 
   // Si llegamos con ?m=<id> (desde el dashboard), abrir ese movimiento para editar.
   useEffect(() => {
@@ -154,10 +156,13 @@ export default function MovimientosPage() {
                       const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
                       const isMove = m.tipo === "Move";
                       return (
-                        <button key={m.id} onClick={() => openEdit(m)} aria-label={t.edit} style={{
+                        <button key={m.id}
+                          {...bindLongPress(() => setModalState({ mode: "edit", mov: m, view: "delete" }), () => openEdit(m))}
+                          aria-label={t.edit} style={{
                           width: "100%", textAlign: "left", background: "none", cursor: "pointer",
                           display: "flex", alignItems: "flex-start", gap: 10, padding: "13px 14px",
                           border: "none", borderBottom: i < movs.length - 1 ? "1px solid var(--faint)" : "none",
+                          WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none",
                         }}>
                           <TipoDot tipo={m.tipo} categoria={m.categoria} />
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -219,6 +224,7 @@ export default function MovimientosPage() {
       movimientos={movimientos}
       config={config}
       activePeriodoId={activePeriodoId}
+      initialView={modalState?.view}
       onClose={() => setModalState(null)}
       onChanged={refresh}
     />

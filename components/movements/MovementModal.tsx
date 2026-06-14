@@ -12,13 +12,6 @@ import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
 
-const TrashIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-  </svg>
-);
-
 // Bottom-sheet genérico.
 function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   return (
@@ -53,13 +46,15 @@ interface MovementModalProps {
   config: ConfigUsuario | null;
   /** Período al que se carga el alta. Por defecto, el más reciente. */
   activePeriodoId?: string;
+  /** Vista inicial en edición: "delete" abre directo la confirmación de borrado (long-press). */
+  initialView?: "form" | "delete";
   onClose: () => void;
   /** Avisar al padre para que refresque sus datos tras alta/edición/borrado. */
   onChanged: () => void;
 }
 
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
-export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, onClose, onChanged }: MovementModalProps) {
+export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, onClose, onChanged }: MovementModalProps) {
   const { user } = useAuth();
   const { cotizacion } = useCotizacion();
   const { monedaInversiones, monedaPrincipal, showAhorros } = useAppPrefs();
@@ -149,12 +144,16 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // Inicializar al abrir según el modo.
   useEffect(() => {
     if (!open) return;
-    setView("form");
     if (mode === "add") {
+      setView("form");
       resetAdd();
       if (sinPeriodos) { setTipo("Ingreso"); setCategoria("Sueldo"); }
       else setTipo("Gasto");
     } else if (mode === "edit" && movimiento) {
+      // El sueldo que abre período (ancla) no se puede borrar → forzar vista form.
+      const esAncla = movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" &&
+        fechaAPeriodoId(movimiento.fecha) === movimiento.periodoId;
+      setView(initialView === "delete" && !esAncla ? "delete" : "form");
       setEMonto(String(movimiento.monto));
       setEDesc(movimiento.descripcion || (movimiento as Movimiento & { origenAhorro?: string }).origenAhorro || "");
       setEMedio(movimiento.medioPago ?? "");
@@ -162,7 +161,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       resetComprobante();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, movimiento?.id]);
+  }, [open, mode, movimiento?.id, initialView]);
 
   const esSueldo = tipo === "Ingreso" && categoria === "Sueldo";
   const esAhorros = tipo === "Ingreso" && categoria === "Ahorros";
@@ -214,10 +213,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     !!categoria && parseFloat(monto || "0") > 0
   );
 
+  // Un sueldo que ABRE período (su fecha define el periodoId) es el ancla → no se puede
+  // borrar (se chequea en el efecto de apertura). Un sueldo "sumado" al período sí.
   const isLocked = movimiento ? movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" : false;
-  // Un sueldo que ABRE período (su fecha define el periodoId) es el ancla → no se
-  // puede borrar. Un sueldo "sumado" al período en curso sí es borrable.
-  const esAperturaPeriodo = isLocked && !!movimiento && fechaAPeriodoId(movimiento.fecha) === movimiento.periodoId;
   // Quién puede adjuntar comprobantes. Hoy solo el dueño; a futuro: isOwner || isPremium.
   const canComprobante = isOwner;
 
@@ -335,61 +333,33 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   const title = mode === "add" ? t.newMovement : view === "delete" ? t.delete : t.editMovement;
 
-  // Campo de comprobante reutilizable (alta y edición). `existingUrl` = comprobante ya guardado.
-  const comprobanteField = (existingUrl?: string) => {
-    if (!canComprobante) return null;
-    const thumb: React.CSSProperties = { maxHeight: 110, maxWidth: "100%", borderRadius: 10, border: "1px solid var(--border)", display: "block" };
-    const removeBtn: React.CSSProperties = { position: "absolute", top: -8, right: -8, width: 24, height: 24, borderRadius: "50%", background: "var(--red)", color: "#fff", border: "2px solid var(--bg)", cursor: "pointer", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" };
-    const picker: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, border: "1px dashed var(--border)", borderRadius: 10, cursor: "pointer", color: "var(--muted)", fontSize: 13 };
-    const smallBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", color: "var(--muted)", fontSize: 12, fontWeight: 600, background: "transparent" };
-    const docBox: React.CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, width: 92, height: 92, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-alt)", color: "var(--muted)", fontSize: 11, fontWeight: 700, textDecoration: "none" };
-    const showExisting = !!existingUrl && !comprobanteRemoved && !comprobantePreview;
+  // Versión compacta (ícono) del comprobante — va al lado del medio de pago (alta)
+  // o de observaciones (edición). `existingUrl` = comprobante ya guardado (edición).
+  const comprobanteIcon = (existingUrl?: string) => {
+    const accept = "image/*,application/pdf";
+    const box: React.CSSProperties = { width: 38, height: 38, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, textDecoration: "none", border: "1px solid var(--border)", background: "var(--surface-alt)", color: "var(--muted)" };
+    const thumbImg: React.CSSProperties = { width: 38, height: 38, borderRadius: 8, objectFit: "cover", border: "1px solid var(--border)", display: "block" };
+    const removeBtn: React.CSSProperties = { position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "var(--red)", color: "#fff", border: "1.5px solid var(--bg)", cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" };
     const newIsPdf = comprobanteFile?.type === "application/pdf";
     const existingIsPdf = !!movimiento?.comprobantePath && movimiento.comprobantePath.toLowerCase().endsWith(".pdf");
-    const accept = "image/*,application/pdf";
-    return (
-      <div style={{ marginBottom: 20 }}>
-        <div className="label">{t.receipt}</div>
-        {comprobantePreview ? (
-          <div style={{ position: "relative", display: "inline-block" }}>
-            {newIsPdf
-              ? <a href={comprobantePreview} target="_blank" rel="noreferrer" style={docBox}><span style={{ fontSize: 26 }}>📄</span>PDF</a>
-              : <img src={comprobantePreview} alt="" style={thumb} />}
-            <button type="button" onClick={clearComprobante} aria-label={t.removeReceipt} style={removeBtn}>×</button>
-          </div>
-        ) : showExisting ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <a href={existingUrl} target="_blank" rel="noreferrer" style={existingIsPdf ? docBox : undefined}>
-              {existingIsPdf ? <><span style={{ fontSize: 26 }}>📄</span>PDF</> : <img src={existingUrl} alt="" style={thumb} />}
-            </a>
-            <label style={smallBtn}>
-              <input type="file" accept={accept} onChange={onComprobanteSelect} style={{ display: "none" }} />
-              {t.replaceReceipt}
-            </label>
-            <button type="button" onClick={clearComprobante} style={{ ...smallBtn, color: "var(--red)" }}>{t.removeReceipt}</button>
-          </div>
-        ) : (
-          <label style={picker}>
-            <input type="file" accept={accept} onChange={onComprobanteSelect} style={{ display: "none" }} />
-            📎 {t.attachReceipt}
-          </label>
-        )}
-      </div>
-    );
-  };
-
-  // Versión compacta (ícono) del comprobante para el alta — va al lado del medio de pago.
-  const comprobanteIcon = () => {
-    const accept = "image/*,application/pdf";
-    const box: React.CSSProperties = { width: 38, height: 38, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 };
-    const newIsPdf = comprobanteFile?.type === "application/pdf";
+    const showExisting = !!existingUrl && !comprobanteRemoved && !comprobantePreview;
     if (comprobantePreview) {
       return (
         <div style={{ position: "relative", flexShrink: 0 }}>
           {newIsPdf
-            ? <a href={comprobantePreview} target="_blank" rel="noreferrer" style={{ ...box, border: "1px solid var(--border)", background: "var(--surface-alt)", textDecoration: "none" }}>📄</a>
-            : <a href={comprobantePreview} target="_blank" rel="noreferrer"><img src={comprobantePreview} alt="" style={{ width: 38, height: 38, borderRadius: 8, objectFit: "cover", border: "1px solid var(--border)", display: "block" }} /></a>}
-          <button type="button" onClick={clearComprobante} aria-label={t.removeReceipt} style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "var(--red)", color: "#fff", border: "1.5px solid var(--bg)", cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+            ? <a href={comprobantePreview} target="_blank" rel="noreferrer" style={box}>📄</a>
+            : <a href={comprobantePreview} target="_blank" rel="noreferrer"><img src={comprobantePreview} alt="" style={thumbImg} /></a>}
+          <button type="button" onClick={clearComprobante} aria-label={t.removeReceipt} style={removeBtn}>×</button>
+        </div>
+      );
+    }
+    if (showExisting) {
+      return (
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          {existingIsPdf
+            ? <a href={existingUrl} target="_blank" rel="noreferrer" style={box}>📄</a>
+            : <a href={existingUrl} target="_blank" rel="noreferrer"><img src={existingUrl} alt="" style={thumbImg} /></a>}
+          <button type="button" onClick={clearComprobante} aria-label={t.removeReceipt} style={removeBtn}>×</button>
         </div>
       );
     }
@@ -630,7 +600,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           {/* Observaciones (50%) + comprobante (25%) + enviar (25%) en la misma fila */}
           <div style={{ display: "grid", gridTemplateColumns: canComprobante ? "50% 25% 25%" : "70% 30%", gap: 10, alignItems: "end", marginTop: 8 }}>
             <div>
-              <div className="label">{t.notesOptional}</div>
+              <div className="label">{t.notes}</div>
               <input className="input" type="text" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
             </div>
             {canComprobante && (
@@ -661,23 +631,25 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       {/* EDIT */}
       {mode === "edit" && movimiento && view === "form" && (
         <>
-          <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+          {/* Grid de 3: Tipo · Categoría · Fecha (solo lectura). */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
             {[{ l: t.type, v: movimiento.tipo }, { l: t.category, v: movimiento.categoria }, { l: t.date, v: fechaCorta(movimiento.fecha) }].map((f) => (
-              <div key={f.l} style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 12px" }}>
+              <div key={f.l} style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
                 <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{f.l}</div>
-                <div style={{ fontSize: 12, fontWeight: 600 }}>{f.v}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.v}</div>
               </div>
             ))}
           </div>
-
-          {/* Descripción y monto siempre editables (también en Sueldo). */}
-          <div style={{ marginBottom: 14 }}>
-            <div className="label">{t.description}</div>
-            <input className="input" value={eDesc} onChange={(e) => setEDesc(e.target.value)} />
-          </div>
-          <div style={{ marginBottom: 14 }}>
-            <div className="label">{t.amount}</div>
-            <input className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" value={eMonto} onChange={(e) => setEMonto(e.target.value)} />
+          {/* Monto (30%) + Descripción (70%) — ambos editables (descripción también en Sueldo). */}
+          <div style={{ display: "grid", gridTemplateColumns: "30% 70%", gap: 10, marginBottom: 14 }}>
+            <div>
+              <div className="label">{t.amount}</div>
+              <input className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" inputMode="decimal" value={eMonto} onChange={(e) => setEMonto(e.target.value)} />
+            </div>
+            <div>
+              <div className="label">{t.description}</div>
+              <input className="input" value={eDesc} onChange={(e) => setEDesc(e.target.value)} />
+            </div>
           </div>
           {/* Medio de pago: no aplica al Sueldo (ancla del período). */}
           {!isLocked && (
@@ -694,12 +666,18 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               </div>
             </div>
           )}
-          <div style={{ marginBottom: 24 }}>
-            <div className="label">{t.notes}</div>
-            <input className="input" value={eObs} onChange={(e) => setEObs(e.target.value)} />
+          {/* Observaciones (70%) + comprobante compacto (30%) en la misma fila */}
+          <div style={{ display: "grid", gridTemplateColumns: canComprobante ? "70% 30%" : "1fr", gap: 10, alignItems: "end", marginBottom: 24 }}>
+            <div>
+              <div className="label">{t.notes}</div>
+              <input className="input" value={eObs} onChange={(e) => setEObs(e.target.value)} />
+            </div>
+            {canComprobante && (
+              <div style={{ display: "flex", justifyContent: "center", paddingBottom: 4 }}>
+                {comprobanteIcon(movimiento.comprobanteUrl)}
+              </div>
+            )}
           </div>
-
-          {comprobanteField(movimiento.comprobanteUrl)}
 
           <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", height: 56, marginTop: 8 }}>
             <button onClick={handleEdit} disabled={!isDirtyEdit || editLoading} aria-label={t.save} style={{
@@ -717,11 +695,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
                 : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             </button>
-            {!esAperturaPeriodo && (
-              <button onClick={() => setView("delete")} aria-label={t.delete} style={{ position: "absolute", right: 0, background: "none", border: "none", color: "var(--red)", cursor: "pointer", padding: 8 }}>
-                <TrashIcon />
-              </button>
-            )}
           </div>
         </>
       )}

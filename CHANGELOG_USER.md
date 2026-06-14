@@ -4,6 +4,22 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.8.0] — 2026-06-14
+
+### Novedades
+- **Cotización manual** (Configuración → Inversión): un switch para usar un valor fijo en vez del automático de bluelytics. Si lo activás, ese valor se usa para valuar tu reserva en la moneda de inversión. Arriba ves siempre qué cotización estás usando.
+- **Borrar un movimiento ahora es con mantener apretado**: dejá el dedo sobre el movimiento (en Movimientos o en Inicio) y se abre directo la confirmación para eliminar. Sacamos el tachito de la edición. (El sueldo que abre un período sigue sin poder borrarse.)
+
+### Mejoras
+- Tu **cotización es siempre la oficial**; el blue solo lo elegís al cargar una compra/gasto en dólares o euros.
+- La sección **Inversión** ahora muestra el nombre en grande y la(s) moneda(s) arriba en chiquito.
+- **Reportes** ya no se configura por partes: se ve todo siempre. Queda solo el encendido/apagado en Generales.
+- Al entrar a **Configuración**, la sección **Cuenta** aparece abierta.
+- **Editar movimiento** más prolijo: arriba Tipo · Categoría · Fecha, y abajo Monto + Descripción en una fila. Observaciones ya no dice "(opcional)".
+- En el **changelog**, el "+" pasó a ser un **"ver más"** al pie.
+
+---
+
 ## [2.7.0] — 2026-06-14
 
 ### Novedades

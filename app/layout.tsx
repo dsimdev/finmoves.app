@@ -1,6 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
 import { themeInitScript } from "@/lib/theme-init";
@@ -49,8 +47,6 @@ export default function RootLayout({
         {children}
         <ServiceWorkerRegister />
         <FirebaseAnalytics />
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

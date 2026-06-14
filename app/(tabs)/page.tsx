@@ -12,6 +12,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useAppBadge } from "@/hooks/useAppBadge";
+import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 
 function TipoColor(m: Movimiento) {
@@ -31,7 +32,8 @@ export default function Dashboard() {
   const t = useT();
 
   // Modal de alta/edición abierto desde el propio inicio (sin navegar).
-  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento } | null>(null);
+  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
+  const bindLongPress = useLongPress();
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const ultimoCargado = useMemo(() => {
@@ -151,7 +153,9 @@ export default function Dashboard() {
             {ultimos.length === 0 ? (
               <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noMovements}</div>
             ) : ultimos.map((m) => (
-              <button key={m.id} onClick={() => setModalState({ mode: "edit", mov: m })} className="row" style={{ width: "100%", padding: "11px 0", background: "none", border: "none", textAlign: "left", color: "inherit", cursor: "pointer" }}>
+              <button key={m.id}
+                {...bindLongPress(() => setModalState({ mode: "edit", mov: m, view: "delete" }), () => setModalState({ mode: "edit", mov: m }))}
+                className="row" style={{ width: "100%", padding: "11px 0", background: "none", border: "none", textAlign: "left", color: "inherit", cursor: "pointer", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {m.descripcion || m.categoria}
@@ -183,6 +187,7 @@ export default function Dashboard() {
         movimientos={movimientos}
         config={config}
         activePeriodoId={p?.periodoId}
+        initialView={modalState?.view}
         onClose={() => setModalState(null)}
         onChanged={refresh}
       />

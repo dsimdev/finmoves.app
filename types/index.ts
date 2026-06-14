@@ -83,6 +83,9 @@ export interface ConfigUsuario {
     metaMoneda?: "USD"; // siempre USD
     metaMonto?: number;
     metaPorPeriodo?: number;
+    /** Cotización manual (oficial de la moneda de inversión activa). Si activa, reemplaza a bluelytics en la valuación. */
+    cotizacionManual?: number;
+    cotizacionManualActiva?: boolean;
     ahorrosAcumSeedPeriodoId?: string;
     monedaPrincipal?: "ARS" | "USD" | "EUR";
     autoAhorro?: { activo: boolean; monto: number; mediosPago?: string[]; omitirDescripciones?: string[] };

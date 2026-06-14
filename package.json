@@ -1,6 +1,6 @@
 {
   "name": "moves-project",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,8 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^2.0.0",
     "firebase": "^12.14.0",
     "firebase-admin": "^13.10.0",
     "google-auth-library": "^10.7.0",
