@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.8.1] — 2026-06-14
+
+### Arreglos
+- **Se mezclaban preferencias entre cuentas en el mismo dispositivo**: la moneda de inversión y los toggles de secciones (Inversión/Reportes) quedaban guardados solo en el dispositivo y se filtraban de un usuario a otro. Ahora cada cuenta guarda lo suyo en su perfil, se carga al iniciar sesión y se limpia al cerrar sesión.
+
+---
+
 ## [2.8.0] — 2026-06-14
 
 ### Novedades

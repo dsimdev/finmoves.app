@@ -70,7 +70,7 @@ export default function OnboardingPage() {
     try {
       await setDoc(doc(db, `users/${user.uid}/config/meta`), {
         ...config,
-        meta: { ...config.meta, monedaPrincipal: moneda, onboardingCompleto: true },
+        meta: { ...config.meta, monedaPrincipal: moneda, showAhorros: !!invierte, onboardingCompleto: true },
       });
       router.replace("/");
     } catch {

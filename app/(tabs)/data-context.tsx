@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useConfig } from "@/hooks/useConfig";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
 interface DataCtx {
@@ -26,6 +27,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { movimientos, loading, refresh } = useAllMovimientos(user?.uid);
   const { config, loading: configLoading, refresh: refreshConfig } = useConfig(user?.uid);
+  const hydratePrefs = useAppPrefs((s) => s.hydrate);
+
+  // Prefs por-usuario: la config (Firestore) es la fuente de verdad. Al cargarla,
+  // hidratamos el store local para no arrastrar prefs de otro usuario del dispositivo.
+  useEffect(() => {
+    if (!config) return;
+    hydratePrefs({
+      monedaPrincipal: config.meta.monedaPrincipal,
+      monedaInversiones: config.meta.monedaInversiones,
+      showAhorros: config.meta.showAhorros,
+      showReportes: config.meta.showReportes,
+    });
+  }, [config, hydratePrefs]);
 
   // Usuario nuevo sin onboarding completado → al wizard.
   useEffect(() => {

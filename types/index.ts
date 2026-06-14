@@ -88,6 +88,10 @@ export interface ConfigUsuario {
     cotizacionManualActiva?: boolean;
     ahorrosAcumSeedPeriodoId?: string;
     monedaPrincipal?: "ARS" | "USD" | "EUR";
+    /** Prefs de UI persistidas por-usuario (fuente de verdad; el store local es solo caché). */
+    monedaInversiones?: "USD" | "EUR";
+    showAhorros?: boolean;
+    showReportes?: boolean;
     autoAhorro?: { activo: boolean; monto: number; mediosPago?: string[]; omitirDescripciones?: string[] };
     onboardingCompleto?: boolean;
     nombre?: string;

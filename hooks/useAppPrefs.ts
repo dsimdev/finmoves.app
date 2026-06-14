@@ -13,20 +13,35 @@ interface AppPrefs {
   setMoneda: (m: "USD" | "EUR") => void;
   setMonedaPrincipal: (m: "ARS" | "USD" | "EUR") => void;
   setLang: (l: "es" | "en") => void;
+  /** Hidrata desde la config del usuario (Firestore = fuente de verdad). Solo pisa lo definido. */
+  hydrate: (p: Partial<Pick<AppPrefs, "showReportes" | "showAhorros" | "monedaInversiones" | "monedaPrincipal">>) => void;
+  /** Resetea a defaults (al cerrar sesión, para no filtrar prefs entre usuarios del dispositivo). */
+  reset: () => void;
 }
+
+const DEFAULTS = {
+  showReportes: false,
+  showAhorros: false,
+  monedaInversiones: "USD" as const,
+  monedaPrincipal: "ARS" as const,
+};
 
 export const useAppPrefs = create<AppPrefs>()(
   persist(
     (set) => ({
-      showReportes: false,
-      showAhorros: false,
-      monedaInversiones: "USD",
-      monedaPrincipal: "ARS",
+      ...DEFAULTS,
       lang: "es",
       set: (key, value) => set({ [key]: value }),
       setMoneda: (m) => set({ monedaInversiones: m }),
       setMonedaPrincipal: (m) => set({ monedaPrincipal: m }),
       setLang: (l) => set({ lang: l }),
+      hydrate: (p) => set((s) => ({
+        showReportes: p.showReportes ?? s.showReportes,
+        showAhorros: p.showAhorros ?? s.showAhorros,
+        monedaInversiones: p.monedaInversiones ?? s.monedaInversiones,
+        monedaPrincipal: p.monedaPrincipal ?? s.monedaPrincipal,
+      })),
+      reset: () => set({ ...DEFAULTS }),
     }),
     { name: "finmoves_app_prefs" }
   )

@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.8.1] — 2026-06-14
+
+### Fixed
+- **UI prefs leaking between users on the same device**: `monedaInversiones`, `showAhorros` and `showReportes` were stored only in `localStorage` (device-global) and never cleared on logout, so a different account's currency/section choices bled into yours. They are now persisted **per-user in `config.meta`** (Firestore is the source of truth), **hydrated from config on load** (in `DataProvider`), and the prefs store is **reset on every sign-out** (manual logout, password change, 8h inactivity, biometric "use password"). Settings/onboarding toggles now write these prefs to config.
+
+---
+
 ## [2.8.0] — 2026-06-14
 
 ### Added

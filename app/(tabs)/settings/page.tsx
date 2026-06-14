@@ -221,7 +221,7 @@ export default function ConfigPage() {
         // Cambió la contraseña: cerramos sesión para que entre con la nueva.
         setProfileMsg({ ok: true, text: t.passwordChangedRelogin });
         setPassInput(""); setCurrentPassInput("");
-        setTimeout(async () => { await signOut(auth); router.push("/login"); }, 1400);
+        setTimeout(async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }, 1400);
         return;
       }
       setProfileMsg({ ok: true, text: t.profileSaved });
@@ -974,7 +974,11 @@ export default function ConfigPage() {
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showReportsLabel}</div>
                 </div>
               </div>
-              <Toggle activo={showReportes} onClick={() => setPref("showReportes", !showReportes)} />
+              <Toggle activo={showReportes} onClick={() => {
+                const next = !showReportes;
+                setPref("showReportes", next);
+                if (config) saveConfig({ ...config, meta: { ...config.meta, showReportes: next } });
+              }} />
             </div>
 
             {/* Inversión */}
@@ -996,7 +1000,11 @@ export default function ConfigPage() {
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showInvestmentsLabel}</div>
                 </div>
               </div>
-              <Toggle activo={showAhorros} onClick={() => setPref("showAhorros", !showAhorros)} />
+              <Toggle activo={showAhorros} onClick={() => {
+                const next = !showAhorros;
+                setPref("showAhorros", next);
+                if (config) saveConfig({ ...config, meta: { ...config.meta, showAhorros: next } });
+              }} />
             </div>
 
             {/* Moneda de inversión */}
@@ -1023,7 +1031,10 @@ export default function ConfigPage() {
                     ) : (
                       <div style={{ display: "flex", gap: 6 }}>
                         {(["USD", "EUR"] as const).map((m) => (
-                          <button key={m} onClick={() => setMoneda(m)} className="pill" style={{
+                          <button key={m} onClick={() => {
+                            setMoneda(m);
+                            if (config) saveConfig({ ...config, meta: { ...config.meta, monedaInversiones: m } });
+                          }} className="pill" style={{
                             borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)",
                             background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent",
                             color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)",
@@ -1655,7 +1666,7 @@ export default function ConfigPage() {
             <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.signOutBody}</div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setConfirmLogout(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
-              <button onClick={async () => { await signOut(auth); router.push("/login"); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--red)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.signOut}</button>
+              <button onClick={async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--red)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.signOut}</button>
             </div>
           </div>
         </div>,

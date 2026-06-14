@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebase/firebase";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 
 const TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 horas
 const STORAGE_KEY = "finmoves_last_activity";
@@ -19,6 +20,7 @@ export function useInactivityLogout(enabled: boolean) {
 
     const logout = () => {
       localStorage.removeItem(STORAGE_KEY);
+      useAppPrefs.getState().reset();
       signOut(auth);
     };
 

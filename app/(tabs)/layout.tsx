@@ -11,6 +11,7 @@ import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { UpdateBanner } from "@/components/pwa/UpdateBanner";
 import { LockScreen } from "@/components/pwa/LockScreen";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { isBiometricEnabledFor } from "@/lib/biometric";
 import { DataProvider } from "./data-context";
 
@@ -44,7 +45,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
     return (
       <LockScreen
         onUnlock={() => setLockState("unlocked")}
-        onUsePassword={async () => { await signOut(auth); }}
+        onUsePassword={async () => { useAppPrefs.getState().reset(); await signOut(auth); }}
       />
     );
   }
