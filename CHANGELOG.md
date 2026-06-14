@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.4.0] — 2026-06-14
+
+### Added
+- **Bidirectional Move**: the Move form now has a direction toggle — **To Available** (classic: Savings → Available) and **To Savings** (new: Available → Savings). Both net into the same `moveTotal` (signed) and the same accumulated-savings pool, with opposite signs: "To Savings" lowers the period's available and raises accumulated savings. New `direccionMove` field; legacy Moves default to "To Available". Shown with a "−" sign where it leaves the available balance.
+
+---
+
 ## [2.3.2] — 2026-06-13
 
 ### Changed (cron / notifications)

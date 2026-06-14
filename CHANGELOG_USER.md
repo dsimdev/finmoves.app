@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.4.0] — 2026-06-14
+
+### Novedades
+- **Move en dos direcciones**: además de pasar plata de Ahorros a Disponible, ahora podés hacer el inverso (**Disponible → Ahorros**) para guardar. Elegís la dirección al cargar el Move; baja tu disponible y suma a tus ahorros.
+
+---
+
 ## [2.3.2] — 2026-06-13
 
 ### Mejoras
