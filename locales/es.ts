@@ -85,6 +85,7 @@ export const es = {
   toSavings: "a ahorros",
   editMovement: "Editar movimiento",
   deleteMovementTitle: "¿Eliminar este movimiento?",
+  actionIrreversible: "Esta acción no se puede deshacer.",
   yesDelete: "Sí, eliminar",
   errNotAuth: "No autenticado",
   errSelectCat: "Seleccioná una categoría",

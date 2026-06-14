@@ -185,6 +185,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   );
 
   const isLocked = movimiento ? movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" : false;
+  // Un sueldo que ABRE período (su fecha define el periodoId) es el ancla → no se
+  // puede borrar. Un sueldo "sumado" al período en curso sí es borrable.
+  const esAperturaPeriodo = isLocked && !!movimiento && fechaAPeriodoId(movimiento.fecha) === movimiento.periodoId;
   const isDirtyEdit = !!movimiento && (
     eMonto !== String(movimiento.monto) ||
     eDesc !== (movimiento.descripcion ?? "") ||
@@ -548,7 +551,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
                 : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             </button>
-            {!isLocked && (
+            {!esAperturaPeriodo && (
               <button onClick={() => setView("delete")} aria-label={t.delete} style={{ position: "absolute", right: 0, background: "none", border: "none", color: "var(--red)", cursor: "pointer", padding: 8 }}>
                 <TrashIcon />
               </button>
@@ -562,9 +565,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         <div style={{ textAlign: "center", paddingTop: 8 }}>
           <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>{t.deleteMovementTitle}</div>
           <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>{movimiento.descripcion || movimiento.categoria}</div>
-          <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 28 }}>
+          <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 10 }}>
             {money(movimiento.monto)}
           </div>
+          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 24 }}>{t.actionIrreversible}</div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setView("form")} className="btn btn-ghost" style={{ flex: 1 }}>{t.cancel}</button>
             <button onClick={handleDelete} disabled={editLoading} className="btn btn-danger" style={{ flex: 1 }}>

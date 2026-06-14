@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.1.3] — 2026-06-13
+
+### Mejoras
+- Un sueldo que **suma** al período en curso ahora se puede **eliminar**; el sueldo que **abre** el período no (es el que lo sostiene).
+- Al eliminar, te avisamos que **la acción no se puede deshacer**.
+
+---
+
 ## [2.1.2] — 2026-06-13
 
 ### Mejoras

@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.1.3] — 2026-06-13
+
+### Changed
+- **Salary deletion rule**: a salary that **opens a period** (its date defines the `periodoId`) is the anchor and **cannot be deleted**; a salary **added to the current period** is now deletable. Detected via `fechaAPeriodoId(fecha) === periodoId`.
+- Delete confirmation now shows an **"can't be undone"** warning (irreversible-action notice).
+
+### Fixed
+- Reverted EN dashboard title back to "Dashboard" (the "Resumen" rename is Spanish-only).
+
+---
+
 ## [2.1.2] — 2026-06-13
 
 ### Changed
