@@ -27,6 +27,9 @@ export interface Movimiento {
   cantidadUSD?: number;
   cotizacion?: number;
   origenAhorro?: string;
+  // Dirección del Move. Ausente o "aDisponible" = clásico (Ahorros → Disponible);
+  // "aAhorro" = inverso (Disponible → Ahorros). Netea contra el mismo moveTotal.
+  direccionMove?: "aDisponible" | "aAhorro";
 }
 
 export interface ReservaUSD {

@@ -169,7 +169,7 @@ export default function MovimientosPage() {
                             </div>
                           </div>
                           <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : isMove ? "var(--yellow)" : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
-                            {isGasto ? "-" : "+"}{money(m.monto)}
+                            {isGasto || (isMove && m.direccionMove === "aAhorro") ? "-" : "+"}{money(m.monto)}
                           </span>
                         </button>
                       );

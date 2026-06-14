@@ -20,6 +20,8 @@ function TipoColor(m: Movimiento) {
   return "var(--green)";
 }
 function TipoPrefix(m: Movimiento) {
+  // Move "a ahorros" sale del disponible → signo negativo.
+  if (m.tipo === "Move" && m.direccionMove === "aAhorro") return "-";
   return m.tipo === "Gasto" || m.tipo === "CompraUSD" ? "-" : "+";
 }
 

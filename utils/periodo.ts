@@ -52,7 +52,9 @@ export function agruparPorPeriodo(movimientos: Movimiento[]): PeriodoResumen[] {
           extras += m.monto;
         }
       } else if (m.tipo === "Move") {
-        moveTotal += m.monto; // se suma a extras: es ingreso disponible del período
+        // moveTotal con signo: "aDisponible" suma (ingreso del período, sale de
+        // ahorros); "aAhorro" resta (sale del disponible, va a ahorros). Netean.
+        moveTotal += m.direccionMove === "aAhorro" ? -m.monto : m.monto;
       }
     }
 

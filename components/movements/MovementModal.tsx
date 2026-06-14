@@ -101,6 +101,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [modoCarga, setModoCarga] = useState<"USD" | "ARS">("USD");
   const [cotizManual, setCotizManual] = useState("");
   const [abreNuevoPeriodo, setAbreNuevoPeriodo] = useState(false);
+  const [moveDir, setMoveDir] = useState<"aDisponible" | "aAhorro">("aDisponible");
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -114,7 +115,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const resetAdd = () => {
     setDescripcion(""); setMonto(""); setCategoria(""); setOrigenAhorro("");
     setCantidadUSD(""); setCotizManual(""); setObservaciones(""); setAddError("");
-    setMontoARSInput(""); setModoCarga("USD"); setFecha(hoyISO()); setAbreNuevoPeriodo(false);
+    setMontoARSInput(""); setModoCarga("USD"); setFecha(hoyISO()); setAbreNuevoPeriodo(false); setMoveDir("aDisponible");
   };
 
   // Inicializar al abrir según el modo.
@@ -210,10 +211,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       await crearMovimiento(user.uid, {
         timestampCarga: new Date(), fecha, tipo,
         categoria: esMove ? "Move" : esCompraFX ? tipo : esGastoFX ? tipo : categoria,
-        descripcion: esMove ? "Move a disponible" : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
+        descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
         monto: montoFinal,
         medioPago: esMove || esCompraFX ? "Mercado Pago" : esGastoFX ? "—" : medioPago,
         observaciones, periodoId: periodoIdFinal, userId: user.uid,
+        ...(esMove ? { direccionMove: moveDir } : {}),
         ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
         ...(esCompraFX ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
         ...(esGastoFX ? { cantidadUSD: usdFinal } : {}),
@@ -294,9 +296,25 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           </div>
 
           {esMove && (
-            <div style={{ background: "var(--yellow-dim)", border: "1px solid var(--yellow)44", borderRadius: "var(--radius-sm)", padding: 12, marginBottom: 16, fontSize: 12, color: "var(--yellow)" }}>
-              {t.moveFromSavings}
-              {periodoActual && <div style={{ color: "var(--muted)", marginTop: 4 }}>{t.savingsBalance(money(ahorrosAcumActivo))}</div>}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                {([["aDisponible", t.moveDirToDisponible], ["aAhorro", t.moveDirToAhorro]] as const).map(([d, label]) => (
+                  <button key={d} type="button" onClick={() => setMoveDir(d)} className="pill" style={{
+                    flex: 1,
+                    borderColor: moveDir === d ? "var(--yellow)" : "var(--border)",
+                    background: moveDir === d ? "var(--yellow-dim)" : "transparent",
+                    color: moveDir === d ? "var(--yellow)" : "var(--muted)",
+                  }}>{label}</button>
+                ))}
+              </div>
+              <div style={{ background: "var(--yellow-dim)", border: "1px solid var(--yellow)44", borderRadius: "var(--radius-sm)", padding: 12, fontSize: 12, color: "var(--yellow)" }}>
+                {moveDir === "aAhorro" ? t.moveToSavings : t.moveFromSavings}
+                {periodoActual && (
+                  <div style={{ color: "var(--muted)", marginTop: 4 }}>
+                    {moveDir === "aAhorro" ? t.availableBalance(money(periodoActual.disponible)) : t.savingsBalance(money(ahorrosAcumActivo))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
