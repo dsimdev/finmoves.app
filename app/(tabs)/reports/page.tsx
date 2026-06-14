@@ -280,7 +280,7 @@ export default function ReportesPage() {
   // Reserva real en FX — suma cantidadUSD de CompraUSD/GastoUSD (igual que página Inversión)
   const tipoCompraFX = monedaInversiones === "EUR" ? "CompraEUR" : "CompraUSD";
   const tipoGastoFX  = monedaInversiones === "EUR" ? "GastoEUR"  : "GastoUSD";
-  const SALDO_INICIAL = monedaInversiones === "EUR" ? 0 : (config?.meta.saldoUSD ?? 0);
+  const SALDO_INICIAL = monedaInversiones === "EUR" ? (config?.meta.saldoEUR ?? 0) : (config?.meta.saldoUSD ?? 0);
   const reservaFX = useMemo(() => {
     let total = SALDO_INICIAL;
     for (const m of movimientos) {

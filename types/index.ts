@@ -72,6 +72,7 @@ export interface ConfigUsuario {
     usdMensual: number;
     tipoCambioRef: TipoCambioRef;
     saldoUSD?: number;
+    saldoEUR?: number;
     metaFecha?: string; // YYYY-MM-DD
     metaMoneda?: "USD"; // siempre USD
     metaMonto?: number;

@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.1.4] — 2026-06-13
+
+### Correcciones
+- La **cotización del euro** ahora carga bien también para usuarios nuevos (antes podía aparecer vacía).
+- Si tu inversión es en **euros**, la **reserva inicial** ahora se carga y se muestra en EUR (antes quedaba fija en USD y se ignoraba).
+
+---
+
 ## [2.1.3] — 2026-06-13
 
 ### Mejoras

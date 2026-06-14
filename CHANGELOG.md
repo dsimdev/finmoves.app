@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.1.4] — 2026-06-13
+
+### Fixed
+- **Euro rate for new users**: exchange rate now comes from a server-cached `/api/cotizacion` route (shared across users + survives cold starts) with a `localStorage` fallback, and keeps the last good euro value if the upstream omits it. Fixes empty/wrong euro for fresh sessions.
+- **Initial reserve follows the investment currency**: new `saldoEUR` config field. In EUR mode the "Initial reserve" field reads/writes/labels as EUR (was always USD, so an EUR user's seed was ignored). USD data untouched. Applied across Investments, Reports and savings-goal notifications.
+
+---
+
 ## [2.1.3] — 2026-06-13
 
 ### Changed

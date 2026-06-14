@@ -401,16 +401,18 @@ export default function ConfigPage() {
   }, [movimientos]);
 
   const totalEUR = useMemo(() => {
-    let total = 0;
+    let total = config?.meta.saldoEUR ?? 0;
     for (const m of movimientos) {
       if (m.tipo === "CompraEUR" && m.cantidadUSD) total += m.cantidadUSD;
       else if (m.tipo === "GastoEUR" && m.cantidadUSD) total -= m.cantidadUSD;
     }
     return total;
-  }, [movimientos]);
+  }, [movimientos, config?.meta.saldoEUR]);
 
   const totalReserva = monedaInversiones === "EUR" ? totalEUR : totalUSD;
   const simboloReserva = monedaInversiones === "EUR" ? "€" : "U$D";
+  // Seed inicial según la moneda de inversión activa (saldoUSD / saldoEUR).
+  const seedGuardado = (monedaInversiones === "EUR" ? config?.meta.saldoEUR : config?.meta.saldoUSD)?.toString() ?? "";
 
   const sugeridoPorPeriodo = useMemo(() => {
     if (!metaFecha || !metaMonto || periodos.length < 2) return null;
@@ -439,7 +441,7 @@ export default function ConfigPage() {
       if (d && m && y) savedIso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       else savedIso = "";
     }
-    return metaFecha !== savedIso || metaMonto !== (config.meta.metaMonto?.toString() ?? "") || metaSaldo !== (config.meta.saldoUSD?.toString() ?? "");
+    return metaFecha !== savedIso || metaMonto !== (config.meta.metaMonto?.toString() ?? "") || metaSaldo !== seedGuardado;
   }, [metaFecha, metaMonto, metaSaldo, config]);
 
   // ── Effects ──
@@ -468,7 +470,7 @@ export default function ConfigPage() {
       }
       setMetaFecha(iso);
       setMetaMonto(config.meta.metaMonto?.toString() ?? "");
-      setMetaSaldo(config.meta.saldoUSD?.toString() ?? "");
+      setMetaSaldo((monedaInversiones === "EUR" ? config.meta.saldoEUR : config.meta.saldoUSD)?.toString() ?? "");
     }
   }, [config?.meta.metaFecha, config?.meta.metaMonto]);
 
@@ -721,8 +723,13 @@ export default function ConfigPage() {
     else delete newMeta.metaMonto;
     if (sugeridoPorPeriodo != null) newMeta.metaPorPeriodo = sugeridoPorPeriodo;
     else delete newMeta.metaPorPeriodo;
-    if (metaSaldo && parseFloat(metaSaldo) > 0) newMeta.saldoUSD = parseFloat(metaSaldo);
-    else delete newMeta.saldoUSD;
+    if (metaSaldo && parseFloat(metaSaldo) > 0) {
+      if (monedaInversiones === "EUR") newMeta.saldoEUR = parseFloat(metaSaldo);
+      else newMeta.saldoUSD = parseFloat(metaSaldo);
+    } else {
+      if (monedaInversiones === "EUR") delete newMeta.saldoEUR;
+      else delete newMeta.saldoUSD;
+    }
     newMeta.metaMoneda = "USD";
     await saveConfig({ ...config, meta: newMeta });
   };
@@ -1219,7 +1226,7 @@ export default function ConfigPage() {
               {t.currentReserve(simboloReserva, totalReserva.toFixed(2))}
             </div>
             <div style={{ marginBottom: 12 }}>
-              <div className="label" style={{ marginBottom: 6 }}>{t.initialReserve}</div>
+              <div className="label" style={{ marginBottom: 6 }}>{t.initialReserve(monedaInversiones === "EUR" ? "EUR" : "USD")}</div>
               <input type="number" value={metaSaldo} placeholder="0"
                 onChange={(e) => setMetaSaldo(e.target.value)} className="input" style={{ width: "100%" }} />
             </div>

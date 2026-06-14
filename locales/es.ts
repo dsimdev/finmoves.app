@@ -250,7 +250,7 @@ export const es = {
   incomeType: "Ingreso",
   savingsGoalSettings: "Meta de ahorro",
   currentReserve: (s: string, v: string) => `Reserva actual: ${s} ${v}`,
-  initialReserve: "Reserva inicial (USD)",
+  initialReserve: (cur: string) => `Reserva inicial (${cur})`,
   targetDate: "Fecha objetivo",
   targetAmount: (m: string) => `Objetivo (${m})`,
   estimatedPerPeriod: "Por período estimado",

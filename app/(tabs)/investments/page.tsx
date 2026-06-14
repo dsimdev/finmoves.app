@@ -84,10 +84,11 @@ export default function DolaresPage() {
     .filter((m) => m.tipo === "CompraEUR" || m.tipo === "GastoEUR")
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
   const historialEUR = comprasEUR.filter(m => m.tipo === "CompraEUR");
-  const { total: totalEUR, costoPromedio: costoPromedioEUR } = calcularReserva(comprasEUR, "EUR");
+  const { total: desdeMovimientosEUR, costoPromedio: costoPromedioEUR } = calcularReserva(comprasEUR, "EUR");
+  const totalEUR = (config?.meta.saldoEUR ?? 0) + desdeMovimientosEUR;
   const reservaEURenARS = cotizacionEUR ? totalEUR * cotizacionEUR : null;
-  const gananciaEUR = reservaEURenARS && costoPromedioEUR > 0 ? reservaEURenARS - totalEUR * costoPromedioEUR : null;
-  const gananciaPctEUR = gananciaEUR && totalEUR * costoPromedioEUR > 0 ? (gananciaEUR / (totalEUR * costoPromedioEUR)) * 100 : null;
+  const gananciaEUR = reservaEURenARS && costoPromedioEUR > 0 ? reservaEURenARS - desdeMovimientosEUR * costoPromedioEUR : null;
+  const gananciaPctEUR = gananciaEUR && desdeMovimientosEUR * costoPromedioEUR > 0 ? (gananciaEUR / (desdeMovimientosEUR * costoPromedioEUR)) * 100 : null;
 
   // ── Visibilidad de secciones ──
   const showUSD = historialUSD.length > 0 || !esEUR;

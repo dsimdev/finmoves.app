@@ -79,7 +79,7 @@ async function checkMeta(uid: string, movs: Movimiento[], config: ConfigUsuario,
   const moneda: "USD" | "EUR" = principal === "EUR" ? "USD" : principal === "USD" ? "EUR" : "USD";
   const compra = moneda === "USD" ? "CompraUSD" : "CompraEUR";
   const gasto = moneda === "USD" ? "GastoUSD" : "GastoEUR";
-  let total = moneda === "USD" ? (config.meta?.saldoUSD ?? 0) : 0;
+  let total = moneda === "USD" ? (config.meta?.saldoUSD ?? 0) : (config.meta?.saldoEUR ?? 0);
   for (const m of movs) {
     if (m.tipo === compra && m.cantidadUSD) total += m.cantidadUSD;
     else if (m.tipo === gasto && m.cantidadUSD) total -= m.cantidadUSD;

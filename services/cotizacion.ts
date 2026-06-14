@@ -1,30 +1,51 @@
 import { Cotizacion } from "@/types";
 
-const API_URL = "https://api.bluelytics.com.ar/v2/latest";
 const CACHE_TTL = 1000 * 60 * 30;
+const LS_KEY = "finmoves.cotizacion";
 
 let cache: { data: Cotizacion; ts: number } | null = null;
+
+function readLS(): Cotizacion | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Cotizacion;
+    return { ...d, timestamp: new Date(d.timestamp) };
+  } catch { return null; }
+}
+
+function writeLS(data: Cotizacion) {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+}
 
 export async function getCotizacion(): Promise<Cotizacion | null> {
   if (cache && Date.now() - cache.ts < CACHE_TTL) {
     return { ...cache.data, fuente: "cache" };
   }
 
+  // Último valor conocido (memoria → localStorage), para fallback y para
+  // conservar el euro si el upstream no lo trae en esta consulta.
+  const prev = cache?.data ?? readLS();
   try {
-    const res = await fetch(API_URL);
-    const json = await res.json();
+    const res = await fetch("/api/cotizacion");
+    if (!res.ok) throw new Error("fetch");
+    const j = await res.json();
+    if (j.error || j.blue == null) throw new Error("empty");
     const data: Cotizacion = {
-      blue: json.blue.value_sell,
-      oficial: json.oficial.value_sell,
-      blue_euro: json.blue_euro?.value_sell,
-      oficial_euro: json.oficial_euro?.value_sell,
+      blue: j.blue,
+      oficial: j.oficial,
+      blue_euro: j.blue_euro ?? prev?.blue_euro,
+      oficial_euro: j.oficial_euro ?? prev?.oficial_euro,
       fuente: "api",
       timestamp: new Date(),
     };
     cache = { data, ts: Date.now() };
+    writeLS(data);
     return data;
   } catch {
-    if (cache) return { ...cache.data, fuente: "cache" };
+    if (prev) return { ...prev, fuente: "cache" };
     return null;
   }
 }

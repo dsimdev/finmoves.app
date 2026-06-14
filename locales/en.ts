@@ -252,7 +252,7 @@ export const en: AppLocale = {
   incomeType: "Income",
   savingsGoalSettings: "Savings goal",
   currentReserve: (s: string, v: string) => `Current reserve: ${s} ${v}`,
-  initialReserve: "Initial reserve (USD)",
+  initialReserve: (cur: string) => `Initial reserve (${cur})`,
   targetDate: "Target date",
   targetAmount: (m: string) => `Target (${m})`,
   estimatedPerPeriod: "Estimated per period",
