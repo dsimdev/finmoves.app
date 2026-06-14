@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.3.0] — 2026-06-13
+
+### Changed (onboarding)
+- Refreshed the onboarding wizard: updated the "how it works" step for the new salary flow (add to current / new period, leftover → Savings), added a **"Movement types"** step (Expense / Salary / Move / USD-EUR) and expanded the savings/reserve explanation.
+- New **"Security & alerts"** step lets users enable **fingerprint unlock** and **notifications** right from onboarding (with availability checks), instead of only later in Settings.
+
+---
+
 ## [2.2.0] — 2026-06-13
 
 ### Added

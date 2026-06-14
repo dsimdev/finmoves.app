@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.3.0] — 2026-06-13
+
+### Mejoras
+- **Guía de inicio renovada**: ahora explica los **tipos de movimiento** y cómo funcionan los **ahorros y la reserva**, con el flujo de sueldo actualizado (sumar al período o abrir uno nuevo).
+- Desde la guía ya podés **activar el desbloqueo con huella y las notificaciones**, sin tener que ir a Configuración.
+
+---
+
 ## [2.2.0] — 2026-06-13
 
 ### Novedades

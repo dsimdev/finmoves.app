@@ -10,8 +10,12 @@ import { useConfig } from "@/hooks/useConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useT } from "@/hooks/useTranslation";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { platformAuthenticatorAvailable, isBiometricEnabledFor, registerBiometric, clearBiometric } from "@/lib/biometric";
+import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/push-client";
 
 type Moneda = "ARS" | "USD" | "EUR";
+
+const INVEST_STEP = 4; // índice del paso de inversión (requiere elegir sí/no)
 
 export default function OnboardingPage() {
   const t = useT();
@@ -24,12 +28,28 @@ export default function OnboardingPage() {
   const [moneda, setMoneda] = useState<Moneda>("ARS");
   const [invierte, setInvierte] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Seguridad y avisos (se activan en el momento, no en finish).
+  const [bioAvail, setBioAvail] = useState(false);
+  const [pushAvail, setPushAvail] = useState(false);
+  const [bioOn, setBioOn] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
   // Modo "ver de nuevo": no redirige aunque el onboarding ya esté completo.
   const replay = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("replay");
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
+
+  useEffect(() => {
+    platformAuthenticatorAvailable().then(setBioAvail);
+    setPushAvail(pushSupported());
+    setBioOn(isBiometricEnabledFor(user?.uid));
+    isPushEnabled().then(setPushOn);
+  }, [user?.uid]);
 
   // Si ya completó el onboarding (y no es replay), fuera.
   useEffect(() => {
@@ -58,13 +78,49 @@ export default function OnboardingPage() {
     }
   };
 
+  const toggleBio = async () => {
+    if (!user || bioBusy) return;
+    setBioBusy(true);
+    try {
+      if (bioOn) { clearBiometric(); setBioOn(false); }
+      else { await registerBiometric(user.uid, user.email ?? ""); setBioOn(true); }
+    } catch { /* cancelado o no disponible */ }
+    finally { setBioBusy(false); }
+  };
+
+  const togglePush = async () => {
+    if (!user || pushBusy) return;
+    setPushBusy(true);
+    try {
+      if (pushOn) { await disablePush(user.uid); setPushOn(false); }
+      else { setPushOn(await enablePush(user.uid)); }
+    } catch { /* permiso denegado */ }
+    finally { setPushBusy(false); }
+  };
+
   const steps = [
     // 0 — Bienvenida
     <Screen key="w" icon={<Image src="/favicon.png" alt="" width={84} height={84} style={{ opacity: 0.95 }} priority />}
       title={t.obWelcomeTitle} body={t.obWelcomeBody} />,
     // 1 — Cómo funciona
     <Screen key="h" emoji="📅" title={t.obHowTitle} body={t.obHowBody} />,
-    // 2 — Moneda principal
+    // 2 — Tipos de movimiento
+    <Screen key="t" emoji="🔀" title={t.obTypesTitle} body={t.obTypesBody}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8, width: "100%", maxWidth: 340, textAlign: "left" }}>
+        {([
+          ["var(--red)", t.obTypeGasto],
+          ["var(--green)", t.obTypeIngreso],
+          ["var(--yellow)", t.obTypeMove],
+          ["var(--blue)", t.obTypeFx],
+        ] as const).map(([c, txt]) => (
+          <div key={txt} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "var(--text)" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0, marginTop: 6 }} />
+            <span>{txt}</span>
+          </div>
+        ))}
+      </div>
+    </Screen>,
+    // 3 — Moneda principal
     <Screen key="c" emoji="💱" title={t.obCurrencyTitle} body={t.obCurrencyBody}>
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8 }}>
         {(["ARS", "USD", "EUR"] as Moneda[]).map((m) => (
@@ -77,19 +133,30 @@ export default function OnboardingPage() {
         ))}
       </div>
     </Screen>,
-    // 3 — Inversión
+    // 4 — Inversión / ahorros
     <Screen key="i" emoji="📈" title={t.obInvestTitle} body={t.obInvestBody}>
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8 }}>
         <button onClick={() => setInvierte(true)} style={chipStyle(invierte === true, "var(--green)", "var(--green-dim)")}>{t.obInvestYes}</button>
         <button onClick={() => setInvierte(false)} style={chipStyle(invierte === false, "var(--muted)", "var(--surface-alt)")}>{t.obInvestNo}</button>
       </div>
     </Screen>,
-    // 4 — Listo
+    // 5 — Seguridad y avisos
+    <Screen key="s" emoji="🔔" title={t.obSecurityTitle} body={t.obSecurityBody}>
+      {(bioAvail || pushAvail) ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8, width: "100%", maxWidth: 340 }}>
+          {bioAvail && <OnbRow label={t.obEnableBiometric} on={bioOn} busy={bioBusy} onClick={toggleBio} />}
+          {pushAvail && <OnbRow label={t.obEnableNotifications} on={pushOn} busy={pushBusy} onClick={togglePush} />}
+        </div>
+      ) : (
+        <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>{t.obSecurityUnavailable}</div>
+      )}
+    </Screen>,
+    // 6 — Listo
     <Screen key="d" emoji="🎉" title={t.obDoneTitle} body={t.obDoneBody} />,
   ];
 
   const isLast = step === steps.length - 1;
-  const canNext = step !== 3 || invierte !== null; // en inversión hay que elegir
+  const canNext = step !== INVEST_STEP || invierte !== null; // en inversión hay que elegir
 
   return (
     <div style={{ position: "relative", minHeight: "100dvh", display: "flex", flexDirection: "column", padding: "32px 24px", overflow: "hidden" }}>
@@ -136,6 +203,21 @@ function chipStyle(active: boolean, color: string, dim: string): React.CSSProper
     background: active ? dim : "transparent",
     color: active ? color : "var(--muted)",
   };
+}
+
+function OnbRow({ label, on, busy, onClick }: { label: string; on: boolean; busy: boolean; onClick: () => void }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid var(--border)", borderRadius: 14, background: "var(--surface-alt)" }}>
+      <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
+      <button onClick={onClick} disabled={busy} aria-pressed={on} style={{
+        width: 46, height: 28, borderRadius: 999, border: "none", flexShrink: 0,
+        cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1,
+        background: on ? "var(--green)" : "var(--border)", position: "relative", transition: "background 0.15s",
+      }}>
+        <span style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
+      </button>
+    </div>
+  );
 }
 
 function Screen({ icon, emoji, title, body, children }: { icon?: React.ReactNode; emoji?: string; title: string; body: string; children?: React.ReactNode }) {
