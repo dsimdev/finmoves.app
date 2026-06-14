@@ -4,6 +4,15 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.6.2] — 2026-06-14
+
+### Changed (new-movement form)
+- **Receipt attach is now a single icon** at the right of the payment-method row (same grid), instead of a full dashed box. Shows a small thumbnail/📄 with remove when attached.
+- **Notes + submit share one row** (70% notes / 30% submit checkmark).
+- The auto-savings hint now only appears **once a description is entered** (and still hidden for skip-list descriptions).
+
+---
+
 ## [2.6.1] — 2026-06-14
 
 ### Changed (new-movement form)

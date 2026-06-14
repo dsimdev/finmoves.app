@@ -362,6 +362,29 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     );
   };
 
+  // Versión compacta (ícono) del comprobante para el alta — va al lado del medio de pago.
+  const comprobanteIcon = () => {
+    const accept = "image/*,application/pdf";
+    const box: React.CSSProperties = { width: 38, height: 38, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 };
+    const newIsPdf = comprobanteFile?.type === "application/pdf";
+    if (comprobantePreview) {
+      return (
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          {newIsPdf
+            ? <a href={comprobantePreview} target="_blank" rel="noreferrer" style={{ ...box, border: "1px solid var(--border)", background: "var(--surface-alt)", textDecoration: "none" }}>📄</a>
+            : <a href={comprobantePreview} target="_blank" rel="noreferrer"><img src={comprobantePreview} alt="" style={{ width: 38, height: 38, borderRadius: 8, objectFit: "cover", border: "1px solid var(--border)", display: "block" }} /></a>}
+          <button type="button" onClick={clearComprobante} aria-label={t.removeReceipt} style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "var(--red)", color: "#fff", border: "1.5px solid var(--bg)", cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+        </div>
+      );
+    }
+    return (
+      <label aria-label={t.attachReceipt} title={t.attachReceipt} style={{ ...box, border: "1px dashed var(--border)", color: "var(--muted)", cursor: "pointer" }}>
+        <input type="file" accept={accept} onChange={onComprobanteSelect} style={{ display: "none" }} />
+        📎
+      </label>
+    );
+  };
+
   return (
     <Sheet open={open} onClose={onClose} title={title}>
       {/* ADD */}
@@ -551,26 +574,25 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           {!esMove && !esUSD && (
             <div style={{ marginBottom: 14 }}>
               <div className="label">{t.paymentMethod}</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {config?.mediosPago.filter((m) => m.activo).map((m) => (
-                  <button key={m.nombre} type="button" onClick={() => setMedioPago(m.nombre)}
-                    className="pill" style={{
-                      borderColor: medioPago === m.nombre ? "var(--accent)" : "var(--border)",
-                      background: medioPago === m.nombre ? "var(--accent-dim)" : "transparent",
-                      color: medioPago === m.nombre ? "var(--accent)" : "var(--muted)",
-                    }}>{m.nombre}</button>
-                ))}
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
+                  {config?.mediosPago.filter((m) => m.activo).map((m) => (
+                    <button key={m.nombre} type="button" onClick={() => setMedioPago(m.nombre)}
+                      className="pill" style={{
+                        borderColor: medioPago === m.nombre ? "var(--accent)" : "var(--border)",
+                        background: medioPago === m.nombre ? "var(--accent-dim)" : "transparent",
+                        color: medioPago === m.nombre ? "var(--accent)" : "var(--muted)",
+                      }}>{m.nombre}</button>
+                  ))}
+                </div>
+                {canComprobante && comprobanteIcon()}
               </div>
             </div>
           )}
-          <div style={{ marginBottom: 20 }}>
-            <div className="label">{t.notesOptional}</div>
-            <input className="input" type="text" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
-          </div>
 
-          {comprobanteField()}
-
+          {/* Auto-ahorro: solo una vez cargada la descripción (y si no está en la lista a omitir). */}
           {tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
+           descripcion.trim().length > 0 &&
            (!config.meta.autoAhorro.mediosPago?.length || config.meta.autoAhorro.mediosPago.includes(medioPago)) &&
            !(config.meta.autoAhorro.omitirDescripciones ?? []).some((d) => d.toLowerCase() === descripcion.trim().toLowerCase()) && (
             <div style={{ background: "var(--blue-dim)", border: "1px solid var(--blue)33", borderRadius: "var(--radius-sm)", padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "var(--blue)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -586,21 +608,29 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               {addError}
             </div>
           )}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
-            <button type="submit" disabled={!canSubmit || addLoading} style={{
-              width: 56, height: 56, borderRadius: "50%",
-              background: canSubmit ? "var(--green)" : "transparent",
-              border: `2px solid ${canSubmit ? "var(--green)" : "var(--border)"}`,
-              color: canSubmit ? "var(--bg)" : "var(--border)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: canSubmit ? "pointer" : "default",
-              transition: "background 0.2s, border-color 0.2s, color 0.2s",
-              boxShadow: canSubmit ? "0 4px 20px var(--green)55" : "none",
-            }}>
-              {addLoading
-                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
-                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-            </button>
+
+          {/* Observaciones (70%) + enviar (30%) en la misma fila */}
+          <div style={{ display: "grid", gridTemplateColumns: "70% 30%", gap: 10, alignItems: "end", marginTop: 8 }}>
+            <div>
+              <div className="label">{t.notesOptional}</div>
+              <input className="input" type="text" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <button type="submit" disabled={!canSubmit || addLoading} aria-label={t.save} style={{
+                width: 52, height: 52, borderRadius: "50%",
+                background: canSubmit ? "var(--green)" : "transparent",
+                border: `2px solid ${canSubmit ? "var(--green)" : "var(--border)"}`,
+                color: canSubmit ? "var(--bg)" : "var(--border)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: canSubmit ? "pointer" : "default",
+                transition: "background 0.2s, border-color 0.2s, color 0.2s",
+                boxShadow: canSubmit ? "0 4px 20px var(--green)55" : "none",
+              }}>
+                {addLoading
+                  ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
+                  : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+              </button>
+            </div>
           </div>
         </form>
       )}

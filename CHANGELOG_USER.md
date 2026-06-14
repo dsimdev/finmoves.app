@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.6.2] — 2026-06-14
+
+### Mejoras
+- Pantalla de carga más compacta: el **comprobante** es un ícono al lado del medio de pago, y **observaciones** comparte fila con el botón de confirmar.
+
+---
+
 ## [2.6.1] — 2026-06-14
 
 ### Mejoras
