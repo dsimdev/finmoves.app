@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.2.0] — 2026-06-13
+
+### Novedades
+- **Aviso de novedades**: cada tanto (cada 5 versiones) te aparece un aviso con un botón **"Ver cambios"** que abre el detalle de las novedades. Así te enterás de lo nuevo sin que te moleste en cada actualización chica. También llega como notificación.
+
+---
+
 ## [2.1.4] — 2026-06-13
 
 ### Correcciones

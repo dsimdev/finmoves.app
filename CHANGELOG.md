@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.2.0] — 2026-06-13
+
+### Added
+- **Update notice every 5 versions**: a banner (logo + spinner, like the loading screen) appears once ≥5 releases have shipped since the user last saw it. "See changes" opens Settings with the changelog modal (`/settings?changelog=1`). Dismiss/open marks the current version as seen; the count accumulates across patches instead of nagging on every one.
+- The **new-version push** is aligned to the same 5-version cadence and deep-links to the changelog. Version distance is computed from `CHANGELOG_USER.md` (`lib/changelog-versions.ts`, shared client/server).
+
+---
+
 ## [2.1.4] — 2026-06-13
 
 ### Fixed

@@ -505,6 +505,16 @@ export default function ConfigPage() {
     setShowChangelog(true);
   };
 
+  // Abrir el changelog si llegamos con ?changelog=1 (desde el aviso de novedades).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("changelog") === "1") {
+      openChangelog();
+      window.history.replaceState(null, "", "/settings");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const exportCSV = () => {
     const header = ["Timestamp", t.csvDate, t.csvType, t.csvCategory, t.csvDescription, t.csvAmount, t.csvPaymentMethod, t.csvNotes, t.csvPeriod];
     const rows = [...movimientos]

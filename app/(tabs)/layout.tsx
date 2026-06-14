@@ -8,6 +8,7 @@ import { auth } from "@/services/firebase/firebase";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { UpdateBanner } from "@/components/pwa/UpdateBanner";
 import { LockScreen } from "@/components/pwa/LockScreen";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { isBiometricEnabledFor } from "@/lib/biometric";
@@ -53,6 +54,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       {children}
       <BottomNav />
       <OfflineBanner />
+      <UpdateBanner />
     </DataProvider>
   );
 }

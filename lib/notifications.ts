@@ -2,7 +2,10 @@ import { adminDb } from "./firebase-admin";
 import { sendPushToUser } from "./web-push";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
+import { parseChangelogVersions, releasesSince, UPDATE_BANNER_THRESHOLD } from "./changelog-versions";
 import { Timestamp } from "firebase-admin/firestore";
+import { readFileSync } from "fs";
+import { join } from "path";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
 const DOLAR_THRESHOLD_PCT = 3;
@@ -16,16 +19,25 @@ interface GlobalCtx {
   dolarOficial: number | null;
 }
 
+interface UserCtx extends GlobalCtx {
+  versions: string[]; // lista del changelog (nueva→vieja) para contar releases
+}
+
 // Recorre TODOS los usuarios con suscripción push y manda los avisos que
 // correspondan (versión nueva, cambio de dólar, meta de ahorro, recordatorio
 // de sueldo). Cada aviso deduplica vía config/notifyMeta → correr el cron más
 // seguido NO genera spam.
 export async function notifyAllUsers(ctx: GlobalCtx): Promise<void> {
+  let versions: string[] = [];
+  try {
+    versions = parseChangelogVersions(readFileSync(join(process.cwd(), "CHANGELOG_USER.md"), "utf-8"));
+  } catch { /* sin changelog → no avisamos versión (sin spam) */ }
+  const full: UserCtx = { ...ctx, versions };
   const userRefs = await adminDb().collection("users").listDocuments();
-  await Promise.all(userRefs.map((ref) => notifyUser(ref.id, ctx).catch((e) => console.error("[notify]", ref.id, e))));
+  await Promise.all(userRefs.map((ref) => notifyUser(ref.id, full).catch((e) => console.error("[notify]", ref.id, e))));
 }
 
-async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
+async function notifyUser(uid: string, ctx: UserCtx): Promise<void> {
   // Sin suscripción → no hacemos nada (ni leemos movimientos).
   const pushSnap = await adminDb().doc(`users/${uid}/config/push`).get();
   if (!pushSnap.exists || !pushSnap.data()?.subscription) return;
@@ -34,11 +46,15 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
   const notify = (await notifyRef.get()).data() ?? {};
   const updates: Record<string, unknown> = {};
 
-  // 1) Nueva versión (global).
-  if (notify.lastVersion && notify.lastVersion !== ctx.version) {
-    await sendPushToUser(uid, { title: "FinMoves", body: `Nueva versión ${ctx.version} disponible`, tag: "new-version", url: "/" });
+  // 1) Novedades: avisar solo cada 5 versiones (igual que el banner). No tocar
+  //    lastVersion si todavía no llegó al umbral → la cuenta se acumula.
+  const lastV = notify.lastVersion as string | undefined;
+  if (!lastV) {
+    updates.lastVersion = ctx.version; // primera vez: registrar sin avisar
+  } else if (lastV !== ctx.version && releasesSince(ctx.versions, lastV, ctx.version) >= UPDATE_BANNER_THRESHOLD) {
+    await sendPushToUser(uid, { title: "FinMoves", body: "Hay novedades en la app", tag: "new-version", url: "/settings?changelog=1" });
+    updates.lastVersion = ctx.version;
   }
-  updates.lastVersion = ctx.version;
 
   // 2) Cambio del dólar oficial (global, dedup por usuario).
   if (ctx.dolarOficial) {
