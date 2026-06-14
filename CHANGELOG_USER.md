@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.6.0] — 2026-06-14
+
+### Novedades
+- Los **comprobantes** ahora también pueden ser **PDF**, no solo fotos.
+
+---
+
 ## [2.5.1] — 2026-06-14
 
 ### Correcciones

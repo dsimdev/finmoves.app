@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.6.0] — 2026-06-14
+
+### Added
+- **Receipts now accept PDFs** (not just images): file picker accepts `image/*,application/pdf`, non-image attachments show a 📄 PDF tile (click to open). `storage.rules` updated to allow `application/pdf` (≤10 MB) — **re-publish the rules in the console**.
+
+### Changed
+- Home "New movement" shortcut label shortened to just **"Nuevo"** (the modal title stays "Nuevo movimiento").
+
+---
+
 ## [2.5.1] — 2026-06-14
 
 ### Fixed

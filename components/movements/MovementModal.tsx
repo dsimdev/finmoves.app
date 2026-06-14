@@ -326,27 +326,35 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     const removeBtn: React.CSSProperties = { position: "absolute", top: -8, right: -8, width: 24, height: 24, borderRadius: "50%", background: "var(--red)", color: "#fff", border: "2px solid var(--bg)", cursor: "pointer", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" };
     const picker: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, border: "1px dashed var(--border)", borderRadius: 10, cursor: "pointer", color: "var(--muted)", fontSize: 13 };
     const smallBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", color: "var(--muted)", fontSize: 12, fontWeight: 600, background: "transparent" };
+    const docBox: React.CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, width: 92, height: 92, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-alt)", color: "var(--muted)", fontSize: 11, fontWeight: 700, textDecoration: "none" };
     const showExisting = !!existingUrl && !comprobanteRemoved && !comprobantePreview;
+    const newIsPdf = comprobanteFile?.type === "application/pdf";
+    const existingIsPdf = !!movimiento?.comprobantePath && movimiento.comprobantePath.toLowerCase().endsWith(".pdf");
+    const accept = "image/*,application/pdf";
     return (
       <div style={{ marginBottom: 20 }}>
         <div className="label">{t.receipt}</div>
         {comprobantePreview ? (
           <div style={{ position: "relative", display: "inline-block" }}>
-            <img src={comprobantePreview} alt="" style={thumb} />
+            {newIsPdf
+              ? <a href={comprobantePreview} target="_blank" rel="noreferrer" style={docBox}><span style={{ fontSize: 26 }}>📄</span>PDF</a>
+              : <img src={comprobantePreview} alt="" style={thumb} />}
             <button type="button" onClick={clearComprobante} aria-label={t.removeReceipt} style={removeBtn}>×</button>
           </div>
         ) : showExisting ? (
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <a href={existingUrl} target="_blank" rel="noreferrer"><img src={existingUrl} alt="" style={thumb} /></a>
+            <a href={existingUrl} target="_blank" rel="noreferrer" style={existingIsPdf ? docBox : undefined}>
+              {existingIsPdf ? <><span style={{ fontSize: 26 }}>📄</span>PDF</> : <img src={existingUrl} alt="" style={thumb} />}
+            </a>
             <label style={smallBtn}>
-              <input type="file" accept="image/*" onChange={onComprobanteSelect} style={{ display: "none" }} />
+              <input type="file" accept={accept} onChange={onComprobanteSelect} style={{ display: "none" }} />
               {t.replaceReceipt}
             </label>
             <button type="button" onClick={clearComprobante} style={{ ...smallBtn, color: "var(--red)" }}>{t.removeReceipt}</button>
           </div>
         ) : (
           <label style={picker}>
-            <input type="file" accept="image/*" onChange={onComprobanteSelect} style={{ display: "none" }} />
+            <input type="file" accept={accept} onChange={onComprobanteSelect} style={{ display: "none" }} />
             📎 {t.attachReceipt}
           </label>
         )}
