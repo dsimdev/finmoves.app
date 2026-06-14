@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.10.1] — 2026-06-14
+
+### Changed
+- **Modernized bottom sheet**: blurred backdrop, smoother decelerated entrance, larger radius and top shadow. The **grab handle is now functional** — drag down to shrink the sheet to a peek (without losing what you typed), drag up to restore, drag far down to close.
+
+### Performance
+- **Receipt images are compressed/resized on upload** (max 1600px, JPEG ~0.8) so they go from several MB to a few hundred KB and load much faster; uploads now set a long `Cache-Control` so re-viewing is instant.
+
+---
+
 ## [2.10.0] — 2026-06-14
 
 ### Added

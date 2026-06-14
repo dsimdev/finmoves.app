@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.10.1] — 2026-06-14
+
+### Mejoras
+- **Hoja de carga renovada**: fondo desenfocado y una apertura más suave. La **barrita de arriba ahora funciona**: arrastrala hacia abajo para achicar la hoja (sin perder lo que cargaste), hacia arriba para volver a agrandarla, y bien abajo para cerrarla.
+- **Las fotos de comprobantes cargan mucho más rápido**: se comprimen al subirlas (de varios MB a unos cientos de KB) y quedan cacheadas para verlas al instante la próxima vez.
+
+---
+
 ## [2.10.0] — 2026-06-14
 
 ### Novedades
