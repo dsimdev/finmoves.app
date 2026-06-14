@@ -124,13 +124,13 @@ export default function Dashboard() {
                   {svg("var(--green)", <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>)}
                   <span style={lbl}>{t.newMovement}</span>
                 </button>
-                <Link href="/reports" style={chip}>
-                  {svg("var(--red)", <><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 4-6"/></>)}
-                  <span style={lbl}>{t.pageTitleReports}</span>
-                </Link>
                 <Link href="/investments" style={chip}>
                   {svg("var(--yellow)", <><circle cx="12" cy="12" r="9"/><path d="M12 7v10M14.5 9.5C14.5 8.4 13.4 8 12 8s-3 .8-3 2 1.2 1.7 3 2 3 .8 3 2-1.3 2-3 2"/></>)}
                   <span style={lbl}>{t.portfolio}</span>
+                </Link>
+                <Link href="/reports" style={chip}>
+                  {svg("var(--red)", <><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 4-6"/></>)}
+                  <span style={lbl}>{t.pageTitleReports}</span>
                 </Link>
               </div>
             );

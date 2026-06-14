@@ -15,7 +15,7 @@ export const es = {
   compare: "Comparar",
   rateOfficial: "oficial",
   rateBlue: "blue",
-  pageTitleDashboard: "Tablero",
+  pageTitleDashboard: "Resumen",
   pageTitleMovements: "Movimientos",
   pageTitleReports: "Reportes",
   pageTitleSettings: "Configuración",

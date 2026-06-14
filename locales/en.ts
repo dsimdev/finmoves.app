@@ -17,7 +17,7 @@ export const en: AppLocale = {
   compare: "Compare",
   rateOfficial: "official",
   rateBlue: "blue",
-  pageTitleDashboard: "Dashboard",
+  pageTitleDashboard: "Summary",
   pageTitleMovements: "Movements",
   pageTitleReports: "Reports",
   pageTitleSettings: "Settings",

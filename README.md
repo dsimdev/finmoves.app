@@ -1,97 +1,89 @@
 # FinMoves
 
-Personal finance manager for Argentina. Track movements, monitor your investment reserve and analyze spending by period.
+Personal finance manager for Argentina. Track movements, monitor your investment reserve and analyze spending by period. Installable PWA, live at **[finmoves.app](https://finmoves.app)**.
 
 ## Stack
 
-- **Next.js 16** (App Router, TypeScript)
-- **Firebase** — Auth (email/password) + Firestore (real-time database)
+- **Next.js 16** (App Router, TypeScript, Turbopack)
+- **Firebase App Hosting** (Cloud Run) — automatic deploy from `main`, scale-to-zero
+- **Firebase** — Auth (email/password) + Firestore (real-time database) + Admin SDK
+- **Cloud Scheduler** — daily cron (Sheets sync + push notifications)
+- **Web Push** (VAPID) + Badging API — notifications and app-icon badge
 - **Zustand** — global state persisted in localStorage
 - **Tailwind v4** — styles with custom CSS variables
 - **Google Sheets** — optional mirror of movements
-- **Vercel** — automatic deploy from `main`
 
 ## Sections
 
-### Home — Dashboard
-Active period summary: Sueldo, Gastado, Ahorros and Retiros KPIs; expense progress bar; latest movements grouped by date.
+### Home — Resumen (`/`)
+Active period summary: Sueldo, Gastado, Ahorros and Retiros KPIs; expense progress bar; latest movements; quick-action shortcuts. Add/edit movements via a modal without leaving Home.
 
-### Movements (`/movimientos`)
-Full CRUD for movements, grouped by date with day headers. Supported types:
+### Movements (`/movements`)
+Full CRUD for movements, grouped by date. Tap a row to edit. Supported types:
 
 | Type | Description |
 |------|-------------|
 | `Gasto` | Expense in ARS |
-| `Ingreso` | Income (salary or other) |
+| `Ingreso` | Income — `Sueldo` (anchors a period) or `Ahorros` |
 | `Move` | Internal transfer (savings → available) |
-| `CompraUSD` | USD purchase (records amount + exchange rate) |
-| `GastoUSD` | USD expense |
-| `CompraEUR` | EUR purchase (records amount + exchange rate) |
-| `GastoEUR` | EUR expense |
+| `CompraUSD` / `GastoUSD` | USD purchase / expense |
+| `CompraEUR` / `GastoEUR` | EUR purchase / expense |
 
-Each movement has: date, category, description, amount, payment method, notes and the period it belongs to. Notes are shown inline in lowercase italic.
+**Periods**: a `Sueldo` opens a period. For the owner (and the first-ever salary) it always opens a new one; other users choose **"Add to current / New period"**. Opening a new period carries the previous period's leftover into the new one as a `RESTO` movement (counts as Savings).
 
-### Investment (`/inversion`)
-USD or EUR reserve tracking:
-- Total reserve and average purchase price
-- ARS gain/loss on investment
-- Blue and official exchange rates in real time (with cache fallback)
-- Savings goal with target date, progress bar and periods-to-goal projection
-- 3-period ARS savings projection
-- Purchase history
+### Investment (`/investments`)
+USD or EUR reserve tracking: total reserve, average purchase price, ARS gain/loss, blue/official rates (with cache fallback), savings goal with target date and projection, purchase history.
 
-### Reports (`/reportes`)
-Period analysis with configurable toggles per section. Tabs:
-- **Gastos**: KPIs (total, average, daily pace, trend), by category, by description, by payment method, by date, period comparison
-- **Ingresos**: total income, salary evolution, by category, by description, savings breakdown
-- **Movimientos**: movement frequency KPIs by type, top descriptions, by category, by day of week, by payment method
-- **Períodos**: historical series chart, comparative KPIs (best/worst period, average), income evolution
+### Reports (`/reports`)
+Per-period analysis with toggles. Tabs: **Gastos**, **Ingresos**, **Movimientos**, **Períodos**.
 
-### Settings (`/config`)
-- Categories, payment methods and savings origins (CRUD)
-- Preferences: dark/light mode, enable Reports section, enable Investment section
-- **Auto-savings**: toggle + fixed ARS amount; when active, every Gasto automatically creates an `Ingreso / Ahorros` movement for the configured amount
-- Investment currency: USD or EUR
-- Manual sync with Google Sheets
+### Settings (`/settings`)
+Profile (name, password change with reauth + relogin, language), categories/payment methods/savings origins (CRUD), dark/light, section toggles, auto-savings, biometric unlock, push notifications, investment currency, install button, Google Sheets sync, invite codes (owner), backup export.
 
-## Periods
+## Performance
 
-Movements are grouped into periods with a start/end date and declared salary. The active period is the main unit of analysis. Report KPIs compare periods against each other. Period and year selectors support multi-select (long press) for cross-period analysis.
+A single `DataProvider` in the tabs layout fetches movements + config **once per session** and shares them across all tabs (no re-fetch on tab switch).
 
-## Google Sheets Sync
+## Security
 
-The app is the source of truth. On sync, it overwrites the `Movimientos` sheet of the configured spreadsheet, keeping up to 5 automatic backups as tabs named by date (Argentina time).
-
-## Theme
-
-Light mode by default, with dark mode toggle. Color variables are applied without flash via inline script in `<head>`. No theme library dependency.
+- Firestore rules: per-user isolation (`request.auth.uid == userId`) + default deny. `inviteCodes` only via Admin SDK.
+- API routes verify Firebase ID tokens; owner-only routes check `OWNER_UID`; cron uses `CRON_SECRET`.
+- Signup closed: accounts created only via one-use invite codes (atomic reservation).
+- Security headers incl. HSTS and a production `Content-Security-Policy`.
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_FIREBASE_*` | Firebase public configuration |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Admin service account (for API routes) |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | Google Sheets service account |
-| `GOOGLE_SPREADSHEET_ID` | Target spreadsheet ID |
-| `NEXT_PUBLIC_APP_VERSION` | Auto-generated from `package.json` via `next.config.ts` |
+Managed via **Cloud Secret Manager** (referenced in `apphosting.yaml`). Local dev reads `.env.local`.
+
+| Variable | Scope | Description |
+|----------|-------|-------------|
+| `NEXT_PUBLIC_FIREBASE_*` | build+runtime | Firebase web config (public) |
+| `NEXT_PUBLIC_OWNER_EMAIL` / `NEXT_PUBLIC_OWNER_UID` | build+runtime | Owner identity for client gating |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | build+runtime | Web Push public key |
+| `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | runtime | Web Push private key |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | runtime | Firebase Admin credentials |
+| `GOOGLE_SHEETS_CREDENTIALS` / `GOOGLE_SPREADSHEET_ID` | runtime | Google Sheets sync |
+| `CRON_SECRET` | runtime | Bearer token for the Cloud Scheduler cron |
+| `OWNER_UID` | runtime | Owner UID for owner-only server logic |
+| `NEXT_PUBLIC_APP_VERSION` | build | Auto-injected from `package.json` via `next.config.ts` |
 
 ## Deploy
 
-```bash
-# Local development
-npm run dev
+**Firebase App Hosting auto-builds from `main`.** Every release MUST follow this checklist:
 
-# Release to production
-git checkout main
-# ... changes ...
-git commit && git push origin main
-git tag vX.X.X
-git push origin main --tags
+```
+1. Make changes; `npm run build` passes.
+2. Bump version in package.json (semver: feat→minor, fix→patch, milestone→major).
+3. Update CHANGELOG.md (technical, EN) — new [x.y.z] section.
+4. Update CHANGELOG_USER.md (user-facing, ES).
+5. Update README.md "Current Version" (+ any changed facts).
+6. git add -A && git commit && git push origin main
+7. git tag vX.Y.Z && git push origin vX.Y.Z
+8. Verify the App Hosting build is live at finmoves.app.
 ```
 
-Vercel deploys automatically from `main`. Rollback via Vercel dashboard or `git reset --hard vX.X.X` + force push.
+Rollback: `git reset --hard vX.Y.Z` + push, or redeploy a previous build from the App Hosting console.
 
 ## Current Version
 
-`v1.14.5` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.
+`v2.1.2` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.

@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.1.2] — 2026-06-13
+
+### Changed
+- **Home renamed "Tablero" → "Resumen"** (ES) / "Summary" (EN).
+- Home shortcuts reordered: New movement · Investment · Reports.
+- Offline banner moved from bottom to **top**.
+- Loading spinner ring tightened around the logo (260→180px).
+
+### Docs
+- README fully updated (was stale at v1.14.5 / Vercel): Firebase App Hosting, custom domain, current routes, security, and the **mandatory deploy checklist** (incl. updating README every release).
+
+---
+
 ## [2.1.1] — 2026-06-13
 
 ### Performance

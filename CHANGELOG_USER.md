@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.1.2] — 2026-06-13
+
+### Mejoras
+- **"Tablero" ahora se llama "Resumen".**
+- En Resumen, los atajos quedaron ordenados: Nuevo movimiento · Inversión · Reportes.
+- El aviso de "sin conexión" ahora aparece **arriba**.
+- Pequeño ajuste visual en la pantalla de carga.
+
+---
+
 ## [2.1.1] — 2026-06-13
 
 ### Mejoras

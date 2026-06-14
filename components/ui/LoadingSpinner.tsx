@@ -6,7 +6,7 @@ export function LoadingSpinner() {
       position: "fixed", inset: 0,
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      <div style={{ position: "relative", width: 260, height: 260 }}>
+      <div style={{ position: "relative", width: 180, height: 180 }}>
         <div style={{
           position: "absolute", inset: 0, display: "flex",
           alignItems: "center", justifyContent: "center",
