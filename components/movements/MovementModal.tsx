@@ -87,10 +87,13 @@ interface MovementModalProps {
   onClose: () => void;
   /** Avisar al padre para que refresque sus datos tras alta/edición/borrado. */
   onChanged: () => void;
+  /** Actualización optimista (sin re-leer la colección) al editar/borrar. */
+  onUpdated?: (id: string, patch: Partial<Movimiento>) => void;
+  onDeleted?: (id: string) => void;
 }
 
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
-export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged }: MovementModalProps) {
+export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged, onUpdated, onDeleted }: MovementModalProps) {
   const { user } = useAuth();
   const { cotizacion } = useCotizacion();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
@@ -151,6 +154,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [eMedio, setEMedio] = useState("");
   const [eObs, setEObs] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
 
   const resetComprobante = () => {
     setComprobantePreview((p) => { if (p) URL.revokeObjectURL(p); return null; });
@@ -196,6 +200,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       setEDesc(movimiento.descripcion || (movimiento as Movimiento & { origenAhorro?: string }).origenAhorro || "");
       setEMedio(movimiento.medioPago ?? "");
       setEObs(movimiento.observaciones ?? "");
+      setEditError("");
       resetComprobante();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -341,7 +346,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   const handleEdit = async () => {
     if (!user?.uid || !movimiento) return;
-    setEditLoading(true);
+    setEditLoading(true); setEditError("");
     try {
       const update: Partial<Movimiento> = { monto: parseFloat(eMonto), observaciones: eObs, descripcion: eDesc.trim() };
       if (!isLocked) update.medioPago = eMedio;
@@ -356,19 +361,22 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         }
       }
       await actualizarMovimiento(user.uid, movimiento.id, update);
-      onChanged(); onClose();
-    } catch (err) { console.error(err); }
+      // Optimista: parchear en memoria en vez de re-leer toda la colección.
+      if (onUpdated) onUpdated(movimiento.id, update); else onChanged();
+      onClose();
+    } catch (err) { console.error(err); setEditError(err instanceof Error ? err.message : t.unexpectedError); }
     finally { setEditLoading(false); }
   };
 
   const handleDelete = async () => {
     if (!user?.uid || !movimiento) return;
-    setEditLoading(true);
+    setEditLoading(true); setEditError("");
     try {
       await eliminarMovimiento(user.uid, movimiento.id);
       await deleteComprobante(movimiento.comprobantePath); // borrar el comprobante asociado
-      onChanged(); onClose();
-    } catch (err) { console.error(err); }
+      if (onDeleted) onDeleted(movimiento.id); else onChanged();
+      onClose();
+    } catch (err) { console.error(err); setEditError(err instanceof Error ? err.message : t.unexpectedError); }
     finally { setEditLoading(false); }
   };
 
@@ -781,6 +789,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             )}
           </div>
 
+          {editError && (
+            <div style={{ background: "var(--red-dim)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: 12, marginBottom: 8, fontSize: 12, color: "var(--red)", textAlign: "center" }}>{editError}</div>
+          )}
           <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", height: 56, marginTop: 8 }}>
             <button onClick={handleEdit} disabled={!isDirtyEdit || editLoading} aria-label={t.save} style={{
               width: 56, height: 56, borderRadius: "50%",
@@ -864,6 +875,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{movimiento.descripcion || movimiento.categoria}</div>
           <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 8 }}>{money(movimiento.monto)}</div>
           <div style={{ fontSize: 11 }}>{t.actionIrreversible}</div>
+          {editError && <div style={{ fontSize: 12, color: "var(--red)", marginTop: 10, fontWeight: 600 }}>{editError}</div>}
         </div>
       </ConfirmModal>
     )}

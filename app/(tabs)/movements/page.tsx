@@ -24,7 +24,7 @@ function TipoDot({ tipo, categoria }: { tipo: TipoMovimiento; categoria: string 
 
 export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
-  const { movimientos, loading, refresh, config } = useData();
+  const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento } = useData();
   const t = useT();
 
   const periodos = agruparPorPeriodo(movimientos);
@@ -227,6 +227,8 @@ export default function MovimientosPage() {
       initialView={modalState?.view}
       onClose={() => setModalState(null)}
       onChanged={refresh}
+      onUpdated={updateMovimiento}
+      onDeleted={removeMovimiento}
     />
     </>
   );

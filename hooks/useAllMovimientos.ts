@@ -12,6 +12,14 @@ export function useAllMovimientos(userId: string | undefined) {
 
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
 
+  // Actualización optimista en memoria: evita re-leer toda la colección tras editar/borrar.
+  const updateLocal = useCallback((id: string, patch: Partial<Movimiento>) => {
+    setMovimientos((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  }, []);
+  const removeLocal = useCallback((id: string) => {
+    setMovimientos((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
   useEffect(() => {
     if (!userId) return;
 
@@ -39,5 +47,5 @@ export function useAllMovimientos(userId: string | undefined) {
     fetch();
   }, [userId, version]);
 
-  return { movimientos, loading, refresh };
+  return { movimientos, loading, refresh, updateLocal, removeLocal };
 }

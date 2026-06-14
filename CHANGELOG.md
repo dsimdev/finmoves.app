@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.10.2] — 2026-06-14
+
+### Performance
+- **Editing or deleting a movement no longer re-reads the whole collection**: the change is applied optimistically in memory (the Firestore write is awaited first, so the DB stays the source of truth). Eliminates N extra reads per edit/delete and makes the UI instant. New movements still do a full refresh (they can spawn carry-over/auto-savings docs).
+
+### Fixed
+- Edit/delete now show a visible error message if the write fails (previously only logged to console).
+
+---
+
 ## [2.10.1] — 2026-06-14
 
 ### Changed

@@ -27,7 +27,7 @@ function TipoPrefix(m: Movimiento) {
 }
 
 export default function Dashboard() {
-  const { movimientos, loading, refresh, config } = useData();
+  const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento } = useData();
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
   const t = useT();
 
@@ -190,6 +190,8 @@ export default function Dashboard() {
         initialView={modalState?.view}
         onClose={() => setModalState(null)}
         onChanged={refresh}
+        onUpdated={updateMovimiento}
+        onDeleted={removeMovimiento}
       />
     </div>
   );

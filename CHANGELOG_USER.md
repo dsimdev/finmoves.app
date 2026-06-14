@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.10.2] — 2026-06-14
+
+### Mejoras
+- **Editar o borrar un movimiento es instantáneo** y consume muchísimos menos datos: ya no vuelve a leer todo tu historial en cada cambio.
+- Si una edición o borrado falla, ahora te avisa con un mensaje (antes no se veía).
+
+---
+
 ## [2.10.1] — 2026-06-14
 
 ### Mejoras
