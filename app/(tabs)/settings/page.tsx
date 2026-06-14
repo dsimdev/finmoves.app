@@ -20,6 +20,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useCotizacion } from "@/hooks/useCotizacion";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useT } from "@/hooks/useTranslation";
 
 function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
@@ -160,14 +161,8 @@ export default function ConfigPage() {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoTipo, setNuevoTipo] = useState<"Gasto" | "Ingreso">("Gasto");
   const [movSub, setMovSub] = useState<"categorias" | "medios" | "origenes">("categorias");
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const confirmDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Long-press sobre un chip: lo deja en estado "confirmar borrado" por unos segundos
-  const startConfirmDelete = (id: string) => {
-    setConfirmDelete(id);
-    if (confirmDeleteTimer.current) clearTimeout(confirmDeleteTimer.current);
-    confirmDeleteTimer.current = setTimeout(() => setConfirmDelete(null), 2800);
-  };
+  // Long-press sobre un chip → modal flotante de confirmación de borrado.
+  const [pendingDelete, setPendingDelete] = useState<{ kind: "cat" | "med" | "ori"; nombre: string } | null>(null);
 
   // Sync state
   const [syncing, setSyncing] = useState(false);
@@ -615,7 +610,7 @@ export default function ConfigPage() {
     const next = localCatsRef.current.filter(c => c.nombre !== nombre);
     localCatsRef.current = next;
     setLocalCats(next);
-    setConfirmDelete(null);
+    setPendingDelete(null);
     saveConfig({ ...config, categorias: next, mediosPago: localMediosRef.current, origenesAhorro: localOrigenesRef.current });
   };
 
@@ -624,7 +619,7 @@ export default function ConfigPage() {
     const next = localMediosRef.current.filter(m => m.nombre !== nombre);
     localMediosRef.current = next;
     setLocalMedios(next);
-    setConfirmDelete(null);
+    setPendingDelete(null);
     saveConfig({ ...config, categorias: localCatsRef.current, mediosPago: next, origenesAhorro: localOrigenesRef.current });
   };
 
@@ -633,8 +628,15 @@ export default function ConfigPage() {
     const next = localOrigenesRef.current.filter(o => o.nombre !== nombre);
     localOrigenesRef.current = next;
     setLocalOrigenes(next);
-    setConfirmDelete(null);
+    setPendingDelete(null);
     saveConfig({ ...config, categorias: localCatsRef.current, mediosPago: localMediosRef.current, origenesAhorro: next });
+  };
+
+  const confirmPendingDelete = () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "cat") eliminarCategoriaLocal(pendingDelete.nombre);
+    else if (pendingDelete.kind === "med") eliminarMedioLocal(pendingDelete.nombre);
+    else eliminarOrigenLocal(pendingDelete.nombre);
   };
 
   const agregarMedioLocal = () => {
@@ -1144,9 +1146,9 @@ export default function ConfigPage() {
                     colorVar={c.tipo === "Gasto" ? "var(--red)" : "var(--green)"}
                     dimVar={c.tipo === "Gasto" ? "var(--red-dim)" : "var(--green-dim)"}
                     activo={c.activa}
-                    confirming={confirmDelete === `cat_${c.nombre}`}
+                    confirming={false}
                     onToggle={() => toggleCategoriaLocal(c.nombre)}
-                    onLongPress={() => startConfirmDelete(`cat_${c.nombre}`)}
+                    onLongPress={() => setPendingDelete({ kind: "cat", nombre: c.nombre })}
                     onConfirmDelete={() => eliminarCategoriaLocal(c.nombre)}
                   />
                 ))}
@@ -1171,9 +1173,9 @@ export default function ConfigPage() {
                   <Chip key={m.nombre} label={m.nombre}
                     colorVar="var(--blue)" dimVar="var(--blue-dim)"
                     activo={m.activo}
-                    confirming={confirmDelete === `med_${m.nombre}`}
+                    confirming={false}
                     onToggle={() => toggleMedioLocal(m.nombre)}
-                    onLongPress={() => startConfirmDelete(`med_${m.nombre}`)}
+                    onLongPress={() => setPendingDelete({ kind: "med", nombre: m.nombre })}
                     onConfirmDelete={() => eliminarMedioLocal(m.nombre)}
                   />
                 ))}
@@ -1199,9 +1201,9 @@ export default function ConfigPage() {
                   <Chip key={o.nombre} label={o.nombre}
                     colorVar="var(--green)" dimVar="var(--green-dim)"
                     activo={o.activo}
-                    confirming={confirmDelete === `ori_${o.nombre}`}
+                    confirming={false}
                     onToggle={() => toggleOrigenLocal(o.nombre)}
-                    onLongPress={() => startConfirmDelete(`ori_${o.nombre}`)}
+                    onLongPress={() => setPendingDelete({ kind: "ori", nombre: o.nombre })}
                     onConfirmDelete={() => eliminarOrigenLocal(o.nombre)}
                   />
                 ))}
@@ -1542,49 +1544,22 @@ export default function ConfigPage() {
         document.body
       )}
 
-      {confirmLeave && mounted && createPortal(
-        <div onClick={() => setConfirmLeave(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px" }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t.leaveSiteTitle}</div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.leaveSiteBody}</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setConfirmLeave(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
-              <button onClick={() => { window.open(CHANGELOG_WEB_URL, "_blank", "noopener,noreferrer"); setConfirmLeave(false); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.leaveSiteConfirm}</button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {confirmLeave && (
+        <ConfirmModal title={t.leaveSiteTitle} confirmLabel={t.leaveSiteConfirm} cancelLabel={t.cancel}
+          onConfirm={() => { window.open(CHANGELOG_WEB_URL, "_blank", "noopener,noreferrer"); setConfirmLeave(false); }}
+          onCancel={() => setConfirmLeave(false)}>{t.leaveSiteBody}</ConfirmModal>
       )}
 
-      {showExportConfirm && mounted && createPortal(
-        <div onClick={() => setShowExportConfirm(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px" }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t.exportCSV}</div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.exportCSVBody}</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowExportConfirm(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
-              <button onClick={() => { exportCSV(); setShowExportConfirm(false); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.download}</button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {showExportConfirm && (
+        <ConfirmModal title={t.exportCSV} confirmLabel={t.download} cancelLabel={t.cancel} confirmColor="var(--blue)"
+          onConfirm={() => { exportCSV(); setShowExportConfirm(false); }}
+          onCancel={() => setShowExportConfirm(false)}>{t.exportCSVBody}</ConfirmModal>
       )}
 
-      {showGithubConfirm && mounted && createPortal(
-        <div onClick={() => setShowGithubConfirm(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px" }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t.openGitHub}</div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.goToGitHubBody}</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowGithubConfirm(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
-              <button onClick={() => { window.open("https://github.com/dsimdev/finmoves-app/blob/main/README.md", "_blank", "noopener,noreferrer"); setShowGithubConfirm(false); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.goToGitHub}</button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {showGithubConfirm && (
+        <ConfirmModal title={t.openGitHub} confirmLabel={t.goToGitHub} cancelLabel={t.cancel} confirmColor="var(--blue)"
+          onConfirm={() => { window.open("https://github.com/dsimdev/finmoves-app/blob/main/README.md", "_blank", "noopener,noreferrer"); setShowGithubConfirm(false); }}
+          onCancel={() => setShowGithubConfirm(false)}>{t.goToGitHubBody}</ConfirmModal>
       )}
 
       {showUserModal && mounted && createPortal(
@@ -1658,19 +1633,10 @@ export default function ConfigPage() {
         document.body
       )}
 
-      {confirmLogout && mounted && createPortal(
-        <div onClick={() => setConfirmLogout(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px" }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t.signOutTitle}</div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.signOutBody}</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setConfirmLogout(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
-              <button onClick={async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--red)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.signOut}</button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {confirmLogout && (
+        <ConfirmModal title={t.signOutTitle} confirmLabel={t.signOut} cancelLabel={t.cancel} confirmColor="var(--red)"
+          onConfirm={async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }}
+          onCancel={() => setConfirmLogout(false)}>{t.signOutBody}</ConfirmModal>
       )}
 
       {showInviteModal && mounted && createPortal(
@@ -1693,22 +1659,20 @@ export default function ConfigPage() {
         document.body
       )}
 
-      {pendingLang && mounted && createPortal(
-        <div onClick={() => setPendingLang(null)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px" }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-              {pendingLang === "es" ? <FlagAR /> : <FlagGB />}
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{t.changeLanguageTitle}</span>
-            </div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24 }}>{t.changeLanguageBody}</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setPendingLang(null)} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{t.cancel}</button>
-              <button onClick={() => { setLang(pendingLang); window.location.href = "/"; }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "var(--blue)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t.confirm}</button>
-            </div>
+      {pendingLang && (
+        <ConfirmModal title={t.changeLanguageTitle} confirmLabel={t.confirm} cancelLabel={t.cancel} confirmColor="var(--blue)"
+          onConfirm={() => { setLang(pendingLang); window.location.href = "/"; }}
+          onCancel={() => setPendingLang(null)}>{t.changeLanguageBody}</ConfirmModal>
+      )}
+
+      {pendingDelete && (
+        <ConfirmModal title={t.delete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)"
+          onConfirm={confirmPendingDelete} onCancel={() => setPendingDelete(null)}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{pendingDelete.nombre}</div>
+            <div>{t.actionIrreversible}</div>
           </div>
-        </div>,
-        document.body
+        </ConfirmModal>
       )}
     </div>
   );

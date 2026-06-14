@@ -25,6 +25,7 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
+import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { Movimiento } from "@/types";
 
 function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
@@ -51,6 +52,7 @@ export default function DolaresPage() {
   const [modal, setModal] = useState<{ mode: "add" } | { mode: "edit"; mov: Movimiento } | null>(null);
   const [expandUSD, setExpandUSD] = useState(false);
   const [expandEUR, setExpandEUR] = useState(false);
+  const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
   // Botón flotante: se oculta al hacer scroll y reaparece al detenerse (igual que en Movimientos).
   const [btnVisible, setBtnVisible] = useState(true);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -165,20 +167,13 @@ export default function DolaresPage() {
                 ≈ {money(reservaUSDenARS)} · {manualOn && !esEUR ? t.rateManual : t.rateOfficial} ${cotizacionUSD?.toLocaleString("es-AR")}
               </div>
             )}
+            {gananciaUSD !== null && (
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", fontSize: 12 }}>
+                <span style={{ color: "var(--muted)" }}>{t.avgPrice}: <span style={{ color: "var(--text)", fontFamily: "var(--font-mono)" }}>{oculto ? MASK : "$" + costoPromedioUSD.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span></span>
+                <span style={{ color: "var(--muted)" }}>{t.profit}: <span style={{ color: gananciaUSD >= 0 ? "var(--green)" : "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700 }}>{oculto ? MASK : `${gananciaUSD >= 0 ? "+" : ""}${money(gananciaUSD)}`}{gananciaPctUSD !== null && !oculto ? ` (${gananciaUSD >= 0 ? "+" : ""}${gananciaPctUSD.toFixed(1)}%)` : ""}</span></span>
+              </div>
+            )}
           </div>
-
-          {gananciaUSD !== null && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <MiniStat basis="1 1 0" label={t.avgPrice} value={oculto ? MASK : "$" + costoPromedioUSD.toLocaleString("es-AR", { maximumFractionDigits: 0 })} color="var(--yellow)" />
-              <MiniStat
-                basis="1 1 0"
-                label={t.profit}
-                value={oculto ? MASK : `${gananciaUSD >= 0 ? "+" : ""}${money(gananciaUSD)}`}
-                sub={gananciaPctUSD !== null && !oculto ? `${gananciaUSD >= 0 ? "+" : ""}${gananciaPctUSD.toFixed(1)}%` : undefined}
-                color={gananciaUSD >= 0 ? "var(--green)" : "var(--red)"}
-              />
-            </div>
-          )}
 
           </>)}
 
@@ -204,20 +199,14 @@ export default function DolaresPage() {
                 ≈ {money(reservaEURenARS)} · {manualOn && esEUR ? t.rateManual : t.rateOfficial} ${cotizacionEUR?.toLocaleString("es-AR")}
               </div>
             )}
+            {gananciaEUR !== null && (
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", fontSize: 12 }}>
+                <span style={{ color: "var(--muted)" }}>{t.avgPrice}: <span style={{ color: "var(--text)", fontFamily: "var(--font-mono)" }}>{oculto ? MASK : "$" + costoPromedioEUR.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span></span>
+                <span style={{ color: "var(--muted)" }}>{t.profit}: <span style={{ color: gananciaEUR >= 0 ? "var(--green)" : "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700 }}>{oculto ? MASK : `${gananciaEUR >= 0 ? "+" : ""}${money(gananciaEUR)}`}{gananciaPctEUR !== null && !oculto ? ` (${gananciaEUR >= 0 ? "+" : ""}${gananciaPctEUR.toFixed(1)}%)` : ""}</span></span>
+              </div>
+            )}
           </div>
 
-          {gananciaEUR !== null && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <MiniStat basis="1 1 0" label={t.avgPrice} value={oculto ? MASK : "$" + costoPromedioEUR.toLocaleString("es-AR", { maximumFractionDigits: 0 })} color="var(--yellow)" />
-              <MiniStat
-                basis="1 1 0"
-                label={t.profit}
-                value={oculto ? MASK : `${gananciaEUR >= 0 ? "+" : ""}${money(gananciaEUR)}`}
-                sub={gananciaPctEUR !== null && !oculto ? `${gananciaEUR >= 0 ? "+" : ""}${gananciaPctEUR.toFixed(1)}%` : undefined}
-                color={gananciaEUR >= 0 ? "var(--green)" : "var(--red)"}
-              />
-            </div>
-          )}
 
           </>)}
 
@@ -260,15 +249,19 @@ export default function DolaresPage() {
 
                 {/* Mini-stats */}
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statPerPeriod}
-                    value={`${oculto ? "••" : (promAhorroUSD !== null ? Math.round(promAhorroUSD).toLocaleString("es-AR") : "—")} / ${Math.round(metaUSD).toLocaleString("es-AR")}`} />
+                  {(() => { const v = `${oculto ? "••" : (promAhorroUSD !== null ? Math.round(promAhorroUSD).toLocaleString("es-AR") : "—")} / ${Math.round(metaUSD).toLocaleString("es-AR")}`; return (
+                    <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statPerPeriod} value={v}
+                      onClick={() => setKpiInfo({ title: t.statPerPeriod, value: v, explain: t.kpiPerPeriodInfo, color: "var(--yellow)" })} />
+                  ); })()}
                   {proyUSD !== null && (
                     <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statProjection}
-                      value={oculto ? "••••" : Math.round(proyUSD).toLocaleString("es-AR")} />
+                      value={oculto ? "••••" : Math.round(proyUSD).toLocaleString("es-AR")}
+                      onClick={() => setKpiInfo({ title: t.statProjection, value: oculto ? "••••" : `${simbolo} ${Math.round(proyUSD).toLocaleString("es-AR")}`, explain: t.kpiProjectionInfo, color: "var(--yellow)" })} />
                   )}
                   {periodosParaMeta !== null && (
                     <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statToGoal}
-                      value={periodosParaMeta === 0 ? t.reached : `${periodosParaMeta} ${t.periodsShort}`} />
+                      value={periodosParaMeta === 0 ? t.reached : `${periodosParaMeta} ${t.periodsShort}`}
+                      onClick={() => setKpiInfo({ title: t.statToGoal, value: periodosParaMeta === 0 ? t.reached : `${periodosParaMeta} ${t.periodsShort}`, explain: t.kpiToGoalInfo, color: "var(--yellow)" })} />
                   )}
                 </div>
               </div>
@@ -377,6 +370,7 @@ export default function DolaresPage() {
       onClose={() => setModal(null)}
       onChanged={refreshData}
     />
+    {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
     </>
   );
 }

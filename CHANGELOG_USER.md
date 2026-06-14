@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.10.0] — 2026-06-14
+
+### Novedades
+- **Tocá un KPI para ver el detalle**: en Reportes y en la meta de Inversión, al tocar una tarjeta se abre una card flotante con el **número exacto** y una explicación de qué significa. Las tarjetas quedaron más limpias.
+- **Confirmaciones y detalles como card flotante**: eliminar un movimiento, borrar categorías/medios/orígenes, las advertencias de Configuración, el detalle del historial de Inversión y el historial de aumentos de sueldo ahora abren en una card centrada (antes era una hoja desde abajo).
+
+### Mejoras
+- **Reportes**: "vs período anterior" ahora muestra la **diferencia en $**; "categoría que más creció" muestra cuánto era antes. Aclaramos Tendencia (rojo = gastás más, verde = menos). El botón **"Comparar" pasó a "Varios"**.
+- **Inversión**: precio promedio y ganancia se sumaron al recuadro principal (sacamos las dos tarjetas grandes).
+- **Comprobantes**: la foto se ve enmarcada y el fondo del visor es más transparente (se ve la app detrás).
+
+---
+
 ## [2.9.1] — 2026-06-14
 
 ### Novedades

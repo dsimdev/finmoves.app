@@ -69,7 +69,7 @@ export function MediaViewer({ src, isPdf, onClose }: { src: string; isPdf: boole
   };
 
   return createPortal(
-    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.35)", backdropFilter: "blur(1px)", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none" }}>
       <button onClick={onClose} aria-label="×" style={{ position: "absolute", top: 12, right: 14, zIndex: 2, background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 24, width: 40, height: 40, borderRadius: "50%", cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
       {isPdf ? (
         <iframe src={src} title="PDF" style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />
@@ -78,7 +78,7 @@ export function MediaViewer({ src, isPdf, onClose }: { src: string; isPdf: boole
           style={{ width: "100%", height: "100%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <img src={src} alt="" draggable={false}
             onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
-            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", transform: `translate(${t.x}px, ${t.y}px) scale(${t.scale})`, transition: start.current ? "none" : "transform 0.15s", touchAction: "none", userSelect: "none", cursor: t.scale > 1 ? "grab" : "default" }} />
+            style={{ maxWidth: "92%", maxHeight: "88%", objectFit: "contain", borderRadius: 14, boxShadow: "0 10px 40px rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.08)", transform: `translate(${t.x}px, ${t.y}px) scale(${t.scale})`, transition: start.current ? "none" : "transform 0.15s", touchAction: "none", userSelect: "none", cursor: t.scale > 1 ? "grab" : "default" }} />
         </div>
       )}
     </div>,

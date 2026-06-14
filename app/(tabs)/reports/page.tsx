@@ -20,6 +20,7 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
+import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 
 type Sub = "gastos" | "ingresos" | "movimientos" | "periodos";
 
@@ -108,9 +109,9 @@ export default function ReportesPage() {
   const [sub, setSub] = useState<Sub>("gastos");
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
   const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movdescs" | "movcat" | null>(null);
+  const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
   const [modalTopExpanded, setModalTopExpanded] = useState(false);
   const [modalSueldo, setModalSueldo] = useState(false);
-  const [modalSueldoExpanded, setModalSueldoExpanded] = useState(false);
   const [modalAhorros, setModalAhorros] = useState(false);
   const [diaModal, setDiaModal] = useState<string | null>(null);
   const [diaModalExpanded, setDiaModalExpanded] = useState(false);
@@ -510,19 +511,28 @@ export default function ReportesPage() {
               {/* Mini-stats fila 1: 3 columnas */}
               {reportOn("gastos_kpis") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                {diasLibres && <MiniStat center label={t.expenseFreeDays} value={String(diasLibres.sinGasto)} sub={t.ofDays(diasLibres.total)} color="var(--green)" />}
-                {tendenciaGasto !== null && <MiniStat center label={t.trend} value={`${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`} sub={t.last3vsPrev3} color={tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"} />}
-                <MiniStat center label={t.highestSpendingDay} value={kpis.diaMayorGasto ? (oculto ? "••" : abbr(kpis.diaMayorGasto.monto)) : "—"} sub={kpis.diaMayorGasto ? sinAño(kpis.diaMayorGasto.fecha) : undefined} color="var(--red)" />
+                {diasLibres && <MiniStat center label={t.expenseFreeDays} value={String(diasLibres.sinGasto)} color="var(--green)"
+                  onClick={() => setKpiInfo({ title: t.expenseFreeDays, value: String(diasLibres.sinGasto), explain: `${t.kpiFreeDaysInfo} (${t.ofDays(diasLibres.total)})`, color: "var(--green)" })} />}
+                {tendenciaGasto !== null && (() => { const c = tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`; return (
+                  <MiniStat center label={t.trend} value={v} color={c}
+                    onClick={() => setKpiInfo({ title: t.trend, value: v, explain: t.kpiTrendInfo, color: c })} />
+                ); })()}
+                <MiniStat center label={t.highestSpendingDay} value={kpis.diaMayorGasto ? (oculto ? "••" : abbr(kpis.diaMayorGasto.monto)) : "—"} color="var(--red)"
+                  onClick={kpis.diaMayorGasto ? () => setKpiInfo({ title: t.highestSpendingDay, value: oculto ? "••" : formatARS(kpis.diaMayorGasto!.monto), explain: `${t.kpiHighestDayInfo} (${sinAño(kpis.diaMayorGasto!.fecha)})`, color: "var(--red)" }) : undefined} />
               </div>
               )}
 
               {/* Mini-stats fila 2: 2 columnas */}
               {reportOn("gastos_kpis") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
-                {ritmo && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} sub={t.daysWithExpenses(kpis.diasConGasto)} color="var(--red)" />}
-                {promPorMov !== null && <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} sub={t.transactions(kpis.cantGastos)} color="var(--red)" />}
-                {ritmo && <MiniStat center basis="1 1 45%" label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} sub={t.projection30days(oculto ? "••" : abbr(ritmo.proyeccionCierre))} color="var(--red)" />}
-                {proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} sub={t.avgLast3} color="var(--red)" />}
+                {ritmo && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} color="var(--red)"
+                  onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis.diasConGasto)})`, color: "var(--red)" })} />}
+                {promPorMov !== null && <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} color="var(--red)"
+                  onClick={() => setKpiInfo({ title: t.avgPerExpense, value: oculto ? "••" : formatARS(promPorMov), explain: `${t.kpiAvgPerExpenseInfo} (${t.transactions(kpis.cantGastos)})`, color: "var(--red)" })} />}
+                {ritmo && <MiniStat center basis="1 1 45%" label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} color="var(--red)"
+                  onClick={() => setKpiInfo({ title: t.spendingPace, value: `${oculto ? "••" : formatARS(ritmo.gastadoPorDia)}${t.perDay}`, explain: `${t.kpiPaceInfo} (${t.projection30days(oculto ? "••" : formatARS(ritmo.proyeccionCierre))})`, color: "var(--red)" })} />}
+                {proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} color="var(--red)"
+                  onClick={() => setKpiInfo({ title: t.nextPeriodProjection, value: oculto ? "••" : formatARS(proyeccionGasto), explain: `${t.kpiNextProjInfo} (${t.avgLast3})`, color: "var(--red)" })} />}
               </div>
               )}
 
@@ -543,7 +553,9 @@ export default function ReportesPage() {
                     <div key={c.categoria} className="row" style={{ padding: "8px 0" }}>
                       <span style={{ fontSize: 13 }}>{c.categoria}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--muted)" }}>{c.anterior > 0 ? money(c.anterior) : "—"}</span>
+                        {(() => { const diff = c.actual - c.anterior; return (
+                          <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--muted)" }}>{diff >= 0 ? "+" : "−"}{money(Math.abs(diff))}</span>
+                        ); })()}
                         {c.deltaPct !== null ? (
                           <span style={{ fontSize: 11, fontWeight: 700, color: c.deltaPct > 0 ? "var(--red)" : "var(--green)", minWidth: 48, textAlign: "right" }}>
                             {c.deltaPct > 0 ? "↑" : "↓"}{Math.abs(c.deltaPct)}%
@@ -564,6 +576,7 @@ export default function ReportesPage() {
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)" }}>{money(catMasCrecio.actual)}</div>
                       <div style={{ fontSize: 10, color: "var(--red)" }}>{t.vsPrevious(catMasCrecio.deltaPct!)}</div>
+                      <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 1 }}>{t.kpiBefore} {money(catMasCrecio.anterior)}</div>
                     </div>
                   </div>
                 </div>
@@ -634,18 +647,20 @@ export default function ReportesPage() {
                 ) : (
                   <MiniStat center basis="1 1 45%" label={t.salary} value={oculto ? "••" : abbr(periodo.sueldo)} color="var(--green)" />
                 )}
-                {periodo.moveTotal > 0 && <MiniStat center basis="1 1 45%" label={t.withdrawals} value={oculto ? "••" : abbr(periodo.moveTotal)} sub={t.fromSavings} color="var(--yellow)" />}
+                {periodo.moveTotal > 0 && <MiniStat center basis="1 1 45%" label={t.withdrawals} value={oculto ? "••" : abbr(periodo.moveTotal)} color="var(--yellow)"
+                  onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveTotal), explain: `${t.kpiWithdrawalsInfo} (${t.fromSavings})`, color: "var(--yellow)" })} />}
               </div>
 
               {/* Mini-stats: Total ingresado · Ahorros acum. */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                 {reportOn("ingresos_kpis") && totalAhorradoDirecto > 0 && (
-                  <MiniStat center basis="1 1 45%" label={t.totalIncome} value={oculto ? "••" : abbr(periodo.sueldo + totalAhorradoDirecto)} sub={t.toSavingsLabel + ": " + (oculto ? "••" : abbr(totalAhorradoDirecto))} color="var(--green)" />
+                  <MiniStat center basis="1 1 45%" label={t.totalIncome} value={oculto ? "••" : abbr(periodo.sueldo + totalAhorradoDirecto)} color="var(--green)"
+                    onClick={() => setKpiInfo({ title: t.totalIncome, value: oculto ? "••" : formatARS(periodo.sueldo + totalAhorradoDirecto), explain: `${t.kpiTotalIncomeInfo} (${t.toSavingsLabel}: ${oculto ? "••" : formatARS(totalAhorradoDirecto)})`, color: "var(--green)" })} />
                 )}
                 <MiniStat center basis="1 1 45%" label={t.accumSavings}
                   value={ahorrosAcumPeriodo > 0 ? (oculto ? "••" : abbr(ahorrosAcumPeriodo)) : "—"}
-                  sub={deltaAhorros !== null ? `${deltaAhorros >= 0 ? "+" : ""}${oculto ? "••" : abbr(deltaAhorros)}${deltaAhorrosPct !== null ? ` (${deltaAhorrosPct >= 0 ? "+" : ""}${deltaAhorrosPct}%)` : ""}` : undefined}
-                  color="var(--blue)" />
+                  color="var(--blue)"
+                  onClick={ahorrosAcumPeriodo > 0 ? () => setKpiInfo({ title: t.accumSavings, value: oculto ? "••" : formatARS(ahorrosAcumPeriodo), explain: deltaAhorros !== null ? `${t.kpiAccumSavingsInfo} (${deltaAhorros >= 0 ? "+" : ""}${oculto ? "••" : formatARS(deltaAhorros)}${deltaAhorrosPct !== null ? ` · ${deltaAhorrosPct >= 0 ? "+" : ""}${deltaAhorrosPct}%` : ""})` : t.kpiAccumSavingsInfo, color: "var(--blue)" }) : undefined} />
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginBottom: 12 }}>
@@ -761,8 +776,10 @@ export default function ReportesPage() {
                 const peor = valid.length > 0 ? valid.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
                 return (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                    {mejor && <MiniStat center basis="1 1 45%" label={t.bestPeriod} value={shortPer(mejor.periodoId)} sub={`${Math.round((mejor.gastado / mejor.total) * 100)}%`} color="var(--green)" />}
-                    {peor && <MiniStat center basis="1 1 45%" label={t.worstPeriod} value={shortPer(peor.periodoId)} sub={`${Math.round((peor.gastado / peor.total) * 100)}%`} color="var(--red)" />}
+                    {mejor && <MiniStat center basis="1 1 45%" label={t.bestPeriod} value={shortPer(mejor.periodoId)} color="var(--green)"
+                      onClick={() => setKpiInfo({ title: t.bestPeriod, value: shortPer(mejor.periodoId), explain: `${t.kpiBestPeriodInfo} (${Math.round((mejor.gastado / mejor.total) * 100)}%)`, color: "var(--green)" })} />}
+                    {peor && <MiniStat center basis="1 1 45%" label={t.worstPeriod} value={shortPer(peor.periodoId)} color="var(--red)"
+                      onClick={() => setKpiInfo({ title: t.worstPeriod, value: shortPer(peor.periodoId), explain: `${t.kpiWorstPeriodInfo} (${Math.round((peor.gastado / peor.total) * 100)}%)`, color: "var(--red)" })} />}
                   </div>
                 );
               })()}
@@ -853,9 +870,12 @@ export default function ReportesPage() {
 
                   {/* Mini-stats */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                    <MiniStat center label={t.mostActiveDay} value={sinAño(movCounts.diaMasActivo)} sub={t.movCount(movCounts.diaMasActivoN)} color="var(--accent)" />
-                    <MiniStat center label={t.avgMovsPerDay} value={promDia} sub={t.activeDays(movCounts.diasActivos)} color="var(--accent)" />
-                    <MiniStat center label={t.biggestMov} value={mayor ? (oculto ? "••" : abbr(mayor.monto)) : "—"} sub={mayor ? (mayor.descripcion || mayor.categoria) : undefined} color="var(--accent)" />
+                    <MiniStat center label={t.mostActiveDay} value={sinAño(movCounts.diaMasActivo)} color="var(--accent)"
+                      onClick={() => setKpiInfo({ title: t.mostActiveDay, value: sinAño(movCounts.diaMasActivo), explain: `${t.kpiActiveDayInfo} (${t.movCount(movCounts.diaMasActivoN)})`, color: "var(--accent)" })} />
+                    <MiniStat center label={t.avgMovsPerDay} value={promDia} color="var(--accent)"
+                      onClick={() => setKpiInfo({ title: t.avgMovsPerDay, value: promDia, explain: `${t.kpiAvgMovsInfo} (${t.activeDays(movCounts.diasActivos)})`, color: "var(--accent)" })} />
+                    <MiniStat center label={t.biggestMov} value={mayor ? (oculto ? "••" : abbr(mayor.monto)) : "—"} color="var(--accent)"
+                      onClick={mayor ? () => setKpiInfo({ title: t.biggestMov, value: oculto ? "••" : formatARS(mayor.monto), explain: `${t.kpiBiggestMovInfo} (${mayor.descripcion || mayor.categoria})`, color: "var(--accent)" }) : undefined} />
                   </div>
                   </>
                 );
@@ -933,25 +953,8 @@ export default function ReportesPage() {
 
       {/* Modal: Historial de aumentos de sueldo */}
       {modalSueldo && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 200,
-          display: "flex", alignItems: "flex-end", overflow: "hidden",
-        }} onClick={() => { setModalSueldo(false); setModalSueldoExpanded(false); }}>
-          <div style={{
-            width: "100%", background: "var(--bg)", borderRadius: "20px 20px 0 0",
-            maxHeight: modalSueldoExpanded ? "90dvh" : "50dvh", overflowY: "auto", padding: "20px 20px 40px",
-            transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1)",
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 16px", cursor: "grab", touchAction: "none" }}
-              onPointerDown={(e) => { sheetDragY.current = e.clientY; (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
-              onPointerMove={(e) => {
-                if (sheetDragY.current === null) return;
-                const dy = sheetDragY.current - e.clientY;
-                if (dy > 30) { setModalSueldoExpanded(true); sheetDragY.current = null; }
-                else if (dy < -30 && modalSueldoExpanded) { setModalSueldoExpanded(false); sheetDragY.current = null; }
-              }}
-              onPointerUp={() => { sheetDragY.current = null; }}
-            />
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => setModalSueldo(false)}>
+          <div style={{ width: "100%", maxWidth: 360, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, maxHeight: "80vh", overflowY: "auto", padding: 20, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>{t.salaryHistory}</span>
               <button onClick={() => setModalSueldo(false)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
@@ -1095,6 +1098,8 @@ export default function ReportesPage() {
           </div>
         );
       })()}
+
+      {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
     </div>
   );
 }

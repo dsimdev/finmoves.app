@@ -9,6 +9,7 @@ import { useT } from "@/hooks/useTranslation";
 import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { MediaViewer } from "@/components/ui/MediaViewer";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
@@ -383,7 +384,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   return (
     <>
-    <Sheet open={open} onClose={onClose} title={title}>
+    <Sheet open={open && view !== "delete" && !readOnly} onClose={onClose} title={title}>
       {/* ADD */}
       {mode === "add" && (
         <form onSubmit={handleAdd}>
@@ -682,55 +683,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         </form>
       )}
 
-      {/* DETALLE (solo lectura — desde el historial de Inversión) */}
-      {mode === "edit" && movimiento && readOnly && (
-        <div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
-            {[{ l: t.type, v: movimiento.tipo }, { l: t.category, v: movimiento.categoria }, { l: t.date, v: fechaCorta(movimiento.fecha) }].map((f) => (
-              <div key={f.l} style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
-                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{f.l}</div>
-                <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.v}</div>
-              </div>
-            ))}
-          </div>
-          {esFXMov && (
-            <div style={{ display: "grid", gridTemplateColumns: movimiento.cotizacion != null ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 14 }}>
-              <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px" }}>
-                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.quantity}</div>
-                <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{fxMovLabel} {movimiento.cantidadUSD?.toFixed(2) ?? "—"}</div>
-              </div>
-              {movimiento.cotizacion != null && (
-                <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px" }}>
-                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.exchangeRate}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>${movimiento.cotizacion.toLocaleString("es-AR")}</div>
-                </div>
-              )}
-            </div>
-          )}
-          <div style={{ display: "grid", gridTemplateColumns: "30% 70%", gap: 10, marginBottom: 14 }}>
-            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
-              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.amount}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{money(movimiento.monto)}</div>
-            </div>
-            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
-              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.description}</div>
-              <div style={{ fontSize: 12, fontWeight: 600 }}>{movimiento.descripcion || "—"}</div>
-            </div>
-          </div>
-          {movimiento.observaciones && (
-            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", marginBottom: 14 }}>
-              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.notes}</div>
-              <div style={{ fontSize: 12, fontWeight: 600 }}>{movimiento.observaciones}</div>
-            </div>
-          )}
-          {movimiento.comprobanteUrl && (
-            <button type="button" onClick={() => setViewer({ src: movimiento.comprobanteUrl!, isPdf: !!movimiento.comprobantePath?.toLowerCase().endsWith(".pdf") })}
-              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer", marginBottom: 8 }}>
-              📎 {t.receipt}
-            </button>
-          )}
-        </div>
-      )}
+      {/* DETALLE (solo lectura): se renderiza como modal flotante fuera del Sheet (más abajo). */}
 
       {/* EDIT */}
       {mode === "edit" && movimiento && !readOnly && view === "form" && (
@@ -818,24 +771,72 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         </>
       )}
 
-      {/* DELETE */}
-      {mode === "edit" && movimiento && view === "delete" && (
-        <div style={{ textAlign: "center", paddingTop: 8 }}>
-          <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>{t.deleteMovementTitle}</div>
-          <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>{movimiento.descripcion || movimiento.categoria}</div>
-          <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 10 }}>
-            {money(movimiento.monto)}
-          </div>
-          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 24 }}>{t.actionIrreversible}</div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setView("form")} className="btn btn-ghost" style={{ flex: 1 }}>{t.cancel}</button>
-            <button onClick={handleDelete} disabled={editLoading} className="btn btn-danger" style={{ flex: 1 }}>
-              {editLoading ? "..." : t.yesDelete}
-            </button>
-          </div>
-        </div>
-      )}
     </Sheet>
+    {open && readOnly && movimiento && (
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 360, maxHeight: "85vh", overflowY: "auto", padding: 20, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 16, fontWeight: 700 }}>{t.detail}</span>
+            <button onClick={onClose} aria-label={t.cancel} style={{ background: "none", border: "none", color: "var(--red)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 0 }}>×</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+            {[{ l: t.type, v: movimiento.tipo }, { l: t.category, v: movimiento.categoria }, { l: t.date, v: fechaCorta(movimiento.fecha) }].map((f) => (
+              <div key={f.l} style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{f.l}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.v}</div>
+              </div>
+            ))}
+          </div>
+          {esFXMov && (
+            <div style={{ display: "grid", gridTemplateColumns: movimiento.cotizacion != null ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 12 }}>
+              <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px" }}>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.quantity}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{fxMovLabel} {movimiento.cantidadUSD?.toFixed(2) ?? "—"}</div>
+              </div>
+              {movimiento.cotizacion != null && (
+                <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px" }}>
+                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.exchangeRate}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>${movimiento.cotizacion.toLocaleString("es-AR")}</div>
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "30% 70%", gap: 10, marginBottom: 12 }}>
+            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
+              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.amount}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{money(movimiento.monto)}</div>
+            </div>
+            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", minWidth: 0 }}>
+              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.description}</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>{movimiento.descripcion || "—"}</div>
+            </div>
+          </div>
+          {movimiento.observaciones && (
+            <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "6px 10px", marginBottom: 12 }}>
+              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{t.notes}</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>{movimiento.observaciones}</div>
+            </div>
+          )}
+          {movimiento.comprobanteUrl && (
+            <button type="button" onClick={() => setViewer({ src: movimiento.comprobanteUrl!, isPdf: !!movimiento.comprobantePath?.toLowerCase().endsWith(".pdf") })}
+              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}>
+              📎 {t.receipt}
+            </button>
+          )}
+        </div>
+      </div>
+    )}
+    {open && view === "delete" && movimiento && (
+      <ConfirmModal title={t.delete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)" loading={editLoading}
+        onConfirm={handleDelete} onCancel={onClose}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ marginBottom: 6 }}>{t.deleteMovementTitle}</div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{movimiento.descripcion || movimiento.categoria}</div>
+          <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 8 }}>{money(movimiento.monto)}</div>
+          <div style={{ fontSize: 11 }}>{t.actionIrreversible}</div>
+        </div>
+      </ConfirmModal>
+    )}
     {viewer && <MediaViewer src={viewer.src} isPdf={viewer.isPdf} onClose={() => setViewer(null)} />}
     </>
   );

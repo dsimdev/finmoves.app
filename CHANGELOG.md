@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.10.0] — 2026-06-14
+
+### Added
+- **KPI detail card**: report KPIs (Expenses, Income, Movements, Periods) and the Investment goal mini-stats are now tappable — a centered floating card shows the **exact number** (un-abbreviated) plus a short explanation. Cards were stripped of secondary text for a cleaner look.
+- **Unified floating confirm/detail modals**: deleting a movement, deleting categories/methods/origins (long-press), all Settings warnings (leave-to-GitHub, export, sign-out, language), the Investment history detail (read-only) and the salary raise history now open as centered floating cards instead of bottom sheets.
+
+### Changed
+- **Reports**: "vs previous period" now shows the **difference in $** (what the % represents) instead of the previous total; "fastest-growing category" shows the previous-period amount. Trend explanation clarified (red = spending more, green = less). The period **"Compare" button renamed to "Multiple"** (it selects several periods).
+- **Investment**: average price + gain/loss merged into the reserve hero as a compact line (removed the two large cards), for USD and EUR.
+- **Receipt viewer**: image framed (rounded corners + shadow) and the backdrop is more transparent so the app stays visible behind.
+
+---
+
 ## [2.9.1] — 2026-06-14
 
 ### Added
