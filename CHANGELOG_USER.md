@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.10.3] — 2026-06-14
+
+### Mejoras
+- **Capturas al instalar la app**: al instalar FinMoves desde el navegador ahora se ve un adelanto de las pantallas (ingreso, reportes y configuración).
+
+---
+
 ## [2.10.2] — 2026-06-14
 
 ### Mejoras

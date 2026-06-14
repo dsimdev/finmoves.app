@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.10.3] — 2026-06-14
+
+### Added
+- **PWA install screenshots**: the manifest now ships three `narrow` (mobile) screenshots (login, reports, settings), so the browser's install prompt and richer install UI show a preview of the app before installing.
+
+---
+
 ## [2.10.2] — 2026-06-14
 
 ### Performance

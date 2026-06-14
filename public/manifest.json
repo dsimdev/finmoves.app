@@ -19,6 +19,11 @@
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
+  "screenshots": [
+    { "src": "/pwa-login.jpeg", "sizes": "780x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "Ingreso a FinMoves" },
+    { "src": "/pwa-reports.jpeg", "sizes": "771x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "Reportes por período" },
+    { "src": "/pwa-settings.jpeg", "sizes": "783x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "Configuración" }
+  ],
   "shortcuts": [
     { "name": "Nuevo movimiento", "short_name": "Movimiento", "url": "/movements", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
     { "name": "Reportes", "short_name": "Reportes", "url": "/reports", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
