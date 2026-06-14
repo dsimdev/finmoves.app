@@ -71,7 +71,7 @@ export const es = {
   management: "Gestión",
   noMovementsAdd: "No hay movimientos. Usá + para agregar.",
   newMovement: "Nuevo movimiento",
-  newShort: "Nuevo",
+  newShort: "Movimiento",
   addTo: "Ingresar en",
   closePeriodDesc: "Cierra el período actual, mueve el resto a Ahorros y abre uno nuevo.",
   salaryOpensPeriod: "Abre un período nuevo y pasa el sobrante a Ahorros.",

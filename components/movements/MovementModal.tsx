@@ -381,6 +381,20 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           </div>
 
+          {/* Monto + Fecha — el monto es el primer dato; la fecha al lado (ya viene cargada). */}
+          <div style={{ display: "grid", gridTemplateColumns: esUSD ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 16 }}>
+            {!esUSD && (
+              <div>
+                <div className="label">{t.amount}</div>
+                <input className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" />
+              </div>
+            )}
+            <div>
+              <div className="label">{t.date}</div>
+              <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            </div>
+          </div>
+
           {esMove && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
@@ -534,16 +548,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               <input className="input" type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
             </div>
           )}
-          {!esUSD && (
-            <div style={{ marginBottom: 14 }}>
-              <div className="label">{t.amount}</div>
-              <input className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" />
-            </div>
-          )}
-          <div style={{ marginBottom: 14 }}>
-            <div className="label">{t.date}</div>
-            <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-          </div>
           {!esMove && !esUSD && (
             <div style={{ marginBottom: 14 }}>
               <div className="label">{t.paymentMethod}</div>

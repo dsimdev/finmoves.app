@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.6.1] — 2026-06-14
+
+### Changed (new-movement form)
+- **Amount is now the first field**, on a compact row next to the date (which is pre-filled), so the most common entry is faster. The standalone amount/date fields below were removed.
+- Home shortcut relabeled **"Movimiento"** / "Movement" (kept "Movement" in EN since "Move" is already the transfer type).
+
+---
+
 ## [2.6.0] — 2026-06-14
 
 ### Added

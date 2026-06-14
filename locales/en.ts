@@ -73,7 +73,7 @@ export const en: AppLocale = {
   management: "Management",
   noMovementsAdd: "No movements. Tap + to add one.",
   newMovement: "New movement",
-  newShort: "New",
+  newShort: "Movement",
   addTo: "Add to",
   closePeriodDesc: "Closes the current period, moves remaining balance to Savings and opens a new one.",
   salaryOpensPeriod: "Opens a new period and moves the leftover to Savings.",

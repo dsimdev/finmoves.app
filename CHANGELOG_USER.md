@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.6.1] — 2026-06-14
+
+### Mejoras
+- Cargar un movimiento es más rápido: el **monto va primero**, con la **fecha al lado**.
+
+---
+
 ## [2.6.0] — 2026-06-14
 
 ### Novedades
