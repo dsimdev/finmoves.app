@@ -174,60 +174,57 @@ export default function ConfigPage() {
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [pendingLang, setPendingLang] = useState<"es" | "en" | null>(null);
-  // Modal de perfil de usuario
+  // Card de perfil + modal de cambio de contraseña
   const [showUserModal, setShowUserModal] = useState(false);
-  const [nameInput, setNameInput] = useState("");
+  const [showChangePass, setShowChangePass] = useState(false);
   const [currentPassInput, setCurrentPassInput] = useState("");
   const [passInput, setPassInput] = useState("");
-  const [changingPass, setChangingPass] = useState(false);
   const [passVisible, setPassVisible] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [profileBusy, setProfileBusy] = useState(false);
   const openUserModal = () => {
-    setNameInput(config?.meta.nombre ?? "");
+    // Lazy sync: si Google está vinculado y el nombre en providerData difiere del guardado, actualizar.
+    const u = auth.currentUser;
+    if (u && isGoogleLinked()) {
+      const g = u.providerData.find((p) => p.providerId === "google.com");
+      const googleName = g?.displayName;
+      if (googleName && googleName !== config?.meta.nombre) {
+        setDoc(doc(db, `users/${u.uid}/config/meta`), { meta: { nombre: googleName } }, { merge: true })
+          .then(() => refresh())
+          .catch(() => {});
+      }
+    }
     setPassInput("");
     setCurrentPassInput("");
-    setChangingPass(false);
     setPassVisible(false);
     setProfileMsg(null);
     setShowUserModal(true);
   };
-  const saveProfile = async () => {
-    if (profileBusy || !config) return;
+  const openChangePass = () => {
+    setPassInput("");
+    setCurrentPassInput("");
+    setPassVisible(false);
+    setProfileMsg(null);
+    setShowChangePass(true);
+  };
+  const savePassword = async () => {
+    if (profileBusy) return;
+    if (passInput.length < 6) { setProfileMsg({ ok: false, text: t.regWeakPassword }); return; }
+    if (!currentPassInput) { setProfileMsg({ ok: false, text: t.currentPasswordRequired }); return; }
     setProfileBusy(true); setProfileMsg(null);
     try {
-      const nombre = nameInput.trim();
-      if (nombre !== (config.meta.nombre ?? "")) {
-        await saveConfig({ ...config, meta: { ...config.meta, nombre: nombre || undefined } });
-      }
-      if (changingPass && passInput) {
-        if (passInput.length < 6) { setProfileMsg({ ok: false, text: t.regWeakPassword }); return; }
-        if (!currentPassInput) { setProfileMsg({ ok: false, text: t.currentPasswordRequired }); return; }
-        try {
-          // Reautenticar con la contraseña actual evita el error
-          // auth/requires-recent-login en sesiones de larga duración.
-          const cred = EmailAuthProvider.credential(auth.currentUser!.email!, currentPassInput);
-          await reauthenticateWithCredential(auth.currentUser!, cred);
-          await updatePassword(auth.currentUser!, passInput);
-        } catch (err) {
-          const code = (err as { code?: string })?.code ?? "";
-          const text = code === "auth/wrong-password" || code === "auth/invalid-credential"
-            ? t.wrongCurrentPassword
-            : code === "auth/requires-recent-login" ? t.reauthNeeded : t.profileError;
-          setProfileMsg({ ok: false, text });
-          return;
-        }
-        // Cambió la contraseña: cerramos sesión para que entre con la nueva.
-        setProfileMsg({ ok: true, text: t.passwordChangedRelogin });
-        setPassInput(""); setCurrentPassInput("");
-        setTimeout(async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }, 1400);
-        return;
-      }
-      setProfileMsg({ ok: true, text: t.profileSaved });
-      setPassInput("");
-      setTimeout(() => setShowUserModal(false), 900);
-    } catch {
-      setProfileMsg({ ok: false, text: t.profileError });
+      const cred = EmailAuthProvider.credential(auth.currentUser!.email!, currentPassInput);
+      await reauthenticateWithCredential(auth.currentUser!, cred);
+      await updatePassword(auth.currentUser!, passInput);
+      setProfileMsg({ ok: true, text: t.passwordChangedRelogin });
+      setPassInput(""); setCurrentPassInput("");
+      setTimeout(async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }, 1400);
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? "";
+      const text = code === "auth/wrong-password" || code === "auth/invalid-credential"
+        ? t.wrongCurrentPassword
+        : code === "auth/requires-recent-login" ? t.reauthNeeded : t.profileError;
+      setProfileMsg({ ok: false, text });
     } finally {
       setProfileBusy(false);
     }
@@ -1802,58 +1799,52 @@ export default function ConfigPage() {
 
       <BottomSheet open={showUserModal} onClose={() => setShowUserModal(false)}>
         {/* Profile header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid var(--faint)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24, paddingBottom: 18, borderBottom: "1px solid var(--faint)" }}>
           {config.meta.fotoURL ? (
-            <img src={config.meta.fotoURL} alt="" style={{ width: 52, height: 52, borderRadius: 14, objectFit: "cover", border: "1px solid var(--green)44", flexShrink: 0 }} />
+            <img src={config.meta.fotoURL} alt="" style={{ width: 56, height: 56, borderRadius: 16, objectFit: "cover", border: "1px solid var(--green)44", flexShrink: 0 }} />
           ) : (
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: config.meta.nombre ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${config.meta.nombre ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: config.meta.nombre ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${config.meta.nombre ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="8" r="4" stroke={config.meta.nombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" />
                 <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke={config.meta.nombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" />
               </svg>
             </div>
           )}
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{config.meta.nombre || t.user}</div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{config.meta.nombre || t.user}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
           </div>
         </div>
 
-        {/* Nombre */}
-        <div style={{ marginBottom: 16 }}>
-          <div className="label" style={{ marginBottom: 6 }}>{t.nameLabel}</div>
-          <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: "100%" }} placeholder={t.namePlaceholder} maxLength={40} />
-        </div>
-
-        {/* Cambiar contraseña + banderas en la misma fila */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: changingPass ? 0 : 16 }}>
-          {!changingPass ? (
-            <button onClick={() => setChangingPass(true)} className="row" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)", cursor: "pointer", textAlign: "left" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{t.changePassword}</span>
-              </div>
-            </button>
-          ) : (
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>{t.changePassword}</div>
-          )}
-          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+        {/* Dos botones del mismo tamaño: cambiar contraseña + banderas */}
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={openChangePass} style={{ flex: 1, height: 48, borderRadius: 14, border: "1px solid var(--border)", background: "var(--surface-alt)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            {t.changePassword}
+          </button>
+          <div style={{ display: "flex", gap: 6, height: 48, borderRadius: 14, border: "1px solid var(--border)", background: "var(--surface-alt)", padding: "0 14px", alignItems: "center" }}>
             {(["es", "en"] as const).map((l) => (
               <button key={l} onClick={() => { if (l !== lang) setPendingLang(l); }} aria-label={l === "es" ? "Español" : "English"}
-                style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, opacity: lang === l ? 1 : 0.35, filter: lang === l ? "none" : "grayscale(0.7)", transform: lang === l ? "scale(1.12)" : "scale(1)", transition: "all 0.15s" }}>
-                {l === "es" ? <FlagAR /> : <FlagGB />}
+                style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, opacity: lang === l ? 1 : 0.35, filter: lang === l ? "none" : "grayscale(0.7)", transform: lang === l ? "scale(1.1)" : "scale(1)", transition: "all 0.15s" }}>
+                {l === "es" ? <FlagAR size={24} /> : <FlagGB size={24} />}
               </button>
             ))}
           </div>
         </div>
+      </BottomSheet>
 
-        {changingPass && (
-          <div style={{ padding: "14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)", marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <div className="label" style={{ margin: 0 }}>{t.changePassword}</div>
-              <button onClick={() => { setChangingPass(false); setPassInput(""); setCurrentPassInput(""); setPassVisible(false); }} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 12, cursor: "pointer", padding: 0 }}>{t.cancel}</button>
-            </div>
-            <input type="password" value={currentPassInput} onChange={(e) => setCurrentPassInput(e.target.value)} className="input" style={{ width: "100%", marginBottom: 8 }} placeholder={t.currentPasswordPlaceholder} autoComplete="current-password" autoFocus />
+      {showChangePass && (
+        <ConfirmModal
+          title={t.changePassword}
+          confirmLabel={t.saveProfile}
+          cancelLabel={t.cancel}
+          confirmColor="var(--blue)"
+          loading={profileBusy}
+          onConfirm={savePassword}
+          onCancel={() => { setShowChangePass(false); setPassInput(""); setCurrentPassInput(""); setProfileMsg(null); }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input type="password" value={currentPassInput} onChange={(e) => setCurrentPassInput(e.target.value)} className="input" placeholder={t.currentPasswordPlaceholder} autoComplete="current-password" autoFocus />
             <div style={{ position: "relative" }}>
               <input type={passVisible ? "text" : "password"} value={passInput} onChange={(e) => setPassInput(e.target.value)} className="input" style={{ width: "100%", paddingRight: 40 }} placeholder={t.newPasswordPlaceholder} autoComplete="new-password" />
               <button onClick={() => setPassVisible(v => !v)} aria-label={passVisible ? t.hide : t.show} style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--muted)", display: "flex" }}>
@@ -1862,24 +1853,11 @@ export default function ConfigPage() {
                   : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
               </button>
             </div>
-            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.passwordHint}</div>
+            <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.passwordHint}</div>
+            {profileMsg && <div style={{ fontSize: 12, color: profileMsg.ok ? "var(--green)" : "var(--red)", lineHeight: 1.5 }}>{profileMsg.text}</div>}
           </div>
-        )}
-
-        {profileMsg && (
-          <div style={{ fontSize: 12, color: profileMsg.ok ? "var(--green)" : "var(--red)", marginBottom: 12, lineHeight: 1.5 }}>{profileMsg.text}</div>
-        )}
-
-        {(() => {
-          const hasChanges = nameInput.trim() !== (config.meta.nombre ?? "") || (changingPass && passInput.length > 0);
-          const disabled = profileBusy || !hasChanges;
-          return (
-            <button onClick={saveProfile} disabled={disabled} style={{ width: "100%", padding: "13px 0", borderRadius: 12, border: "none", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1, transition: "opacity 0.15s", marginTop: 4 }}>
-              {t.saveProfile}
-            </button>
-          );
-        })()}
-      </BottomSheet>
+        </ConfirmModal>
+      )}
 
       {confirmLogout && (
         <ConfirmModal title={t.signOutTitle} confirmLabel={t.signOut} cancelLabel={t.cancel} confirmColor="var(--red)"
