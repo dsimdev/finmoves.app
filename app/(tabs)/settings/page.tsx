@@ -928,44 +928,6 @@ export default function ConfigPage() {
               </div>
             )}
 
-            {/* Notificaciones */}
-            {pushAvailable && (
-              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: pushOn ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${pushOn ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pushOn ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    </svg>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.notifications}</div>
-                    <div style={{ fontSize: 11, color: pushError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{pushError || t.notificationsSub}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                  <Toggle activo={pushOn} onClick={togglePush} />
-                </div>
-              </div>
-            )}
-
-            {/* Recordatorios (requiere notificaciones activas) */}
-            {pushOn && (
-              <button onClick={openRecordatorios} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--orange-dim)", border: "1px solid var(--orange)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--orange)" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" />
-                    </svg>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.reminders}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.remindersSub}</div>
-                  </div>
-                </div>
-              </button>
-            )}
-
             {/* Backup */}
             <button onClick={() => setShowExportConfirm(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
@@ -1080,77 +1042,42 @@ export default function ConfigPage() {
               }} />
             </div>
 
-            {/* Inversión — visible solo si el dueño habilitó el permiso */}
-            {inversionAllowed && (
-            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: showAhorros ? "var(--green-dim)" : "var(--red-dim)",
-                  border: `1px solid ${showAhorros ? "var(--green)44" : "var(--red)44"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 1 18" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                    <polyline points="16 7 22 7 22 13" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+            {/* Notificaciones */}
+            {pushAvailable && (
+              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: pushOn ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${pushOn ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pushOn ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.notifications}</div>
+                    <div style={{ fontSize: 11, color: pushError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{pushError || t.notificationsSub}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentsSection}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showInvestmentsLabel}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  <Toggle activo={pushOn} onClick={togglePush} />
                 </div>
               </div>
-              <Toggle activo={showAhorros} onClick={() => {
-                const next = !showAhorros;
-                setPref("showAhorros", next);
-                if (config) saveConfig({ ...config, meta: { ...config.meta, showAhorros: next } });
-              }} />
-            </div>
             )}
 
-            {/* Moneda de inversión */}
-            {showAhorros && (
-            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: "var(--yellow-dim)", border: "1px solid var(--yellow)44",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
-                    {monedaPrincipal === "USD" ? "€" : monedaPrincipal === "EUR" ? "U$D" : (monedaInversiones === "EUR" ? "€" : "$")}
-                  </span>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentCurrency}</div>
-                    {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>{t.activeGoal}</span>}
+            {/* Recordatorios (requiere notificaciones activas) */}
+            {pushOn && (
+              <button onClick={openRecordatorios} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--orange-dim)", border: "1px solid var(--orange)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--orange)" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" />
+                    </svg>
                   </div>
-                  {monedaPrincipal === "ARS" ? (
-                    config?.meta.metaMonto ? (
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.cantChangeWithGoal}</div>
-                    ) : (
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {(["USD", "EUR"] as const).map((m) => (
-                          <button key={m} onClick={() => {
-                            setMoneda(m);
-                            if (config) saveConfig({ ...config, meta: { ...config.meta, monedaInversiones: m } });
-                          }} className="pill" style={{
-                            borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)",
-                            background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent",
-                            color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)",
-                          }}>{m}</button>
-                        ))}
-                      </div>
-                    )
-                  ) : (
-                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {monedaPrincipal === "USD" ? t.eurInvestments : t.usdInvestments}
-                    </div>
-                  )}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.reminders}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.remindersSub}</div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </button>
             )}
 
             {/* Auto-ahorro */}
@@ -1314,12 +1241,64 @@ export default function ConfigPage() {
             </div>)}
           </div>
 
-          {/* ── Inversión ── */}
-          {showAhorros && (
+          {/* ── Inversión ── (toda la sección visible solo si el dueño habilitó el permiso) */}
+          {inversionAllowed && (
           <div className="card">
             <SectionHeader title={t.settingsTabInvestments} open={isOpen("ahorros")} onClick={() => toggleSection("ahorros")} />
             {isOpen("ahorros") && (<div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
+            {/* Mostrar sección de inversión (preferencia del usuario) */}
+            <div className="row" style={{ padding: "12px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: showAhorros ? "var(--green-dim)" : "var(--red-dim)", border: `1px solid ${showAhorros ? "var(--green)44" : "var(--red)44"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 1 18" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    <polyline points="16 7 22 7 22 13" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentsSection}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showInvestmentsLabel}</div>
+                </div>
+              </div>
+              <Toggle activo={showAhorros} onClick={() => {
+                const next = !showAhorros;
+                setPref("showAhorros", next);
+                if (config) saveConfig({ ...config, meta: { ...config.meta, showAhorros: next } });
+              }} />
+            </div>
+
+            {showAhorros && (<>
+            {/* Moneda de inversión */}
+            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--yellow-dim)", border: "1px solid var(--yellow)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
+                    {monedaPrincipal === "USD" ? "€" : monedaPrincipal === "EUR" ? "U$D" : (monedaInversiones === "EUR" ? "€" : "$")}
+                  </span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentCurrency}</div>
+                    {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>{t.activeGoal}</span>}
+                  </div>
+                  {monedaPrincipal === "ARS" ? (
+                    config?.meta.metaMonto ? (
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.cantChangeWithGoal}</div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {(["USD", "EUR"] as const).map((m) => (
+                          <button key={m} onClick={() => { setMoneda(m); if (config) saveConfig({ ...config, meta: { ...config.meta, monedaInversiones: m } }); }} className="pill" style={{ borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)", background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent", color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)" }}>{m}</button>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ fontSize: 11, color: "var(--muted)" }}>{monedaPrincipal === "USD" ? t.eurInvestments : t.usdInvestments}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 11, color: "var(--muted)", borderTop: "1px solid var(--faint)", paddingTop: 12, marginBottom: 12 }}>
               {t.exchangeRate}: {tasaEnUso != null ? `$${tasaEnUso.toLocaleString("es-AR")}` : "—"} ({monedaInversiones === "EUR" ? "EUR" : "USD"})
             </div>
 
@@ -1393,6 +1372,7 @@ export default function ConfigPage() {
               )}
             </div>
 
+            </>)}
             </div>)}
           </div>
           )}

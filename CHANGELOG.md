@@ -4,6 +4,18 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.15.0] — 2026-06-14
+
+### Added
+- **Admin panel (owner-only)** in Settings → "Administración": invite codes (lists only available ones, manual delete, **24h auto-expiry** for unused codes — enforced on registration + cron cleanup + on open) and a **registered users** list (email as primary, name + the invite code they used as secondary, push status dot).
+- **Per-user permissions** managed by the owner, both **default OFF**: **Images** (receipt upload) and **Investment**. Enforced: no Images permission → no receipt option in the add sheet; no Investment permission → the user loses the Investment tab/section entirely and can't re-enable it (forced in `data-context`).
+- APIs: `/api/admin/users` (GET list, POST set permission, owner-gated), `invite-codes` GET (available) / DELETE + 24h expiry.
+
+### Changed
+- **Settings reorg**: Notifications + Reminders moved into **General**; the Investment toggle + currency moved into the **Investment** section (above goal config), shown only when the user has the Investment permission.
+
+---
+
 ## [2.14.2] — 2026-06-14
 
 ### Fixed

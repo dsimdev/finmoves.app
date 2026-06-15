@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.15.0] — 2026-06-14
+
+### Mejoras
+- **Configuración reordenada**: Notificaciones y Recordatorios ahora están en **Generales**, y la configuración de **Inversión** quedó dentro de la sección **Inversión** (más ordenado).
+
+---
+
 ## [2.14.2] — 2026-06-14
 
 ### Arreglos
