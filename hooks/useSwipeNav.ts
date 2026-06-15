@@ -64,8 +64,9 @@ export function useSwipeNav() {
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
       if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2) return;
-      if (dx < 0 && idx < tabs.length - 1) router.push(tabs[idx + 1]);
-      else if (dx > 0 && idx > 0) router.push(tabs[idx - 1]);
+      // replace (no push): así "atrás" no recorre el historial de pestañas, sale de la app.
+      if (dx < 0 && idx < tabs.length - 1) router.replace(tabs[idx + 1]);
+      else if (dx > 0 && idx > 0) router.replace(tabs[idx - 1]);
     };
 
     window.addEventListener("touchstart", onStart, { passive: true });

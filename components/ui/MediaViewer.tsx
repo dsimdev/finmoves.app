@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 /**
  * Visor a pantalla completa para comprobantes, dentro de la app (sin abrir la
@@ -9,6 +10,7 @@ import { createPortal } from "react-dom";
  */
 export function MediaViewer({ src, isPdf, onClose }: { src: string; isPdf: boolean; onClose: () => void }) {
   const [mounted, setMounted] = useState(false);
+  useScrollLock(true);
   const [t, setT] = useState({ scale: 1, x: 0, y: 0 });
   const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
   const start = useRef<{ dist: number; scale: number; cx: number; cy: number; x: number; y: number } | null>(null);
