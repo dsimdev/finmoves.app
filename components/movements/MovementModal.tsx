@@ -7,6 +7,7 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
 import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
+import { listarPlantillas, crearPlantilla, eliminarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { MediaViewer } from "@/components/ui/MediaViewer";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -108,6 +109,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
+  // Plantillas de gasto frecuente (solo modo alta).
+  const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
+  const [tplDelete, setTplDelete] = useState<Plantilla | null>(null);
+  const [tplSavedFlash, setTplSavedFlash] = useState(false);
+
   const resetComprobante = () => {
     setComprobantePreview((p) => { if (p) URL.revokeObjectURL(p); return null; });
     setComprobanteFile(null); setComprobanteRemoved(false);
@@ -157,6 +163,42 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, movimiento?.id, initialView]);
+
+  // Cargar plantillas al abrir un alta normal (no reserva ni sin períodos).
+  useEffect(() => {
+    if (!open || mode !== "add" || reserveMode || !user?.uid) return;
+    listarPlantillas(user.uid).then(setPlantillas).catch(() => {});
+  }, [open, mode, reserveMode, user?.uid]);
+
+  const aplicarPlantilla = (p: Plantilla) => {
+    setTipo("Gasto");
+    setCategoria(p.categoria);
+    setMonto(String(p.monto));
+    setDescripcion(p.nombre);
+    setMedioPago(p.medioPago);
+    setObservaciones(p.observaciones ?? "");
+  };
+
+  const guardarComoPlantilla = async () => {
+    if (!user?.uid || tipo !== "Gasto" || !categoria) return;
+    await crearPlantilla(user.uid, {
+      nombre: descripcion.trim() || categoria,
+      categoria,
+      monto: parseFloat(monto || "0"),
+      medioPago,
+      ...(observaciones.trim() ? { observaciones: observaciones.trim() } : {}),
+    });
+    setTplSavedFlash(true);
+    setTimeout(() => setTplSavedFlash(false), 1800);
+    listarPlantillas(user.uid).then(setPlantillas).catch(() => {});
+  };
+
+  const confirmarBorrarPlantilla = async () => {
+    if (!user?.uid || !tplDelete) return;
+    await eliminarPlantilla(user.uid, tplDelete.id);
+    setPlantillas((prev) => prev.filter((x) => x.id !== tplDelete.id));
+    setTplDelete(null);
+  };
 
   const esSueldo = tipo === "Ingreso" && categoria === "Sueldo";
   const esAhorros = tipo === "Ingreso" && categoria === "Ahorros";
@@ -416,6 +458,21 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           </div>
 
+          {/* Plantillas: tap precarga el form; × borra. Solo para gastos. */}
+          {tipo === "Gasto" && plantillas.length > 0 && (
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2, scrollbarWidth: "none" }}>
+              {plantillas.map((p) => (
+                <div key={p.id} className="pill" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, borderColor: "var(--border)", padding: "5px 8px 5px 12px" }}>
+                  <button type="button" onClick={() => aplicarPlantilla(p)} style={{ background: "none", border: "none", color: "var(--text)", cursor: "pointer", fontSize: 12, padding: 0, display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span>{p.nombre}</span>
+                    {p.monto > 0 && <span style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 11 }}>{money(p.monto)}</span>}
+                  </button>
+                  <button type="button" aria-label={t.tplDelete} onClick={() => setTplDelete(p)} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: "0 2px" }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Monto + Fecha — el monto es el primer dato; la fecha al lado (ya viene cargada). */}
           <div style={{ display: "grid", gridTemplateColumns: esUSD ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 16 }}>
             {!esUSD && (
@@ -653,6 +710,19 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 {comprobanteIcon()}
               </div>
             )}
+            {tipo === "Gasto" && !!categoria && parseFloat(monto || "0") > 0 && (
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <button type="button" onClick={guardarComoPlantilla} aria-label={t.tplSave} title={t.tplSave} style={{
+                  display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+                  color: tplSavedFlash ? "var(--green)" : "var(--muted)", cursor: "pointer", fontSize: 12, padding: 4,
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill={tplSavedFlash ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                  {tplSavedFlash ? t.tplSaved : t.tplSave}
+                </button>
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "center" }}>
               <button type="submit" disabled={!canSubmit || addLoading} aria-label={t.save} style={{
                 width: 52, height: 52, borderRadius: "50%",
@@ -828,6 +898,15 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 8 }}>{money(movimiento.monto)}</div>
           <div style={{ fontSize: 11 }}>{t.actionIrreversible}</div>
           {editError && <div style={{ fontSize: 12, color: "var(--red)", marginTop: 10, fontWeight: 600 }}>{editError}</div>}
+        </div>
+      </ConfirmModal>
+    )}
+    {tplDelete && (
+      <ConfirmModal title={t.tplDelete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)"
+        onConfirm={confirmarBorrarPlantilla} onCancel={() => setTplDelete(null)}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ marginBottom: 6 }}>{t.tplDeleteConfirm}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{tplDelete.nombre}</div>
         </div>
       </ConfirmModal>
     )}

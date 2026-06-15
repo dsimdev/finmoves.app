@@ -17,7 +17,7 @@ import { useT } from "@/hooks/useTranslation";
 
 function TipoColor(m: Movimiento) {
   if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
-  if (m.tipo === "Move") return "var(--yellow)";
+  if (m.tipo === "Move") return "var(--orange)";
   return "var(--green)";
 }
 function TipoPrefix(m: Movimiento) {
