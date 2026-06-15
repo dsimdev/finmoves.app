@@ -256,3 +256,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ── Landing: feature card hover ── */
+.screen-card {
+  transition: transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.screen-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(83, 109, 254, 0.2);
+}
