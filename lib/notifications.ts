@@ -2,42 +2,36 @@ import { adminDb } from "./firebase-admin";
 import { sendPushToUser } from "./web-push";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
-import { parseChangelogVersions, releasesSince, UPDATE_BANNER_THRESHOLD } from "./changelog-versions";
 import { Timestamp } from "firebase-admin/firestore";
-import { readFileSync } from "fs";
-import { join } from "path";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
 const DOLAR_THRESHOLD_PCT = 3;
 const HITOS = [50, 75, 100];
-const SUELDO_REMINDER_DAYS = 33; // si pasó más de ~1 mes sin abrir período nuevo
+const SUELDO_REMINDER_DAYS = 30; // si pasó ~1 mes sin abrir período nuevo
+const CARGA_OLVIDADA_DIAS = 3;   // días sin registrar ningún movimiento
+
+// Fecha de hoy en AR (UTC-3) como YYYY-MM-DD, para comparar contra recordatorios.
+function hoyAR(): string {
+  const ar = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  return ar.toISOString().slice(0, 10);
+}
 
 const money = (n: number) => `$${Math.round(n).toLocaleString("es-AR")}`;
 
 interface GlobalCtx {
-  version: string;
   dolarOficial: number | null;
 }
 
-interface UserCtx extends GlobalCtx {
-  versions: string[]; // lista del changelog (nueva→vieja) para contar releases
-}
-
 // Recorre TODOS los usuarios con suscripción push y manda los avisos que
-// correspondan (versión nueva, cambio de dólar, meta de ahorro, recordatorio
-// de sueldo). Cada aviso deduplica vía config/notifyMeta → correr el cron más
-// seguido NO genera spam.
+// correspondan (cambio de dólar, meta de ahorro, recordatorio de sueldo, carga
+// olvidada, recordatorios puntuales). Cada aviso deduplica vía config/notifyMeta
+// → correr el cron más seguido NO genera spam.
 export async function notifyAllUsers(ctx: GlobalCtx): Promise<void> {
-  let versions: string[] = [];
-  try {
-    versions = parseChangelogVersions(readFileSync(join(process.cwd(), "CHANGELOG_USER.md"), "utf-8"));
-  } catch { /* sin changelog → no avisamos versión (sin spam) */ }
-  const full: UserCtx = { ...ctx, versions };
   const userRefs = await adminDb().collection("users").listDocuments();
-  await Promise.all(userRefs.map((ref) => notifyUser(ref.id, full).catch((e) => console.error("[notify]", ref.id, e))));
+  await Promise.all(userRefs.map((ref) => notifyUser(ref.id, ctx).catch((e) => console.error("[notify]", ref.id, e))));
 }
 
-async function notifyUser(uid: string, ctx: UserCtx): Promise<void> {
+async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
   // Sin suscripción → no hacemos nada (ni leemos movimientos).
   const pushSnap = await adminDb().doc(`users/${uid}/config/push`).get();
   if (!pushSnap.exists || !pushSnap.data()?.subscription) return;
@@ -46,17 +40,7 @@ async function notifyUser(uid: string, ctx: UserCtx): Promise<void> {
   const notify = (await notifyRef.get()).data() ?? {};
   const updates: Record<string, unknown> = {};
 
-  // 1) Novedades: avisar solo cada 5 versiones (igual que el banner). No tocar
-  //    lastVersion si todavía no llegó al umbral → la cuenta se acumula.
-  const lastV = notify.lastVersion as string | undefined;
-  if (!lastV) {
-    updates.lastVersion = ctx.version; // primera vez: registrar sin avisar
-  } else if (lastV !== ctx.version && releasesSince(ctx.versions, lastV, ctx.version) >= UPDATE_BANNER_THRESHOLD) {
-    await sendPushToUser(uid, { title: "FinMoves", body: "Hay novedades en la app", tag: "new-version", url: "/settings?changelog=1" });
-    updates.lastVersion = ctx.version;
-  }
-
-  // 2) Cambio del dólar oficial. El baseline (lastDolarOficial) se re-ancla SOLO
+  // Cambio del dólar oficial. El baseline (lastDolarOficial) se re-ancla SOLO
   //    al avisar, así medimos el cambio ACUMULADO desde el último aviso y el
   //    resultado no depende de cada cuánto corra la cron (clave si corre por hora).
   if (ctx.dolarOficial) {
@@ -84,9 +68,38 @@ async function notifyUser(uid: string, ctx: UserCtx): Promise<void> {
 
     await checkMeta(uid, movimientos, config, notify, updates);
     await checkSueldo(uid, movimientos, notify, updates);
+    await checkCargaOlvidada(uid, movimientos, notify, updates);
   }
 
+  // Recordatorios puntuales del usuario (colección propia, independiente de config).
+  await checkRecordatorios(uid);
+
   await notifyRef.set(updates, { merge: true });
+}
+
+// Carga olvidada: si pasaron >= N días desde el último movimiento cargado, avisa
+// una sola vez por ese hueco (se re-arma cuando el usuario vuelve a cargar algo).
+async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  if (movs.length === 0) return;
+  const ultimo = movs.reduce((mx, m) => (m.timestampCarga > mx ? m.timestampCarga : mx), movs[0].timestampCarga);
+  const dias = Math.floor((Date.now() - ultimo.getTime()) / 86_400_000);
+  if (dias < CARGA_OLVIDADA_DIAS) return;
+  const key = ultimo.getTime();
+  if (notify.cargaRemindedFor === key) return; // ya avisé por este hueco
+  await sendPushToUser(uid, { title: "FinMoves", body: `Hace ${dias} días que no registrás un movimiento`, tag: "carga", url: "/movements" });
+  updates.cargaRemindedFor = key;
+}
+
+// Recordatorios puntuales: manda los que llegaron a su fecha y los marca como avisados.
+async function checkRecordatorios(uid: string) {
+  const hoy = hoyAR();
+  const snap = await adminDb().collection(`users/${uid}/recordatorios`).get();
+  for (const doc of snap.docs) {
+    const r = doc.data() as { texto?: string; fecha?: string; notified?: boolean };
+    if (r.notified || !r.fecha || r.fecha > hoy) continue;
+    await sendPushToUser(uid, { title: "Recordatorio", body: r.texto ?? "", tag: `rec-${doc.id}`, url: "/movements" });
+    await doc.ref.set({ notified: true, notifiedAt: Timestamp.now() }, { merge: true });
+  }
 }
 
 // Meta de ahorro: avisa al cruzar 50/75/100% (una vez cada hito).

@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.14.0] — 2026-06-14
+
+### Added
+- **Push reminders**: two new cron-based notifications. **Forgot-to-log** ("it's been N days since your last movement", ≥3 days, deduped per gap, re-armed when you log again) and **custom reminders** (free text + date) created/managed from a new "Recordatorios" sheet in Settings (shown when notifications are on). Stored in `users/{uid}/recordatorios`; the cron sends on/after the date and marks them sent. New `services/firebase/recordatorios.ts`.
+
+### Changed
+- Salary reminder threshold 33 → **30 days**.
+- **"Save as template"** moved to the top of the add form, next to Type (50/50 grid).
+
+### Removed
+- **New-version push notification** (the semver-based update banner already covers updates; removed the changelog-count push to avoid redundant pings).
+
+---
+
 ## [2.13.0] — 2026-06-14
 
 ### Added

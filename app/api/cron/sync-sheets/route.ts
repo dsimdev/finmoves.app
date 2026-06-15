@@ -68,7 +68,6 @@ export async function GET(req: NextRequest) {
   // Idempotente: deduplica vía config/notifyMeta, así correrlo más seguido no spamea.
   try {
     await notifyAllUsers({
-      version: process.env.NEXT_PUBLIC_APP_VERSION ?? "0",
       dolarOficial: await fetchDolarOficial(),
     });
   } catch (err) {

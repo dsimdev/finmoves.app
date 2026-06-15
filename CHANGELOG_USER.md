@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.14.0] — 2026-06-14
+
+### Novedades
+- **Recordatorios**: en Configuración (con notificaciones activadas) podés cargar avisos puntuales con **texto + fecha**; te llega como notificación ese día.
+- **Aviso si te olvidás de cargar**: si pasan varios días sin registrar un movimiento, te lo recordamos.
+
+### Mejoras
+- **"Guardar como plantilla"** quedó arriba, al lado del tipo, más a mano.
+
+---
+
 ## [2.13.0] — 2026-06-14
 
 ### Novedades

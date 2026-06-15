@@ -444,18 +444,39 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               </div>
             </div>
           ) : (<>
-          <div style={{ marginBottom: 18 }}>
-            <div className="label">{t.type}</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {(sinPeriodos ? TIPOS.filter((x) => x.t === "Ingreso") : TIPOS).map(({ t: tt, label, color }) => (
-                <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); if (sinPeriodos) setCategoria("Sueldo"); }}
-                  className="pill" style={{
-                    borderColor: tipo === tt ? color : "var(--border)",
-                    background: tipo === tt ? color + "22" : "transparent",
-                    color: tipo === tt ? color : "var(--muted)",
-                  }}>{label}</button>
-              ))}
+          <div style={{ display: "grid", gridTemplateColumns: tipo === "Gasto" ? "1fr 1fr" : "1fr", gap: 10, marginBottom: 18 }}>
+            <div>
+              <div className="label">{t.type}</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {(sinPeriodos ? TIPOS.filter((x) => x.t === "Ingreso") : TIPOS).map(({ t: tt, label, color }) => (
+                  <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); if (sinPeriodos) setCategoria("Sueldo"); }}
+                    className="pill" style={{
+                      borderColor: tipo === tt ? color : "var(--border)",
+                      background: tipo === tt ? color + "22" : "transparent",
+                      color: tipo === tt ? color : "var(--muted)",
+                    }}>{label}</button>
+                ))}
+              </div>
             </div>
+            {tipo === "Gasto" && (() => {
+              const ready = !!categoria && parseFloat(monto || "0") > 0;
+              return (
+                <div>
+                  <div className="label">&nbsp;</div>
+                  <button type="button" onClick={ready ? guardarComoPlantilla : undefined} disabled={!ready} aria-label={t.tplSave} style={{
+                    width: "100%", minHeight: 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    border: `1px solid ${tplSavedFlash ? "var(--green)" : "var(--border)"}`, borderRadius: 999,
+                    background: "transparent", color: tplSavedFlash ? "var(--green)" : ready ? "var(--text)" : "var(--muted)",
+                    cursor: ready ? "pointer" : "default", fontSize: 12, padding: "4px 8px",
+                  }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill={tplSavedFlash ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                    {tplSavedFlash ? t.tplSaved : t.tplSave}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Plantillas: tap precarga el form; × borra. Solo para gastos. */}
@@ -708,19 +729,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             {canComprobante && (
               <div style={{ display: "flex", justifyContent: "center" }}>
                 {comprobanteIcon()}
-              </div>
-            )}
-            {tipo === "Gasto" && !!categoria && parseFloat(monto || "0") > 0 && (
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <button type="button" onClick={guardarComoPlantilla} aria-label={t.tplSave} title={t.tplSave} style={{
-                  display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
-                  color: tplSavedFlash ? "var(--green)" : "var(--muted)", cursor: "pointer", fontSize: 12, padding: 4,
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill={tplSavedFlash ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                  </svg>
-                  {tplSavedFlash ? t.tplSaved : t.tplSave}
-                </button>
               </div>
             )}
             <div style={{ display: "flex", justifyContent: "center" }}>
