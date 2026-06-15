@@ -35,13 +35,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // hidratamos el store local para no arrastrar prefs de otro usuario del dispositivo.
   useEffect(() => {
     if (!config) return;
+    // Permiso de Inversión gestionado por el dueño: si no lo tiene (y no es el dueño),
+    // se fuerza showAhorros=false → no ve la pestaña ni la sección y no la puede reactivar.
+    const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
+    const inversionAllowed = isOwner || config.meta.permisos?.inversion === true;
     hydratePrefs({
       monedaPrincipal: config.meta.monedaPrincipal,
       monedaInversiones: config.meta.monedaInversiones,
-      showAhorros: config.meta.showAhorros,
+      showAhorros: inversionAllowed ? config.meta.showAhorros : false,
       showReportes: config.meta.showReportes,
     });
-  }, [config, hydratePrefs]);
+  }, [config, hydratePrefs, user?.email]);
 
   // Usuario nuevo sin onboarding completado → al wizard.
   useEffect(() => {

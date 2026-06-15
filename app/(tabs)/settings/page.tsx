@@ -293,10 +293,19 @@ export default function ConfigPage() {
   };
   // Códigos de invitación (solo dueño)
   const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
+  // Inversión disponible solo si el dueño la habilitó (o si sos el dueño).
+  const inversionAllowed = isOwner || config?.meta.permisos?.inversion === true;
   const [inviteCode, setInviteCode] = useState("");
   const [genBusy, setGenBusy] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  // Panel de administración (solo owner)
+  type AdminUser = { uid: string; email: string; nombre: string; createdAt: string; lastSignIn: string; pushOn: boolean; permisos: Record<string, boolean>; inviteCode: string | null; isOwner: boolean };
+  type AdminCode = { code: string; createdAt: number };
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminCodes, setAdminCodes] = useState<AdminCode[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
   const generateInviteCode = async () => {
     const u = auth.currentUser;
     if (!u || genBusy) return;
@@ -305,11 +314,57 @@ export default function ConfigPage() {
       const token = await getIdToken(u);
       const res = await fetch("/api/invite-codes", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      if (res.ok && data.code) { setInviteCode(data.code); setShowInviteModal(true); }
+      if (res.ok && data.code) {
+        setInviteCode(data.code); setShowInviteModal(true);
+        setAdminCodes((prev) => [{ code: data.code, createdAt: Date.now() }, ...prev]);
+      }
     } catch { /* ignore */ } finally { setGenBusy(false); }
   };
   const copyInviteCode = async () => {
     try { await navigator.clipboard.writeText(inviteCode); setCodeCopied(true); setTimeout(() => setCodeCopied(false), 2000); } catch { /* ignore */ }
+  };
+  const loadAdmin = async () => {
+    const u = auth.currentUser;
+    if (!u) return;
+    setAdminLoading(true);
+    try {
+      const token = await getIdToken(u);
+      const h = { Authorization: `Bearer ${token}` };
+      const [ru, rc] = await Promise.all([
+        fetch("/api/admin/users", { headers: h }),
+        fetch("/api/invite-codes", { headers: h }),
+      ]);
+      const du = await ru.json(); const dc = await rc.json();
+      if (ru.ok) setAdminUsers(du.users ?? []);
+      if (rc.ok) setAdminCodes(dc.codes ?? []);
+    } catch { /* ignore */ } finally { setAdminLoading(false); }
+  };
+  const openAdmin = () => { setShowAdmin(true); loadAdmin(); };
+  const setPermission = async (targetUid: string, key: string, value: boolean) => {
+    const u = auth.currentUser;
+    if (!u) return;
+    setAdminUsers((prev) => prev.map((x) => x.uid === targetUid ? { ...x, permisos: { ...x.permisos, [key]: value } } : x));
+    try {
+      const token = await getIdToken(u);
+      await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: targetUid, key, value }),
+      });
+    } catch { /* ignore; el estado optimista ya se aplicó */ }
+  };
+  const delCode = async (code: string) => {
+    const u = auth.currentUser;
+    if (!u) return;
+    setAdminCodes((prev) => prev.filter((c) => c.code !== code));
+    try {
+      const token = await getIdToken(u);
+      await fetch("/api/invite-codes", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+    } catch { /* ignore */ }
   };
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -873,44 +928,6 @@ export default function ConfigPage() {
               </div>
             )}
 
-            {/* Notificaciones */}
-            {pushAvailable && (
-              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: pushOn ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${pushOn ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pushOn ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    </svg>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.notifications}</div>
-                    <div style={{ fontSize: 11, color: pushError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{pushError || t.notificationsSub}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                  <Toggle activo={pushOn} onClick={togglePush} />
-                </div>
-              </div>
-            )}
-
-            {/* Recordatorios (requiere notificaciones activas) */}
-            {pushOn && (
-              <button onClick={openRecordatorios} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--orange-dim)", border: "1px solid var(--orange)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--orange)" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" />
-                    </svg>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.reminders}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.remindersSub}</div>
-                  </div>
-                </div>
-              </button>
-            )}
-
             {/* Backup */}
             <button onClick={() => setShowExportConfirm(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
@@ -926,22 +943,18 @@ export default function ConfigPage() {
               </div>
             </button>
 
-            {/* Códigos de invitación (solo dueño) */}
+            {/* Administración (solo dueño) */}
             {isOwner && (
-              <button onClick={generateInviteCode} disabled={genBusy} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: genBusy ? "default" : "pointer", textAlign: "left", opacity: genBusy ? 0.6 : 1 }}>
+              <button onClick={openAdmin} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-dim)", border: "1px solid var(--accent)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--accent)" }}>
-                    {genBusy ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="7.5" cy="15.5" r="4.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
-                      </svg>
-                    )}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" /><path d="m9 12 2 2 4-4" />
+                    </svg>
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.inviteCodesTitle}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.inviteCodesSub}</div>
+                    <div style={{ fontSize: 13 }}>{t.adminTitle}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.adminSub}</div>
                   </div>
                 </div>
               </button>
@@ -1029,75 +1042,42 @@ export default function ConfigPage() {
               }} />
             </div>
 
-            {/* Inversión */}
-            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: showAhorros ? "var(--green-dim)" : "var(--red-dim)",
-                  border: `1px solid ${showAhorros ? "var(--green)44" : "var(--red)44"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 1 18" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                    <polyline points="16 7 22 7 22 13" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentsSection}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showInvestmentsLabel}</div>
-                </div>
-              </div>
-              <Toggle activo={showAhorros} onClick={() => {
-                const next = !showAhorros;
-                setPref("showAhorros", next);
-                if (config) saveConfig({ ...config, meta: { ...config.meta, showAhorros: next } });
-              }} />
-            </div>
-
-            {/* Moneda de inversión */}
-            {showAhorros && (
-            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: "var(--yellow-dim)", border: "1px solid var(--yellow)44",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
-                    {monedaPrincipal === "USD" ? "€" : monedaPrincipal === "EUR" ? "U$D" : (monedaInversiones === "EUR" ? "€" : "$")}
-                  </span>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentCurrency}</div>
-                    {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>{t.activeGoal}</span>}
+            {/* Notificaciones */}
+            {pushAvailable && (
+              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: pushOn ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${pushOn ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pushOn ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
                   </div>
-                  {monedaPrincipal === "ARS" ? (
-                    config?.meta.metaMonto ? (
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.cantChangeWithGoal}</div>
-                    ) : (
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {(["USD", "EUR"] as const).map((m) => (
-                          <button key={m} onClick={() => {
-                            setMoneda(m);
-                            if (config) saveConfig({ ...config, meta: { ...config.meta, monedaInversiones: m } });
-                          }} className="pill" style={{
-                            borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)",
-                            background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent",
-                            color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)",
-                          }}>{m}</button>
-                        ))}
-                      </div>
-                    )
-                  ) : (
-                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {monedaPrincipal === "USD" ? t.eurInvestments : t.usdInvestments}
-                    </div>
-                  )}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.notifications}</div>
+                    <div style={{ fontSize: 11, color: pushError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{pushError || t.notificationsSub}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  <Toggle activo={pushOn} onClick={togglePush} />
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Recordatorios (requiere notificaciones activas) */}
+            {pushOn && (
+              <button onClick={openRecordatorios} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--orange-dim)", border: "1px solid var(--orange)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--orange)" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.reminders}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.remindersSub}</div>
+                  </div>
+                </div>
+              </button>
             )}
 
             {/* Auto-ahorro */}
@@ -1261,12 +1241,64 @@ export default function ConfigPage() {
             </div>)}
           </div>
 
-          {/* ── Inversión ── */}
-          {showAhorros && (
+          {/* ── Inversión ── (toda la sección visible solo si el dueño habilitó el permiso) */}
+          {inversionAllowed && (
           <div className="card">
             <SectionHeader title={t.settingsTabInvestments} open={isOpen("ahorros")} onClick={() => toggleSection("ahorros")} />
             {isOpen("ahorros") && (<div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
+            {/* Mostrar sección de inversión (preferencia del usuario) */}
+            <div className="row" style={{ padding: "12px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: showAhorros ? "var(--green-dim)" : "var(--red-dim)", border: `1px solid ${showAhorros ? "var(--green)44" : "var(--red)44"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 1 18" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    <polyline points="16 7 22 7 22 13" stroke={showAhorros ? "var(--green)" : "var(--red)"} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentsSection}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showInvestmentsLabel}</div>
+                </div>
+              </div>
+              <Toggle activo={showAhorros} onClick={() => {
+                const next = !showAhorros;
+                setPref("showAhorros", next);
+                if (config) saveConfig({ ...config, meta: { ...config.meta, showAhorros: next } });
+              }} />
+            </div>
+
+            {showAhorros && (<>
+            {/* Moneda de inversión */}
+            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--yellow-dim)", border: "1px solid var(--yellow)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
+                    {monedaPrincipal === "USD" ? "€" : monedaPrincipal === "EUR" ? "U$D" : (monedaInversiones === "EUR" ? "€" : "$")}
+                  </span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{t.investmentCurrency}</div>
+                    {config?.meta.metaMonto && <span style={{ fontSize: 10, color: "var(--muted)" }}>{t.activeGoal}</span>}
+                  </div>
+                  {monedaPrincipal === "ARS" ? (
+                    config?.meta.metaMonto ? (
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.cantChangeWithGoal}</div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {(["USD", "EUR"] as const).map((m) => (
+                          <button key={m} onClick={() => { setMoneda(m); if (config) saveConfig({ ...config, meta: { ...config.meta, monedaInversiones: m } }); }} className="pill" style={{ borderColor: monedaInversiones === m ? "var(--yellow)" : "var(--border)", background: monedaInversiones === m ? "var(--yellow-dim)" : "transparent", color: monedaInversiones === m ? "var(--yellow)" : "var(--muted)" }}>{m}</button>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ fontSize: 11, color: "var(--muted)" }}>{monedaPrincipal === "USD" ? t.eurInvestments : t.usdInvestments}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 11, color: "var(--muted)", borderTop: "1px solid var(--faint)", paddingTop: 12, marginBottom: 12 }}>
               {t.exchangeRate}: {tasaEnUso != null ? `$${tasaEnUso.toLocaleString("es-AR")}` : "—"} ({monedaInversiones === "EUR" ? "EUR" : "USD"})
             </div>
 
@@ -1340,6 +1372,7 @@ export default function ConfigPage() {
               )}
             </div>
 
+            </>)}
             </div>)}
           </div>
           )}
@@ -1609,6 +1642,61 @@ export default function ConfigPage() {
               <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{isoToFechaAR(r.fecha)}{r.notified ? ` · ${t.reminderSent}` : ""}</div>
             </div>
             <button onClick={() => delRecordatorio(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
+          </div>
+        ))}
+      </BottomSheet>
+
+      <BottomSheet open={showAdmin} onClose={() => setShowAdmin(false)} title={t.adminTitle}>
+        {/* Códigos de invitación (solo disponibles; caducan a las 24h) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t.adminInviteSection}</span>
+          <button onClick={generateInviteCode} disabled={genBusy} style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: 999, padding: "4px 10px", cursor: genBusy ? "default" : "pointer" }}>+ {t.adminGenerate}</button>
+        </div>
+        {adminCodes.length === 0 ? (
+          <div style={{ color: "var(--muted)", fontSize: 12, padding: "2px 0 12px" }}>{t.adminNoCodes}</div>
+        ) : (
+          <div style={{ marginBottom: 14 }}>
+            {adminCodes.map((c) => (
+              <div key={c.code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--faint)" }}>
+                <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: 2 }}>{c.code}</span>
+                <button onClick={() => delCode(c.code)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px" }}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Usuarios */}
+        <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "6px 0 8px" }}>{t.adminUsersSection}</div>
+        {adminLoading ? (
+          <div style={{ textAlign: "center", padding: "12px 0", color: "var(--muted)", fontSize: 12 }}>…</div>
+        ) : adminUsers.length === 0 ? (
+          <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>{t.adminNoUsers}</div>
+        ) : adminUsers.map((u) => (
+          <div key={u.uid} style={{ padding: "9px 0", borderBottom: "1px solid var(--faint)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.pushOn ? "var(--green)" : "var(--border)", flexShrink: 0 }} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.email || u.uid}</div>
+                <div style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {u.isOwner ? "owner" : [u.nombre, u.inviteCode].filter(Boolean).join(" · ") || "—"}
+                </div>
+              </div>
+              {!u.isOwner && (
+                <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
+                  {([["comprobantes", t.permComprobantes], ["inversion", t.permInversion]] as const).map(([key, label]) => {
+                    const on = u.permisos[key] === true; // ambos default OFF (el dueño habilita)
+                    return (
+                      <button key={key} onClick={() => setPermission(u.uid, key, !on)} title={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        <span style={{ width: 30, height: 17, borderRadius: 999, background: on ? "var(--green)" : "var(--surface-alt)", border: `1px solid ${on ? "var(--green)" : "var(--border)"}`, position: "relative", flexShrink: 0 }}>
+                          <span style={{ position: "absolute", top: 1, left: on ? 14 : 1, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
+                        </span>
+                        <span style={{ fontSize: 9, color: on ? "var(--text)" : "var(--muted)" }}>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </BottomSheet>

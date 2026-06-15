@@ -22,9 +22,13 @@ export async function POST(req: NextRequest) {
   // Reservar el código de forma atómica: si dos requests usan el mismo código en
   // paralelo, solo uno gana la transacción; el otro ve `used` y aborta.
   try {
+    const CODE_TTL_MS = 24 * 60 * 60 * 1000; // caduca a las 24h sin uso
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(codeRef);
-      if (!snap.exists || snap.data()?.used) throw new Error("invalid-code");
+      const data = snap.data();
+      if (!snap.exists || data?.used) throw new Error("invalid-code");
+      const createdAt = (data?.createdAt as Timestamp | undefined)?.toMillis() ?? 0;
+      if (createdAt && Date.now() - createdAt > CODE_TTL_MS) throw new Error("invalid-code"); // vencido
       tx.update(codeRef, { used: true, reservedAt: Timestamp.now() });
     });
   } catch {
