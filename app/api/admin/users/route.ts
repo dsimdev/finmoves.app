@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { sendPushToUser } from "@/lib/web-push";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
     { meta: { permisos: { [key]: !!value } } },
     { merge: true }
   );
+  const labels: Record<string, string> = { comprobantes: "Imágenes", inversion: "Inversión" };
+  const label = labels[key] ?? key;
+  const body = value ? `Se activó ${label} en tu cuenta` : `Se desactivó ${label} en tu cuenta`;
+  await sendPushToUser(targetUid, { title: "FinMoves", body, tag: "permission-change", url: "/settings" }).catch(() => {});
   return NextResponse.json({ ok: true });
 }
 

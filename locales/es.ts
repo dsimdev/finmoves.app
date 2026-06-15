@@ -292,7 +292,7 @@ export const es = {
   skipPrefix: "omite:",
   setsFixedAmount: "Establece un monto fijo por gasto",
   account: "Cuenta",
-  user: "Usuario",
+  user: "Perfil",
   editProfile: "Editar perfil",
   nameLabel: "Nombre",
   namePlaceholder: "Tu nombre",

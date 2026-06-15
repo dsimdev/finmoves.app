@@ -294,7 +294,7 @@ export const en: AppLocale = {
   skipPrefix: "skip:",
   setsFixedAmount: "Sets a fixed amount per expense",
   account: "Account",
-  user: "User",
+  user: "Profile",
   editProfile: "Edit profile",
   nameLabel: "Name",
   namePlaceholder: "Your name",

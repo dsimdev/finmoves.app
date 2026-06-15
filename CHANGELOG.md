@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.19.0] — 2026-06-15
+
+### Added
+- **Admin — permission toggles**: clicking a toggle now shows a confirmation modal before applying. On success the affected user receives a push notification (e.g. "Se activó Inversión en tu cuenta") that navigates them to Settings, effectively triggering a config reload.
+- **Admin — re-copy invite codes**: clicking an available code in the Administración panel opens the copy card again so you can share it without generating a new one.
+
+### Fixed
+- **COOP blocking Google popup**: added `Cross-Origin-Opener-Policy: same-origin-allow-popups` header so Firebase Auth popups (`linkWithPopup`, `signInWithPopup`) can communicate `window.closed` correctly.
+- **Google profile sync**: `syncGoogleProfile` now reads name/photo from the popup result (`providerData` + `getAdditionalUserInfo`) instead of `auth.currentUser.displayName` which is empty after linking.
+
+### Changed
+- **Profile card**: "Perfil" section replaces "Cuenta → Usuario". The edit card is now a draggable bottom-sheet with a photo/name header at the top and language flags inline next to the change-password button.
+
+---
+
 ## [2.18.4] — 2026-06-15
 
 ### Changed

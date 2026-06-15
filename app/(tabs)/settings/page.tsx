@@ -327,6 +327,9 @@ export default function ConfigPage() {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminCodes, setAdminCodes] = useState<AdminCode[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
+  const [pendingPerm, setPendingPerm] = useState<{ uid: string; key: string; value: boolean; label: string; nombre: string } | null>(null);
+  const [permBusy, setPermBusy] = useState(false);
+  const [permMsg, setPermMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const generateInviteCode = async () => {
     const u = auth.currentUser;
     if (!u || genBusy) return;
@@ -363,16 +366,26 @@ export default function ConfigPage() {
   const openAdmin = () => { setShowAdmin(true); loadAdmin(); };
   const setPermission = async (targetUid: string, key: string, value: boolean) => {
     const u = auth.currentUser;
-    if (!u) return;
+    if (!u || permBusy) return;
+    setPermBusy(true);
     setAdminUsers((prev) => prev.map((x) => x.uid === targetUid ? { ...x, permisos: { ...x.permisos, [key]: value } } : x));
     try {
       const token = await getIdToken(u);
-      await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ uid: targetUid, key, value }),
       });
-    } catch { /* ignore; el estado optimista ya se aplicó */ }
+      if (!res.ok) throw new Error("error");
+      setPermMsg({ ok: true, text: "Permiso actualizado" });
+    } catch {
+      setAdminUsers((prev) => prev.map((x) => x.uid === targetUid ? { ...x, permisos: { ...x.permisos, [key]: !value } } : x));
+      setPermMsg({ ok: false, text: "No se pudo actualizar" });
+    } finally {
+      setPermBusy(false);
+      setPendingPerm(null);
+      setTimeout(() => setPermMsg(null), 3000);
+    }
   };
   const delCode = async (code: string) => {
     const u = auth.currentUser;
@@ -590,7 +603,7 @@ export default function ConfigPage() {
   }, [user?.uid]);
   // Bloquear scroll de fondo con cualquier modal inline abierto (los BottomSheet
   // y los modales reutilizables ya lockean solos).
-  useScrollLock(showRecordatorios || showAutoAhorroModal || showChangelog || showInviteModal || showUserModal || showSyncLog);
+  useScrollLock(showRecordatorios || showAutoAhorroModal || showChangelog || showInviteModal || showSyncLog);
   const addRecordatorio = async () => {
     if (!user?.uid || !recTexto.trim() || !recFecha) return;
     await crearRecordatorio(user.uid, recTexto.trim(), recFecha);
@@ -1700,7 +1713,9 @@ export default function ConfigPage() {
           <div style={{ marginBottom: 14 }}>
             {adminCodes.map((c) => (
               <div key={c.code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--faint)" }}>
-                <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: 2 }}>{c.code}</span>
+                <button onClick={() => { setInviteCode(c.code); setShowInviteModal(true); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}>
+                  <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: 2, color: "var(--accent)" }}>{c.code}</span>
+                </button>
                 <button onClick={() => delCode(c.code)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px" }}>×</button>
               </div>
             ))}
@@ -1709,6 +1724,11 @@ export default function ConfigPage() {
 
         {/* Usuarios */}
         <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "6px 0 8px" }}>{t.adminUsersSection}</div>
+        {permMsg && (
+          <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 10, fontSize: 12, background: permMsg.ok ? "var(--green-dim)" : "var(--red-dim)", border: `1px solid ${permMsg.ok ? "var(--green)44" : "var(--red)44"}`, color: permMsg.ok ? "var(--green)" : "var(--red)" }}>
+            {permMsg.text}
+          </div>
+        )}
         {adminLoading ? (
           <div style={{ textAlign: "center", padding: "12px 0", color: "var(--muted)", fontSize: 12 }}>…</div>
         ) : adminUsers.length === 0 ? (
@@ -1726,9 +1746,9 @@ export default function ConfigPage() {
               {!u.isOwner && (
                 <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
                   {([["comprobantes", t.permComprobantes], ["inversion", t.permInversion]] as const).map(([key, label]) => {
-                    const on = u.permisos[key] === true; // ambos default OFF (el dueño habilita)
+                    const on = u.permisos[key] === true;
                     return (
-                      <button key={key} onClick={() => setPermission(u.uid, key, !on)} title={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                      <button key={key} onClick={() => setPendingPerm({ uid: u.uid, key, value: !on, label, nombre: u.nombre || u.email })} title={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                         <span style={{ width: 30, height: 17, borderRadius: 999, background: on ? "var(--green)" : "var(--surface-alt)", border: `1px solid ${on ? "var(--green)" : "var(--border)"}`, position: "relative", flexShrink: 0 }}>
                           <span style={{ position: "absolute", top: 1, left: on ? 14 : 1, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
                         </span>
@@ -1742,6 +1762,25 @@ export default function ConfigPage() {
           </div>
         ))}
       </BottomSheet>
+
+      {pendingPerm && (
+        <ConfirmModal
+          title={pendingPerm.value ? "Activar permiso" : "Desactivar permiso"}
+          confirmLabel={pendingPerm.value ? "Activar" : "Desactivar"}
+          cancelLabel={t.cancel}
+          confirmColor={pendingPerm.value ? "var(--green)" : "var(--red)"}
+          loading={permBusy}
+          onConfirm={() => setPermission(pendingPerm.uid, pendingPerm.key, pendingPerm.value)}
+          onCancel={() => setPendingPerm(null)}
+        >
+          <div>
+            <strong>{pendingPerm.label}</strong> para <strong>{pendingPerm.nombre}</strong>
+            {pendingPerm.value
+              ? <><br />Se enviará una notificación al usuario.</>
+              : <><br />El usuario perderá acceso a esta función. Se enviará una notificación.</>}
+          </div>
+        </ConfirmModal>
+      )}
 
       {confirmLeave && (
         <ConfirmModal title={t.leaveSiteTitle} confirmLabel={t.leaveSiteConfirm} cancelLabel={t.cancel}
@@ -1761,76 +1800,86 @@ export default function ConfigPage() {
           onCancel={() => setShowGithubConfirm(false)}>{t.goToGitHubBody}</ConfirmModal>
       )}
 
-      {showUserModal && mounted && createPortal(
-        <div data-no-swipe onClick={() => setShowUserModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 36px" }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{t.editProfile}</div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 20 }}>{user?.email}</div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div className="label" style={{ marginBottom: 6 }}>{t.nameLabel}</div>
-              <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: "100%" }} placeholder={t.namePlaceholder} maxLength={40} />
+      <BottomSheet open={showUserModal} onClose={() => setShowUserModal(false)}>
+        {/* Profile header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid var(--faint)" }}>
+          {config.meta.fotoURL ? (
+            <img src={config.meta.fotoURL} alt="" style={{ width: 52, height: 52, borderRadius: 14, objectFit: "cover", border: "1px solid var(--green)44", flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: config.meta.nombre ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${config.meta.nombre ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="8" r="4" stroke={config.meta.nombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" />
+                <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke={config.meta.nombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
             </div>
-
-            <div style={{ marginBottom: 16 }}>
-              {!changingPass ? (
-                <button onClick={() => setChangingPass(true)} className="row" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)", cursor: "pointer", textAlign: "left" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{t.changePassword}</span>
-                  </div>
-                </button>
-              ) : (
-                <div style={{ padding: "14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <div className="label" style={{ margin: 0 }}>{t.changePassword}</div>
-                    <button onClick={() => { setChangingPass(false); setPassInput(""); setCurrentPassInput(""); setPassVisible(false); }} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 12, cursor: "pointer", padding: 0 }}>{t.cancel}</button>
-                  </div>
-                  <input type="password" value={currentPassInput} onChange={(e) => setCurrentPassInput(e.target.value)} className="input" style={{ width: "100%", marginBottom: 8 }} placeholder={t.currentPasswordPlaceholder} autoComplete="current-password" autoFocus />
-                  <div style={{ position: "relative" }}>
-                    <input type={passVisible ? "text" : "password"} value={passInput} onChange={(e) => setPassInput(e.target.value)} className="input" style={{ width: "100%", paddingRight: 40 }} placeholder={t.newPasswordPlaceholder} autoComplete="new-password" />
-                    <button onClick={() => setPassVisible(v => !v)} aria-label={passVisible ? t.hide : t.show} style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--muted)", display: "flex" }}>
-                      {passVisible
-                        ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                        : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
-                    </button>
-                  </div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.passwordHint}</div>
-                </div>
-              )}
-            </div>
-
-            {/* Idioma */}
-            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)", marginBottom: 16 }}>
-              <div style={{ fontSize: 13 }}>{t.changeLang}</div>
-              <div style={{ display: "flex", gap: 12 }}>
-                {(["es", "en"] as const).map((l) => (
-                  <button key={l} onClick={() => { if (l !== lang) setPendingLang(l); }} aria-label={l === "es" ? "Español" : "English"}
-                    style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, opacity: lang === l ? 1 : 0.35, filter: lang === l ? "none" : "grayscale(0.7)", transform: lang === l ? "scale(1.12)" : "scale(1)", transition: "all 0.15s" }}>
-                    {l === "es" ? <FlagAR /> : <FlagGB />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {profileMsg && (
-              <div style={{ fontSize: 12, color: profileMsg.ok ? "var(--green)" : "var(--red)", marginBottom: 12, lineHeight: 1.5 }}>{profileMsg.text}</div>
-            )}
-
-            {(() => {
-              const hasChanges = nameInput.trim() !== (config.meta.nombre ?? "") || (changingPass && passInput.length > 0);
-              const disabled = profileBusy || !hasChanges;
-              return (
-                <button onClick={saveProfile} disabled={disabled} style={{ width: "100%", padding: "13px 0", borderRadius: 12, border: "none", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1, transition: "opacity 0.15s" }}>
-                  {t.saveProfile}
-                </button>
-              );
-            })()}
+          )}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{config.meta.nombre || t.user}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
           </div>
-        </div>,
-        document.body
-      )}
+        </div>
+
+        {/* Nombre */}
+        <div style={{ marginBottom: 16 }}>
+          <div className="label" style={{ marginBottom: 6 }}>{t.nameLabel}</div>
+          <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: "100%" }} placeholder={t.namePlaceholder} maxLength={40} />
+        </div>
+
+        {/* Cambiar contraseña + banderas en la misma fila */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: changingPass ? 0 : 16 }}>
+          {!changingPass ? (
+            <button onClick={() => setChangingPass(true)} className="row" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)", cursor: "pointer", textAlign: "left" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{t.changePassword}</span>
+              </div>
+            </button>
+          ) : (
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>{t.changePassword}</div>
+          )}
+          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+            {(["es", "en"] as const).map((l) => (
+              <button key={l} onClick={() => { if (l !== lang) setPendingLang(l); }} aria-label={l === "es" ? "Español" : "English"}
+                style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, opacity: lang === l ? 1 : 0.35, filter: lang === l ? "none" : "grayscale(0.7)", transform: lang === l ? "scale(1.12)" : "scale(1)", transition: "all 0.15s" }}>
+                {l === "es" ? <FlagAR /> : <FlagGB />}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {changingPass && (
+          <div style={{ padding: "14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-alt)", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div className="label" style={{ margin: 0 }}>{t.changePassword}</div>
+              <button onClick={() => { setChangingPass(false); setPassInput(""); setCurrentPassInput(""); setPassVisible(false); }} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 12, cursor: "pointer", padding: 0 }}>{t.cancel}</button>
+            </div>
+            <input type="password" value={currentPassInput} onChange={(e) => setCurrentPassInput(e.target.value)} className="input" style={{ width: "100%", marginBottom: 8 }} placeholder={t.currentPasswordPlaceholder} autoComplete="current-password" autoFocus />
+            <div style={{ position: "relative" }}>
+              <input type={passVisible ? "text" : "password"} value={passInput} onChange={(e) => setPassInput(e.target.value)} className="input" style={{ width: "100%", paddingRight: 40 }} placeholder={t.newPasswordPlaceholder} autoComplete="new-password" />
+              <button onClick={() => setPassVisible(v => !v)} aria-label={passVisible ? t.hide : t.show} style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--muted)", display: "flex" }}>
+                {passVisible
+                  ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+              </button>
+            </div>
+            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.passwordHint}</div>
+          </div>
+        )}
+
+        {profileMsg && (
+          <div style={{ fontSize: 12, color: profileMsg.ok ? "var(--green)" : "var(--red)", marginBottom: 12, lineHeight: 1.5 }}>{profileMsg.text}</div>
+        )}
+
+        {(() => {
+          const hasChanges = nameInput.trim() !== (config.meta.nombre ?? "") || (changingPass && passInput.length > 0);
+          const disabled = profileBusy || !hasChanges;
+          return (
+            <button onClick={saveProfile} disabled={disabled} style={{ width: "100%", padding: "13px 0", borderRadius: 12, border: "none", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1, transition: "opacity 0.15s", marginTop: 4 }}>
+              {t.saveProfile}
+            </button>
+          );
+        })()}
+      </BottomSheet>
 
       {confirmLogout && (
         <ConfirmModal title={t.signOutTitle} confirmLabel={t.signOut} cancelLabel={t.cancel} confirmColor="var(--red)"

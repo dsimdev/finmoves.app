@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.19.0] — 2026-06-15
+
+### Nuevo
+- **Admin**: los toggles de permisos ahora piden confirmación antes de aplicarse y envían una notificación push al usuario afectado.
+- **Admin**: al tocar un código de invitación disponible se abre la tarjeta de copia para compartirlo sin generar uno nuevo.
+- **Perfil**: el modal de edición pasó a ser una card deslizable desde abajo, con foto y nombre al tope, y las banderas de idioma al lado del botón de cambiar contraseña.
+
+### Arreglos
+- Se corrigió el popup de Google que en algunos casos no cerraba correctamente (error COOP).
+- El nombre y foto de Google ahora se sincronizan correctamente al vincular la cuenta.
+
+---
+
 ## [2.18.4] — 2026-06-15
 
 ### Mejoras
