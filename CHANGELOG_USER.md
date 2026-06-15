@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.14.1] — 2026-06-14
+
+### Mejoras
+- **Deslizar dentro de un gráfico o carrusel ya no te cambia de sección** sin querer.
+- El aviso de **"Actualizar"** ahora aparece en cada versión nueva.
+
+---
+
 ## [2.14.0] — 2026-06-14
 
 ### Novedades

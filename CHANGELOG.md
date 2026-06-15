@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.14.1] — 2026-06-14
+
+### Fixed
+- **Swipe nav too sensitive**: gestures that start inside a horizontally-scrollable element (charts, carousels, year/period chips) no longer switch tabs. Raised the swipe threshold (80px and 2× horizontal-over-vertical).
+
+### Changed
+- **Update banner now shows on every new version** (was minor/major only). Removed the semver gate in `useUpdateBanner`.
+
+---
+
 ## [2.14.0] — 2026-06-14
 
 ### Added
