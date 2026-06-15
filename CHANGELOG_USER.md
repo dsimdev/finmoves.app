@@ -8,7 +8,6 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ### Nuevo
 - **Página de inicio**: nueva landing con capturas reales de la app, efectos de hover en las cards y botón para instalar la app directamente desde la página de bienvenida.
-- **Admin**: la lista de usuarios ahora muestra solo el correo. Tocás un usuario y se abre una card con su última conexión, estado de notificaciones y los permisos activados con sus toggles.
 
 ### Mejoras
 - **Plantillas**: se ordenan de mayor a menor uso — la que más usás aparece primero.
@@ -21,8 +20,6 @@ Lo nuevo y lo que mejoró, versión por versión.
 ## [2.19.0] — 2026-06-15
 
 ### Nuevo
-- **Admin**: los toggles de permisos ahora piden confirmación antes de aplicarse y envían una notificación push al usuario afectado.
-- **Admin**: al tocar un código de invitación disponible se abre la tarjeta de copia para compartirlo sin generar uno nuevo.
 - **Perfil**: el modal de edición pasó a ser una card deslizable desde abajo, con foto y nombre al tope, y las banderas de idioma al lado del botón de cambiar contraseña.
 
 ### Arreglos
@@ -449,7 +446,6 @@ Lo nuevo y lo que mejoró, versión por versión.
 ### Mejoras
 - **Cambiar contraseña** más prolijo: ahora es una opción que se despliega solo si la tocás, con un ojito para ver lo que escribís. Ya no aparece un campo vacío colgado.
 - Los iconos de **huella** y **notificaciones** se ponen en **verde** cuando están activos.
-- **Código de invitación**: se genera tocando la fila directamente (sin botón aparte), con un spinner mientras se crea.
 - El botón **Guardar** del perfil se activa solo si hay cambios.
 - En Reportes, el gráfico "Evolución ingresos" ahora tiene el mismo borde que el resto.
 - La proyección de ahorros arranca en **3 períodos** por defecto.
@@ -508,7 +504,6 @@ Lo nuevo y lo que mejoró, versión por versión.
 ## [1.22.0] — 2026-06-12
 
 ### Novedades
-- **Invitá a otros con un código**: ahora se puede crear cuenta con un código de un solo uso. Generá el tuyo desde Configuración → Cuenta → Código.
 - **Guía de bienvenida** para usuarios nuevos: una pantalla simple que explica cómo funciona la app y deja todo listo en un minuto.
 - **¿Olvidaste tu contraseña?** en el ingreso, para recuperarla por email.
 
