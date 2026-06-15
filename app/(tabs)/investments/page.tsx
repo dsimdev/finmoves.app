@@ -221,7 +221,10 @@ export default function DolaresPage() {
             return (
               <div className="card" style={{ background: "linear-gradient(135deg, var(--surface), var(--surface-alt))", marginBottom: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <div className="label" style={{ marginBottom: 0 }}>{t.savingsGoal}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div className="label" style={{ marginBottom: 0 }}>{t.savingsGoal}</div>
+                    {metaAlcanzada && <span className="badge" style={{ background: "var(--green-dim)", color: "var(--green)", border: "1px solid var(--green)44" }}>{t.reachedBadge}</span>}
+                  </div>
                   {config.meta.metaFecha && <div style={{ fontSize: 9, color: "var(--muted)" }}>{fechaCortaConAnio(config.meta.metaFecha)}</div>}
                 </div>
 
