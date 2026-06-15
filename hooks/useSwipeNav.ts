@@ -31,11 +31,26 @@ export function useSwipeNav() {
     let startY = 0;
     let tracking = false;
 
+    // ¿El gesto arranca dentro de algo scrolleable horizontalmente (gráficos,
+    // carruseles, chips)? Si sí, el swipe es para ESE elemento, no para cambiar tab.
+    const enScrollHorizontal = (el: HTMLElement | null): boolean => {
+      let node: HTMLElement | null = el;
+      while (node && node !== document.body) {
+        if (node.scrollWidth > node.clientWidth + 4) {
+          const ox = getComputedStyle(node).overflowX;
+          if (ox === "auto" || ox === "scroll") return true;
+        }
+        node = node.parentElement;
+      }
+      return false;
+    };
+
     const onStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       const target = e.target as HTMLElement | null;
       if (target?.closest("[data-no-swipe]")) return;
+      if (enScrollHorizontal(target)) return; // carrusel/gráfico → no cambiar de tab
       if (t.clientX < 24 || t.clientX > window.innerWidth - 24) return; // bordes
       startX = t.clientX;
       startY = t.clientY;
@@ -48,7 +63,7 @@ export function useSwipeNav() {
       const t = e.changedTouches[0];
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
-      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2) return;
       if (dx < 0 && idx < tabs.length - 1) router.push(tabs[idx + 1]);
       else if (dx > 0 && idx > 0) router.push(tabs[idx - 1]);
     };
