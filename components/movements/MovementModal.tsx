@@ -64,7 +64,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   ] : [
     { t: "Gasto", label: t.tipoDisplay["Gasto"], color: "var(--red)" },
     { t: "Ingreso", label: t.tipoDisplay["Ingreso"], color: "var(--green)" },
-    { t: "Move", label: t.tipoDisplay["Move"], color: "var(--yellow)" },
+    { t: "Move", label: t.tipoDisplay["Move"], color: "var(--orange)" },
   ];
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);

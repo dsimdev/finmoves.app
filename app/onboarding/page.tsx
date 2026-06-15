@@ -110,7 +110,7 @@ export default function OnboardingPage() {
         {([
           ["var(--red)", t.obTypeGasto],
           ["var(--green)", t.obTypeIngreso],
-          ["var(--yellow)", t.obTypeMove],
+          ["var(--orange)", t.obTypeMove],
           ["var(--blue)", t.obTypeFx],
         ] as const).map(([c, txt]) => (
           <div key={txt} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "var(--text)" }}>

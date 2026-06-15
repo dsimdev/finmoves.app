@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.12.1] — 2026-06-14
+
+### Mejoras
+- **Move tiene su propio color** (naranja), para distinguirlo de los dólares.
+- En **Movimientos**, los días anteriores al más reciente se ven resumidos con la **cantidad de movimientos por tipo** (en color) y se abren con un toque.
+
+---
+
 ## [2.12.0] — 2026-06-14
 
 ### Novedades
@@ -26,17 +34,10 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.10.3] — 2026-06-14
-
-### Mejoras
-- **Capturas al instalar la app**: al instalar FinMoves desde el navegador ahora se ve un adelanto de las pantallas (ingreso, reportes y configuración).
-
----
-
 ## [2.10.2] — 2026-06-14
 
 ### Mejoras
-- **Editar o borrar un movimiento es instantáneo** y consume muchísimos menos datos: ya no vuelve a leer todo tu historial en cada cambio.
+- **Editar o borrar un movimiento es instantáneo** y usa menos datos.
 - Si una edición o borrado falla, ahora te avisa con un mensaje (antes no se veía).
 
 ---
@@ -44,8 +45,8 @@ Lo nuevo y lo que mejoró, versión por versión.
 ## [2.10.1] — 2026-06-14
 
 ### Mejoras
-- **Hoja de carga renovada**: fondo desenfocado y una apertura más suave. La **barrita de arriba ahora funciona**: arrastrala hacia abajo para achicar la hoja (sin perder lo que cargaste), hacia arriba para volver a agrandarla, y bien abajo para cerrarla.
-- **Las fotos de comprobantes cargan mucho más rápido**: se comprimen al subirlas (de varios MB a unos cientos de KB) y quedan cacheadas para verlas al instante la próxima vez.
+- **Hoja de carga renovada**: fondo desenfocado y una apertura más suave. La **barrita de arriba ahora funciona**: arrastrala hacia abajo para achicar la hoja (sin perder lo que cargaste), hacia arriba para agrandarla, y bien abajo para cerrarla.
+- Las **fotos de comprobantes cargan mucho más rápido**.
 
 ---
 
@@ -137,13 +138,6 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.5.1] — 2026-06-14
-
-### Correcciones
-- Arreglamos que, al desbloquear con la huella, la app se recargara y tapara el aviso de novedades. Ahora el aviso aparece bien.
-
----
-
 ## [2.5.0] — 2026-06-14
 
 ### Novedades
@@ -161,7 +155,7 @@ Lo nuevo y lo que mejoró, versión por versión.
 ## [2.4.1] — 2026-06-14
 
 ### Mejoras
-- La app carga más rápido y consume menos datos: cachea mejor los archivos que no cambian.
+- La app **carga más rápido** y consume menos datos.
 
 ---
 
@@ -176,13 +170,6 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ### Mejoras
 - Las **notificaciones del dólar** ahora son más a tiempo y avisan por el cambio acumulado del día (antes podían no saltar).
-
----
-
-## [2.3.1] — 2026-06-13
-
-### Mejoras
-- Mejoras internas (métricas de uso anónimas para seguir mejorando la app).
 
 ---
 
@@ -224,13 +211,6 @@ Lo nuevo y lo que mejoró, versión por versión.
 - En Resumen, los atajos quedaron ordenados: Nuevo movimiento · Inversión · Reportes.
 - El aviso de "sin conexión" ahora aparece **arriba**.
 - Pequeño ajuste visual en la pantalla de carga.
-
----
-
-## [2.1.1] — 2026-06-13
-
-### Mejoras
-- Ajustes de **velocidad** (menos lecturas a la base) y de **seguridad** del sitio. Sin cambios en el uso diario.
 
 ---
 
