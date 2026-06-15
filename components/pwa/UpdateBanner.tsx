@@ -1,15 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useUpdateBanner } from "@/hooks/useUpdateBanner";
 import { useT } from "@/hooks/useTranslation";
 
-// Aviso de novedades (cada 5 versiones). Reusa el logo + spinner de la pantalla
-// de carga. "Ver cambios" lleva a Configuración con el changelog abierto.
+// Aviso de actualización: aparece cuando hay una versión nueva lista (SW en espera).
+// Reusa el logo + spinner de la pantalla de carga. Es persistente (sin X): "Actualizar"
+// activa el SW nuevo y recarga la app con la última versión.
 export function UpdateBanner() {
-  const { show, dismiss } = useUpdateBanner();
-  const router = useRouter();
+  const { show, update } = useUpdateBanner();
   const t = useT();
 
   if (!show) return null;
@@ -40,13 +39,10 @@ export function UpdateBanner() {
           <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.updateBody}</div>
         </div>
 
-        <button onClick={() => { dismiss(); router.push("/settings?changelog=1"); }} style={{
+        <button onClick={update} style={{
           flexShrink: 0, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)",
-          color: "#fff", border: "none", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer",
-        }}>{t.updateSeeChanges}</button>
-        <button onClick={dismiss} aria-label="×" style={{
-          flexShrink: 0, background: "none", border: "none", color: "var(--muted)", fontSize: 18, cursor: "pointer", padding: "0 2px",
-        }}>×</button>
+          color: "#fff", border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+        }}>{t.updateNow}</button>
       </div>
     </div>
   );

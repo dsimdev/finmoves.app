@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.12.0] — 2026-06-14
+
+### Novedades
+- **Días plegables en Movimientos**: solo el último día queda abierto; los días anteriores se muestran resumidos (fecha · cantidad · total gastado) y se abren con un toque. Adiós al scroll eterno cuando hay muchos días.
+
+### Mejoras
+- Las ventanas emergentes de Reportes (historial de sueldo, directo a ahorros, detalle del día, listas completas) ahora son todas la misma hoja deslizable, consistente con el resto de la app.
+- **Las actualizaciones ya no molestan**: la app se actualiza sola la próxima vez que la abrís. Solo vas a ver el aviso "Actualizar" cuando una versión lo requiera de verdad.
+
+---
+
 ## [2.11.0] — 2026-06-14
 
 ### Novedades

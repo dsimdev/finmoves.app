@@ -1,42 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { parseChangelogVersions, releasesSince, UPDATE_BANNER_THRESHOLD } from "@/lib/changelog-versions";
 
-const LS_KEY = "finmoves.lastSeenVersion";
-
-// Muestra el aviso de novedades solo cuando pasaron >= 5 versiones desde la
-// última que el usuario vio. No actualiza "lo visto" hasta que el banner se
-// abre/cierra, así la cuenta se acumula entre parches en vez de resetearse.
+// Aviso de actualización OBLIGATORIA. La app se auto-actualiza sola en el próximo
+// arranque en frío (sin molestar); este banner solo aparece cuando el server
+// reporta `required: true` (release con cambios incompatibles, ver lib/app-version)
+// Y la versión del server difiere de la que corre el cliente. Es persistente
+// (sin descartar): "Actualizar" activa el SW nuevo (SKIP_WAITING) y recarga.
 export function useUpdateBanner() {
   const [show, setShow] = useState(false);
   const current = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
 
   useEffect(() => {
-    if (!current) return;
-    const lastSeen = localStorage.getItem(LS_KEY);
-    // Instalación nueva: marcar visto y no molestar.
-    if (!lastSeen) { localStorage.setItem(LS_KEY, current); return; }
-    if (lastSeen === current) return;
+    if (typeof window === "undefined") return;
+    let cancelled = false;
 
-    let cancel = false;
-    (async () => {
+    const check = async () => {
       try {
-        const res = await fetch("/api/changelog");
-        const versions = parseChangelogVersions(await res.text());
-        if (!cancel && releasesSince(versions, lastSeen, current) >= UPDATE_BANNER_THRESHOLD) {
+        const res = await fetch("/api/app-version", { cache: "no-store" });
+        const data = await res.json();
+        if (!cancelled && data?.required && data?.version && data.version !== current) {
           setShow(true);
         }
-        // Si son menos de 5, NO tocamos lastSeen → se acumula para la próxima.
       } catch { /* sin red: no mostramos nada */ }
-    })();
-    return () => { cancel = true; };
+    };
+
+    check();
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { cancelled = true; document.removeEventListener("visibilitychange", onVisible); };
   }, [current]);
 
-  const dismiss = () => {
-    localStorage.setItem(LS_KEY, current);
-    setShow(false);
+  const update = async () => {
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      if (reg?.waiting) {
+        // Recargar una sola vez cuando el SW nuevo tome control.
+        navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
+        reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        return;
+      }
+    } catch { /* cae al reload directo */ }
+    window.location.reload();
   };
 
-  return { show, dismiss };
+  return { show, update };
 }

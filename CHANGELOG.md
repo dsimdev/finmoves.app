@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.12.0] — 2026-06-14
+
+### Added
+- **Collapsible days in Movements**: only the most recent day starts expanded; older days collapse to a summary row (date · count · total spent) and expand on tap. Kills the infinite scroll over ~15 days. Switching period/year resets to the latest day open; editing doesn't collapse what you opened.
+- **Shared `BottomSheet`**: extracted the canonical draggable sheet (peek/close drag) from MovementModal into `components/ui/BottomSheet`. The four Reports modals (salary history, direct-to-savings, top lists, day detail) now use it — salary/savings were old centered cards, the others had ad-hoc drag state.
+
+### Changed
+- **Update banner is now required-only**: the app auto-updates on the next cold start (no nagging). The banner only appears when the server reports a required update (`REQUIRE_UPDATE` in `lib/app-version`, exposed via `/api/app-version`) and the running version differs. The button is now "Update" (was "See changes"), has no dismiss X (persistent), and forces `SKIP_WAITING` + reload.
+
+---
+
 ## [2.11.0] — 2026-06-14
 
 ### Added
