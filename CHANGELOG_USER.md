@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.18.2] — 2026-06-15
+
+### Mejoras
+- Nueva página pública de inicio que explica qué es FinMoves (para el ingreso con Google).
+
+---
+
 ## [2.18.1] — 2026-06-15
 
 ### Mejoras

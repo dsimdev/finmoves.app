@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.18.2] — 2026-06-15
+
+### Added
+- **Public landing page** at `/inicio`: describes the app's purpose (movements, reports, investment, reminders), notes invite-only access, links Privacy/Terms and a sign-in CTA. Meant as the OAuth consent screen "home page" (public, no login wall).
+
+---
+
 ## [2.18.1] — 2026-06-15
 
 ### Added
