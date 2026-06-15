@@ -1632,10 +1632,10 @@ export default function ConfigPage() {
         {recordatorios.length === 0 ? (
           <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, padding: "16px 0" }}>{t.noReminders}</div>
         ) : recordatorios.map((r) => (
-          <div key={r.id} className="row" style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)", opacity: r.notified ? 0.5 : 1 }}>
+          <div key={r.id} className="row" style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)" }}>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.texto}</div>
-              <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{isoToFechaAR(r.fecha)}{r.notified ? ` · ${t.reminderSent}` : ""}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{isoToFechaAR(r.fecha)}</div>
             </div>
             <button onClick={() => delRecordatorio(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
           </div>

@@ -16,6 +16,15 @@ function hoyAR(): string {
   return ar.toISOString().slice(0, 10);
 }
 
+// Días entre dos fechas YYYY-MM-DD (b - a), en días enteros.
+function diasEntre(a: string, b: string): number {
+  const [ay, am, ad] = a.split("-").map(Number);
+  const [by, bm, bd] = b.split("-").map(Number);
+  return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86_400_000);
+}
+
+const PRE_AVISO_DIAS = 3; // pre-aviso cuando faltan <= 3 días
+
 const money = (n: number) => `$${Math.round(n).toLocaleString("es-AR")}`;
 
 interface GlobalCtx {
@@ -90,16 +99,30 @@ async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Recor
   updates.cargaRemindedFor = key;
 }
 
-// Recordatorios puntuales: manda los que llegaron a su fecha y los marca como avisados.
+// Recordatorios puntuales, en dos tiempos:
+//  1) Pre-aviso cuando faltan ≤3 días ("en unos días…"), una sola vez (flag avisadoPre).
+//  2) El día (o pasado), aviso final y BORRA el recordatorio.
 async function checkRecordatorios(uid: string) {
   const hoy = hoyAR();
   const snap = await adminDb().collection(`users/${uid}/recordatorios`).get();
-  for (const doc of snap.docs) {
-    const r = doc.data() as { texto?: string; fecha?: string; notified?: boolean };
-    if (r.notified || !r.fecha || r.fecha > hoy) continue;
-    await sendPushToUser(uid, { title: "Recordatorio", body: r.texto ?? "", tag: `rec-${doc.id}`, url: "/movements" });
-    await doc.ref.set({ notified: true, notifiedAt: Timestamp.now() }, { merge: true });
-  }
+  await Promise.all(snap.docs.map(async (doc) => {
+    const r = doc.data() as { texto?: string; fecha?: string; avisadoPre?: boolean };
+    if (!r.fecha) return;
+    const texto = r.texto ?? "";
+    if (r.fecha <= hoy) {
+      // Llegó la fecha → aviso final + borrar.
+      await sendPushToUser(uid, { title: "Recordatorio", body: texto, tag: `rec-${doc.id}`, url: "/movements" });
+      await doc.ref.delete().catch(() => {});
+      return;
+    }
+    // Pre-aviso: faltan entre 1 y 3 días y todavía no se avisó.
+    const faltan = diasEntre(hoy, r.fecha);
+    if (faltan >= 1 && faltan <= PRE_AVISO_DIAS && !r.avisadoPre) {
+      const cuando = faltan === 1 ? "mañana" : `en ${faltan} días`;
+      await sendPushToUser(uid, { title: "Recordatorio", body: `${cuando}: ${texto}`, tag: `rec-pre-${doc.id}`, url: "/movements" });
+      await doc.ref.set({ avisadoPre: true }, { merge: true });
+    }
+  }));
 }
 
 // Meta de ahorro: avisa al cruzar 50/75/100% (una vez cada hito).
