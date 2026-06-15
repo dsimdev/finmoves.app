@@ -21,6 +21,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { listarRecordatorios, crearRecordatorio, eliminarRecordatorio, type Recordatorio } from "@/services/firebase/recordatorios";
 import { useT } from "@/hooks/useTranslation";
 
 function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
@@ -312,6 +314,11 @@ export default function ConfigPage() {
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  // Recordatorios puntuales
+  const [showRecordatorios, setShowRecordatorios] = useState(false);
+  const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
+  const [recTexto, setRecTexto] = useState("");
+  const [recFecha, setRecFecha] = useState("");
   const CHANGELOG_WEB_URL = "https://github.com/dsimdev/finmoves.app/blob/main/CHANGELOG_USER.md";
   // Mini-render de **negrita** del markdown (el changelog usa ** para resaltar).
   const boldify = (text: string) => text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
@@ -495,6 +502,22 @@ export default function ConfigPage() {
       setChangelog(text);
     }
     setShowChangelog(true);
+  };
+
+  const openRecordatorios = async () => {
+    setShowRecordatorios(true);
+    if (user?.uid) listarRecordatorios(user.uid).then(setRecordatorios).catch(() => {});
+  };
+  const addRecordatorio = async () => {
+    if (!user?.uid || !recTexto.trim() || !recFecha) return;
+    await crearRecordatorio(user.uid, recTexto.trim(), recFecha);
+    setRecTexto(""); setRecFecha("");
+    listarRecordatorios(user.uid).then(setRecordatorios).catch(() => {});
+  };
+  const delRecordatorio = async (id: string) => {
+    if (!user?.uid) return;
+    await eliminarRecordatorio(user.uid, id);
+    setRecordatorios((prev) => prev.filter((r) => r.id !== id));
   };
 
   // Abrir el changelog si llegamos con ?changelog=1 (desde el aviso de novedades).
@@ -869,6 +892,23 @@ export default function ConfigPage() {
                   <Toggle activo={pushOn} onClick={togglePush} />
                 </div>
               </div>
+            )}
+
+            {/* Recordatorios (requiere notificaciones activas) */}
+            {pushOn && (
+              <button onClick={openRecordatorios} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--orange-dim)", border: "1px solid var(--orange)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--orange)" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.reminders}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.remindersSub}</div>
+                  </div>
+                </div>
+              </button>
             )}
 
             {/* Backup */}
@@ -1549,6 +1589,29 @@ export default function ConfigPage() {
         </div>,
         document.body
       )}
+
+      <BottomSheet open={showRecordatorios} onClose={() => setShowRecordatorios(false)} title={t.reminders}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <input className="input" type="text" placeholder={t.reminderTextPlaceholder} value={recTexto} onChange={(e) => setRecTexto(e.target.value)} style={{ flex: 1 }} />
+          <input className="input" type="date" value={recFecha} onChange={(e) => setRecFecha(e.target.value)} style={{ width: 140 }} />
+          <button onClick={addRecordatorio} disabled={!recTexto.trim() || !recFecha} aria-label={t.add} style={{
+            flexShrink: 0, width: 44, borderRadius: "var(--radius-sm)", border: "none",
+            background: recTexto.trim() && recFecha ? "var(--green)" : "var(--surface-alt)",
+            color: recTexto.trim() && recFecha ? "var(--bg)" : "var(--muted)", cursor: recTexto.trim() && recFecha ? "pointer" : "default", fontSize: 22, lineHeight: 1,
+          }}>+</button>
+        </div>
+        {recordatorios.length === 0 ? (
+          <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, padding: "16px 0" }}>{t.noReminders}</div>
+        ) : recordatorios.map((r) => (
+          <div key={r.id} className="row" style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)", opacity: r.notified ? 0.5 : 1 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.texto}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{isoToFechaAR(r.fecha)}{r.notified ? ` · ${t.reminderSent}` : ""}</div>
+            </div>
+            <button onClick={() => delRecordatorio(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
+          </div>
+        ))}
+      </BottomSheet>
 
       {confirmLeave && (
         <ConfirmModal title={t.leaveSiteTitle} confirmLabel={t.leaveSiteConfirm} cancelLabel={t.cancel}
