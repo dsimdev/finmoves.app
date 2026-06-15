@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.16.0] — 2026-06-15
+
+### Mejoras
+- **Recordatorios** ahora abre como tarjeta centrada, y su acceso se pone **verde** cuando tenés alguno cargado.
+- **Configuración reordenada** (Generales): Modo oscuro, Notificaciones, Recordatorios, Huella, Reportes, Auto-ahorro. El **desbloqueo con huella** pasó a Generales.
+- Al abrir una ventana, **el fondo ya no se mueve**.
+- El botón **Atrás** ahora **sale de la app** en vez de saltar entre secciones.
+
+---
+
 ## [2.15.2] — 2026-06-15
 
 ### Arreglos

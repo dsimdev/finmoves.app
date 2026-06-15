@@ -12,6 +12,7 @@ import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { MediaViewer } from "@/components/ui/MediaViewer";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { BottomSheet as Sheet } from "@/components/ui/BottomSheet";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
@@ -52,6 +53,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const { m: money } = useMoney();
   const t = useT();
+  // El detalle solo-lectura es un overlay aparte del Sheet → lockear su scroll.
+  useScrollLock(open && !!readOnly);
 
   const monedaInversionesEfectiva: "USD" | "EUR" =
     monedaPrincipal === "USD" ? "EUR" : monedaPrincipal === "EUR" ? "USD" : monedaInversiones;

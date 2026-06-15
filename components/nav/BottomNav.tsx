@@ -105,7 +105,7 @@ export function BottomNav() {
         const active = pathname === tab.href;
         const { color, dim } = navGradColor(i, visible.length);
         return (
-          <Link key={tab.href} href={tab.href} style={{
+          <Link key={tab.href} href={tab.href} replace style={{
             flex: 1, display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
             gap: 0, textDecoration: "none", paddingTop: 0,

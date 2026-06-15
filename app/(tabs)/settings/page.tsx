@@ -23,6 +23,7 @@ import { useCotizacion } from "@/hooks/useCotizacion";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { listarRecordatorios, crearRecordatorio, eliminarRecordatorio, type Recordatorio } from "@/services/firebase/recordatorios";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { useT } from "@/hooks/useTranslation";
 
 function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
@@ -563,6 +564,13 @@ export default function ConfigPage() {
     setShowRecordatorios(true);
     if (user?.uid) listarRecordatorios(user.uid).then(setRecordatorios).catch(() => {});
   };
+  // Cargar recordatorios al montar para colorear el acceso (verde si hay alguno).
+  useEffect(() => {
+    if (user?.uid) listarRecordatorios(user.uid).then(setRecordatorios).catch(() => {});
+  }, [user?.uid]);
+  // Bloquear scroll de fondo con cualquier modal inline abierto (los BottomSheet
+  // y los modales reutilizables ya lockean solos).
+  useScrollLock(showRecordatorios || showAutoAhorroModal || showChangelog || showInviteModal || showUserModal || showSyncLog);
   const addRecordatorio = async () => {
     if (!user?.uid || !recTexto.trim() || !recFecha) return;
     await crearRecordatorio(user.uid, recTexto.trim(), recFecha);
@@ -909,25 +917,6 @@ export default function ConfigPage() {
             </button>
             )}
 
-            {/* Desbloqueo con huella */}
-            {bioAvailable && (
-              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: bioEnabled ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${bioEnabled ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={bioEnabled ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 11c0 3 0 6-1 8.5" /><path d="M8 11a4 4 0 0 1 8 0c0 3.5-.5 6-1.5 8" />
-                      <path d="M5 11a7 7 0 0 1 14 0c0 1.5 0 3-.3 4.5" /><path d="M3 9a9 9 0 0 1 4-3.5M21 9a9 9 0 0 0-4-3.5" />
-                    </svg>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.biometricUnlock}</div>
-                    <div style={{ fontSize: 11, color: bioError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{bioError || t.biometricUnlockSub}</div>
-                  </div>
-                </div>
-                <Toggle activo={bioEnabled} onClick={toggleBiometric} />
-              </div>
-            )}
-
             {/* Backup */}
             <button onClick={() => setShowExportConfirm(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
@@ -968,46 +957,8 @@ export default function ConfigPage() {
             <SectionHeader title={t.general} open={isOpen("general")} onClick={() => toggleSection("general")} />
             {isOpen("general") && (<div style={{ marginTop: 16 }}>
 
-            {/* Notificaciones */}
-            {pushAvailable && (
-              <div className="row" style={{ padding: "12px 0" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: pushOn ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${pushOn ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pushOn ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    </svg>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.notifications}</div>
-                    <div style={{ fontSize: 11, color: pushError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{pushError || t.notificationsSub}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                  <Toggle activo={pushOn} onClick={togglePush} />
-                </div>
-              </div>
-            )}
-
-            {/* Recordatorios (requiere notificaciones activas) */}
-            {pushOn && (
-              <button onClick={openRecordatorios} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--orange-dim)", border: "1px solid var(--orange)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--orange)" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" />
-                    </svg>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.reminders}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.remindersSub}</div>
-                  </div>
-                </div>
-              </button>
-            )}
-
             {/* Theme mode */}
-            <div className="row" style={{ padding: "12px 0", borderTop: pushAvailable ? "1px solid var(--faint)" : "none" }}>
+            <div className="row" style={{ padding: "12px 0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
@@ -1036,6 +987,63 @@ export default function ConfigPage() {
               </div>
               <Toggle activo={dark} onClick={toggleTheme} />
             </div>
+
+            {/* Notificaciones */}
+            {pushAvailable && (
+              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: pushOn ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${pushOn ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pushOn ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.notifications}</div>
+                    <div style={{ fontSize: 11, color: pushError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{pushError || t.notificationsSub}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  <Toggle activo={pushOn} onClick={togglePush} />
+                </div>
+              </div>
+            )}
+
+            {/* Recordatorios (requiere notificaciones activas) */}
+            {pushOn && (
+              <button onClick={openRecordatorios} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: recordatorios.length > 0 ? "var(--green-dim)" : "var(--orange-dim)", border: `1px solid ${recordatorios.length > 0 ? "var(--green)44" : "var(--orange)44"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: recordatorios.length > 0 ? "var(--green)" : "var(--orange)" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.reminders}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.remindersSub}</div>
+                  </div>
+                </div>
+              </button>
+            )}
+
+            {/* Desbloqueo con huella */}
+            {bioAvailable && (
+              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: bioEnabled ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${bioEnabled ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={bioEnabled ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 11c0 3 0 6-1 8.5" /><path d="M8 11a4 4 0 0 1 8 0c0 3.5-.5 6-1.5 8" />
+                      <path d="M5 11a7 7 0 0 1 14 0c0 1.5 0 3-.3 4.5" /><path d="M3 9a9 9 0 0 1 4-3.5M21 9a9 9 0 0 0-4-3.5" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13 }}>{t.biometricUnlock}</div>
+                    <div style={{ fontSize: 11, color: bioError ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{bioError || t.biometricUnlockSub}</div>
+                  </div>
+                </div>
+                <Toggle activo={bioEnabled} onClick={toggleBiometric} />
+              </div>
+            )}
 
             {/* Reportes */}
             <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
@@ -1605,7 +1613,13 @@ export default function ConfigPage() {
         document.body
       )}
 
-      <BottomSheet open={showRecordatorios} onClose={() => setShowRecordatorios(false)} title={t.reminders}>
+      {showRecordatorios && mounted && createPortal(
+        <div data-no-swipe onClick={() => setShowRecordatorios(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 380, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.5)", padding: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 16, fontWeight: 700 }}>{t.reminders}</span>
+              <button onClick={() => setShowRecordatorios(false)} style={{ background: "none", border: "none", color: "var(--red)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
+            </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <input className="input" type="text" placeholder={t.reminderTextPlaceholder} value={recTexto} onChange={(e) => setRecTexto(e.target.value)} style={{ flex: 1 }} />
           <input className="input" type="date" value={recFecha} onChange={(e) => setRecFecha(e.target.value)} style={{ width: 140 }} />
@@ -1626,7 +1640,10 @@ export default function ConfigPage() {
             <button onClick={() => delRecordatorio(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
           </div>
         ))}
-      </BottomSheet>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <BottomSheet open={showAdmin} onClose={() => setShowAdmin(false)} title={t.adminTitle}>
         {/* Códigos de invitación (solo disponibles; caducan a las 24h) */}

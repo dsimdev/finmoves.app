@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 /**
  * Bottom-sheet genérico y arrastrable (patrón único de la app):
@@ -23,6 +24,7 @@ export function BottomSheet({ open, onClose, title, children }: {
   // .fade-up con fill `both`) capture el position:fixed y descoloque el modal.
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useScrollLock(open);
   const startY = useRef(0);
   const baseTy = useRef(0);
 

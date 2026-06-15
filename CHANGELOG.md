@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.16.0] — 2026-06-15
+
+### Changed
+- **Reminders modal** is now a centered floating card (was a bottom sheet).
+- **General section reorder**: Dark mode → Notifications → Reminders → Fingerprint unlock → Reports → Auto-savings. Fingerprint unlock moved here from Account.
+- **Reminders access turns green** when there's at least one reminder loaded (orange otherwise).
+- **Background scroll is locked** while any modal/sheet is open (new `useScrollLock` hook, used by BottomSheet, ConfirmModal, KpiInfoModal, MediaViewer, movement detail and the settings modals).
+- **Back gesture/button no longer cycles through tabs**: tab navigation uses `replace` (BottomNav + swipe), so Back exits the app instead of walking the in-app history.
+
+---
+
 ## [2.15.2] — 2026-06-15
 
 ### Fixed
