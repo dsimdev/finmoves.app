@@ -31,13 +31,15 @@ import { Movimiento } from "@/types";
 function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
   const tipoCompra = moneda === "USD" ? "CompraUSD" : "CompraEUR";
   const tipoGasto  = moneda === "USD" ? "GastoUSD"  : "GastoEUR";
+  const tipoVenta  = moneda === "USD" ? "VentaUSD"  : "VentaEUR";
   let total = 0;
   let costoTotalARS = 0;
   for (const m of movimientos) {
     if (m.tipo === tipoCompra && m.cantidadUSD) {
       total += m.cantidadUSD;
       costoTotalARS += m.monto;
-    } else if (m.tipo === tipoGasto && m.cantidadUSD) {
+    } else if ((m.tipo === tipoGasto || m.tipo === tipoVenta) && m.cantidadUSD) {
+      // Gasto y Venta bajan la reserva (la Venta además sumó al disponible, ya contado).
       total -= m.cantidadUSD;
     }
   }
@@ -92,7 +94,7 @@ export default function DolaresPage() {
 
   // ── USD ──
   const comprasUSD = movimientos
-    .filter((m) => m.tipo === "CompraUSD" || m.tipo === "GastoUSD")
+    .filter((m) => m.tipo === "CompraUSD" || m.tipo === "GastoUSD" || m.tipo === "VentaUSD")
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
   const historialUSD = comprasUSD; // compras (+) y retiros (−) de la reserva
   const { total: desdeMovimientosUSD, costoPromedio: costoPromedioUSD } = calcularReserva(comprasUSD, "USD");
@@ -103,7 +105,7 @@ export default function DolaresPage() {
 
   // ── EUR ──
   const comprasEUR = movimientos
-    .filter((m) => m.tipo === "CompraEUR" || m.tipo === "GastoEUR")
+    .filter((m) => m.tipo === "CompraEUR" || m.tipo === "GastoEUR" || m.tipo === "VentaEUR")
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
   const historialEUR = comprasEUR; // compras (+) y retiros (−) de la reserva
   const { total: desdeMovimientosEUR, costoPromedio: costoPromedioEUR } = calcularReserva(comprasEUR, "EUR");
@@ -274,19 +276,23 @@ export default function DolaresPage() {
               <div className="label">{t.usdHistory}</div>
               {(expandUSD ? historialUSD : historialUSD.slice(0, 5)).map((m) => {
                 const esRetiro = m.tipo === "GastoUSD";
+                const esVenta = m.tipo === "VentaUSD";
+                const esSalida = esRetiro || esVenta;
                 return (
                 <div key={m.id} className="row" onClick={() => setModal({ mode: "edit", mov: m })} style={{ cursor: "pointer" }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{fechaCortaConAnio(m.fecha)}</div>
-                    {esRetiro
+                    {esVenta
+                      ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.sell}{m.cotizacion ? ` · ${t.rate} $${m.cotizacion.toLocaleString("es-AR")}` : ""}</div>
+                      : esRetiro
                       ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.removeReserve}</div>
                       : m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: esRetiro ? "var(--red)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
-                      {esRetiro ? "−" : "+"}{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: esVenta ? "var(--red)" : esRetiro ? "var(--blue)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
+                      {esSalida ? "−" : "+"}{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
                     </div>
-                    {!esRetiro && <div style={{ fontSize: 10, color: "var(--muted)" }}>{money(m.monto)}</div>}
+                    {!esRetiro && <div style={{ fontSize: 10, color: esVenta ? "var(--green)" : "var(--muted)" }}>{esVenta ? "+" : ""}{money(m.monto)}</div>}
                   </div>
                 </div>
               );})}
@@ -304,19 +310,23 @@ export default function DolaresPage() {
               <div className="label">{t.eurHistory}</div>
               {(expandEUR ? historialEUR : historialEUR.slice(0, 5)).map((m) => {
                 const esRetiro = m.tipo === "GastoEUR";
+                const esVenta = m.tipo === "VentaEUR";
+                const esSalida = esRetiro || esVenta;
                 return (
                 <div key={m.id} className="row" onClick={() => setModal({ mode: "edit", mov: m })} style={{ cursor: "pointer" }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{fechaCortaConAnio(m.fecha)}</div>
-                    {esRetiro
+                    {esVenta
+                      ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.sell}{m.cotizacion ? ` · ${t.rate} $${m.cotizacion.toLocaleString("es-AR")}` : ""}</div>
+                      : esRetiro
                       ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.removeReserve}</div>
                       : m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: esRetiro ? "var(--red)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
-                      {esRetiro ? "−" : "+"}{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: esVenta ? "var(--red)" : esRetiro ? "var(--blue)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
+                      {esSalida ? "−" : "+"}{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
                     </div>
-                    {!esRetiro && <div style={{ fontSize: 10, color: "var(--muted)" }}>{money(m.monto)}</div>}
+                    {!esRetiro && <div style={{ fontSize: 10, color: esVenta ? "var(--green)" : "var(--muted)" }}>{esVenta ? "+" : ""}{money(m.monto)}</div>}
                   </div>
                 </div>
               );})}

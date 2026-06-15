@@ -279,15 +279,16 @@ export default function ReportesPage() {
   // Reserva real en FX — suma cantidadUSD de CompraUSD/GastoUSD (igual que página Inversión)
   const tipoCompraFX = monedaInversiones === "EUR" ? "CompraEUR" : "CompraUSD";
   const tipoGastoFX  = monedaInversiones === "EUR" ? "GastoEUR"  : "GastoUSD";
+  const tipoVentaFX  = monedaInversiones === "EUR" ? "VentaEUR"  : "VentaUSD";
   const SALDO_INICIAL = monedaInversiones === "EUR" ? (config?.meta.saldoEUR ?? 0) : (config?.meta.saldoUSD ?? 0);
   const reservaFX = useMemo(() => {
     let total = SALDO_INICIAL;
     for (const m of movimientos) {
       if (m.tipo === tipoCompraFX && m.cantidadUSD) total += m.cantidadUSD;
-      else if (m.tipo === tipoGastoFX && m.cantidadUSD) total -= m.cantidadUSD;
+      else if ((m.tipo === tipoGastoFX || m.tipo === tipoVentaFX) && m.cantidadUSD) total -= m.cantidadUSD;
     }
     return Math.max(0, total);
-  }, [movimientos, tipoCompraFX, tipoGastoFX]);
+  }, [movimientos, tipoCompraFX, tipoGastoFX, tipoVentaFX]);
 
   const metaMonto = config?.meta.metaMonto;
   const progresoMeta = metaMonto && cotizActual ? progresoMetaUSD(reservaFX * cotizActual, metaMonto, cotizActual) : null;
@@ -315,6 +316,7 @@ export default function ReportesPage() {
       Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--orange)",
       CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
       GastoUSD: "var(--red)", GastoEUR: "var(--red)",
+      VentaUSD: "var(--red)", VentaEUR: "var(--red)",
     };
     const domColor = (tipoMap: Map<string, number>) => {
       const dom = [...tipoMap.entries()].reduce((a, b) => b[1] > a[1] ? b : a, ["", 0] as [string, number])[0];
@@ -849,7 +851,7 @@ export default function ReportesPage() {
               {reportOn("movimientos_kpis") && (() => {
                 const tipoColor: Record<string, string> = {
                   Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--orange)",
-                  CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)", GastoUSD: "var(--red)", GastoEUR: "var(--red)",
+                  CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)", GastoUSD: "var(--red)", GastoEUR: "var(--red)", VentaUSD: "var(--red)", VentaEUR: "var(--red)",
                 };
                 const promDia = movCounts.diasActivos > 0 ? (movCounts.total / movCounts.diasActivos).toFixed(1) : "0";
                 const mayor = periodo.movimientos.filter(m => m.categoria !== "Sueldo" && m.categoria !== "RESTO").reduce<(typeof periodo.movimientos)[number] | null>((mx, m) => (m.monto > (mx?.monto ?? -1) ? m : mx), null);

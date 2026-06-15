@@ -58,6 +58,8 @@ export const es = {
     GastoUSD: "GastoUSD",
     CompraEUR: "CompraEUR",
     GastoEUR: "GastoEUR",
+    VentaUSD: "VentaUSD",
+    VentaEUR: "VentaEUR",
   } as Record<string, string>,
 
   // Dashboard
@@ -75,6 +77,9 @@ export const es = {
   reserve: "Reserva",
   addReserve: "+ Reserva",
   removeReserve: "− Reserva",
+  buy: "Compra",
+  spend: "Gasto",
+  sell: "Venta",
   quantity: "Cantidad",
   newShort: "Movimiento",
   addTo: "Ingresar en",
