@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { PrivacidadContent } from "@/components/legal/PrivacidadContent";
 import { TerminosContent } from "@/components/legal/TerminosContent";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 
 type Modal = "privacidad" | "terminos" | null;
 
@@ -31,6 +32,7 @@ const cards = [
 
 export function InicioClient() {
   const [modal, setModal] = useState<Modal>(null);
+  const { canInstall, promptInstall } = useInstallPrompt();
 
   return (
     <>
@@ -56,22 +58,47 @@ export function InicioClient() {
             Registrá, analizá y seguí tus gastos, ingresos, ahorros e inversiones.
             Tus datos son tuyos: privados, seguros, sin publicidad.
           </p>
-          <a
-            href="/login"
-            style={{
-              display: "inline-block",
-              padding: "14px 40px",
-              borderRadius: 12,
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#fff",
-              textDecoration: "none",
-              background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)",
-              boxShadow: "0 0 28px rgba(83,109,254,0.4)",
-            }}
-          >
-            Ingresar
-          </a>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <a
+              href="/login"
+              style={{
+                display: "inline-block",
+                padding: "14px 40px",
+                borderRadius: 12,
+                fontSize: 15,
+                fontWeight: 700,
+                color: "#fff",
+                textDecoration: "none",
+                background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)",
+                boxShadow: "0 0 28px rgba(83,109,254,0.4)",
+              }}
+            >
+              Ingresar
+            </a>
+            {canInstall && (
+              <button
+                onClick={promptInstall}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "14px 24px",
+                  borderRadius: 12,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "var(--text)",
+                  background: "transparent",
+                  border: "1px solid var(--border-hi)",
+                  cursor: "pointer",
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Instalar
+              </button>
+            )}
+          </div>
         </header>
 
         {/* Feature cards */}
