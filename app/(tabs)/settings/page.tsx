@@ -968,83 +968,9 @@ export default function ConfigPage() {
             <SectionHeader title={t.general} open={isOpen("general")} onClick={() => toggleSection("general")} />
             {isOpen("general") && (<div style={{ marginTop: 16 }}>
 
-            {/* Theme mode */}
-            <div className="row" style={{ padding: "12px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: dark ? "var(--surface-alt)" : "var(--yellow-dim)",
-                  border: "1px solid var(--border)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  {dark ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" stroke="var(--muted)" strokeWidth="1.7" strokeLinejoin="round" />
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="4" stroke="var(--yellow)" strokeWidth="1.7" />
-                      <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="var(--yellow)" strokeWidth="1.7" strokeLinecap="round" />
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.darkMode}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                    {dark ? t.switchToLight : t.switchToDark}
-                  </div>
-                </div>
-              </div>
-              <Toggle activo={dark} onClick={toggleTheme} />
-            </div>
-
-            {/* Moneda principal */}
-            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: "var(--accent-dim)", border: "1px solid var(--accent)44",
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
-                  {monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$"}
-                </span>
-              </div>
-              <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>{t.mainCurrency}</div>
-                <span className="badge" style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)44" }}>{monedaPrincipal}</span>
-              </div>
-            </div>
-
-            {/* Reportes */}
-            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: showReportes ? "var(--green-dim)" : "var(--red-dim)",
-                  border: `1px solid ${showReportes ? "var(--green)44" : "var(--red)44"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="18" height="18" rx="2" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
-                    <path d="M3 9h18M9 3v18" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.reportsSection}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showReportsLabel}</div>
-                </div>
-              </div>
-              <Toggle activo={showReportes} onClick={() => {
-                const next = !showReportes;
-                setPref("showReportes", next);
-                if (config) saveConfig({ ...config, meta: { ...config.meta, showReportes: next } });
-              }} />
-            </div>
-
             {/* Notificaciones */}
             {pushAvailable && (
-              <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div className="row" style={{ padding: "12px 0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: pushOn ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${pushOn ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={pushOn ? "var(--green)" : "var(--muted)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -1079,6 +1005,63 @@ export default function ConfigPage() {
                 </div>
               </button>
             )}
+
+            {/* Theme mode */}
+            <div className="row" style={{ padding: "12px 0", borderTop: pushAvailable ? "1px solid var(--faint)" : "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: dark ? "var(--surface-alt)" : "var(--yellow-dim)",
+                  border: "1px solid var(--border)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {dark ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" stroke="var(--muted)" strokeWidth="1.7" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="4" stroke="var(--yellow)" strokeWidth="1.7" />
+                      <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="var(--yellow)" strokeWidth="1.7" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.darkMode}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                    {dark ? t.switchToLight : t.switchToDark}
+                  </div>
+                </div>
+              </div>
+              <Toggle activo={dark} onClick={toggleTheme} />
+            </div>
+
+            {/* Reportes */}
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: showReportes ? "var(--green-dim)" : "var(--red-dim)",
+                  border: `1px solid ${showReportes ? "var(--green)44" : "var(--red)44"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="18" height="18" rx="2" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
+                    <path d="M3 9h18M9 3v18" stroke={showReportes ? "var(--green)" : "var(--red)"} strokeWidth="1.7" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.reportsSection}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.showReportsLabel}</div>
+                </div>
+              </div>
+              <Toggle activo={showReportes} onClick={() => {
+                const next = !showReportes;
+                setPref("showReportes", next);
+                if (config) saveConfig({ ...config, meta: { ...config.meta, showReportes: next } });
+              }} />
+            </div>
 
             {/* Auto-ahorro */}
             <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
@@ -1453,16 +1436,15 @@ export default function ConfigPage() {
       )}
 
       {showAutoAhorroModal && mounted && createPortal(
-        <div onClick={() => setShowAutoAhorroModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480 }}>
-            <div style={{ padding: "12px 16px 0" }}>
-              <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 14px" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div onClick={() => setShowAutoAhorroModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 380, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
+            <div style={{ padding: "18px 18px 0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
                 <span style={{ fontSize: 16, fontWeight: 700 }}>Auto-ahorro</span>
                 <button onClick={() => setShowAutoAhorroModal(false)} style={{ background: "none", border: "none", color: "var(--red)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
               </div>
             </div>
-            <div style={{ padding: "0 16px 40px", display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ padding: "0 18px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
               <div>
                 <div className="label" style={{ marginBottom: 8 }}>{t.autoSavingsAmountPerExpense(monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$")}</div>
                 <input

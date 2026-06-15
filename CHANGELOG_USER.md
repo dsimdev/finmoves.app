@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.15.1] — 2026-06-15
+
+### Mejoras
+- **Auto-ahorro** ahora abre como una tarjeta centrada.
+- **Notificaciones y Recordatorios** quedaron arriba de todo en Generales.
+
+---
+
 ## [2.15.0] — 2026-06-14
 
 ### Mejoras
