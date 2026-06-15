@@ -30,9 +30,10 @@ export async function POST(req: NextRequest) {
   if (!targetUid || !PERMISOS_VALIDOS.includes(key)) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
-  // Los permisos viven bajo `meta` en el doc config/meta (deep-merge no pisa el resto).
-  await adminDb().doc(`users/${targetUid}/config/meta`).set(
-    { meta: { permisos: { [key]: !!value } } },
+  // Los permisos viven en un doc aparte (config/permisos) read-only para el cliente:
+  // solo se escriben acá, con el Admin SDK. Así el usuario no puede auto-activárselos.
+  await adminDb().doc(`users/${targetUid}/config/permisos`).set(
+    { [key]: !!value },
     { merge: true }
   );
   const labels: Record<string, string> = { comprobantes: "Imágenes", inversion: "Inversión" };
@@ -59,9 +60,10 @@ export async function GET(req: NextRequest) {
   const users = await Promise.all(
     list.users.map(async (u) => {
       const data = (await adminDb().doc(`users/${u.uid}/config/meta`).get()).data() as
-        | { meta?: { nombre?: string; permisos?: Record<string, boolean> } }
+        | { meta?: { nombre?: string } }
         | undefined;
       const meta = data?.meta;
+      const permisos = ((await adminDb().doc(`users/${u.uid}/config/permisos`).get()).data() ?? {}) as Record<string, boolean>;
       const pushOn = (await adminDb().doc(`users/${u.uid}/config/push`).get()).exists;
       return {
         uid: u.uid,
@@ -70,7 +72,7 @@ export async function GET(req: NextRequest) {
         createdAt: u.metadata.creationTime ?? "",
         lastSignIn: u.metadata.lastSignInTime ?? "",
         pushOn,
-        permisos: meta?.permisos ?? {},
+        permisos,
         inviteCode: codeByUser.get(u.uid) ?? null,
         isOwner: u.uid === owner,
       };

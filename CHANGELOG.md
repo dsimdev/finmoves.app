@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.21.0] — 2026-06-15
+
+### Security
+- **Server-side permission enforcement**: user entitlements (`comprobantes`, `inversion`) moved out of the client-writable `config/meta` into a dedicated read-only `config/permisos` document. Firestore rules now deny client writes to `config/permisos` and the new `permisosLog` subcollection — only the Admin SDK writes them. Previously any authenticated user could self-grant permissions by writing `meta.permisos` from the client. `obtenerConfig` reads the separate doc and injects it into `meta.permisos`, overriding any local value, so the three consumer sites are unchanged. `/api/admin/users` reads/writes the new location. One-off migration `scripts/migrate-permisos.js` backfills existing users. **Requires a separate `firebase deploy --only firestore:rules`.**
+
+### Changed
+- **PWA screenshots**: manifest points to `public/screenshots/*` (previous `/pwa-*.jpeg` paths were removed and broke the install preview). Six labeled narrow screenshots for the mobile rich install UI. Desktop rich install still needs `wide` screenshots (pending assets).
+
+---
+
 ## [2.20.1] — 2026-06-15
 
 ### Fixed

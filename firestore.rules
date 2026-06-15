@@ -2,12 +2,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Cada usuario solo puede leer/escribir bajo su propio árbol (users/<su-uid>/**).
-    // request.auth.uid == userId impide acceso cruzado entre cuentas.
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    match /users/{userId} {
+
+      // Entitlements (permisos) y su historial: el cliente SOLO lee.
+      // La escritura la hace exclusivamente el Admin SDK (panel del dueño), que
+      // bypassa estas reglas. Así el usuario NO puede auto-activarse permisos.
+      match /config/permisos {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
+      match /permisosLog/{logId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Resto de la config del usuario (meta, push, syncMeta, notifyMeta): suya,
+      // salvo el doc `permisos` (cubierto arriba, sin allow write → denegado).
+      match /config/{doc} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if request.auth != null && request.auth.uid == userId && doc != 'permisos';
+      }
+
+      // Colecciones del usuario (movimientos, recordatorios, plantillas, …):
+      // lectura/escritura propias. Se excluyen `config` y `permisosLog`, ya cubiertos.
+      match /{collection}/{document} {
+        allow read, write: if request.auth != null && request.auth.uid == userId
+                           && collection != 'config' && collection != 'permisosLog';
+      }
     }
 
-    // Todo lo demás queda denegado por defecto (no hay otra regla que lo permita).
+    // Todo lo demás queda denegado por defecto.
   }
 }

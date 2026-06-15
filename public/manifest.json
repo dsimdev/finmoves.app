@@ -20,9 +20,12 @@
     { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [
-    { "src": "/pwa-login.jpeg", "sizes": "780x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "Ingreso a FinMoves" },
-    { "src": "/pwa-reports.jpeg", "sizes": "771x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "Reportes por período" },
-    { "src": "/pwa-settings.jpeg", "sizes": "783x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "Configuración" }
+    { "src": "/screenshots/dashboard.png", "sizes": "1079x1190", "type": "image/png", "form_factor": "narrow", "label": "Resumen de tus finanzas del período" },
+    { "src": "/screenshots/new-movement.png", "sizes": "1080x2223", "type": "image/png", "form_factor": "narrow", "label": "Cargá un movimiento en segundos" },
+    { "src": "/screenshots/reports-movements.png", "sizes": "1068x2212", "type": "image/png", "form_factor": "narrow", "label": "Todos tus movimientos por período" },
+    { "src": "/screenshots/reports-expenses.jpeg", "sizes": "771x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "Reportes de gastos e ingresos" },
+    { "src": "/screenshots/portfolio.png", "sizes": "1076x2195", "type": "image/png", "form_factor": "narrow", "label": "Seguimiento de ahorros e inversión" },
+    { "src": "/screenshots/settings.png", "sizes": "1065x2204", "type": "image/png", "form_factor": "narrow", "label": "Configuración y sincronización" }
   ],
   "shortcuts": [
     { "name": "Nuevo movimiento", "short_name": "Movimiento", "url": "/movements", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },

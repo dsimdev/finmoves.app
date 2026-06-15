@@ -13,7 +13,19 @@ export async function obtenerConfig(userId: string): Promise<ConfigUsuario> {
     return TEMPLATE_CONFIG;
   }
 
-  return snap.data() as ConfigUsuario;
+  const config = snap.data() as ConfigUsuario;
+
+  // Los permisos viven en un doc aparte (`config/permisos`), read-only para el
+  // cliente: solo el dueño los escribe vía Admin SDK. Se inyectan en meta.permisos
+  // —sobrescribiendo cualquier valor local— para que el resto de la app los lea igual
+  // y el usuario no pueda auto-activárselos tocando meta.
+  const permisosSnap = await getDoc(doc(db, `users/${userId}/config/permisos`)).catch(() => null);
+  config.meta = {
+    ...config.meta,
+    permisos: (permisosSnap?.exists() ? permisosSnap.data() : {}) as ConfigUsuario["meta"]["permisos"],
+  };
+
+  return config;
 }
 
 export async function crearConfigDefault(userId: string): Promise<void> {
