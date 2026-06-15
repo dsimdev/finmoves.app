@@ -192,6 +192,10 @@ export default function LoginPage() {
           <button onClick={switchMode} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
             {mode === "signin" ? t.noAccountCreate : t.haveAccountSignIn}
           </button>
+          <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
+            <a href="/privacidad" style={{ color: "var(--muted)", fontSize: 11, textDecoration: "none" }}>Privacidad</a>
+            <a href="/terminos" style={{ color: "var(--muted)", fontSize: 11, textDecoration: "none" }}>Términos</a>
+          </div>
         </div>
       </div>
     </div>

@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.18.1] — 2026-06-15
+
+### Added
+- **Public legal pages**: `/privacidad` (Privacy Policy) and `/terminos` (Terms of Service), unauthenticated, linked from the login footer — for the Google OAuth consent screen. Both note the closed, invite-code-only access.
+
+---
+
 ## [2.18.0] — 2026-06-15
 
 ### Added

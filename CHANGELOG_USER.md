@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.18.1] — 2026-06-15
+
+### Mejoras
+- Agregamos las páginas de **Política de Privacidad** y **Condiciones del Servicio** (enlaces al pie del ingreso).
+
+---
+
 ## [2.18.0] — 2026-06-15
 
 ### Novedades
