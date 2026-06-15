@@ -4,6 +4,15 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.15.1] — 2026-06-15
+
+### Changed
+- **Auto-savings modal** is now a centered floating card (was a bottom sheet).
+- **Notifications + Reminders** moved to the top of the General section (above Dark mode).
+- Removed the non-actionable **"Main currency"** row from General (it couldn't be changed there).
+
+---
+
 ## [2.15.0] — 2026-06-14
 
 ### Added
