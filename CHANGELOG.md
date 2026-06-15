@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.20.1] — 2026-06-15
+
+### Fixed
+- **Build break (hotfix)**: a duplicate `borderBottom` key in the admin user-list button's inline `style` (introduced in 2.20.0) failed TypeScript type-checking ("object literal cannot have multiple properties with the same name") and blocked the App Hosting framework build, leaving the 2.20.0 deploy stuck. Removed the redundant key — no visual change. Production kept serving the previous good revision throughout.
+
+---
+
 ## [2.20.0] — 2026-06-15
 
 ### Added

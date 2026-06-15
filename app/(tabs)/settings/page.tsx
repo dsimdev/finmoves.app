@@ -1760,7 +1760,7 @@ export default function ConfigPage() {
         ) : adminUsers.length === 0 ? (
           <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>{t.adminNoUsers}</div>
         ) : adminUsers.map((u) => (
-          <button key={u.uid} onClick={() => setSelectedAdminUid(u.uid)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--faint)", background: "none", border: "none", borderBottom: "1px solid var(--faint)", cursor: "pointer", textAlign: "left" }}>
+          <button key={u.uid} onClick={() => setSelectedAdminUid(u.uid)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 0", background: "none", border: "none", borderBottom: "1px solid var(--faint)", cursor: "pointer", textAlign: "left" }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.pushOn ? "var(--green)" : "var(--border)", flexShrink: 0 }} />
             <span style={{ fontSize: 13, fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>{u.email || u.uid}</span>
             {u.isOwner && <span className="badge" style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)44" }}>owner</span>}
