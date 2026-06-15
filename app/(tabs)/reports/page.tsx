@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
 import { useData } from "../data-context";
@@ -21,6 +21,7 @@ import { EyeIcon } from "@/components/ui/EyeIcon";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 
 type Sub = "gastos" | "ingresos" | "movimientos" | "periodos";
 
@@ -110,12 +111,9 @@ export default function ReportesPage() {
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
   const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movdescs" | "movcat" | null>(null);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
-  const [modalTopExpanded, setModalTopExpanded] = useState(false);
   const [modalSueldo, setModalSueldo] = useState(false);
   const [modalAhorros, setModalAhorros] = useState(false);
   const [diaModal, setDiaModal] = useState<string | null>(null);
-  const [diaModalExpanded, setDiaModalExpanded] = useState(false);
-  const sheetDragY = useRef<number | null>(null);
   const [proyPeriodos, setProyPeriodos] = useState(3);
   const [compareMode, setCompareMode] = useState(false);
 
@@ -604,7 +602,7 @@ export default function ReportesPage() {
               {reportOn("gastos_otros") && porFecha.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byDay}</div>
-                  <VBars max={Math.max(...porFecha.map((f) => f.monto), 1)} oculto={oculto} data={porFecha.map((f) => ({ label: sinAño(f.nombre), value: f.monto, color: "var(--red)" }))} onBarClick={(label) => { setDiaModal(label); setDiaModalExpanded(false); }} />
+                  <VBars max={Math.max(...porFecha.map((f) => f.monto), 1)} oculto={oculto} data={porFecha.map((f) => ({ label: sinAño(f.nombre), value: f.monto, color: "var(--red)" }))} onBarClick={(label) => setDiaModal(label)} />
                 </div>
               )}
 
@@ -961,79 +959,36 @@ export default function ReportesPage() {
       )}
 
       {/* Modal: Historial de aumentos de sueldo */}
-      {modalSueldo && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => setModalSueldo(false)}>
-          <div style={{ width: "100%", maxWidth: 360, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, maxHeight: "80vh", overflowY: "auto", padding: 20, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{t.salaryHistory}</span>
-              <button onClick={() => setModalSueldo(false)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
-            </div>
-            {suelHistorial.map((ev, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < suelHistorial.length - 1 ? "1px solid var(--faint)" : "none" }}>
-                <div>
-                  <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 4 }}>{ev.cuando}</div>
-                  <div style={{ fontSize: 13, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>
-                    {money(ev.de)} → {money(ev.a)}
-                  </div>
-                </div>
-                <span style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)" }}>+{ev.pct}%</span>
+      <BottomSheet open={modalSueldo} onClose={() => setModalSueldo(false)} title={t.salaryHistory}>
+        {suelHistorial.map((ev, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < suelHistorial.length - 1 ? "1px solid var(--faint)" : "none" }}>
+            <div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 4 }}>{ev.cuando}</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>
+                {money(ev.de)} → {money(ev.a)}
               </div>
-            ))}
+            </div>
+            <span style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)" }}>+{ev.pct}%</span>
           </div>
-        </div>
-      )}
+        ))}
+      </BottomSheet>
 
       {/* Modal: Todo lo directo a ahorros */}
-      {modalAhorros && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 200, display: "flex", alignItems: "flex-end", overflow: "hidden" }} onClick={() => setModalAhorros(false)}>
-          <div style={{ width: "100%", background: "var(--bg)", borderRadius: "20px 20px 0 0", maxHeight: "80dvh", overflowY: "auto", padding: "20px 20px 40px" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 16px" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{t.directToSavings}</span>
-              <button onClick={() => setModalAhorros(false)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
+      <BottomSheet open={modalAhorros} onClose={() => setModalAhorros(false)} title={t.directToSavings}>
+        {movIngresosAhorros.map((m) => (
+          <div key={m.id} className="row" style={{ padding: "10px 0", borderBottom: "1px solid var(--faint)" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || m.origenAhorro || m.categoria}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)" }}>{sinAño(m.fecha)}</div>
             </div>
-            {movIngresosAhorros.map((m) => (
-              <div key={m.id} className="row" style={{ padding: "10px 0", borderBottom: "1px solid var(--faint)" }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || m.origenAhorro || m.categoria}</div>
-                  <div style={{ fontSize: 10, color: "var(--muted)" }}>{sinAño(m.fecha)}</div>
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>+{money(m.monto)}</span>
-              </div>
-            ))}
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>+{money(m.monto)}</span>
           </div>
-        </div>
-      )}
+        ))}
+      </BottomSheet>
 
       {/* Modal: Todos los top gastos/descripciones */}
-      {modalTop && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 200,
-          display: "flex", alignItems: "flex-end", overflow: "hidden",
-        }} onClick={() => { setModalTop(null); setModalTopExpanded(false); }}>
-          <div style={{
-            width: "100%", background: "var(--bg)", borderRadius: "20px 20px 0 0",
-            maxHeight: modalTopExpanded ? "90dvh" : "50dvh", overflowY: "auto", padding: 20, paddingBottom: 40,
-            transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1)",
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 16px", cursor: "grab", touchAction: "none" }}
-              onPointerDown={(e) => { sheetDragY.current = e.clientY; (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
-              onPointerMove={(e) => {
-                if (sheetDragY.current === null) return;
-                const dy = sheetDragY.current - e.clientY;
-                if (dy > 30) { setModalTopExpanded(true); sheetDragY.current = null; }
-                else if (dy < -30 && modalTopExpanded) { setModalTopExpanded(false); sheetDragY.current = null; }
-              }}
-              onPointerUp={() => { sheetDragY.current = null; }}
-            />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>
-                {modalTop === "gastos" ? t.top20Expenses : modalTop === "movdescs" ? t.allDescriptions : modalTop === "movcat" ? t.allCategories : t.allDescriptions}
-              </span>
-              <button onClick={() => setModalTop(null)} style={{
-                background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1,
-              }}>×</button>
-            </div>
+      <BottomSheet open={!!modalTop} onClose={() => setModalTop(null)}
+        title={modalTop === "gastos" ? t.top20Expenses : modalTop === "movcat" ? t.allCategories : t.allDescriptions}>
             {modalTop === "descs" && descsModal.map((d, i) => (
               <div key={d.nombre} className="row" style={{ padding: "12px 0" }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
@@ -1066,34 +1021,17 @@ export default function ReportesPage() {
                 <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "var(--font-mono)" }}>{count}×</div>
               </div>
             ))}
-          </div>
-        </div>
-      )}
+      </BottomSheet>
 
-      {diaModal && (() => {
-        const fechaOriginal = porFecha.find((f) => sinAño(f.nombre) === diaModal)?.nombre ?? diaModal;
-        const movsDia = (periodo?.movimientos ?? []).filter((m) => m.tipo === "Gasto" && (sinAño(m.fecha) === diaModal || m.fecha === fechaOriginal)).sort((a, b) => b.monto - a.monto);
-        const totalDia = movsDia.reduce((s, m) => s + m.monto, 0);
-        return (
-          <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-            onClick={() => { setDiaModal(null); setDiaModalExpanded(false); }}>
-            <div style={{ width: "100%", background: "var(--bg)", borderRadius: "20px 20px 0 0", maxHeight: diaModalExpanded ? "90dvh" : "50dvh", overflowY: "auto", padding: 20, paddingBottom: 40, transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1)" }}
-              onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 16px", cursor: "grab", touchAction: "none" }}
-                onPointerDown={(e) => { sheetDragY.current = e.clientY; (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
-                onPointerMove={(e) => {
-                  if (sheetDragY.current === null) return;
-                  const dy = sheetDragY.current - e.clientY;
-                  if (dy > 30) { setDiaModalExpanded(true); sheetDragY.current = null; }
-                  else if (dy < -30 && diaModalExpanded) { setDiaModalExpanded(false); sheetDragY.current = null; }
-                }}
-                onPointerUp={() => { sheetDragY.current = null; }}
-              />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <span style={{ fontSize: 16, fontWeight: 700 }}>{diaModal}</span>
-                <button onClick={() => setDiaModal(null)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
-              </div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16 }}>{`${money(totalDia)} · ${t.expensesCount(movsDia.length)}`}</div>
+      <BottomSheet open={!!diaModal} onClose={() => setDiaModal(null)} title={diaModal ?? ""}>
+        {(() => {
+          if (!diaModal) return null;
+          const fechaOriginal = porFecha.find((f) => sinAño(f.nombre) === diaModal)?.nombre ?? diaModal;
+          const movsDia = (periodo?.movimientos ?? []).filter((m) => m.tipo === "Gasto" && (sinAño(m.fecha) === diaModal || m.fecha === fechaOriginal)).sort((a, b) => b.monto - a.monto);
+          const totalDia = movsDia.reduce((s, m) => s + m.monto, 0);
+          return (
+            <>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16 }}>{`${money(totalDia)} · ${t.expensesCount(movsDia.length)}`}</div>
               {movsDia.map((m, i) => (
                 <div key={i} className="row" style={{ padding: "11px 0" }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
@@ -1103,10 +1041,10 @@ export default function ReportesPage() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(m.monto)}</div>
                 </div>
               ))}
-            </div>
-          </div>
-        );
-      })()}
+            </>
+          );
+        })()}
+      </BottomSheet>
 
       {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
     </div>

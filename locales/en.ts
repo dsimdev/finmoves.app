@@ -105,6 +105,7 @@ export const en: AppLocale = {
   updateTitle: "Updates available",
   updateBody: "There are new changes in the app",
   updateSeeChanges: "See changes",
+  updateNow: "Update",
   viewFullChangelog: "View full changelog",
   leaveSiteTitle: "You're leaving the site",
   leaveSiteBody: "The full changelog will open on GitHub, outside FinMoves.",

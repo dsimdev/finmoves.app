@@ -1,42 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { parseChangelogVersions, releasesSince, UPDATE_BANNER_THRESHOLD } from "@/lib/changelog-versions";
 
-const LS_KEY = "finmoves.lastSeenVersion";
-
-// Muestra el aviso de novedades solo cuando pasaron >= 5 versiones desde la
-// última que el usuario vio. No actualiza "lo visto" hasta que el banner se
-// abre/cierra, así la cuenta se acumula entre parches en vez de resetearse.
+// Aviso de actualización: aparece cuando hay un service worker NUEVO en espera
+// (cada deploy genera un sw.js distinto → queda "waiting"). El banner es
+// persistente (sin descartar): solo se va cuando el usuario toca "Actualizar",
+// que activa el SW nuevo (SKIP_WAITING) y recarga la app con la última versión.
+// No se muestra en la primera instalación (no hay controller previo).
 export function useUpdateBanner() {
   const [show, setShow] = useState(false);
-  const current = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
+  const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
 
   useEffect(() => {
-    if (!current) return;
-    const lastSeen = localStorage.getItem(LS_KEY);
-    // Instalación nueva: marcar visto y no molestar.
-    if (!lastSeen) { localStorage.setItem(LS_KEY, current); return; }
-    if (lastSeen === current) return;
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+    let cancelled = false;
 
-    let cancel = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/changelog");
-        const versions = parseChangelogVersions(await res.text());
-        if (!cancel && releasesSince(versions, lastSeen, current) >= UPDATE_BANNER_THRESHOLD) {
-          setShow(true);
-        }
-        // Si son menos de 5, NO tocamos lastSeen → se acumula para la próxima.
-      } catch { /* sin red: no mostramos nada */ }
-    })();
-    return () => { cancel = true; };
-  }, [current]);
+    const flag = (sw: ServiceWorker | null) => {
+      if (cancelled || !sw) return;
+      // controller presente = ya había una versión instalada → es una actualización real
+      if (!navigator.serviceWorker.controller) return;
+      setWaiting(sw);
+      setShow(true);
+    };
 
-  const dismiss = () => {
-    localStorage.setItem(LS_KEY, current);
-    setShow(false);
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      if (!reg || cancelled) return;
+      flag(reg.waiting);
+      reg.addEventListener("updatefound", () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener("statechange", () => {
+          if (sw.state === "installed") flag(sw);
+        });
+      });
+    });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const update = () => {
+    if (!waiting) { window.location.reload(); return; }
+    // Recargar una sola vez cuando el SW nuevo tome control.
+    navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
+    waiting.postMessage({ type: "SKIP_WAITING" });
   };
 
-  return { show, dismiss };
+  return { show, update };
 }

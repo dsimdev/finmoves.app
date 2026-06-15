@@ -103,6 +103,7 @@ export const es = {
   updateTitle: "Novedades disponibles",
   updateBody: "Hay cambios nuevos en la app",
   updateSeeChanges: "Ver cambios",
+  updateNow: "Actualizar",
   viewFullChangelog: "Ver historial completo",
   leaveSiteTitle: "Vas a salir del sitio",
   leaveSiteBody: "Se abrirá el historial completo de cambios en GitHub, fuera de FinMoves.",
