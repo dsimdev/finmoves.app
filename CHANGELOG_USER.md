@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.14.2] — 2026-06-14
+
+### Arreglos
+- Las ventanas emergentes (como Recordatorios) ya no aparecían descolocadas o translúcidas: ahora se muestran bien centradas abajo.
+
+---
+
 ## [2.14.1] — 2026-06-14
 
 ### Mejoras
