@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.14.2] — 2026-06-14
+
+### Fixed
+- **Bottom sheets mispositioned/translucent**: `BottomSheet` now renders via `createPortal` to `document.body`, so it's no longer captured by a transformed ancestor (the page's `.fade-up` animation uses `both` fill, which keeps a `translateY(0)` transform and creates a containing block). Fixes the Reminders sheet appearing mid-page and washed out; also hardens the reports modals and add/edit sheet.
+
+---
+
 ## [2.14.1] — 2026-06-14
 
 ### Fixed
