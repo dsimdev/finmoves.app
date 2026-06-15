@@ -7,7 +7,7 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
 import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
-import { listarPlantillas, crearPlantilla, eliminarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
+import { listarPlantillas, crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { MediaViewer } from "@/components/ui/MediaViewer";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -181,6 +181,14 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     setDescripcion(p.nombre);
     setMedioPago(p.medioPago);
     setObservaciones(p.observaciones ?? "");
+    if (user?.uid) {
+      usarPlantilla(user.uid, p.id).then(() => {
+        setPlantillas((prev) => {
+          const updated = prev.map((x) => x.id === p.id ? { ...x, usageCount: (x.usageCount ?? 0) + 1 } : x);
+          return [...updated].sort((a, b) => (b.usageCount ?? 0) - (a.usageCount ?? 0));
+        });
+      }).catch(() => {});
+    }
   };
 
   const guardarComoPlantilla = async () => {
@@ -490,9 +498,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2, scrollbarWidth: "none" }}>
               {plantillas.map((p) => (
                 <div key={p.id} className="pill" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, borderColor: "var(--border)", padding: "5px 8px 5px 12px" }}>
-                  <button type="button" onClick={() => aplicarPlantilla(p)} style={{ background: "none", border: "none", color: "var(--text)", cursor: "pointer", fontSize: 12, padding: 0, display: "flex", alignItems: "baseline", gap: 6 }}>
-                    <span>{p.nombre}</span>
-                    {p.monto > 0 && <span style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 11 }}>{money(p.monto)}</span>}
+                  <button type="button" onClick={() => aplicarPlantilla(p)} style={{ background: "none", border: "none", color: "var(--text)", cursor: "pointer", fontSize: 12, padding: 0 }}>
+                    {p.nombre}
                   </button>
                   <button type="button" aria-label={t.tplDelete} onClick={() => setTplDelete(p)} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: "0 2px" }}>×</button>
                 </div>
