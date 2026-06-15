@@ -25,35 +25,42 @@ async function requireOwner(req: NextRequest): Promise<string | NextResponse> {
   return uid;
 }
 
-// Lista los códigos de invitación (usados y disponibles). Solo el dueño.
+export const CODE_TTL_MS = 24 * 60 * 60 * 1000; // los códigos sin usar caducan en 24h
+
+// Lista SOLO los códigos disponibles (sin usar) y no vencidos. Solo el dueño.
+// De paso, borra los vencidos sin uso (limpieza oportunista).
 export async function GET(req: NextRequest) {
   const owner = await requireOwner(req);
   if (typeof owner !== "string") return owner;
   const snap = await adminDb().collection("inviteCodes").get();
-  const codes = snap.docs
-    .map((d) => {
-      const data = d.data() as { used?: boolean; createdAt?: Timestamp; usedBy?: string };
-      return { code: d.id, used: !!data.used, createdAt: data.createdAt?.toMillis() ?? 0, usedBy: data.usedBy ?? null };
-    })
-    .sort((a, b) => b.createdAt - a.createdAt);
+  const now = Date.now();
+  const codes: { code: string; createdAt: number }[] = [];
+  await Promise.all(snap.docs.map(async (d) => {
+    const data = d.data() as { used?: boolean; createdAt?: Timestamp };
+    if (data.used) return;
+    const createdAt = data.createdAt?.toMillis() ?? 0;
+    if (now - createdAt > CODE_TTL_MS) { await d.ref.delete().catch(() => {}); return; } // vencido → borrar
+    codes.push({ code: d.id, createdAt });
+  }));
+  codes.sort((a, b) => b.createdAt - a.createdAt);
   return NextResponse.json({ codes });
+}
+
+// Borra un código manualmente: body { code }. Solo el dueño.
+export async function DELETE(req: NextRequest) {
+  const owner = await requireOwner(req);
+  if (typeof owner !== "string") return owner;
+  const { code } = await req.json();
+  if (!code) return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  await adminDb().doc(`inviteCodes/${code}`).delete();
+  return NextResponse.json({ ok: true });
 }
 
 // Genera un código de invitación de un solo uso. Solo el dueño (OWNER_UID).
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  let uid: string;
-  try {
-    uid = (await adminAuth().verifyIdToken(token)).uid;
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-
-  const owner = process.env.OWNER_UID ?? process.env.NEXT_PUBLIC_OWNER_UID;
-  if (!owner || uid !== owner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ownerRes = await requireOwner(req);
+  if (typeof ownerRes !== "string") return ownerRes;
+  const uid = ownerRes;
 
   // Reintenta si por casualidad ya existe.
   let code = randomCode();

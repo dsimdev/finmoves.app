@@ -64,6 +64,21 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── 1.5) Limpieza de códigos de invitación sin uso vencidos (>24h) ──
+  try {
+    const CODE_TTL_MS = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const codesSnap = await adminDb().collection("inviteCodes").get();
+    await Promise.all(codesSnap.docs.map(async (d) => {
+      const data = d.data() as { used?: boolean; createdAt?: Timestamp };
+      if (data.used) return;
+      const createdAt = data.createdAt?.toMillis() ?? 0;
+      if (createdAt && now - createdAt > CODE_TTL_MS) await d.ref.delete().catch(() => {});
+    }));
+  } catch (err) {
+    console.error("[cron/codes-cleanup]", err);
+  }
+
   // ── 2) Avisos para TODOS los usuarios (versión, dólar, meta, sueldo) ──
   // Idempotente: deduplica vía config/notifyMeta, así correrlo más seguido no spamea.
   try {

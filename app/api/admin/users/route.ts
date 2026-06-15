@@ -43,6 +43,13 @@ export async function GET(req: NextRequest) {
   if (typeof owner !== "string") return owner;
 
   const list = await adminAuth().listUsers(1000);
+  // Mapa uid → código que usó (para mostrarlo en cada usuario).
+  const codesSnap = await adminDb().collection("inviteCodes").get();
+  const codeByUser = new Map<string, string>();
+  codesSnap.docs.forEach((d) => {
+    const usedBy = (d.data() as { usedBy?: string }).usedBy;
+    if (usedBy) codeByUser.set(usedBy, d.id);
+  });
   const users = await Promise.all(
     list.users.map(async (u) => {
       const meta = (await adminDb().doc(`users/${u.uid}/config/meta`).get()).data() as
@@ -57,6 +64,7 @@ export async function GET(req: NextRequest) {
         lastSignIn: u.metadata.lastSignInTime ?? "",
         pushOn,
         permisos: meta?.permisos ?? {},
+        inviteCode: codeByUser.get(u.uid) ?? null,
         isOwner: u.uid === owner,
       };
     })

@@ -293,13 +293,15 @@ export default function ConfigPage() {
   };
   // Códigos de invitación (solo dueño)
   const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
+  // Inversión disponible solo si el dueño la habilitó (o si sos el dueño).
+  const inversionAllowed = isOwner || config?.meta.permisos?.inversion === true;
   const [inviteCode, setInviteCode] = useState("");
   const [genBusy, setGenBusy] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   // Panel de administración (solo owner)
-  type AdminUser = { uid: string; email: string; nombre: string; createdAt: string; lastSignIn: string; pushOn: boolean; permisos: Record<string, boolean>; isOwner: boolean };
-  type AdminCode = { code: string; used: boolean; createdAt: number; usedBy: string | null };
+  type AdminUser = { uid: string; email: string; nombre: string; createdAt: string; lastSignIn: string; pushOn: boolean; permisos: Record<string, boolean>; inviteCode: string | null; isOwner: boolean };
+  type AdminCode = { code: string; createdAt: number };
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminCodes, setAdminCodes] = useState<AdminCode[]>([]);
@@ -314,7 +316,7 @@ export default function ConfigPage() {
       const data = await res.json();
       if (res.ok && data.code) {
         setInviteCode(data.code); setShowInviteModal(true);
-        setAdminCodes((prev) => [{ code: data.code, used: false, createdAt: Date.now(), usedBy: null }, ...prev]);
+        setAdminCodes((prev) => [{ code: data.code, createdAt: Date.now() }, ...prev]);
       }
     } catch { /* ignore */ } finally { setGenBusy(false); }
   };
@@ -350,6 +352,19 @@ export default function ConfigPage() {
         body: JSON.stringify({ uid: targetUid, key, value }),
       });
     } catch { /* ignore; el estado optimista ya se aplicó */ }
+  };
+  const delCode = async (code: string) => {
+    const u = auth.currentUser;
+    if (!u) return;
+    setAdminCodes((prev) => prev.filter((c) => c.code !== code));
+    try {
+      const token = await getIdToken(u);
+      await fetch("/api/invite-codes", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+    } catch { /* ignore */ }
   };
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -1065,7 +1080,8 @@ export default function ConfigPage() {
               }} />
             </div>
 
-            {/* Inversión */}
+            {/* Inversión — visible solo si el dueño habilitó el permiso */}
+            {inversionAllowed && (
             <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{
@@ -1090,6 +1106,7 @@ export default function ConfigPage() {
                 if (config) saveConfig({ ...config, meta: { ...config.meta, showAhorros: next } });
               }} />
             </div>
+            )}
 
             {/* Moneda de inversión */}
             {showAhorros && (
@@ -1650,55 +1667,56 @@ export default function ConfigPage() {
       </BottomSheet>
 
       <BottomSheet open={showAdmin} onClose={() => setShowAdmin(false)} title={t.adminTitle}>
-        {/* Códigos de invitación */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t.adminInviteSection}</span>
-          <button onClick={generateInviteCode} disabled={genBusy} style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: 999, padding: "5px 12px", cursor: genBusy ? "default" : "pointer" }}>+ {t.adminGenerate}</button>
+        {/* Códigos de invitación (solo disponibles; caducan a las 24h) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t.adminInviteSection}</span>
+          <button onClick={generateInviteCode} disabled={genBusy} style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: 999, padding: "4px 10px", cursor: genBusy ? "default" : "pointer" }}>+ {t.adminGenerate}</button>
         </div>
         {adminCodes.length === 0 ? (
-          <div style={{ color: "var(--muted)", fontSize: 12, padding: "4px 0 12px" }}>{t.adminNoCodes}</div>
+          <div style={{ color: "var(--muted)", fontSize: 12, padding: "2px 0 12px" }}>{t.adminNoCodes}</div>
         ) : (
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 14 }}>
             {adminCodes.map((c) => (
-              <div key={c.code} className="row" style={{ padding: "9px 0", borderBottom: "1px solid var(--faint)", opacity: c.used ? 0.5 : 1 }}>
-                <span style={{ fontSize: 14, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: 2 }}>{c.code}</span>
-                <span style={{ fontSize: 11, color: c.used ? "var(--muted)" : "var(--green)" }}>{c.used ? t.adminCodeUsed : t.adminCodeAvailable}</span>
+              <div key={c.code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--faint)" }}>
+                <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: 2 }}>{c.code}</span>
+                <button onClick={() => delCode(c.code)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px" }}>×</button>
               </div>
             ))}
           </div>
         )}
 
         {/* Usuarios */}
-        <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "8px 0 10px" }}>{t.adminUsersSection}</div>
+        <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "6px 0 8px" }}>{t.adminUsersSection}</div>
         {adminLoading ? (
-          <div style={{ textAlign: "center", padding: "16px 0" }}><LoadingSpinner /></div>
+          <div style={{ textAlign: "center", padding: "12px 0", color: "var(--muted)", fontSize: 12 }}>…</div>
         ) : adminUsers.length === 0 ? (
           <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>{t.adminNoUsers}</div>
         ) : adminUsers.map((u) => (
-          <div key={u.uid} style={{ padding: "12px 0", borderBottom: "1px solid var(--faint)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: u.isOwner ? 0 : 10 }}>
+          <div key={u.uid} style={{ padding: "9px 0", borderBottom: "1px solid var(--faint)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.pushOn ? "var(--green)" : "var(--border)", flexShrink: 0 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.nombre || u.email || u.uid}</div>
-                <div style={{ fontSize: 10, color: "var(--muted)" }}>{u.email}{u.isOwner ? " · owner" : ""}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.email || u.uid}</div>
+                <div style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {u.isOwner ? "owner" : [u.nombre, u.inviteCode].filter(Boolean).join(" · ") || "—"}
+                </div>
               </div>
+              {!u.isOwner && (
+                <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
+                  {([["comprobantes", t.permComprobantes], ["inversion", t.permInversion]] as const).map(([key, label]) => {
+                    const on = u.permisos[key] === true; // ambos default OFF (el dueño habilita)
+                    return (
+                      <button key={key} onClick={() => setPermission(u.uid, key, !on)} title={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        <span style={{ width: 30, height: 17, borderRadius: 999, background: on ? "var(--green)" : "var(--surface-alt)", border: `1px solid ${on ? "var(--green)" : "var(--border)"}`, position: "relative", flexShrink: 0 }}>
+                          <span style={{ position: "absolute", top: 1, left: on ? 14 : 1, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
+                        </span>
+                        <span style={{ fontSize: 9, color: on ? "var(--text)" : "var(--muted)" }}>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            {!u.isOwner && (
-              <div style={{ display: "flex", gap: 16, paddingLeft: 15 }}>
-                {([["comprobantes", t.permComprobantes], ["inversion", t.permInversion]] as const).map(([key, label]) => {
-                  // imágenes: default OFF (hay que habilitar). inversión: default ON (se revoca).
-                  const on = key === "comprobantes" ? u.permisos.comprobantes === true : u.permisos[key] !== false;
-                  return (
-                    <button key={key} onClick={() => setPermission(u.uid, key, !on)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                      <span style={{ width: 32, height: 18, borderRadius: 999, background: on ? "var(--green)" : "var(--surface-alt)", border: `1px solid ${on ? "var(--green)" : "var(--border)"}`, position: "relative", transition: "background 0.15s", flexShrink: 0 }}>
-                        <span style={{ position: "absolute", top: 1, left: on ? 15 : 1, width: 14, height: 14, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
-                      </span>
-                      <span style={{ fontSize: 11, color: on ? "var(--text)" : "var(--muted)" }}>{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
         ))}
       </BottomSheet>
