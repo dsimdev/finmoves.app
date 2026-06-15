@@ -174,32 +174,13 @@ export default function ConfigPage() {
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [pendingLang, setPendingLang] = useState<"es" | "en" | null>(null);
-  // Card de perfil + modal de cambio de contraseña
-  const [showUserModal, setShowUserModal] = useState(false);
+  // Modal de cambio de contraseña
   const [showChangePass, setShowChangePass] = useState(false);
   const [currentPassInput, setCurrentPassInput] = useState("");
   const [passInput, setPassInput] = useState("");
   const [passVisible, setPassVisible] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [profileBusy, setProfileBusy] = useState(false);
-  const openUserModal = () => {
-    // Lazy sync: si Google está vinculado y el nombre en providerData difiere del guardado, actualizar.
-    const u = auth.currentUser;
-    if (u && isGoogleLinked()) {
-      const g = u.providerData.find((p) => p.providerId === "google.com");
-      const googleName = g?.displayName;
-      if (googleName && googleName !== config?.meta.nombre) {
-        setDoc(doc(db, `users/${u.uid}/config/meta`), { meta: { nombre: googleName } }, { merge: true })
-          .then(() => refresh())
-          .catch(() => {});
-      }
-    }
-    setPassInput("");
-    setCurrentPassInput("");
-    setPassVisible(false);
-    setProfileMsg(null);
-    setShowUserModal(true);
-  };
   const openChangePass = () => {
     setPassInput("");
     setCurrentPassInput("");
@@ -246,6 +227,19 @@ export default function ConfigPage() {
   const [googleLinked, setGoogleLinked] = useState(false);
   const [googleErr, setGoogleErr] = useState("");
   useEffect(() => { setGoogleLinked(isGoogleLinked()); }, [user?.uid]);
+  // Lazy sync nombre desde Google al cargar config (por si se vinculó con el código viejo)
+  useEffect(() => {
+    const u = auth.currentUser;
+    if (!u || !config || !isGoogleLinked()) return;
+    const g = u.providerData.find((p) => p.providerId === "google.com");
+    const googleName = g?.displayName;
+    if (googleName && googleName !== config.meta.nombre) {
+      setDoc(doc(db, `users/${u.uid}/config/meta`), { meta: { nombre: googleName } }, { merge: true })
+        .then(() => refresh())
+        .catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, config?.meta.nombre]);
   const handleLinkGoogle = async () => {
     if (googleLinked) return;
     setGoogleErr("");
@@ -889,27 +883,43 @@ export default function ConfigPage() {
             <SectionHeader title={t.account} open={isOpen("account")} onClick={() => toggleSection("account")} danger={!!syncError} />
             {isOpen("account") && (<div style={{ marginTop: 12 }}>
 
-            {/* Usuario — abre modal de perfil */}
-            {(() => { const tieneNombre = !!config.meta.nombre; return (
-            <button onClick={openUserModal} className="row" style={{ width: "100%", padding: "10px 0", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                {config.meta.fotoURL ? (
-                  <img src={config.meta.fotoURL} alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: "1px solid var(--green)44" }} />
-                ) : (
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: tieneNombre ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${tieneNombre ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="8" r="4" stroke={tieneNombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" />
-                    <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke={tieneNombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" />
-                  </svg>
+            {/* Perfil — inline con botones de contraseña + idioma */}
+            {(() => {
+              const googlePhoto = auth.currentUser?.providerData.find((p) => p.providerId === "google.com")?.photoURL;
+              const fotoSrc = config.meta.fotoURL || googlePhoto || null;
+              const tieneNombre = !!config.meta.nombre;
+              return (
+              <div className="row" style={{ padding: "10px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  {fotoSrc ? (
+                    <img src={fotoSrc} alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: "1px solid var(--green)44" }} />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: tieneNombre ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${tieneNombre ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="8" r="4" stroke={tieneNombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" />
+                        <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke={tieneNombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{config.meta.nombre || t.user}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
+                  </div>
                 </div>
-                )}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{config.meta.nombre || t.user}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
+                  <button onClick={openChangePass} aria-label={t.changePassword} style={{ width: 34, height: 34, borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--muted)" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </button>
+                  {(["es", "en"] as const).map((l) => (
+                    <button key={l} onClick={() => { if (l !== lang) setPendingLang(l); }} aria-label={l === "es" ? "Español" : "English"}
+                      style={{ width: 34, height: 34, borderRadius: 9, border: `1px solid ${lang === l ? "var(--accent)44" : "var(--border)"}`, background: lang === l ? "var(--accent-dim)" : "var(--surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: lang === l ? 1 : 0.55, transition: "all 0.15s" }}>
+                      {l === "es" ? <FlagAR size={20} /> : <FlagGB size={20} />}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </button>
-            ); })()}
+              );
+            })()}
 
             {/* Sincronización (solo dueño) — la fila abre el historial */}
             {isOwner && (
@@ -1796,42 +1806,6 @@ export default function ConfigPage() {
           onConfirm={() => { window.open("https://github.com/dsimdev/finmoves-app/blob/main/README.md", "_blank", "noopener,noreferrer"); setShowGithubConfirm(false); }}
           onCancel={() => setShowGithubConfirm(false)}>{t.goToGitHubBody}</ConfirmModal>
       )}
-
-      <BottomSheet open={showUserModal} onClose={() => setShowUserModal(false)}>
-        {/* Profile header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24, paddingBottom: 18, borderBottom: "1px solid var(--faint)" }}>
-          {config.meta.fotoURL ? (
-            <img src={config.meta.fotoURL} alt="" style={{ width: 56, height: 56, borderRadius: 16, objectFit: "cover", border: "1px solid var(--green)44", flexShrink: 0 }} />
-          ) : (
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: config.meta.nombre ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${config.meta.nombre ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="8" r="4" stroke={config.meta.nombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" />
-                <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke={config.meta.nombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" />
-              </svg>
-            </div>
-          )}
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{config.meta.nombre || t.user}</div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
-          </div>
-        </div>
-
-        {/* Dos botones del mismo tamaño: cambiar contraseña + banderas */}
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={openChangePass} style={{ flex: 1, height: 48, borderRadius: 14, border: "1px solid var(--border)", background: "var(--surface-alt)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            {t.changePassword}
-          </button>
-          <div style={{ display: "flex", gap: 6, height: 48, borderRadius: 14, border: "1px solid var(--border)", background: "var(--surface-alt)", padding: "0 14px", alignItems: "center" }}>
-            {(["es", "en"] as const).map((l) => (
-              <button key={l} onClick={() => { if (l !== lang) setPendingLang(l); }} aria-label={l === "es" ? "Español" : "English"}
-                style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, opacity: lang === l ? 1 : 0.35, filter: lang === l ? "none" : "grayscale(0.7)", transform: lang === l ? "scale(1.1)" : "scale(1)", transition: "all 0.15s" }}>
-                {l === "es" ? <FlagAR size={24} /> : <FlagGB size={24} />}
-              </button>
-            ))}
-          </div>
-        </div>
-      </BottomSheet>
 
       {showChangePass && (
         <ConfirmModal
