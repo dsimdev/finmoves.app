@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.20.0] — 2026-06-15
+
+### Added
+- **Landing `/inicio`**: redesigned with gradient title, 4 feature cards using app screenshots (`pwa-*.jpeg`) as backgrounds with dark overlay and hover lift effect, staggered fade-in animations, PWA install button (via `useInstallPrompt`) alongside the CTA.
+- **Landing — legal modals**: footer links for Política de Privacidad and Condiciones del Servicio now open inline modals; standalone pages at `/privacidad` and `/terminos` remain for Google OAuth verification. Legal content extracted to shared components (`PrivacidadContent`, `TerminosContent`).
+- **Admin — user detail card**: users list shows only email + push dot; tapping a user opens a floating BottomSheet with last sign-in timestamp, push status, and permission toggles (comprobantes, inversion).
+
+### Fixed
+- **Plantillas**: sorted by `usageCount` descending (most used first); amount hidden from chip — visible only after selecting. `usarPlantilla` increments counter in Firestore on each apply.
+- **Investments — goal badge**: `reachedBadge` ("ALCANZADA") now renders in the savings goal card header when the target is met; the translation key existed but was never wired to the UI.
+- **PWA `start_url`**: reverted to `/` — dashboard lives at root via `(tabs)` route group; `/movements` was incorrect.
+- **globals.css**: added `.screen-card` hover class (`translateY(-6px)` + blue glow box-shadow).
+
+---
+
 ## [2.19.0] — 2026-06-15
 
 ### Added

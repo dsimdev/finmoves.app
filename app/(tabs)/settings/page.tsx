@@ -334,6 +334,8 @@ export default function ConfigPage() {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminCodes, setAdminCodes] = useState<AdminCode[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
+  const [selectedAdminUid, setSelectedAdminUid] = useState<string | null>(null);
+  const selectedAdminUser = adminUsers.find((u) => u.uid === selectedAdminUid) ?? null;
   const [pendingPerm, setPendingPerm] = useState<{ uid: string; key: string; value: boolean; label: string; nombre: string } | null>(null);
   const [permBusy, setPermBusy] = useState(false);
   const [permMsg, setPermMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -1753,43 +1755,57 @@ export default function ConfigPage() {
 
         {/* Usuarios */}
         <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "6px 0 8px" }}>{t.adminUsersSection}</div>
-        {permMsg && (
-          <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 10, fontSize: 12, background: permMsg.ok ? "var(--green-dim)" : "var(--red-dim)", border: `1px solid ${permMsg.ok ? "var(--green)44" : "var(--red)44"}`, color: permMsg.ok ? "var(--green)" : "var(--red)" }}>
-            {permMsg.text}
-          </div>
-        )}
         {adminLoading ? (
           <div style={{ textAlign: "center", padding: "12px 0", color: "var(--muted)", fontSize: 12 }}>…</div>
         ) : adminUsers.length === 0 ? (
           <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>{t.adminNoUsers}</div>
         ) : adminUsers.map((u) => (
-          <div key={u.uid} style={{ padding: "9px 0", borderBottom: "1px solid var(--faint)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.pushOn ? "var(--green)" : "var(--border)", flexShrink: 0 }} />
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.email || u.uid}</div>
-                <div style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {u.isOwner ? "owner" : [u.nombre, u.inviteCode].filter(Boolean).join(" · ") || "—"}
-                </div>
+          <button key={u.uid} onClick={() => setSelectedAdminUid(u.uid)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--faint)", background: "none", border: "none", borderBottom: "1px solid var(--faint)", cursor: "pointer", textAlign: "left" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.pushOn ? "var(--green)" : "var(--border)", flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>{u.email || u.uid}</span>
+            {u.isOwner && <span className="badge" style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)44" }}>owner</span>}
+          </button>
+        ))}
+      </BottomSheet>
+
+      {/* Card flotante de usuario seleccionado */}
+      <BottomSheet open={!!selectedAdminUser} onClose={() => setSelectedAdminUid(null)} title={selectedAdminUser?.email ?? ""}>
+        {selectedAdminUser && (() => {
+          const u = selectedAdminUser;
+          const lastSignIn = u.lastSignIn ? new Date(u.lastSignIn).toLocaleString("es-AR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+          return (
+            <>
+              <div className="row"><span style={{ fontSize: 13, color: "var(--muted)" }}>Última conexión</span><span style={{ fontSize: 13 }}>{lastSignIn}</span></div>
+              <div className="row">
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>Push</span>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.pushOn ? "var(--green)" : "var(--border)", display: "inline-block" }} />
               </div>
               {!u.isOwner && (
-                <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
+                <>
+                  <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 4px" }}>Permisos</div>
                   {([["comprobantes", t.permComprobantes], ["inversion", t.permInversion]] as const).map(([key, label]) => {
                     const on = u.permisos[key] === true;
                     return (
-                      <button key={key} onClick={() => setPendingPerm({ uid: u.uid, key, value: !on, label, nombre: u.nombre || u.email })} title={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                        <span style={{ width: 30, height: 17, borderRadius: 999, background: on ? "var(--green)" : "var(--surface-alt)", border: `1px solid ${on ? "var(--green)" : "var(--border)"}`, position: "relative", flexShrink: 0 }}>
-                          <span style={{ position: "absolute", top: 1, left: on ? 14 : 1, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
-                        </span>
-                        <span style={{ fontSize: 9, color: on ? "var(--text)" : "var(--muted)" }}>{label}</span>
-                      </button>
+                      <div key={key} className="row">
+                        <span style={{ fontSize: 13 }}>{label}</span>
+                        <button onClick={() => setPendingPerm({ uid: u.uid, key, value: !on, label, nombre: u.nombre || u.email })} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          <span style={{ width: 34, height: 19, borderRadius: 999, background: on ? "var(--green)" : "var(--surface-alt)", border: `1px solid ${on ? "var(--green)" : "var(--border)"}`, position: "relative", display: "block" }}>
+                            <span style={{ position: "absolute", top: 2, left: on ? 16 : 2, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
+                          </span>
+                        </button>
+                      </div>
                     );
                   })}
+                </>
+              )}
+              {permMsg && (
+                <div style={{ marginTop: 12, padding: "8px 12px", borderRadius: 10, fontSize: 12, background: permMsg.ok ? "var(--green-dim)" : "var(--red-dim)", border: `1px solid ${permMsg.ok ? "var(--green)44" : "var(--red)44"}`, color: permMsg.ok ? "var(--green)" : "var(--red)" }}>
+                  {permMsg.text}
                 </div>
               )}
-            </div>
-          </div>
-        ))}
+            </>
+          );
+        })()}
       </BottomSheet>
 
       {pendingPerm && (

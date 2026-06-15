@@ -4,6 +4,20 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.20.0] — 2026-06-15
+
+### Nuevo
+- **Página de inicio**: nueva landing con capturas reales de la app, efectos de hover en las cards y botón para instalar la app directamente desde la página de bienvenida.
+- **Admin**: la lista de usuarios ahora muestra solo el correo. Tocás un usuario y se abre una card con su última conexión, estado de notificaciones y los permisos activados con sus toggles.
+
+### Mejoras
+- **Plantillas**: se ordenan de mayor a menor uso — la que más usás aparece primero.
+
+### Arreglos
+- **Inversión**: cuando alcanzás tu meta de ahorro aparece el badge "ALCANZADA" en la tarjeta.
+
+---
+
 ## [2.19.0] — 2026-06-15
 
 ### Nuevo
