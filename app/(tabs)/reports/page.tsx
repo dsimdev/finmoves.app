@@ -13,7 +13,7 @@ import {
   kpisPeriodo, ritmoGasto, comparativaCategorias,
   serieTendencia, parsePeriodoId, diasSinGastos,
   evolucionSueldo, historialSueldo, proyectarAhorros,
-  progresoMetaUSD, periodosParaMetaUSD,
+  progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos,
 } from "@/utils/reportes";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -302,6 +302,7 @@ export default function ReportesPage() {
   // ── Tendencias: Gastos ──
   const promGastoPorPeriodo = periodos.length > 0
     ? Math.round(periodos.reduce((s, p) => s + p.gastado, 0) / periodos.length) : 0;
+  const estadPeriodos = useMemo(() => estadisticasPeriodos(periodos), [periodos]);
   const avgUlt3 = periodos.slice(0, 3).reduce((s, p) => s + p.gastado, 0) / Math.max(periodos.slice(0, 3).length, 1);
   const avgPrev3 = periodos.slice(3, 6).reduce((s, p) => s + p.gastado, 0) / Math.max(periodos.slice(3, 6).length, 1);
   const tendenciaGasto = periodos.length >= 4
@@ -532,7 +533,7 @@ export default function ReportesPage() {
                 {ritmo && <MiniStat center basis="1 1 45%" label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} color="var(--red)"
                   onClick={() => setKpiInfo({ title: t.spendingPace, value: `${oculto ? "••" : formatARS(ritmo.gastadoPorDia)}${t.perDay}`, explain: `${t.kpiPaceInfo} (${t.projection30days(oculto ? "••" : formatARS(ritmo.proyeccionCierre))})`, color: "var(--red)" })} />}
                 {proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} color="var(--red)"
-                  onClick={() => setKpiInfo({ title: t.nextPeriodProjection, value: oculto ? "••" : formatARS(proyeccionGasto), explain: `${t.kpiNextProjInfo} (${t.avgLast3})`, color: "var(--red)" })} />}
+                  onClick={() => setKpiInfo({ title: t.nextPeriodProjection, value: oculto ? "••" : formatARS(proyeccionGasto), explain: t.kpiNextProjInfo, color: "var(--red)" })} />}
               </div>
               )}
 
@@ -763,13 +764,7 @@ export default function ReportesPage() {
               </div>
               )}
 
-              {/* Gastado por período */}
-              {reportOn("periodos_otros") && serieDesc.length > 0 && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.spentPerPeriod}</div>
-                  <VBars max={maxTotal} oculto={oculto} data={serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId) }))} />
-                </div>
-              )}
+              {/* KPIs período: mejor/peor + mediana/variación */}
               {reportOn("periodos_kpis") && (() => {
                 const valid = serieDesc.filter((s) => s.total > 0);
                 const mejor = valid.length > 0 ? valid.reduce((b, s) => s.gastado / s.total < b.gastado / b.total ? s : b) : null;
@@ -780,9 +775,23 @@ export default function ReportesPage() {
                       onClick={() => setKpiInfo({ title: t.bestPeriod, value: shortPer(mejor.periodoId), explain: `${t.kpiBestPeriodInfo} (${Math.round((mejor.gastado / mejor.total) * 100)}%)`, color: "var(--green)" })} />}
                     {peor && <MiniStat center basis="1 1 45%" label={t.worstPeriod} value={shortPer(peor.periodoId)} color="var(--red)"
                       onClick={() => setKpiInfo({ title: t.worstPeriod, value: shortPer(peor.periodoId), explain: `${t.kpiWorstPeriodInfo} (${Math.round((peor.gastado / peor.total) * 100)}%)`, color: "var(--red)" })} />}
+                    {estadPeriodos && <MiniStat center basis="1 1 45%" label={t.medianSpent} value={oculto ? "••" : abbr(estadPeriodos.mediana)} color="var(--accent)"
+                      onClick={() => setKpiInfo({ title: t.medianSpent, value: oculto ? "••" : formatARS(estadPeriodos.mediana), explain: t.kpiMedianInfo, color: "var(--accent)" })} />}
+                    {estadPeriodos && (() => { const c = estadPeriodos.cv <= 25 ? "var(--green)" : estadPeriodos.cv <= 50 ? "var(--yellow)" : "var(--red)"; return (
+                      <MiniStat center basis="1 1 45%" label={t.spendVariation} value={`±${estadPeriodos.cv}%`} color={c}
+                        onClick={() => setKpiInfo({ title: t.spendVariation, value: `±${estadPeriodos.cv}%`, explain: t.kpiVariationInfo, color: c })} />
+                    ); })()}
                   </div>
                 );
               })()}
+
+              {/* Gastado por período */}
+              {reportOn("periodos_otros") && serieDesc.length > 0 && (
+                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.spentPerPeriod}</div>
+                  <VBars max={maxTotal} oculto={oculto} data={serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId) }))} />
+                </div>
+              )}
 
               {/* Gastos vs sueldo por período */}
               {reportOn("periodos_otros") && serieDesc.filter((s) => s.sueldo > 0).length > 0 && (

@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.11.0] — 2026-06-14
+
+### Novedades
+- **Deslizá entre secciones**: pasá de una pestaña a la de al lado deslizando el dedo hacia los costados (respeta tu orden y las pestañas que tengas ocultas). El gesto arranca desde el centro para no chocar con el "volver" de iOS ni con los carruseles.
+- **Más datos en Períodos**: ahora ves la **mediana** de gasto por período (el valor típico, que no se distorsiona por un período raro) y una **variación** (`±%`) que te dice qué tan parejo es tu gasto entre períodos: verde = parejo, rojo = irregular. Mejor y peor período quedaron arriba, al lado.
+
+### Mejoras
+- La tarjeta de proyección del próximo período ya no repetía dos veces "promedio de los últimos 3".
+
+---
+
 ## [2.10.3] — 2026-06-14
 
 ### Mejoras

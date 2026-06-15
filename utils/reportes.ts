@@ -19,6 +19,22 @@ export function parsePeriodoId(s: string): Date {
 
 const DIA_MS = 86_400_000;
 
+// Mediana del gasto por período y "variación" (coef. de variación = desvío/promedio).
+// La mediana resiste outliers (un período atípico no la mueve). El CV resume qué
+// tan regular es tu gasto entre períodos: bajo = parejo, alto = irregular.
+export function estadisticasPeriodos(periodos: PeriodoResumen[]): { mediana: number; desvio: number; cv: number } | null {
+  const vals = periodos.map((p) => p.gastado).filter((v) => v > 0);
+  if (vals.length === 0) return null;
+  const sorted = [...vals].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const mediana = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  const media = vals.reduce((s, v) => s + v, 0) / vals.length;
+  const varianza = vals.reduce((s, v) => s + (v - media) ** 2, 0) / vals.length;
+  const desvio = Math.sqrt(varianza);
+  const cv = media > 0 ? Math.round((desvio / media) * 100) : 0;
+  return { mediana: Math.round(mediana), desvio: Math.round(desvio), cv };
+}
+
 // ── Distribuciones (sobre el gasto del período) ──────────────────────────────
 function distribucion(
   movs: Movimiento[],

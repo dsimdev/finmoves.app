@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.11.0] — 2026-06-14
+
+### Added
+- **Swipe navigation between tabs**: horizontal swipe moves to the adjacent tab, respecting the nav order and hidden tabs. Gestures starting within `[data-no-swipe]` (carousels, scrollable chips, media viewer, entry sheet) or within 24px of either edge are ignored, so the iOS back-gesture and horizontal scrollers keep working. Smooth `tabFade` transition on change.
+- **Period stats — median & variation**: the Periods tab now shows the **median** spend per period (resistant to outliers, unlike the average) and a **variation** KPI (coefficient of variation, `±X%`) colored by regularity (green ≤25%, yellow ≤50%, red >50%). Best/worst period KPIs moved up next to them.
+
+### Fixed
+- **Next-period projection KPI** no longer repeats "average of last 3" twice in its explanation.
+
+---
+
 ## [2.10.3] — 2026-06-14
 
 ### Added
