@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.13.0] — 2026-06-14
+
+### Novedades
+- **Plantillas de gastos**: guardá un gasto frecuente como plantilla y la próxima vez cargalo con **un toque** — se precarga todo (categoría, monto editable, descripción, medio de pago) y solo confirmás. Cada plantilla se borra con la ×.
+
+### Mejoras
+- El color **naranja del Move** ahora también en Inicio.
+
+---
+
 ## [2.12.1] — 2026-06-14
 
 ### Mejoras

@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.13.0] — 2026-06-14
+
+### Added
+- **Expense templates (1-tap)**: save a frequent expense as a template ("Save as template" from the add form), then reload it with one tap from a chip row (prefills category, amount —editable—, description, payment method, notes). Each chip has an × to delete (with confirm). Stored in `users/{uid}/plantillas`. Templates show only for the Gasto type in add mode. New service `services/firebase/plantillas.ts`.
+
+### Fixed
+- **Move color on the Dashboard**: the Move type now uses `--orange` on the home screen too (was still `--yellow`; the edit was missed in 2.12.1).
+
+---
+
 ## [2.12.1] — 2026-06-14
 
 ### Changed
