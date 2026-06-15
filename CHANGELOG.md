@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.17.1] — 2026-06-15
+
+### Changed
+- **Smarter reminders**: a pre-notice fires when ≤3 days remain ("in N days: …" / "tomorrow: …"), once (deduped via `avisadoPre`); the on-date notice then deletes the reminder (single final ping). Removed the obsolete `notified` state from the model/UI.
+
+---
+
 ## [2.17.0] — 2026-06-15
 
 ### Added

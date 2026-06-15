@@ -6,7 +6,6 @@ export interface Recordatorio {
   id: string;
   texto: string;
   fecha: string;      // YYYY-MM-DD
-  notified?: boolean;
 }
 
 export async function listarRecordatorios(uid: string): Promise<Recordatorio[]> {
@@ -18,7 +17,7 @@ export async function listarRecordatorios(uid: string): Promise<Recordatorio[]> 
 
 export async function crearRecordatorio(uid: string, texto: string, fecha: string): Promise<string> {
   const ref = await addDoc(collection(db, `users/${uid}/recordatorios`), {
-    texto, fecha, notified: false, createdAt: Date.now(),
+    texto, fecha, createdAt: Date.now(),
   });
   return ref.id;
 }

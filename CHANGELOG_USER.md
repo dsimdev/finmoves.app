@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.17.1] — 2026-06-15
+
+### Mejoras
+- **Recordatorios más inteligentes**: te avisan unos días antes (cuando faltan 3 o menos) y de nuevo el día. Al avisarte el día, el recordatorio se borra solo.
+
+---
+
 ## [2.17.0] — 2026-06-15
 
 ### Novedades
