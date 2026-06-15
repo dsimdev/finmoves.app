@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.18.4] — 2026-06-15
+
+### Mejoras
+- El correo de contacto ahora es **info@finmoves.app**.
+
+---
+
 ## [2.18.3] — 2026-06-15
 
 ### Arreglos

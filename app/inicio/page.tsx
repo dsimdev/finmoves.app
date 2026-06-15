@@ -49,7 +49,7 @@ export default function InicioPage() {
           <a href="/privacidad" style={{ color: "var(--blue)", textDecoration: "none" }}>Política de Privacidad</a>
           <a href="/terminos" style={{ color: "var(--blue)", textDecoration: "none" }}>Condiciones del Servicio</a>
         </div>
-        <div>Contacto: <a href="mailto:dmnsimon@gmail.com" style={{ color: "var(--muted)" }}>dmnsimon@gmail.com</a></div>
+        <div>Contacto: <a href="mailto:info@finmoves.app" style={{ color: "var(--muted)" }}>info@finmoves.app</a></div>
         <div style={{ marginTop: 8 }}>© {new Date().getFullYear()} FinMoves</div>
       </footer>
     </main>
