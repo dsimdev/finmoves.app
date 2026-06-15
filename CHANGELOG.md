@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.18.4] — 2026-06-15
+
+### Changed
+- Public contact email switched to **info@finmoves.app** (Privacy, Terms, landing, VAPID subject fallback). Owner/login email unchanged.
+
+---
+
 ## [2.18.3] — 2026-06-15
 
 ### Fixed

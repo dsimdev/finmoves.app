@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 
 const ACTUALIZADO = "15 de junio de 2026";
-const CONTACTO = "dmnsimon@gmail.com";
+const CONTACTO = "info@finmoves.app";
 
 export default function PrivacidadPage() {
   return (
