@@ -95,5 +95,8 @@ export interface ConfigUsuario {
     autoAhorro?: { activo: boolean; monto: number; mediosPago?: string[]; omitirDescripciones?: string[] };
     onboardingCompleto?: boolean;
     nombre?: string;
+    /** Permisos por usuario, gestionados por el dueño desde el panel Admin.
+     *  comprobantes: default OFF (el dueño habilita). inversion: default ON (el dueño revoca). */
+    permisos?: { comprobantes?: boolean; inversion?: boolean };
   };
 }

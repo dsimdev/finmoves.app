@@ -256,8 +256,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // Movimiento de reserva (FX): muestra cantidad + cotización en el detalle.
   const esFXMov = !!movimiento && ["CompraUSD", "GastoUSD", "CompraEUR", "GastoEUR"].includes(movimiento.tipo);
   const fxMovLabel = movimiento && (movimiento.tipo === "CompraEUR" || movimiento.tipo === "GastoEUR") ? "EUR" : "USD";
-  // Quién puede adjuntar comprobantes. Hoy solo el dueño; a futuro: isOwner || isPremium.
-  const canComprobante = isOwner;
+  // Quién puede adjuntar comprobantes: el dueño siempre, o quien tenga el permiso
+  // habilitado por el dueño (default OFF para no-dueños). Ver panel Admin.
+  const canComprobante = isOwner || config?.meta.permisos?.comprobantes === true;
 
   // Sugerencias de descripción para Gasto: descripciones ya usadas (filtradas por
   // la categoría elegida si hay una), ordenadas por frecuencia. Autocompletado nativo.

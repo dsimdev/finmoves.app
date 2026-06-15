@@ -10,6 +10,35 @@ function randomCode(len = 6): string {
   return out;
 }
 
+async function requireOwner(req: NextRequest): Promise<string | NextResponse> {
+  const authHeader = req.headers.get("authorization") ?? "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let uid: string;
+  try {
+    uid = (await adminAuth().verifyIdToken(token)).uid;
+  } catch {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+  const owner = process.env.OWNER_UID ?? process.env.NEXT_PUBLIC_OWNER_UID;
+  if (!owner || uid !== owner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  return uid;
+}
+
+// Lista los códigos de invitación (usados y disponibles). Solo el dueño.
+export async function GET(req: NextRequest) {
+  const owner = await requireOwner(req);
+  if (typeof owner !== "string") return owner;
+  const snap = await adminDb().collection("inviteCodes").get();
+  const codes = snap.docs
+    .map((d) => {
+      const data = d.data() as { used?: boolean; createdAt?: Timestamp; usedBy?: string };
+      return { code: d.id, used: !!data.used, createdAt: data.createdAt?.toMillis() ?? 0, usedBy: data.usedBy ?? null };
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
+  return NextResponse.json({ codes });
+}
+
 // Genera un código de invitación de un solo uso. Solo el dueño (OWNER_UID).
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization") ?? "";
