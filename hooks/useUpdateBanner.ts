@@ -2,26 +2,38 @@
 
 import { useEffect, useState } from "react";
 
-// Aviso de actualización OBLIGATORIA. La app se auto-actualiza sola en el próximo
-// arranque en frío (sin molestar); este banner solo aparece cuando el server
-// reporta `required: true` (release con cambios incompatibles, ver lib/app-version)
-// Y la versión del server difiere de la que corre el cliente. Es persistente
-// (sin descartar): "Actualizar" activa el SW nuevo (SKIP_WAITING) y recarga.
+// Compara dos versiones "x.y.z". Devuelve true si `server` trae un salto de
+// MAJOR o MINOR respecto de `client` (los cambios grandes que conviene aplicar ya).
+// Un salto solo de PATCH devuelve false: se actualiza solo en el próximo arranque
+// en frío, sin molestar.
+function esMinorOMajor(client: string, server: string): boolean {
+  const [a1, b1] = client.split(".").map((n) => parseInt(n, 10) || 0);
+  const [a2, b2] = server.split(".").map((n) => parseInt(n, 10) || 0);
+  if (a2 > a1) return true;            // major
+  if (a2 === a1 && b2 > b1) return true; // minor
+  return false;                        // patch o igual
+}
+
+// Aviso de actualización. La app se auto-actualiza sola en el próximo arranque en
+// frío (sin molestar); este banner solo aparece cuando hay una versión nueva Y
+// es minor/major (cambio relevante) o el server la marca como requerida
+// (REQUIRE_UPDATE, para un patch crítico). Es persistente: "Actualizar" activa el
+// SW nuevo (SKIP_WAITING) y recarga.
 export function useUpdateBanner() {
   const [show, setShow] = useState(false);
   const current = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !current) return;
     let cancelled = false;
 
     const check = async () => {
       try {
         const res = await fetch("/api/app-version", { cache: "no-store" });
         const data = await res.json();
-        if (!cancelled && data?.required && data?.version && data.version !== current) {
-          setShow(true);
-        }
+        const serverV = data?.version as string | undefined;
+        if (cancelled || !serverV || serverV === current) return;
+        if (data?.required || esMinorOMajor(current, serverV)) setShow(true);
       } catch { /* sin red: no mostramos nada */ }
     };
 

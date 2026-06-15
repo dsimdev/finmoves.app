@@ -313,6 +313,12 @@ export default function ConfigPage() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const CHANGELOG_WEB_URL = "https://github.com/dsimdev/finmoves.app/blob/main/CHANGELOG_USER.md";
+  // Mini-render de **negrita** del markdown (el changelog usa ** para resaltar).
+  const boldify = (text: string) => text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**")
+      ? <strong key={i} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>
+      : part
+  );
   const [showSyncLog, setShowSyncLog] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -1532,10 +1538,10 @@ export default function ConfigPage() {
               })().map((line, i) => {
                 if (line.startsWith("## ")) return <div key={i} style={{ fontSize: 14, fontWeight: 700, margin: "16px 0 4px", color: "var(--blue)" }}>{line.replace(/^## /, "")}</div>;
                 if (line.startsWith("### ")) return <div key={i} style={{ fontSize: 11, fontWeight: 600, margin: "10px 0 2px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{line.replace(/^### /, "")}</div>;
-                if (line.startsWith("- ")) return <div key={i} style={{ paddingLeft: 10, marginBottom: 3 }}>• {line.replace(/^- /, "")}</div>;
+                if (line.startsWith("- ")) return <div key={i} style={{ paddingLeft: 10, marginBottom: 3 }}>• {boldify(line.replace(/^- /, ""))}</div>;
                 if (line.startsWith("---")) return <hr key={i} style={{ border: "none", borderTop: "1px solid var(--border)", margin: "10px 0" }} />;
                 if (line.startsWith("# ") || line.trim() === "" || line.startsWith("Todos los cambios") || line.startsWith("Formato basado") || line.startsWith("https://keep")) return null;
-                return <div key={i}>{line}</div>;
+                return <div key={i}>{boldify(line)}</div>;
               }) : <div style={{ color: "var(--muted)" }}>Loading…</div>}
               <button onClick={() => setConfirmLeave(true)} aria-label={t.viewFullChangelog} title={t.viewFullChangelog} style={{ display: "block", width: "100%", textAlign: "center", margin: "20px auto 2px", background: "none", border: "none", color: "var(--muted)", fontSize: 12, fontStyle: "italic", cursor: "pointer" }}>{t.seeMore}</button>
             </div>

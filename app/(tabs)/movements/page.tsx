@@ -14,7 +14,7 @@ import { useT } from "@/hooks/useTranslation";
 function TipoDot({ tipo, categoria }: { tipo: TipoMovimiento; categoria: string }) {
   let c = "var(--muted)";
   if (tipo === "Gasto" || tipo === "CompraUSD" || tipo === "CompraEUR") c = "var(--red)";
-  else if (tipo === "Move") c = "var(--yellow)";
+  else if (tipo === "Move") c = "var(--orange)";
   else if (tipo === "Ingreso") {
     if (categoria === "Ahorros" || categoria === "RESTO") c = "var(--blue)";
     else c = "var(--green)";
@@ -102,8 +102,6 @@ export default function MovimientosPage() {
     next.has(fecha) ? next.delete(fecha) : next.add(fecha);
     return next;
   });
-  const totalGastoDia = (movs: Movimiento[]) =>
-    movs.reduce((s, m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR") ? s + m.monto : s, 0);
 
   return (
     <>
@@ -162,31 +160,37 @@ export default function MovimientosPage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {movsPorFecha.map(({ fecha, movs }) => {
-                const abierto = diasAbiertos.has(fecha);
-                const gastoDia = totalGastoDia(movs);
+              {movsPorFecha.map(({ fecha, movs }, idx) => {
+                // El día más reciente siempre abierto; el resto colapsa a un resumen (fecha + total).
+                const abierto = idx === 0 ? true : diasAbiertos.has(fecha);
+                // Conteo por tipo para el resumen colapsado. Orden de izq→der:
+                // ingreso (verde), usd/dólares (amarillo), move (amarillo), gasto (rojo, a la derecha).
+                let nGasto = 0, nMove = 0, nUsd = 0, nIngreso = 0;
+                for (const m of movs) {
+                  if (m.tipo === "Gasto") nGasto++;
+                  else if (m.tipo === "Move") nMove++;
+                  else if (m.tipo === "Ingreso") nIngreso++;
+                  else nUsd++; // CompraUSD/GastoUSD/CompraEUR/GastoEUR
+                }
                 return (
-                <div key={fecha}>
-                  {/* Cabecera del día: tap para colapsar/expandir. Colapsado muestra resumen. */}
-                  <button onClick={() => toggleDia(fecha)} style={{
-                    width: "100%", background: "none", border: "none", cursor: "pointer",
-                    display: "flex", alignItems: "center", gap: 8, padding: "2px 2px 6px",
+                <div key={fecha} className="card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                  <button onClick={() => { if (idx !== 0) toggleDia(fecha); }} style={{
+                    width: "100%", background: "none", cursor: idx === 0 ? "default" : "pointer",
+                    display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
+                    border: "none", borderBottom: abierto ? "1px solid var(--faint)" : "none",
                   }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      style={{ transform: abierto ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>
-                      <polyline points="9 6 15 12 9 18" />
-                    </svg>
                     <span style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: 0.3 }}>{fechaCorta(fecha)}</span>
-                    <span style={{ flex: 1 }} />
                     {!abierto && (
-                      <>
-                        <span style={{ fontSize: 10, color: "var(--muted)" }}>{movs.length}</span>
-                        {gastoDia > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)" }}>-{money(gastoDia)}</span>}
-                      </>
+                      <span style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: 10, fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)" }}>
+                        {nIngreso > 0 && <span style={{ color: "var(--green)" }}>{nIngreso}</span>}
+                        {nUsd > 0 && <span style={{ color: "var(--yellow)" }}>{nUsd}</span>}
+                        {nMove > 0 && <span style={{ color: "var(--orange)" }}>{nMove}</span>}
+                        {nGasto > 0 && <span style={{ color: "var(--red)" }}>{nGasto}</span>}
+                      </span>
                     )}
                   </button>
                   {abierto && (
-                  <div className="card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                  <>
                     {movs.map((m, i) => {
                       const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
                       const isMove = m.tipo === "Move";
@@ -208,13 +212,13 @@ export default function MovimientosPage() {
                               {m.categoria}{m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}
                             </div>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : isMove ? "var(--yellow)" : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : isMove ? "var(--orange)" : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
                             {isGasto || (isMove && m.direccionMove === "aAhorro") ? "-" : "+"}{money(m.monto)}
                           </span>
                         </button>
                       );
                     })}
-                  </div>
+                  </>
                   )}
                 </div>
                 );

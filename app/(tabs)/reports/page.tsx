@@ -312,7 +312,7 @@ export default function ReportesPage() {
     if (!periodo) return null;
     const movs = periodo.movimientos;
     const tipoColor: Record<string, string> = {
-      Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--yellow)",
+      Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--orange)",
       CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
       GastoUSD: "var(--red)", GastoEUR: "var(--red)",
     };
@@ -848,7 +848,7 @@ export default function ReportesPage() {
             <>
               {reportOn("movimientos_kpis") && (() => {
                 const tipoColor: Record<string, string> = {
-                  Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--yellow)",
+                  Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--orange)",
                   CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)", GastoUSD: "var(--red)", GastoEUR: "var(--red)",
                 };
                 const promDia = movCounts.diasActivos > 0 ? (movCounts.total / movCounts.diasActivos).toFixed(1) : "0";

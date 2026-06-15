@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.12.1] — 2026-06-14
+
+### Changed
+- **Movements collapsed days**: each day is wrapped in its own card; collapsed days show a per-type count summary, colored (green income · yellow USD/dollars · orange Move · red expenses, expenses rightmost). The most recent day is always open.
+- **New `--orange` color for the Move type** (`#ff6e40`), applied everywhere Move was shown (dot, amount, type button, onboarding legend, reports type maps, collapsed counts). Yellow now means only USD/dollars.
+- **Update banner trigger is semver-based**: shows on MINOR/MAJOR bumps (compared client vs `/api/app-version`), silent on PATCH (auto-updates on cold start). `REQUIRE_UPDATE` kept as a manual override to force the banner on a critical patch.
+- **CHANGELOG_USER curated by user-relevance** (benefit over mechanism); removed purely technical entries (2.10.3 install screenshots, 2.5.1 biometric reload, 2.3.1 analytics, 2.1.1 internal perf).
+
+---
+
 ## [2.12.0] — 2026-06-14
 
 ### Added
