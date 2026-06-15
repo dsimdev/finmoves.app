@@ -226,6 +226,8 @@ export default function ConfigPage() {
   // Vinculación con Google
   const [googleLinked, setGoogleLinked] = useState(false);
   const [googleErr, setGoogleErr] = useState("");
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
+  const [fotoError, setFotoError] = useState(false);
   useEffect(() => { setGoogleLinked(isGoogleLinked()); }, [user?.uid]);
   // Lazy sync nombre desde Google al cargar config (por si se vinculó con el código viejo)
   useEffect(() => {
@@ -240,6 +242,7 @@ export default function ConfigPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, config?.meta.nombre]);
+  useEffect(() => { setFotoError(false); }, [config?.meta.fotoURL, googleLinked]);
   const handleLinkGoogle = async () => {
     if (googleLinked) return;
     setGoogleErr("");
@@ -253,6 +256,19 @@ export default function ConfigPage() {
         setGoogleErr(t.googleLinkErr);
         setTimeout(() => setGoogleErr(""), 4000);
       }
+    }
+  };
+  const handleUnlinkGoogle = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const { unlink } = await import("firebase/auth");
+      await unlink(auth.currentUser, "google.com");
+      setGoogleLinked(false);
+      setConfirmUnlink(false);
+    } catch {
+      setGoogleErr(t.googleUnlinkErr);
+      setTimeout(() => setGoogleErr(""), 4000);
+      setConfirmUnlink(false);
     }
   };
   const toggleBiometric = async () => {
@@ -891,8 +907,8 @@ export default function ConfigPage() {
               return (
               <div className="row" style={{ padding: "10px 0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  {fotoSrc ? (
-                    <img src={fotoSrc} alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: "1px solid var(--green)44" }} />
+                  {fotoSrc && !fotoError ? (
+                    <img src={fotoSrc} alt="" width={36} height={36} referrerPolicy="no-referrer" onError={() => setFotoError(true)} style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: "1px solid var(--green)44" }} />
                   ) : (
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: tieneNombre ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${tieneNombre ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -961,9 +977,9 @@ export default function ConfigPage() {
             </button>
             )}
 
-            {/* Vincular Google */}
-            <button onClick={handleLinkGoogle} disabled={googleLinked} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: googleLinked ? "default" : "pointer", textAlign: "left" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+            {/* Vincular / Desvincular Google */}
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <button onClick={googleLinked ? undefined : handleLinkGoogle} disabled={googleLinked} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, background: "none", border: "none", cursor: googleLinked ? "default" : "pointer", textAlign: "left", padding: 0 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: googleLinked ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${googleLinked ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
@@ -974,11 +990,17 @@ export default function ConfigPage() {
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13 }}>{googleLinked ? t.googleLinked : t.googleLink}</div>
-                  <div style={{ fontSize: 11, color: googleErr ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{googleErr || t.googleLinkSub}</div>
+                  {(googleErr || !googleLinked) && (
+                    <div style={{ fontSize: 11, color: googleErr ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{googleErr || t.googleLinkSub}</div>
+                  )}
                 </div>
-              </div>
-              {googleLinked && <span style={{ color: "var(--green)", flexShrink: 0 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span>}
-            </button>
+              </button>
+              {googleLinked && (
+                <button onClick={() => setConfirmUnlink(true)} style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: "var(--muted)", background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
+                  {t.googleUnlink}
+                </button>
+              )}
+            </div>
 
             {/* Backup */}
             <button onClick={() => setShowExportConfirm(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
@@ -1837,6 +1859,11 @@ export default function ConfigPage() {
         <ConfirmModal title={t.signOutTitle} confirmLabel={t.signOut} cancelLabel={t.cancel} confirmColor="var(--red)"
           onConfirm={async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }}
           onCancel={() => setConfirmLogout(false)}>{t.signOutBody}</ConfirmModal>
+      )}
+
+      {confirmUnlink && (
+        <ConfirmModal title={t.googleUnlinkTitle} confirmLabel={t.googleUnlink} cancelLabel={t.cancel} confirmColor="var(--red)"
+          onConfirm={handleUnlinkGoogle} onCancel={() => setConfirmUnlink(false)}>{t.googleUnlinkBody}</ConfirmModal>
       )}
 
       {showInviteModal && mounted && createPortal(
