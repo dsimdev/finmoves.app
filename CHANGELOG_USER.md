@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.18.0] — 2026-06-15
+
+### Novedades
+- **Entrar con Google**: ahora podés vincular tu cuenta de Google (Configuración → Cuenta) y entrar con un toque. Al vincular, tomamos tu **nombre y foto** de Google para tu perfil.
+
+---
+
 ## [2.17.1] — 2026-06-15
 
 ### Mejoras

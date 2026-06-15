@@ -14,6 +14,7 @@ import type { ConfigUsuario } from "@/types";
 import { formatTimestampAR, isoToFechaAR, sanitizeCell } from "@/lib/sheet-format";
 import { dbErrorMessage } from "@/lib/firebase-error";
 import { platformAuthenticatorAvailable, isBiometricEnabledFor, registerBiometric, clearBiometric } from "@/lib/biometric";
+import { linkGoogle, isGoogleLinked } from "@/lib/google-auth";
 import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/push-client";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -244,6 +245,25 @@ export default function ConfigPage() {
     platformAuthenticatorAvailable().then(setBioAvailable);
     setBioEnabled(isBiometricEnabledFor(user?.uid));
   }, [user?.uid]);
+  // Vinculación con Google
+  const [googleLinked, setGoogleLinked] = useState(false);
+  const [googleErr, setGoogleErr] = useState("");
+  useEffect(() => { setGoogleLinked(isGoogleLinked()); }, [user?.uid]);
+  const handleLinkGoogle = async () => {
+    if (googleLinked) return;
+    setGoogleErr("");
+    try {
+      await linkGoogle();
+      setGoogleLinked(true);
+      refresh(); // traer nombre/foto que Google completó
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+        setGoogleErr(t.googleLinkErr);
+        setTimeout(() => setGoogleErr(""), 4000);
+      }
+    }
+  };
   const toggleBiometric = async () => {
     setBioError("");
     if (bioEnabled) {
@@ -863,12 +883,16 @@ export default function ConfigPage() {
             {(() => { const tieneNombre = !!config.meta.nombre; return (
             <button onClick={openUserModal} className="row" style={{ width: "100%", padding: "10px 0", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                {config.meta.fotoURL ? (
+                  <img src={config.meta.fotoURL} alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: "1px solid var(--green)44" }} />
+                ) : (
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: tieneNombre ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${tieneNombre ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="8" r="4" stroke={tieneNombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" />
                     <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke={tieneNombre ? "var(--green)" : "var(--muted)"} strokeWidth="1.7" strokeLinecap="round" />
                   </svg>
                 </div>
+                )}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{config.meta.nombre || t.user}</div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
@@ -916,6 +940,25 @@ export default function ConfigPage() {
               )}
             </button>
             )}
+
+            {/* Vincular Google */}
+            <button onClick={handleLinkGoogle} disabled={googleLinked} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: googleLinked ? "default" : "pointer", textAlign: "left" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: googleLinked ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${googleLinked ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
+                    <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" />
+                  </svg>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13 }}>{googleLinked ? t.googleLinked : t.googleLink}</div>
+                  <div style={{ fontSize: 11, color: googleErr ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{googleErr || t.googleLinkSub}</div>
+                </div>
+              </div>
+              {googleLinked && <span style={{ color: "var(--green)", flexShrink: 0 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span>}
+            </button>
 
             {/* Backup */}
             <button onClick={() => setShowExportConfirm(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>

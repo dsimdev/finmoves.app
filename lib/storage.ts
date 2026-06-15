@@ -50,6 +50,21 @@ export async function uploadComprobante(uid: string, file: File): Promise<{ url:
   return { url, path };
 }
 
+// Copia una foto de perfil (ej. la de Google) a nuestro Storage y devuelve la URL
+// estable. Best-effort: si falla (CORS, sin red), devuelve null y se omite la foto.
+export async function uploadAvatarFromUrl(uid: string, srcUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(srcUrl);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const r = ref(storage, `users/${uid}/avatar.jpg`);
+    await uploadBytes(r, blob, { contentType: blob.type || "image/jpeg", cacheControl: "public, max-age=86400" });
+    return await getDownloadURL(r);
+  } catch {
+    return null;
+  }
+}
+
 // Borra un comprobante por su path. Best-effort (ignora si ya no existe).
 export async function deleteComprobante(path: string | undefined): Promise<void> {
   if (!path) return;

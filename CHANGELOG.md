@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.18.0] — 2026-06-15
+
+### Added
+- **Sign in with Google**: button on login (registration stays closed by invite code — a brand-new Google account is rejected) and **Link Google** in Settings → Account. On link/sign-in, the Google **name overwrites** the stored name and the **profile photo is copied to Storage** (stable URL) and shown as avatar.
+
+### Fixed
+- **Admin permissions were written/read at the wrong doc level** (top-level instead of under `meta`), so per-user permissions (images/investment) and the name weren't applied/read. Now uses `meta.permisos` / `meta.nombre`. Permissions toggled before this fix need to be re-toggled.
+
+---
+
 ## [2.17.1] — 2026-06-15
 
 ### Changed
