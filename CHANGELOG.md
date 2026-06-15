@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.15.2] — 2026-06-15
+
+### Fixed
+- **Swipe nav broke scrolling inside modals**: all modals/sheets (BottomSheet, ConfirmModal, KpiInfoModal, MediaViewer, auto-savings, changelog, users, invite, sync log, movement detail) now carry `data-no-swipe`, so gestures starting inside them no longer trigger tab navigation. Since sheets are portaled to `body` and the swipe listens on `window`, this is what stops the conflict.
+
+---
+
 ## [2.15.1] — 2026-06-15
 
 ### Changed

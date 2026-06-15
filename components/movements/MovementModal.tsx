@@ -845,7 +845,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
     </Sheet>
     {open && readOnly && movimiento && (
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div data-no-swipe onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 360, maxHeight: "85vh", overflowY: "auto", padding: 20, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <span style={{ fontSize: 16, fontWeight: 700 }}>{t.detail}</span>

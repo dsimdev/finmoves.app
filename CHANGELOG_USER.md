@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.15.2] — 2026-06-15
+
+### Arreglos
+- Deslizar dentro de una ventana emergente ya no cambia de sección: ahora podés scrollear los modales sin que se escape el swipe.
+
+---
+
 ## [2.15.1] — 2026-06-15
 
 ### Mejoras
