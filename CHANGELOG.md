@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.18.3] — 2026-06-15
+
+### Fixed
+- **CSP was blocking Google sign-in and web fonts** (and could break login): the production Content-Security-Policy didn't allow `apis.google.com`/`gstatic.com` (Firebase Auth / Google sign-in), `fonts.googleapis.com`/`fonts.gstatic.com` (fonts), nor the Google auth frames. Added those to `script-src`/`style-src`/`font-src`/`frame-src`.
+
+---
+
 ## [2.18.2] — 2026-06-15
 
 ### Added

@@ -7,12 +7,15 @@ import { version } from "./package.json";
 // connect-src https:/wss: deja pasar Firebase/Google/APIs sin enumerarlos uno a uno.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
-  "style-src 'self' 'unsafe-inline'",
+  // apis.google.com + gstatic: Firebase Auth / login con Google. googletagmanager: analytics.
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://apis.google.com https://www.gstatic.com",
+  // fonts.googleapis.com: hoja de estilos de Google Fonts (import en globals.css).
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https: wss:",
-  "frame-src 'self' https://*.firebaseapp.com https://firebasestorage.googleapis.com",
+  // accounts.google.com + apis.google.com: popup/iframe del login con Google.
+  "frame-src 'self' https://*.firebaseapp.com https://firebasestorage.googleapis.com https://apis.google.com https://accounts.google.com",
   "worker-src 'self'",
   "manifest-src 'self'",
   "object-src 'none'",

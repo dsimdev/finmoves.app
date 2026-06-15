@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.18.3] — 2026-06-15
+
+### Arreglos
+- Se corrigió un problema que impedía **entrar con Google** (y a veces el ingreso normal) y cargaba mal las tipografías.
+
+---
+
 ## [2.18.2] — 2026-06-15
 
 ### Mejoras
