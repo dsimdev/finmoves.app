@@ -60,6 +60,8 @@ export const en: AppLocale = {
     GastoUSD: "Spend USD",
     CompraEUR: "Buy EUR",
     GastoEUR: "Spend EUR",
+    VentaUSD: "Sell USD",
+    VentaEUR: "Sell EUR",
   },
 
   // Dashboard
@@ -76,6 +78,9 @@ export const en: AppLocale = {
   newMovement: "New movement",
   reserve: "Reserve",
   addReserve: "+ Reserve",
+  buy: "Buy",
+  spend: "Spend",
+  sell: "Sell",
   removeReserve: "− Reserve",
   quantity: "Quantity",
   newShort: "Movement",

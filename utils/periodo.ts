@@ -55,6 +55,10 @@ export function agruparPorPeriodo(movimientos: Movimiento[]): PeriodoResumen[] {
         // moveTotal con signo: "aDisponible" suma (ingreso del período, sale de
         // ahorros); "aAhorro" resta (sale del disponible, va a ahorros). Netean.
         moveTotal += m.direccionMove === "aAhorro" ? -m.monto : m.monto;
+      } else if (m.tipo === "VentaUSD" || m.tipo === "VentaEUR") {
+        // Venta de divisa: el ARS recibido entra como ingreso del período (sube
+        // el disponible). La reserva baja aparte (ver calcularReserva/reservaFX).
+        extras += m.monto;
       }
     }
 

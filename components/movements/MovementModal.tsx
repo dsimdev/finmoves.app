@@ -63,8 +63,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // En modo reserva (desde Inversión) solo se cargan +Reserva / -Reserva (FX).
   // En modo normal, las cargas a la reserva ya no se ofrecen acá.
   const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = reserveMode ? [
-    { t: (esEURMode ? "CompraEUR" : "CompraUSD") as TipoMovimiento, label: t.addReserve, color: "var(--green)" },
-    { t: (esEURMode ? "GastoEUR" : "GastoUSD") as TipoMovimiento, label: t.removeReserve, color: "var(--red)" },
+    { t: (esEURMode ? "CompraEUR" : "CompraUSD") as TipoMovimiento, label: t.buy, color: "var(--green)" },
+    { t: (esEURMode ? "VentaEUR" : "VentaUSD") as TipoMovimiento, label: t.sell, color: "var(--red)" },
+    { t: (esEURMode ? "GastoEUR" : "GastoUSD") as TipoMovimiento, label: t.spend, color: "var(--blue)" },
   ] : [
     { t: "Gasto", label: t.tipoDisplay["Gasto"], color: "var(--red)" },
     { t: "Ingreso", label: t.tipoDisplay["Ingreso"], color: "var(--green)" },
@@ -210,10 +211,15 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const esGastoUSD = tipo === "GastoUSD";
   const esCompraEUR = tipo === "CompraEUR";
   const esGastoEUR = tipo === "GastoEUR";
+  const esVentaUSD = tipo === "VentaUSD";
+  const esVentaEUR = tipo === "VentaEUR";
   const esCompraFX = esCompraUSD || esCompraEUR;
   const esGastoFX = esGastoUSD || esGastoEUR;
-  const esUSD = esCompraFX || esGastoFX;
-  const fxLabel = esCompraEUR || esGastoEUR ? "EUR" : "USD";
+  const esVentaFX = esVentaUSD || esVentaEUR;
+  // Compra y Venta usan el mismo form (cantidad + cotización → ARS); Gasto solo cantidad.
+  const esCompraOVenta = esCompraFX || esVentaFX;
+  const esUSD = esCompraFX || esGastoFX || esVentaFX;
+  const fxLabel = esCompraEUR || esGastoEUR || esVentaEUR ? "EUR" : "USD";
   const tipoColor = TIPOS.find((tx) => tx.t === tipo)?.color ?? "var(--accent)";
 
   const categoriasFiltradas = tipo === "Gasto"
@@ -231,7 +237,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     : modoCarga === "USD"
     ? parseFloat(cantidadUSD || "0")
     : (cotizActual ? parseFloat(montoARSInput || "0") / cotizActual : 0);
-  const arsCompraUSD = !esCompraFX ? 0 : modoCarga === "USD"
+  const arsCompraUSD = !esCompraOVenta ? 0 : modoCarga === "USD"
     ? parseFloat(cantidadUSD || "0") * cotizActual
     : parseFloat(montoARSInput || "0");
 
@@ -248,7 +254,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   const canSubmit = (!!periodoActual || abrePeriodo) && (
     esGastoFX ? usdFinal > 0 :
-    esCompraFX ? usdFinal > 0 && arsCompraUSD > 0 :
+    esCompraOVenta ? usdFinal > 0 && arsCompraUSD > 0 :
     esMove ? true :
     !!categoria && parseFloat(monto || "0") > 0
   );
@@ -257,8 +263,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // borrar (se chequea en el efecto de apertura). Un sueldo "sumado" al período sí.
   const isLocked = movimiento ? movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" : false;
   // Movimiento de reserva (FX): muestra cantidad + cotización en el detalle.
-  const esFXMov = !!movimiento && ["CompraUSD", "GastoUSD", "CompraEUR", "GastoEUR"].includes(movimiento.tipo);
-  const fxMovLabel = movimiento && (movimiento.tipo === "CompraEUR" || movimiento.tipo === "GastoEUR") ? "EUR" : "USD";
+  const esFXMov = !!movimiento && ["CompraUSD", "GastoUSD", "CompraEUR", "GastoEUR", "VentaUSD", "VentaEUR"].includes(movimiento.tipo);
+  const fxMovLabel = movimiento && (movimiento.tipo === "CompraEUR" || movimiento.tipo === "GastoEUR" || movimiento.tipo === "VentaEUR") ? "EUR" : "USD";
   // Quién puede adjuntar comprobantes: el dueño siempre, o quien tenga el permiso
   // habilitado por el dueño (default OFF para no-dueños). Ver panel Admin.
   const canComprobante = isOwner || config?.meta.permisos?.comprobantes === true;
@@ -290,7 +296,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     try {
       if (!user?.uid) throw new Error(t.errNotAuth);
       if (!esMove && !esUSD && !categoria) throw new Error(t.errSelectCat);
-      const montoFinal = esCompraFX ? arsCompraUSD : esGastoFX ? 0 : parseFloat(monto);
+      const montoFinal = esCompraOVenta ? arsCompraUSD : esGastoFX ? 0 : parseFloat(monto);
       if (!esGastoFX && (!montoFinal || montoFinal <= 0)) throw new Error(t.errInvalidAmount);
       if (esUSD && (!usdFinal || usdFinal <= 0)) throw new Error(t.errInvalidFX(fxLabel));
       const periodoIdFinal = abrePeriodo ? fechaAPeriodoId(fecha) : (periodoActual?.periodoId ?? null);
@@ -299,15 +305,15 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       if (canComprobante && comprobanteFile) comprobante = await uploadComprobante(user.uid, comprobanteFile);
       await crearMovimiento(user.uid, {
         timestampCarga: new Date(), fecha, tipo,
-        categoria: esMove ? "Move" : esCompraFX ? tipo : esGastoFX ? tipo : categoria,
-        descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
+        categoria: esMove ? "Move" : esUSD ? tipo : categoria,
+        descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esVentaFX ? `Venta ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
         monto: montoFinal,
-        medioPago: esMove || esCompraFX ? "Mercado Pago" : esGastoFX ? "—" : medioPago,
+        medioPago: esMove || esCompraFX || esVentaFX ? "Mercado Pago" : esGastoFX ? "—" : medioPago,
         observaciones, periodoId: periodoIdFinal, userId: user.uid,
         ...(esMove ? { direccionMove: moveDir } : {}),
         ...(comprobante ? { comprobanteUrl: comprobante.url, comprobantePath: comprobante.path } : {}),
         ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
-        ...(esCompraFX ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
+        ...(esCompraOVenta ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
         ...(esGastoFX ? { cantidadUSD: usdFinal } : {}),
       });
       // Cierre del período anterior: si este sueldo abre uno nuevo, el disponible
@@ -448,7 +454,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               </div>
             </div>
           ) : (<>
-          <div style={{ display: "grid", gridTemplateColumns: tipo === "Gasto" ? "1fr 1fr" : "1fr", gap: 10, marginBottom: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: tipo === "Gasto" ? "4fr 1fr" : "1fr", gap: 10, marginBottom: 18, alignItems: "end" }}>
             <div>
               <div className="label">{t.type}</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -465,20 +471,16 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             {tipo === "Gasto" && (() => {
               const ready = !!categoria && parseFloat(monto || "0") > 0;
               return (
-                <div>
-                  <div className="label">&nbsp;</div>
-                  <button type="button" onClick={ready ? guardarComoPlantilla : undefined} disabled={!ready} aria-label={t.tplSave} style={{
-                    width: "100%", minHeight: 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                    border: `1px solid ${tplSavedFlash ? "var(--green)" : "var(--border)"}`, borderRadius: 999,
-                    background: "transparent", color: tplSavedFlash ? "var(--green)" : ready ? "var(--text)" : "var(--muted)",
-                    cursor: ready ? "pointer" : "default", fontSize: 12, padding: "4px 8px",
-                  }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill={tplSavedFlash ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                    </svg>
-                    {tplSavedFlash ? t.tplSaved : t.tplSave}
-                  </button>
-                </div>
+                <button type="button" onClick={ready ? guardarComoPlantilla : undefined} disabled={!ready} aria-label={t.tplSave} title={t.tplSave} style={{
+                  width: "100%", minHeight: 34, display: "flex", alignItems: "center", justifyContent: "center",
+                  border: `1px solid ${tplSavedFlash ? "var(--green)" : "var(--border)"}`, borderRadius: 999,
+                  background: "transparent", color: tplSavedFlash ? "var(--green)" : ready ? "var(--text)" : "var(--muted)",
+                  cursor: ready ? "pointer" : "default", padding: "4px",
+                }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill={tplSavedFlash ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                </button>
               );
             })()}
           </div>
@@ -593,7 +595,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           )}
 
-          {esCompraFX && (
+          {esCompraOVenta && (
             <div style={{ marginBottom: 18 }}>
               {/* Ingresar en + Cotización en un solo grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
@@ -655,8 +657,12 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               {periodoActual && (
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
                   {t.available}: <span style={{ fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
-                  {arsCompraUSD > 0 && (() => {
-                    // Color según cuánto representa la compra del disponible: <30% verde, 30-70% amarillo, >70% (o negativo) rojo.
+                  {arsCompraUSD > 0 && esVentaFX && (
+                    // La venta SUMA al disponible (entra ARS).
+                    <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color: "var(--green)" }}>{money(periodoActual.disponible + arsCompraUSD)}</span></>
+                  )}
+                  {arsCompraUSD > 0 && !esVentaFX && (() => {
+                    // Compra: resta del disponible. Color según cuánto representa: <30% verde, 30-70% amarillo, >70% rojo.
                     const ratio = periodoActual.disponible > 0 ? arsCompraUSD / periodoActual.disponible : 1;
                     const restoColor = ratio < 0.30 ? "var(--green)" : ratio <= 0.70 ? "var(--yellow)" : "var(--red)";
                     return <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color: restoColor }}>{money(periodoActual.disponible - arsCompraUSD)}</span></>;

@@ -13,7 +13,8 @@ import { useT } from "@/hooks/useTranslation";
 
 function TipoDot({ tipo, categoria }: { tipo: TipoMovimiento; categoria: string }) {
   let c = "var(--muted)";
-  if (tipo === "Gasto" || tipo === "CompraUSD" || tipo === "CompraEUR") c = "var(--red)";
+  if (tipo === "CompraUSD" || tipo === "CompraEUR" || tipo === "VentaUSD" || tipo === "VentaEUR") c = "var(--yellow)";
+  else if (tipo === "Gasto") c = "var(--red)";
   else if (tipo === "Move") c = "var(--orange)";
   else if (tipo === "Ingreso") {
     if (categoria === "Ahorros" || categoria === "RESTO") c = "var(--blue)";
@@ -192,8 +193,12 @@ export default function MovimientosPage() {
                   {abierto && (
                   <>
                     {movs.map((m, i) => {
-                      const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
+                      const isCompraFX = m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
+                      const isVentaFX = m.tipo === "VentaUSD" || m.tipo === "VentaEUR";
+                      const isFX = isCompraFX || isVentaFX; // divisa → color amarillo
+                      const isGasto = m.tipo === "Gasto";
                       const isMove = m.tipo === "Move";
+                      const negativo = isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro");
                       return (
                         <button key={m.id}
                           {...bindLongPress(() => setModalState({ mode: "edit", mov: m, view: "delete" }), () => openEdit(m))}
@@ -212,8 +217,8 @@ export default function MovimientosPage() {
                               {m.categoria}{m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}
                             </div>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isGasto ? "var(--red)" : isMove ? "var(--orange)" : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
-                            {isGasto || (isMove && m.direccionMove === "aAhorro") ? "-" : "+"}{money(m.monto)}
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? "var(--orange)" : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
+                            {negativo ? "-" : "+"}{money(m.monto)}
                           </span>
                         </button>
                       );

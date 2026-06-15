@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.17.0] — 2026-06-15
+
+### Added
+- **Sell (Venta) reserve action**: new `VentaUSD`/`VentaEUR` movement type. A sale lowers the FX reserve (like Spend) **and** adds the ARS to the period's available (income). Stores the exchange rate. Cost-basis is left as-is (model A; realized-gain accounting deferred). Reserve recomputed correctly in Investment, Reports, goals and the cron meta check. Reserve type selector: Buy (green) · Sell (red) · Spend (blue).
+
+### Changed
+- **Add form — Type row is now 80/20**: types take the width; "Save as template" is an icon-only button (20%).
+- **Movements — FX color**: Buy/Sell USD/EUR show in the yellow FX color (dot + amount, with their sign); plain expenses red, transfers orange, income green.
+
+---
+
 ## [2.16.0] — 2026-06-15
 
 ### Changed

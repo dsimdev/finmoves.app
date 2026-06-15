@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.17.0] — 2026-06-15
+
+### Novedades
+- **Venta de divisa** en Inversión: al vender, **baja tu reserva** y el dinero en pesos **suma a tu disponible** del mes. El selector ahora es Compra · Venta · Gasto.
+
+### Mejoras
+- En la carga, la fila de tipo es más ancha y "Guardar como plantilla" quedó como ícono.
+- En Movimientos, las compras y ventas de dólares/euros se ven en **amarillo** (color de divisa).
+
+---
+
 ## [2.16.0] — 2026-06-15
 
 ### Mejoras
