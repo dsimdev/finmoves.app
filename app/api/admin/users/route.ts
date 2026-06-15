@@ -29,8 +29,9 @@ export async function POST(req: NextRequest) {
   if (!targetUid || !PERMISOS_VALIDOS.includes(key)) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
+  // Los permisos viven bajo `meta` en el doc config/meta (deep-merge no pisa el resto).
   await adminDb().doc(`users/${targetUid}/config/meta`).set(
-    { permisos: { [key]: !!value } },
+    { meta: { permisos: { [key]: !!value } } },
     { merge: true }
   );
   return NextResponse.json({ ok: true });
@@ -52,9 +53,10 @@ export async function GET(req: NextRequest) {
   });
   const users = await Promise.all(
     list.users.map(async (u) => {
-      const meta = (await adminDb().doc(`users/${u.uid}/config/meta`).get()).data() as
-        | { nombre?: string; permisos?: Record<string, boolean> }
+      const data = (await adminDb().doc(`users/${u.uid}/config/meta`).get()).data() as
+        | { meta?: { nombre?: string; permisos?: Record<string, boolean> } }
         | undefined;
+      const meta = data?.meta;
       const pushOn = (await adminDb().doc(`users/${u.uid}/config/push`).get()).exists;
       return {
         uid: u.uid,
