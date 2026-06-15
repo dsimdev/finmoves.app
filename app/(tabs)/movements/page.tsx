@@ -89,6 +89,22 @@ export default function MovimientosPage() {
     return groups;
   }, [movsFiltrados]);
 
+  // Días colapsables: para evitar el scroll infinito, solo el día más reciente
+  // arranca abierto; el resto se muestra como resumen (total + nº) y se abren al tocar.
+  const [diasAbiertos, setDiasAbiertos] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setDiasAbiertos(new Set(movsPorFecha[0] ? [movsPorFecha[0].fecha] : []));
+    // Solo al cambiar de período/año: no resetear al editar para no cerrar lo que abriste.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePeriodoId]);
+  const toggleDia = (fecha: string) => setDiasAbiertos((prev) => {
+    const next = new Set(prev);
+    next.has(fecha) ? next.delete(fecha) : next.add(fecha);
+    return next;
+  });
+  const totalGastoDia = (movs: Movimiento[]) =>
+    movs.reduce((s, m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR") ? s + m.monto : s, 0);
+
   return (
     <>
     <div className="page">
@@ -146,11 +162,30 @@ export default function MovimientosPage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {movsPorFecha.map(({ fecha, movs }) => (
+              {movsPorFecha.map(({ fecha, movs }) => {
+                const abierto = diasAbiertos.has(fecha);
+                const gastoDia = totalGastoDia(movs);
+                return (
                 <div key={fecha}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", marginBottom: 6, paddingLeft: 2, letterSpacing: 0.3 }}>
-                    {fechaCorta(fecha)}
-                  </div>
+                  {/* Cabecera del día: tap para colapsar/expandir. Colapsado muestra resumen. */}
+                  <button onClick={() => toggleDia(fecha)} style={{
+                    width: "100%", background: "none", border: "none", cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 8, padding: "2px 2px 6px",
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ transform: abierto ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+                      <polyline points="9 6 15 12 9 18" />
+                    </svg>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: 0.3 }}>{fechaCorta(fecha)}</span>
+                    <span style={{ flex: 1 }} />
+                    {!abierto && (
+                      <>
+                        <span style={{ fontSize: 10, color: "var(--muted)" }}>{movs.length}</span>
+                        {gastoDia > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)" }}>-{money(gastoDia)}</span>}
+                      </>
+                    )}
+                  </button>
+                  {abierto && (
                   <div className="card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                     {movs.map((m, i) => {
                       const isGasto = m.tipo === "Gasto" || m.tipo === "CompraUSD" || m.tipo === "CompraEUR";
@@ -180,8 +215,10 @@ export default function MovimientosPage() {
                       );
                     })}
                   </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
