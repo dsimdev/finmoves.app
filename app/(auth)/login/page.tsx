@@ -193,8 +193,8 @@ export default function LoginPage() {
             {mode === "signin" ? t.noAccountCreate : t.haveAccountSignIn}
           </button>
           <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
-            <a href="/privacidad" style={{ color: "var(--muted)", fontSize: 11, textDecoration: "none" }}>Privacidad</a>
-            <a href="/terminos" style={{ color: "var(--muted)", fontSize: 11, textDecoration: "none" }}>Términos</a>
+            <a href="/privacy" style={{ color: "var(--muted)", fontSize: 11, textDecoration: "none" }}>Privacidad</a>
+            <a href="/terms" style={{ color: "var(--muted)", fontSize: 11, textDecoration: "none" }}>Términos</a>
           </div>
         </div>
       </div>

@@ -7,7 +7,7 @@ const h: CSSProperties = { fontSize: 18, fontWeight: 700, margin: "28px 0 8px" }
 const ul: CSSProperties = { paddingLeft: 20, display: "flex", flexDirection: "column", gap: 8, margin: "8px 0" };
 const a: CSSProperties = { color: "var(--blue)", textDecoration: "underline" };
 
-export function PrivacidadContent() {
+export function PrivacyContent() {
   return (
     <>
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 6 }}>Política de Privacidad</h1>

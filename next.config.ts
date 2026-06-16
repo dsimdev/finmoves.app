@@ -32,7 +32,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     // La landing pasó de /inicio a /home. Redirect permanente para no romper
     // links viejos, lo indexado por Google ni la config de OAuth.
-    return [{ source: "/inicio", destination: "/home", permanent: true }];
+    return [
+      { source: "/inicio", destination: "/home", permanent: true },
+      { source: "/privacidad", destination: "/privacy", permanent: true },
+      { source: "/terminos", destination: "/terms", permanent: true },
+    ];
   },
   async headers() {
     const headers = [

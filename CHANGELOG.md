@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.22.1] — 2026-06-15
+
+### Changed
+- **Legal routes renamed to English**: `/privacidad` → `/privacy` and `/terminos` → `/terms` (folders + `PrivacyContent`/`TermsContent` components), with permanent redirects from the old paths in `next.config`.
+
+### Fixed
+- **OAuth homepage requirements**: the landing now renders the app name "FinMoves" as visible text and names the product + purpose in the hero description. Google OAuth verification had flagged that the homepage didn't describe the purpose and the name didn't match the consent screen.
+
+---
+
 ## [2.22.0] — 2026-06-15
 
 ### Added

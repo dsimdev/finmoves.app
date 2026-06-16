@@ -1,19 +1,19 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { PrivacidadContent } from "@/components/legal/PrivacidadContent";
-import { TerminosContent } from "@/components/legal/TerminosContent";
+import { PrivacyContent } from "@/components/legal/PrivacyContent";
+import { TermsContent } from "@/components/legal/TermsContent";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 
-type Modal = "privacidad" | "terminos" | null;
+type Modal = "privacy" | "terms" | null;
 type Slide = { title: string; desc: string; img: string };
 
 const T = {
   es: {
     line1: "Tus finanzas personales,",
     line2: "claras",
-    sub: "Registrá, analizá y seguí tus gastos, ingresos, ahorros e inversiones. Tus datos son tuyos: privados, seguros, sin publicidad.",
+    sub: "FinMoves es tu app de finanzas personales: registrá, analizá y seguí tus gastos, ingresos, ahorros e inversiones. Tus datos son tuyos: privados, seguros, sin publicidad.",
     enter: "Ingresar",
     install: "Instalar",
     access1: "Acceso",
@@ -33,7 +33,7 @@ const T = {
   en: {
     line1: "Your personal finances,",
     line2: "clear",
-    sub: "Track and analyze your expenses, income, savings and investments. Your data is yours: private, secure, no ads.",
+    sub: "FinMoves is your personal finance app: track and analyze your expenses, income, savings and investments. Your data is yours: private, secure, no ads.",
     enter: "Sign in",
     install: "Install",
     access1: "Access is",
@@ -204,8 +204,9 @@ export function HomeClient() {
             width={160}
             height={104}
             priority
-            style={{ objectFit: "contain", display: "block", margin: "0 auto 24px" }}
+            style={{ objectFit: "contain", display: "block", margin: "0 auto 16px" }}
           />
+          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", color: "var(--muted)", marginBottom: 18 }}>FinMoves</div>
           <h1
             className="title-gradient"
             style={{ fontSize: "clamp(30px, 5vw, 48px)", fontWeight: 700, letterSpacing: -1, marginBottom: 16, lineHeight: 1.12 }}
@@ -273,13 +274,13 @@ export function HomeClient() {
         <footer style={{ textAlign: "center", fontSize: 12, color: "var(--muted)", borderTop: "1px solid var(--border)", paddingTop: 20 }}>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", marginBottom: 8 }}>
             <button
-              onClick={() => setModal("privacidad")}
+              onClick={() => setModal("privacy")}
               style={{ background: "none", border: "none", color: "var(--blue)", cursor: "pointer", fontSize: 12, padding: 0, textDecoration: "underline" }}
             >
               {t.privacy}
             </button>
             <button
-              onClick={() => setModal("terminos")}
+              onClick={() => setModal("terms")}
               style={{ background: "none", border: "none", color: "var(--blue)", cursor: "pointer", fontSize: 12, padding: 0, textDecoration: "underline" }}
             >
               {t.terms}
@@ -303,7 +304,7 @@ export function HomeClient() {
             >
               ← {lang === "es" ? "Cerrar" : "Close"}
             </button>
-            {modal === "privacidad" ? <PrivacidadContent /> : <TerminosContent />}
+            {modal === "privacy" ? <PrivacyContent /> : <TermsContent />}
           </div>
         </div>
       )}
