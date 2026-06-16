@@ -5,6 +5,7 @@ import { PrivacyContent } from "@/components/legal/PrivacyContent";
 import { TermsContent } from "@/components/legal/TermsContent";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { useTheme } from "@/hooks/useTheme";
 
 type Modal = "privacy" | "terms" | null;
 type Slide = { title: string; desc: string; img: string };
@@ -148,9 +149,8 @@ function arrowStyle(side: "left" | "right"): React.CSSProperties {
     width: 34,
     height: 34,
     borderRadius: "50%",
-    border: "1px solid var(--border)",
-    background: "rgba(7,9,15,0.55)",
-    backdropFilter: "blur(4px)",
+    border: "1px solid var(--border-hi)",
+    background: "var(--surface)",
     color: "var(--text)",
     fontSize: 20,
     lineHeight: 1,
@@ -166,14 +166,26 @@ export function HomeClient() {
   const { canInstall, promptInstall } = useInstallPrompt();
   const lang = useAppPrefs((s) => s.lang);
   const setLang = useAppPrefs((s) => s.setLang);
+  const { dark, toggle: toggleTheme } = useTheme();
   const t = T[lang];
 
   return (
     <>
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "60px 20px 80px", color: "var(--text)" }}>
 
-        {/* Toggle de idioma */}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        {/* Theme + idioma */}
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          <button
+            onClick={toggleTheme}
+            aria-label={dark ? "Modo claro" : "Modo oscuro"}
+            style={{ width: 34, height: 34, borderRadius: "50%", border: "1px solid var(--border)", background: "transparent", color: "var(--text)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            {dark ? (
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+            ) : (
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            )}
+          </button>
           <div style={{ display: "inline-flex", border: "1px solid var(--border)", borderRadius: 999, overflow: "hidden" }}>
             {(["es", "en"] as const).map((l) => (
               <button
@@ -199,14 +211,14 @@ export function HomeClient() {
         {/* Hero */}
         <header className="fade-up" style={{ textAlign: "center", marginBottom: 56 }}>
           <Image
-            src="/logo5-cropped.png"
+            src="/icon-512.png"
             alt="FinMoves"
-            width={160}
-            height={104}
+            width={80}
+            height={80}
             priority
-            style={{ objectFit: "contain", display: "block", margin: "0 auto 16px" }}
+            style={{ objectFit: "contain", display: "block", margin: "0 auto 14px", borderRadius: 18 }}
           />
-          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", color: "var(--muted)", marginBottom: 18 }}>FinMoves</div>
+          <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.5, color: "var(--text)", marginBottom: 18 }}>FinMoves</div>
           <h1
             className="title-gradient"
             style={{ fontSize: "clamp(30px, 5vw, 48px)", fontWeight: 700, letterSpacing: -1, marginBottom: 16, lineHeight: 1.12 }}

@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.23.0] — 2026-06-15
+
+### Nuevo
+- **Tema claro/oscuro desde el inicio**: botón de sol/luna en la página de bienvenida para cambiar el tema de toda la app.
+
+---
+
 ## [2.22.0] — 2026-06-15
 
 ### Nuevo

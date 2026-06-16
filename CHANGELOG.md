@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.23.0] — 2026-06-15
+
+### Added
+- **Theme toggle on the landing**: sun/moon button next to the language toggle that switches the app theme via `useTheme` (shared `finmoves-theme` key, applies app-wide). The Settings theme toggle is untouched.
+
+### Fixed
+- **Landing in light mode**: carousel arrows now use theme variables instead of a hardcoded dark background.
+- **Hero**: now shows the name-less app icon plus "FinMoves" as visible text (the previous wordmark logo + added text was redundant), keeping the app name as crawlable text for OAuth verification.
+
+---
+
 ## [2.22.1] — 2026-06-15
 
 ### Changed
