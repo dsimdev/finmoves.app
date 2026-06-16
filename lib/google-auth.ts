@@ -4,6 +4,7 @@ import { GoogleAuthProvider, signInWithPopup, linkWithPopup, getAdditionalUserIn
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/services/firebase/firebase";
 import { uploadAvatarFromUrl } from "./storage";
+import { ensureUserDoc } from "@/services/firebase/config";
 
 const provider = new GoogleAuthProvider();
 
@@ -54,6 +55,7 @@ export async function signInWithGoogle(): Promise<void> {
     throw new Error("google-new-user");
   }
   await syncGoogleProfile(result, false);
+  await ensureUserDoc(result.user.uid).catch(() => {});
 }
 
 // Vincula Google a la cuenta logueada (desde Configuración) y refresca nombre+foto.

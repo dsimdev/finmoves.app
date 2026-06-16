@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.23.1] — 2026-06-16
+
+### Fixed
+- **User document on sign-in**: `ensureUserDoc` creates `users/{uid}` with `createdAt` on email/Google login. The parent user doc was never written (all data lives in subcollections), so it showed as a phantom doc in the Firestore console — no data was ever lost. Firestore rules now grant the user read/write on their own `users/{uid}` document; this does not cascade to subcollections, and `config/permisos` stays write-protected.
+
+---
+
 ## [2.23.0] — 2026-06-15
 
 ### Added

@@ -4,6 +4,10 @@ service cloud.firestore {
 
     match /users/{userId} {
 
+      // El doc del propio usuario (users/{uid}): suyo. NO cascadea a subcolecciones
+      // (eso lo cubren los match de abajo). Permite materializarlo al loguear (createdAt).
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
       // Entitlements (permisos) y su historial: el cliente SOLO lee.
       // La escritura la hace exclusivamente el Admin SDK (panel del dueño), que
       // bypassa estas reglas. Así el usuario NO puede auto-activarse permisos.

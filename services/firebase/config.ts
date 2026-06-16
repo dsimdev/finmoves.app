@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 import { ConfigUsuario } from "@/types";
 import { TEMPLATE_CONFIG } from "@/lib/default-config";
@@ -31,6 +31,17 @@ export async function obtenerConfig(userId: string): Promise<ConfigUsuario> {
 export async function crearConfigDefault(userId: string): Promise<void> {
   const ref = doc(db, `users/${userId}/config/meta`);
   await setDoc(ref, TEMPLATE_CONFIG);
+}
+
+// Materializa el doc del usuario (users/{uid}) con createdAt si aún no existe.
+// El árbol del usuario vive en subcolecciones, así que este doc "padre" no se
+// creaba y figuraba como fantasma. Se llama al iniciar sesión (email y Google).
+export async function ensureUserDoc(uid: string): Promise<void> {
+  const ref = doc(db, "users", uid);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, { createdAt: serverTimestamp() }, { merge: true });
+  }
 }
 
 export async function actualizarTipoCambio(userId: string, tipo: "blue" | "oficial"): Promise<void> {

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useT } from "@/hooks/useTranslation";
 import { authErrorMessage } from "@/lib/firebase-error";
 import { signInWithGoogle } from "@/lib/google-auth";
+import { ensureUserDoc } from "@/services/firebase/config";
 
 export default function LoginPage() {
   const t = useT();
@@ -45,7 +46,8 @@ export default function LoginPage() {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) { setError(regError(data?.error)); return; }
       }
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      await ensureUserDoc(cred.user.uid).catch(() => {});
       router.replace("/");
     } catch (err: unknown) {
       setError(authErrorMessage(err, t));
