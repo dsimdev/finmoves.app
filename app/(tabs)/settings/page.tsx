@@ -199,7 +199,7 @@ export default function ConfigPage() {
       await updatePassword(auth.currentUser!, passInput);
       setProfileMsg({ ok: true, text: t.passwordChangedRelogin });
       setPassInput(""); setCurrentPassInput("");
-      setTimeout(async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }, 1400);
+      setTimeout(async () => { useAppPrefs.getState().reset(); await signOut(auth); router.replace("/home"); }, 1400);
     } catch (err) {
       const code = (err as { code?: string })?.code ?? "";
       const text = code === "auth/wrong-password" || code === "auth/invalid-credential"
@@ -1873,7 +1873,7 @@ export default function ConfigPage() {
 
       {confirmLogout && (
         <ConfirmModal title={t.signOutTitle} confirmLabel={t.signOut} cancelLabel={t.cancel} confirmColor="var(--red)"
-          onConfirm={async () => { useAppPrefs.getState().reset(); await signOut(auth); router.push("/login"); }}
+          onConfirm={async () => { useAppPrefs.getState().reset(); await signOut(auth); router.replace("/home"); }}
           onCancel={() => setConfirmLogout(false)}>{t.signOutBody}</ConfirmModal>
       )}
 

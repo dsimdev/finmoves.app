@@ -29,6 +29,11 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: version,
   },
+  async redirects() {
+    // La landing pasó de /inicio a /home. Redirect permanente para no romper
+    // links viejos, lo indexado por Google ni la config de OAuth.
+    return [{ source: "/inicio", destination: "/home", permanent: true }];
+  },
   async headers() {
     const headers = [
       { key: "X-Frame-Options", value: "SAMEORIGIN" },

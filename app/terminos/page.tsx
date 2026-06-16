@@ -13,7 +13,7 @@ export default function TerminosPage() {
       <p style={{ marginTop: 32 }}>
         <a href="/privacidad" style={{ color: "var(--blue)", textDecoration: "underline" }}>Política de Privacidad</a>
         {" · "}
-        <a href="/inicio" style={{ color: "var(--muted)", textDecoration: "none" }}>← Inicio</a>
+        <a href="/home" style={{ color: "var(--muted)", textDecoration: "none" }}>← Inicio</a>
       </p>
     </main>
   );

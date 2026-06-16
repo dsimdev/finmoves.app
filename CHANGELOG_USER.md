@@ -4,6 +4,18 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.22.0] — 2026-06-15
+
+### Nuevo
+- **Inicio renovado**: las funciones ahora se ven en un carrusel con capturas reales que se desliza solo (y con swipe en el celu).
+- **Idioma en la bienvenida**: podés ver la página de inicio en español o inglés con el botón de arriba.
+
+### Arreglos
+- **Botón "atrás"**: estando con la sesión iniciada, "atrás" ya no te devuelve a la pantalla de inicio de sesión.
+- Al entrar a finmoves.app ahora ves la página de bienvenida (antes iba directo al login).
+
+---
+
 ## [2.20.0] — 2026-06-15
 
 ### Nuevo

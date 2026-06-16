@@ -31,7 +31,10 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
   useInactivityLogout(!!user);
 
   useEffect(() => {
-    if (!loading && !user) router.push("/login");
+    // Sin sesión → a la landing (puerta de entrada), no al login pelado.
+    // `replace` para no dejar la ruta privada en el historial (evita que "atrás"
+    // vuelva a una pantalla de la app o al login estando deslogueado).
+    if (!loading && !user) router.replace("/home");
   }, [user, loading, router]);
 
   if (loading || (user && lockState === "checking")) return (

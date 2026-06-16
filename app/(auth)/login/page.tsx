@@ -46,7 +46,7 @@ export default function LoginPage() {
         if (!res.ok) { setError(regError(data?.error)); return; }
       }
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      router.push("/");
+      router.replace("/");
     } catch (err: unknown) {
       setError(authErrorMessage(err, t));
     } finally {
@@ -59,7 +59,7 @@ export default function LoginPage() {
     setError(""); setInfo(""); setLoading(true);
     try {
       await signInWithGoogle();
-      router.push("/");
+      router.replace("/");
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
       if ((err as Error)?.message === "google-new-user") setError(t.googleNewUserErr);

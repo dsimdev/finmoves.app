@@ -14,10 +14,32 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "FinMoves",
-  description: "Gestor de finanzas personales",
-  manifest: "/manifest.json",
+  metadataBase: new URL("https://finmoves.app"),
+  title: {
+    default: "FinMoves — Tus finanzas personales, claras",
+    template: "%s · FinMoves",
+  },
+  description:
+    "Registrá gastos, ingresos, ahorros e inversiones por período. Reportes, metas y recordatorios. App personal, privada y sin publicidad. Acceso por invitación.",
   applicationName: "FinMoves",
+  keywords: ["finanzas personales", "gastos", "presupuesto", "ahorros", "inversiones", "dólar", "euro", "app de finanzas", "FinMoves"],
+  manifest: "/manifest.json",
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    siteName: "FinMoves",
+    url: "https://finmoves.app",
+    title: "FinMoves — Tus finanzas personales, claras",
+    description: "Gastos, ingresos, ahorros e inversiones por período. Reportes, metas y recordatorios. Privada y sin publicidad.",
+    locale: "es_AR",
+    alternateLocale: ["en_US"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FinMoves — Tus finanzas personales, claras",
+    description: "Gastos, ingresos, ahorros e inversiones por período. Reportes, metas y recordatorios. Privada y sin publicidad.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

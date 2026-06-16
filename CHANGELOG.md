@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.22.0] — 2026-06-15
+
+### Added
+- **Landing redesign**: the feature grid is now a single-row auto-advancing carousel (one large phone screenshot at a time, info above, swipe on mobile, arrows on desktop, dots) using the real `/screenshots/*` assets.
+- **Bilingual landing (es/en)**: language toggle on the landing; copy switches via `useAppPrefs.lang` (persisted). SSR renders es.
+- **SEO**: enriched root metadata (`metadataBase`, title template, rich description, keywords, canonical, robots, Open Graph + Twitter with `alternateLocale: en_US`), dynamic Open Graph image (`app/opengraph-image.tsx`, branded 1200x630), `app/robots.ts`, `app/sitemap.ts`, and `WebApplication` JSON-LD on the landing.
+
+### Fixed
+- **Navigation / history**: unauthenticated `/` now redirects to the landing `/home` (front door) instead of `/login`, via `router.replace`. The landing route was renamed `/inicio` → `/home` (folder `app/home`, `HomeClient`), with a permanent redirect `/inicio` → `/home` in `next.config`. Logout also lands on `/home`. Login and logout switched from `router.push` to `router.replace`, so the back button no longer returns a logged-in user to `/login`.
+
+### Changed
+- **manifest.json**: trimmed `categories` to the standard vocabulary (`finance`, `productivity`); added `launch_handler: navigate-existing` and `handle_links: preferred`.
+
+---
+
 ## [2.21.0] — 2026-06-15
 
 ### Security

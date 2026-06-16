@@ -14,22 +14,90 @@
   "theme_color": "#07090f",
   "categories": ["finance", "productivity"],
   "prefer_related_applications": false,
+  "launch_handler": { "client_mode": "navigate-existing" },
+  "handle_links": "preferred",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "screenshots": [
-    { "src": "/screenshots/dashboard.png", "sizes": "1079x1190", "type": "image/png", "form_factor": "narrow", "label": "Resumen de tus finanzas del período" },
-    { "src": "/screenshots/new-movement.png", "sizes": "1080x2223", "type": "image/png", "form_factor": "narrow", "label": "Cargá un movimiento en segundos" },
-    { "src": "/screenshots/reports-movements.png", "sizes": "1068x2212", "type": "image/png", "form_factor": "narrow", "label": "Todos tus movimientos por período" },
-    { "src": "/screenshots/reports-expenses.jpeg", "sizes": "771x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "Reportes de gastos e ingresos" },
-    { "src": "/screenshots/portfolio.png", "sizes": "1076x2195", "type": "image/png", "form_factor": "narrow", "label": "Seguimiento de ahorros e inversión" },
-    { "src": "/screenshots/settings.png", "sizes": "1065x2204", "type": "image/png", "form_factor": "narrow", "label": "Configuración y sincronización" }
+    {
+      "src": "/screenshots/dashboard.png",
+      "sizes": "1079x1190",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Resumen de tus finanzas del período"
+    },
+    {
+      "src": "/screenshots/new-movement.png",
+      "sizes": "1080x2223",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Cargá un movimiento en segundos"
+    },
+    {
+      "src": "/screenshots/reports-movements.png",
+      "sizes": "1068x2212",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Todos tus movimientos por período"
+    },
+    {
+      "src": "/screenshots/reports-expenses.jpeg",
+      "sizes": "771x1600",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Reportes de gastos e ingresos"
+    },
+    {
+      "src": "/screenshots/portfolio.png",
+      "sizes": "1076x2195",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Seguimiento de ahorros e inversión"
+    },
+    {
+      "src": "/screenshots/settings.png",
+      "sizes": "1065x2204",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Configuración y sincronización"
+    }
   ],
   "shortcuts": [
-    { "name": "Nuevo movimiento", "short_name": "Movimiento", "url": "/movements", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Reportes", "short_name": "Reportes", "url": "/reports", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Inversión", "short_name": "Inversión", "url": "/investments", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Nuevo movimiento",
+      "short_name": "Movimiento",
+      "url": "/movements",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Reportes",
+      "short_name": "Reportes",
+      "url": "/reports",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Inversión",
+      "short_name": "Inversión",
+      "url": "/investments",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

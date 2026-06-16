@@ -13,7 +13,7 @@ export default function PrivacidadPage() {
       <p style={{ marginTop: 32 }}>
         <a href="/terminos" style={{ color: "var(--blue)", textDecoration: "underline" }}>Condiciones del Servicio</a>
         {" · "}
-        <a href="/inicio" style={{ color: "var(--muted)", textDecoration: "none" }}>← Inicio</a>
+        <a href="/home" style={{ color: "var(--muted)", textDecoration: "none" }}>← Inicio</a>
       </p>
     </main>
   );
