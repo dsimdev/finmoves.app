@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.23.3] — 2026-06-16
+
+### Arreglos
+- **Historial de movimientos**: los gastos de la reserva (GastoUSD/GastoEUR) ya no aparecen en el listado — solo afectan tu inversión, no tus movimientos de pesos.
+
+---
+
 ## [2.23.2] — 2026-06-16
 
 ### Arreglos
