@@ -86,4 +86,4 @@ Rollback: `git reset --hard vX.Y.Z` + push, or redeploy a previous build from th
 
 ## Current Version
 
-`v2.23.6` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.
+`v2.23.7` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.
