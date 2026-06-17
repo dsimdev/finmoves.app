@@ -35,9 +35,24 @@ interface GlobalCtx {
 // correspondan (cambio de dólar, meta de ahorro, recordatorio de sueldo, carga
 // olvidada, recordatorios puntuales). Cada aviso deduplica vía config/notifyMeta
 // → correr el cron más seguido NO genera spam.
+// Optimización: batch-read todos los config/push docs en paralelo, filtrar
+// por suscripción activa, luego procesar solo esos usuarios.
 export async function notifyAllUsers(ctx: GlobalCtx): Promise<void> {
   const userRefs = await adminDb().collection("users").listDocuments();
-  await Promise.all(userRefs.map((ref) => notifyUser(ref.id, ctx).catch((e) => console.error("[notify]", ref.id, e))));
+
+  // Leer todos los config/push en paralelo (en lugar de serial en notifyUser).
+  const pushDocs = await Promise.all(
+    userRefs.map((ref) => adminDb().doc(`${ref.path}/config/push`).get().catch(() => null))
+  );
+
+  // Filtrar solo usuarios con suscripción activa.
+  const activeUids = userRefs
+    .map((ref, i) => ({ uid: ref.id, push: pushDocs[i]?.data() }))
+    .filter(({ push }) => push?.subscription)
+    .map(({ uid }) => uid);
+
+  // Procesar solo usuarios activos.
+  await Promise.all(activeUids.map((uid) => notifyUser(uid, ctx).catch((e) => console.error("[notify]", uid, e))));
 }
 
 async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
