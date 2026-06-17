@@ -119,7 +119,6 @@ async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Recor
 //  2) El día (o pasado), aviso final y BORRA el recordatorio.
 async function checkRecordatorios(uid: string) {
   const hoy = hoyAR();
-  // Solo traer recordatorios desde hoy en adelante (evita leer recordatorios viejos)
   const snap = await adminDb()
     .collection(`users/${uid}/recordatorios`)
     .where("fecha", ">=", hoy)
