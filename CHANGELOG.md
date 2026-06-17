@@ -9,9 +9,6 @@ All notable changes to FinMoves are documented here.
 ### Fixed
 - **Firestore query optimization in cron**: Added date filtering to reminders cron (`.where("fecha", ">=", today)`) to skip expired reminders. Reduces read ops during notification cron runs.
 
-### Changed
-- **`/api/sync-sheets` POST body**: Now accepts `movimientos` array in request body. Manual sync no longer reads from Firestore; client provides data. Cron-triggered sync still reads from DB. Eliminates Firestore reads for user-initiated syncs.
-
 ---
 
 ## [2.23.6] — 2026-06-16

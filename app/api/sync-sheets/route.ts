@@ -25,12 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
-    const { movimientos } = body as { movimientos: unknown[] };
-    if (!movimientos || !Array.isArray(movimientos)) {
-      return NextResponse.json({ error: "movimientos array required" }, { status: 400 });
-    }
-    const { synced } = await syncUserMovimientosToSheet(uid, movimientos);
+    const { synced } = await syncUserMovimientosToSheet(uid);
     return NextResponse.json({ synced, message: `Sync completa · ${synced} movimientos` });
   } catch (err) {
     console.error("Sync error:", err);
