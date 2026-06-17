@@ -218,7 +218,7 @@ export const en: AppLocale = {
   kpiAvgMovsInfo: "Average movements per active day.",
   kpiBiggestMovInfo: "The largest movement of the period.",
   kpiPerPeriodInfo: "How much you're adding to the reserve per period (average of the last 3) vs your per-period goal.",
-  kpiProjectionInfo: "Projection of your reserve adding your recent savings pace.",
+  kpiProjectionInfo: "Estimate of your reserve 3 periods ahead, adding your savings pace of the last 3.",
   kpiToGoalInfo: "Estimated periods to reach your goal keeping this pace.",
   byCategory: "By category",
   vsPrevPeriod: "vs previous period",

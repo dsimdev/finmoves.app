@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PrivacyContent } from "@/components/legal/PrivacyContent";
 import { TermsContent } from "@/components/legal/TermsContent";
@@ -229,8 +230,9 @@ export function HomeClient() {
             {t.sub}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <a
+            <Link
               href="/login"
+              replace
               style={{
                 display: "inline-block",
                 padding: "14px 40px",
@@ -244,7 +246,7 @@ export function HomeClient() {
               }}
             >
               {t.enter}
-            </a>
+            </Link>
             {canInstall && (
               <button
                 onClick={promptInstall}

@@ -32,15 +32,22 @@ function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
   const tipoCompra = moneda === "USD" ? "CompraUSD" : "CompraEUR";
   const tipoGasto  = moneda === "USD" ? "GastoUSD"  : "GastoEUR";
   const tipoVenta  = moneda === "USD" ? "VentaUSD"  : "VentaEUR";
+  // Costo promedio MÓVIL: procesar en orden cronológico (más viejo → más nuevo).
+  // Al reducir la reserva (gasto/venta/retiro) baja la cantidad Y el costo acumulado
+  // a precio promedio, así el promedio de lo que queda no se distorsiona.
+  const orden = [...movimientos].sort((a, b) => a.timestampCarga.getTime() - b.timestampCarga.getTime());
   let total = 0;
   let costoTotalARS = 0;
-  for (const m of movimientos) {
+  for (const m of orden) {
     if (m.tipo === tipoCompra && m.cantidadUSD) {
       total += m.cantidadUSD;
       costoTotalARS += m.monto;
     } else if ((m.tipo === tipoGasto || m.tipo === tipoVenta) && m.cantidadUSD) {
       // Gasto y Venta bajan la reserva (la Venta además sumó al disponible, ya contado).
+      const avg = total > 0 ? costoTotalARS / total : 0;
+      const baja = Math.min(m.cantidadUSD, Math.max(total, 0));
       total -= m.cantidadUSD;
+      costoTotalARS -= baja * avg;
     }
   }
   return { total, costoTotalARS, costoPromedio: total > 0 ? costoTotalARS / total : 0 };

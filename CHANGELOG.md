@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.23.2] — 2026-06-16
+
+### Fixed
+- **Investment average cost / profit**: `calcularReserva` now uses a moving weighted-average cost processed chronologically. Selling/spending reduces the cost basis at the average price (not only the quantity), so "Precio prom." and "Ganancia" reflect the remaining holdings. Previously every sell inflated the average and pushed profit deeply negative.
+- **Back button to /home**: the landing "Ingresar" CTA navigates with `replace`, so a logged-in user pressing back no longer lands on the marketing `/home`.
+
+### Changed
+- **Projection tooltip**: states the 3-period horizon.
+
+---
+
 ## [2.23.1] — 2026-06-16
 
 ### Fixed

@@ -216,7 +216,7 @@ export const es = {
   kpiAvgMovsInfo: "Promedio de movimientos por cada día con actividad.",
   kpiBiggestMovInfo: "El movimiento de mayor monto del período.",
   kpiPerPeriodInfo: "Cuánto venís sumando a la reserva por período (promedio de los últimos 3) sobre tu objetivo por período.",
-  kpiProjectionInfo: "Proyección de tu reserva sumando tu ritmo de ahorro de los últimos períodos.",
+  kpiProjectionInfo: "Estimación de tu reserva dentro de 3 períodos, sumando tu ritmo de ahorro de los últimos 3.",
   kpiToGoalInfo: "Períodos estimados para alcanzar tu objetivo manteniendo este ritmo.",
   byCategory: "Por categoría",
   vsPrevPeriod: "vs período anterior",

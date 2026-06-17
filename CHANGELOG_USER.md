@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.23.2] — 2026-06-16
+
+### Arreglos
+- **Ganancia de la reserva**: el precio promedio y la ganancia ahora se calculan bien al vender o gastar (antes la ganancia quedaba mucho más negativa de lo real).
+- **Botón "atrás"**: estando con la sesión iniciada, "atrás" ya no te lleva a la página de bienvenida.
+
+### Mejoras
+- La proyección de inversión ahora aclara que es a 3 períodos.
+
+---
+
 ## [2.23.0] — 2026-06-15
 
 ### Nuevo
