@@ -73,10 +73,12 @@ export default function MovimientosPage() {
   }, []);
 
   const movsFiltrados = useMemo(() =>
-    [...(periodoActual?.movimientos ?? [])].sort((a, b) => {
-      const d = b.fecha.localeCompare(a.fecha);
-      return d !== 0 ? d : b.timestampCarga.getTime() - a.timestampCarga.getTime();
-    }),
+    [...(periodoActual?.movimientos ?? [])]
+      .filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR")
+      .sort((a, b) => {
+        const d = b.fecha.localeCompare(a.fecha);
+        return d !== 0 ? d : b.timestampCarga.getTime() - a.timestampCarga.getTime();
+      }),
     [periodoActual]
   );
 

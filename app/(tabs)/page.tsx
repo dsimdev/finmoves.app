@@ -45,7 +45,7 @@ export default function Dashboard() {
   const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const p = periodos[0];
   const ahorrosAcum = serie.length ? serie[serie.length - 1].ahorrosAcum : 0;
-  const ultimos = p?.movimientos.slice(0, 5) ?? [];
+  const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR").slice(0, 5) ?? [];
   // Badge en el ícono de la app: cantidad de movimientos del período actual.
   useAppBadge(p?.movimientos.length);
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;

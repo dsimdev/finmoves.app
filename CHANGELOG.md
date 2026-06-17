@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.23.3] — 2026-06-16
+
+### Fixed
+- **Movements list**: GastoUSD/GastoEUR (internal reserve reductions) are no longer shown in the movements historial, dashboard "Latest movements", or the `/movements` list. They only affect the investment reserve, not the main account balance.
+
+---
+
 ## [2.23.2] — 2026-06-16
 
 ### Fixed
