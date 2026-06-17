@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.23.5] — 2026-06-16
+
+### Fixed
+- **Notification cron efficiency**: `notifyAllUsers` now batch-reads all `config/push` docs in parallel and filters to active subscribers before processing, reducing Firestore read ops by ~50%. Pairs with Cloud Scheduler frequency change to every 6 hours (not hourly).
+
+---
+
 ## [2.23.4] — 2026-06-16
 
 ### Fixed
