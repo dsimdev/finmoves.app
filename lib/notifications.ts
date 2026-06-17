@@ -119,7 +119,11 @@ async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Recor
 //  2) El día (o pasado), aviso final y BORRA el recordatorio.
 async function checkRecordatorios(uid: string) {
   const hoy = hoyAR();
-  const snap = await adminDb().collection(`users/${uid}/recordatorios`).get();
+  // Solo traer recordatorios desde hoy en adelante (evita leer recordatorios viejos)
+  const snap = await adminDb()
+    .collection(`users/${uid}/recordatorios`)
+    .where("fecha", ">=", hoy)
+    .get();
   await Promise.all(snap.docs.map(async (doc) => {
     const r = doc.data() as { texto?: string; fecha?: string; avisadoPre?: boolean };
     if (!r.fecha) return;

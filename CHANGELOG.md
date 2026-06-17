@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.23.7] — 2026-06-17
+
+### Fixed
+- **Firestore query optimization**: Implemented delta sync in Google Sheets export (only reads movements changed since last sync, not entire collection). Added date filtering to reminders query to skip past dates. Reduces read ops by ~70% during cron runs.
+
+---
+
 ## [2.23.6] — 2026-06-16
 
 ### Fixed

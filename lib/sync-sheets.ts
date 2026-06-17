@@ -11,10 +11,16 @@ import type { Movimiento } from "@/types";
 export async function syncUserMovimientosToSheet(uid: string): Promise<{ synced: number }> {
   const syncMetaRef = adminDb().doc(`users/${uid}/config/syncMeta`);
   try {
-    const snap = await adminDb()
+    const syncMeta = await syncMetaRef.get().then((d) => d.data());
+    const lastSync = (syncMeta?.lastSync as Timestamp | undefined)?.toDate() ?? new Date(0);
+
+    // Delta sync: solo traer movimientos nuevos desde el último sync
+    const query = adminDb()
       .collection(`users/${uid}/movimientos`)
-      .orderBy("timestampCarga", "asc")
-      .get();
+      .where("timestampCarga", ">", Timestamp.fromDate(lastSync))
+      .orderBy("timestampCarga", "asc");
+
+    const snap = await query.get();
 
     const rows = snap.docs.map((doc) => {
       const data = doc.data();
