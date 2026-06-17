@@ -82,9 +82,21 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       caches.match(req).then((cached) => cached || fetch(req).then((res) => {
         const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy));
+        caches.open(CACHE).then((c) => c.put(req.url, copy));
         return res;
       }))
+    );
+    return;
+  }
+
+  // Next.js RSC (Server Component Responses): detectar por URL o cabecera.
+  // No se cachean, para evitar servir componentes viejos durante transiciones.
+  const isRSC = url.pathname.startsWith("/_next/data/") || req.headers.get("next-router-state-tree");
+  if (isRSC) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => res)
+        .catch(() => caches.match(req))
     );
     return;
   }
@@ -97,7 +109,7 @@ self.addEventListener("fetch", (event) => {
           const preload = await event.preloadResponse;
           const res = preload || await fetch(req);
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          caches.open(CACHE).then((c) => c.put(req.url, copy));
           return res;
         } catch (e) {
           return (await caches.match(req)) || (await caches.match("/")) || (await caches.match("/offline"));

@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.23.4] — 2026-06-16
+
+### Fixed
+- **Service Worker: RSC hardening**: Next.js Server Component Responses (`_next/data/*` or `next-router-state-tree` header) now use network-first strategy (not cached), preventing stale component responses during internal navigations. Falls back to cache only if network fails.
+- **Service Worker: safer caching**: use `req.url` instead of `req` object in `caches.put()` to avoid Cache Storage rejection edge cases.
+
+---
+
 ## [2.23.3] — 2026-06-16
 
 ### Fixed
