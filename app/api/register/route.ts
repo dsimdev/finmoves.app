@@ -3,9 +3,31 @@ import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { TEMPLATE_CONFIG } from "@/lib/default-config";
 import { Timestamp } from "firebase-admin/firestore";
 
+// Rate limit en memoria: [ip]: {count, resetAt}
+const rateLimitMap = new Map<string, {count: number; resetAt: number}>();
+
+function checkRateLimit(ip: string, limit = 10, windowMs = 60000): {allowed: boolean; retryAfter: number} {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    rateLimitMap.set(ip, {count: 1, resetAt: now + windowMs});
+    return {allowed: true, retryAfter: 0};
+  }
+  if (entry.count >= limit) {
+    return {allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000)};
+  }
+  entry.count++;
+  return {allowed: true, retryAfter: 0};
+}
+
 // Alta de cuenta por código de invitación. El signup público de Firebase queda
 // cerrado: las cuentas se crean SOLO aquí, validando un código de un solo uso.
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+  const {allowed, retryAfter} = checkRateLimit(ip, 10, 60000); // 10 intentos / minuto
+  if (!allowed) {
+    return NextResponse.json({error: "rate-limit"}, {status: 429, headers: {"Retry-After": retryAfter.toString()}});
+  }
   let body: { email?: string; password?: string; code?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad-request" }, { status: 400 }); }
 

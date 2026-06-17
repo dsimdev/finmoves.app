@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.23.6] — 2026-06-16
+
+### Fixed
+- **Rate limiting on `/api/register`**: Added in-memory rate limiter (10 requests per minute per IP) to prevent brute-force registration attempts and bot spam on the public endpoint. Returns 429 with `Retry-After` header when limit exceeded.
+
+---
+
 ## [2.23.5] — 2026-06-16
 
 ### Fixed
