@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.0] — 2026-06-17
+
+### Added
+- **Movement quantity trend KPI**: Reports now show trend of movement count vs. previous 3 periods (like spending trend). Green if fewer movements, red if more.
+
+### Changed
+- **Movement KPIs layout**: Reorganized 2x2 grid — day/biggest on top row, trend/average on bottom. Improved visual hierarchy.
+- **Expense KPIs**: Removed "Free Days" KPI from expenses section.
+
+---
+
 ## [2.24.1] — 2026-06-17
 
 ### Changed

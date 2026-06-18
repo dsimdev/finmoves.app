@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.25.0] — 2026-06-17
+
+### Nuevo
+- **Tendencia de cantidad de movimientos**: los Reportes ahora muestran si hiciste más o menos transacciones que los 3 meses anteriores (en verde si menos, en rojo si más).
+
+### Mejoras
+- **KPIs de movimientos reordenados**: layout 2x2 más claro — día/mayor arriba, tendencia/promedio abajo.
+- **Gastos sin "Días libres"**: sacamos ese KPI para simplificar.
+
+---
+
 ## [2.24.1] — 2026-06-17
 
 ### Mejoras
