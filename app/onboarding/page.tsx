@@ -15,7 +15,7 @@ import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/pus
 
 type Moneda = "ARS" | "USD" | "EUR";
 
-const INVEST_STEP = 4; // índice del paso de inversión (requiere elegir sí/no)
+const INVEST_STEP = 8; // índice del paso de inversión (requiere elegir sí/no)
 
 export default function OnboardingPage() {
   const t = useT();
@@ -132,15 +132,26 @@ export default function OnboardingPage() {
           }}>{m}</button>
         ))}
       </div>
+      <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 10, background: "var(--surface-alt)", border: "1px solid var(--border)", maxWidth: 340, width: "100%" }}>
+        <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>{t.obCurrencyWarning}</div>
+      </div>
     </Screen>,
-    // 4 — Inversión / ahorros
-    <Screen key="i" emoji="📈" title={t.obInvestTitle} body={t.obInvestBody}>
+    // 4 — Período
+    <Screen key="p" emoji="📆" title={t.obPeriodTitle} body={t.obPeriodBody} />,
+    // 5 — Ahorros vs Inversión
+    <Screen key="sv" emoji="💰" title={t.obSavingsVsInvestTitle} body={t.obSavingsVsInvestBody} />,
+    // 6 — Cálculo de ganancia
+    <Screen key="g" emoji="📊" title={t.obGainCalculationTitle} body={t.obGainCalculationBody} />,
+    // 7 — Reportes
+    <Screen key="r" emoji="📈" title={t.obReportsTitle} body={t.obReportsBody} />,
+    // 8 — Inversión / ahorros
+    <Screen key="i" emoji="💎" title={t.obInvestTitle} body={t.obInvestBody}>
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8 }}>
         <button onClick={() => setInvierte(true)} style={chipStyle(invierte === true, "var(--green)", "var(--green-dim)")}>{t.obInvestYes}</button>
         <button onClick={() => setInvierte(false)} style={chipStyle(invierte === false, "var(--muted)", "var(--surface-alt)")}>{t.obInvestNo}</button>
       </div>
     </Screen>,
-    // 5 — Seguridad y avisos
+    // 9 — Seguridad y avisos
     <Screen key="s" emoji="🔔" title={t.obSecurityTitle} body={t.obSecurityBody}>
       {(bioAvail || pushAvail) ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8, width: "100%", maxWidth: 340 }}>
@@ -151,7 +162,7 @@ export default function OnboardingPage() {
         <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>{t.obSecurityUnavailable}</div>
       )}
     </Screen>,
-    // 6 — Listo
+    // 10 — Listo
     <Screen key="d" emoji="🎉" title={t.obDoneTitle} body={t.obDoneBody} />,
   ];
 
