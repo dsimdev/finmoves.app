@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.24.0] — 2026-06-17
+
+### Added
+- **Permission change audit log**: Admin panel now tracks every permission activation/deactivation with reason (Fix / Bug / Error), timestamp, and who made the change. Stored in `users/{uid}/config/permisosLog` for full audit trail.
+- **Reason selection modal**: When changing user permissions, admin selects reason before confirming. Reason included in user notification.
+- **Permission history view**: Admin panel shows last 3 permission changes per user with date/time.
+
+### Changed
+- **Push notification format**: Now includes timestamp of permission change (e.g., "Se activó Imágenes por: Fix (16-jun, 20:52)").
+- **Admin user status UI**: Single "Última conexión" row shows green dot + "online" if currently online, or date/time of last sign-in if offline.
+
+---
+
 ## [2.23.7] — 2026-06-17
 
 ### Fixed

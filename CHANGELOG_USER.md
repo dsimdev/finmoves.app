@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.24.0] — 2026-06-17
+
+### Nuevo
+- **Historial de cambios de permisos**: el administrador ahora ve cuándo y por qué (Fix / Bug / Error) se activó o desactivó cada permiso en tu cuenta. Notificaciones de cambios incluyen la fecha y hora.
+
+### Mejoras
+- **Estado de conexión más claro**: la fila "Última conexión" ahora muestra si estás conectado (punto verde) o cuándo fue tu última sesión.
+
+---
+
 ## [2.23.3] — 2026-06-16
 
 ### Arreglos
