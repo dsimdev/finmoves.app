@@ -992,10 +992,11 @@ export default function ConfigPage() {
             <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 13 }}>Moneda</span>
               <div style={{ display: "flex", gap: 6 }}>
-                {(["USD", "EUR"] as const).map((m) => (
+                {(["ARS", "USD", "EUR"] as const).map((m) => (
                   <button
                     key={m}
                     onClick={() => config.meta.monedaPrincipal !== m && setPendingMoneda(m)}
+                    disabled={config.meta.monedaPrincipal === m}
                     style={{
                       padding: "6px 12px",
                       borderRadius: 8,
