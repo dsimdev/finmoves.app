@@ -380,16 +380,16 @@ export default function ConfigPage() {
     if (!user?.uid) return;
     try {
       const token = await getIdToken(user);
-      const res = await fetch(`/api/admin/users/${uid}/permisoslog`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`/api/admin/users/${uid}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         const logs = (data.historial ?? []).map((log: any) => ({
           ...log,
-          timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
+          timestamp: log.timestamp instanceof Object && log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp),
         }));
         setAdminPermisosLog(logs.sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime()));
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error("Error loading permisos log:", err); }
   };
 
   useEffect(() => {
@@ -1802,7 +1802,13 @@ export default function ConfigPage() {
               <div className="row"><span style={{ fontSize: 13, color: "var(--muted)" }}>Última conexión</span><span style={{ fontSize: 13 }}>{lastSignIn}</span></div>
               <div className="row">
                 <span style={{ fontSize: 13, color: "var(--muted)" }}>Push</span>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.pushOn ? "var(--green)" : "var(--border)", display: "inline-block" }} />
+                {u.pushOn ? (
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
+                ) : (
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                    {u.lastSignIn ? new Date(u.lastSignIn).toLocaleString("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }) : "—"}
+                  </span>
+                )}
               </div>
               {!u.isOwner && (
                 <>

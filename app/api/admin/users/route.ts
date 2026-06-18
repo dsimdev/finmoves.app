@@ -59,10 +59,14 @@ export async function POST(req: NextRequest) {
 
   const labels: Record<string, string> = { comprobantes: "Imágenes", inversion: "Inversión" };
   const label = labels[key] ?? key;
+  const timeStr = now.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
   const body = value
-    ? `Se activó ${label} en tu cuenta por: ${motivo ?? "Sin motivo"}`
-    : `Se desactivó ${label} en tu cuenta por: ${motivo ?? "Sin motivo"}`;
-  await sendPushToUser(targetUid, { title: "FinMoves", body, tag: "permission-change", url: "/settings" }).catch(() => {});
+    ? `Se activó ${label} por: ${motivo ?? "Sin motivo"} (${timeStr})`
+    : `Se desactivó ${label} por: ${motivo ?? "Sin motivo"} (${timeStr})`;
+  const pushDoc = await adminDb().doc(`users/${targetUid}/config/push`).get();
+  if (pushDoc.exists) {
+    await sendPushToUser(targetUid, { title: "FinMoves", body, tag: "permission-change", url: "/settings" }).catch(() => {});
+  }
   return NextResponse.json({ ok: true });
 }
 
