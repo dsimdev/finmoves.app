@@ -881,17 +881,17 @@ export default function ReportesPage() {
                     </div>
                   </div>
 
-                  {/* Mini-stats */}
+                  {/* Mini-stats: 2x2 grid */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                    <MiniStat center label={t.mostActiveDay} value={sinAño(movCounts.diaMasActivo)} color="var(--accent)"
+                    <MiniStat center basis="1 1 45%" label={t.mostActiveDay} value={sinAño(movCounts.diaMasActivo)} color="var(--accent)"
                       onClick={() => setKpiInfo({ title: t.mostActiveDay, value: sinAño(movCounts.diaMasActivo), explain: `${t.kpiActiveDayInfo} (${t.movCount(movCounts.diaMasActivoN)})`, color: "var(--accent)" })} />
-                    <MiniStat center label={t.avgMovsPerDay} value={promDia} color="var(--accent)"
+                    <MiniStat center basis="1 1 45%" label={t.avgMovsPerDay} value={promDia} color="var(--accent)"
                       onClick={() => setKpiInfo({ title: t.avgMovsPerDay, value: promDia, explain: `${t.kpiAvgMovsInfo} (${t.activeDays(movCounts.diasActivos)})`, color: "var(--accent)" })} />
                     {tendenciaCantidad !== null && (() => { const c = tendenciaCantidad > 10 ? "var(--green)" : tendenciaCantidad < -10 ? "var(--red)" : "var(--yellow)"; const v = `${tendenciaCantidad >= 0 ? "+" : ""}${tendenciaCantidad}%`; return (
-                      <MiniStat center label={t.trend} value={v} color={c}
+                      <MiniStat center basis="1 1 45%" label={t.trend} value={v} color={c}
                         onClick={() => setKpiInfo({ title: `${t.trend} (${t.movCount(1)})`, value: v, explain: "Variación de cantidad de movimientos vs. los 3 períodos anteriores. En verde si menos movs, en rojo si más movs.", color: c })} />
                     ); })()}
-                    <MiniStat center label={t.biggestMov} value={mayor ? (oculto ? "••" : abbr(mayor.monto)) : "—"} color="var(--accent)"
+                    <MiniStat center basis="1 1 45%" label={t.biggestMov} value={mayor ? (oculto ? "••" : abbr(mayor.monto)) : "—"} color="var(--accent)"
                       onClick={mayor ? () => setKpiInfo({ title: t.biggestMov, value: oculto ? "••" : formatARS(mayor.monto), explain: `${t.kpiBiggestMovInfo} (${mayor.descripcion || mayor.categoria})`, color: "var(--accent)" }) : undefined} />
                   </div>
                   </>
