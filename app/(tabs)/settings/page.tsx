@@ -1003,13 +1003,13 @@ export default function ConfigPage() {
                       fontSize: 12,
                       fontWeight: 600,
                       cursor: config.meta.monedaPrincipal === m ? "default" : "pointer",
-                      border: `1px solid ${config.meta.monedaPrincipal === m ? "var(--green)" : "var(--border)"}`,
+                      border: `2px solid ${config.meta.monedaPrincipal === m ? "var(--green)" : "var(--border)"}`,
                       background: config.meta.monedaPrincipal === m ? "var(--green-dim)" : "transparent",
                       color: config.meta.monedaPrincipal === m ? "var(--green)" : "var(--muted)",
-                      opacity: config.meta.monedaPrincipal === m ? 1 : 0.55,
+                      fontWeight: config.meta.monedaPrincipal === m ? 700 : 600,
                     }}
                   >
-                    {m}
+                    {m} {config.meta.monedaPrincipal === m && "✓"}
                   </button>
                 ))}
               </div>
