@@ -308,6 +308,12 @@ export default function ReportesPage() {
     ? Math.round(((avgUlt3 - avgPrev3) / avgPrev3) * 100) : null;
   const proyeccionGasto = periodos.length >= 2 ? Math.round(avgUlt3) : null;
 
+  // Tendencia de cantidad de movimientos
+  const cantUlt3 = periodos.slice(0, 3).reduce((s, p) => s + p.movimientos.length, 0) / Math.max(periodos.slice(0, 3).length, 1);
+  const cantPrev3 = periodos.slice(3, 6).reduce((s, p) => s + p.movimientos.length, 0) / Math.max(periodos.slice(3, 6).length, 1);
+  const tendenciaCantidad = periodos.length >= 4 && cantPrev3 > 0
+    ? Math.round(((cantUlt3 - cantPrev3) / cantPrev3) * 100) : null;
+
   // ── Movimientos: estadísticas de frecuencia ──
   const movCounts = useMemo(() => {
     if (!periodo) return null;
@@ -512,8 +518,6 @@ export default function ReportesPage() {
               {/* Mini-stats fila 1: 3 columnas */}
               {reportOn("gastos_kpis") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                {diasLibres && <MiniStat center label={t.expenseFreeDays} value={String(diasLibres.sinGasto)} color="var(--green)"
-                  onClick={() => setKpiInfo({ title: t.expenseFreeDays, value: String(diasLibres.sinGasto), explain: `${t.kpiFreeDaysInfo} (${t.ofDays(diasLibres.total)})`, color: "var(--green)" })} />}
                 {tendenciaGasto !== null && (() => { const c = tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`; return (
                   <MiniStat center label={t.trend} value={v} color={c}
                     onClick={() => setKpiInfo({ title: t.trend, value: v, explain: t.kpiTrendInfo, color: c })} />
@@ -883,6 +887,10 @@ export default function ReportesPage() {
                       onClick={() => setKpiInfo({ title: t.mostActiveDay, value: sinAño(movCounts.diaMasActivo), explain: `${t.kpiActiveDayInfo} (${t.movCount(movCounts.diaMasActivoN)})`, color: "var(--accent)" })} />
                     <MiniStat center label={t.avgMovsPerDay} value={promDia} color="var(--accent)"
                       onClick={() => setKpiInfo({ title: t.avgMovsPerDay, value: promDia, explain: `${t.kpiAvgMovsInfo} (${t.activeDays(movCounts.diasActivos)})`, color: "var(--accent)" })} />
+                    {tendenciaCantidad !== null && (() => { const c = tendenciaCantidad > 10 ? "var(--green)" : tendenciaCantidad < -10 ? "var(--red)" : "var(--yellow)"; const v = `${tendenciaCantidad >= 0 ? "+" : ""}${tendenciaCantidad}%`; return (
+                      <MiniStat center label={t.trend} value={v} color={c}
+                        onClick={() => setKpiInfo({ title: `${t.trend} (${t.movCount(1)})`, value: v, explain: "Variación de cantidad de movimientos vs. los 3 períodos anteriores. En verde si menos movs, en rojo si más movs.", color: c })} />
+                    ); })()}
                     <MiniStat center label={t.biggestMov} value={mayor ? (oculto ? "••" : abbr(mayor.monto)) : "—"} color="var(--accent)"
                       onClick={mayor ? () => setKpiInfo({ title: t.biggestMov, value: oculto ? "••" : formatARS(mayor.monto), explain: `${t.kpiBiggestMovInfo} (${mayor.descripcion || mayor.categoria})`, color: "var(--accent)" }) : undefined} />
                   </div>
