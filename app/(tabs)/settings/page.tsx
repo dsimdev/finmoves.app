@@ -181,12 +181,37 @@ export default function ConfigPage() {
   const [passVisible, setPassVisible] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [profileBusy, setProfileBusy] = useState(false);
+  // Cambio de moneda principal
+  const [pendingMoneda, setPendingMoneda] = useState<"ARS" | "USD" | "EUR" | null>(null);
+  const [monedaBusy, setMonedaBusy] = useState(false);
   const openChangePass = () => {
     setPassInput("");
     setCurrentPassInput("");
     setPassVisible(false);
     setProfileMsg(null);
     setShowChangePass(true);
+  };
+
+  const changeMoneda = async (newMoneda: "ARS" | "USD" | "EUR") => {
+    if (!user?.uid || monedaBusy || !config || newMoneda === config.meta.monedaPrincipal) return;
+    setMonedaBusy(true);
+    try {
+      const newMeta = { ...config.meta, monedaPrincipal: newMoneda };
+      // Si cambias a USD/EUR, desactiva la inversión
+      if (newMoneda !== "ARS") {
+        newMeta.showAhorros = false;
+        setPref("showAhorros", false);
+      }
+      await setDoc(doc(db, `users/${user.uid}/config/meta`), { ...config, meta: newMeta });
+      setMonedaPrincipal(newMoneda);
+      setPendingMoneda(null);
+      setProfileMsg({ ok: true, text: "Moneda actualizada" });
+      setTimeout(() => setProfileMsg(null), 3000);
+    } catch {
+      setProfileMsg({ ok: false, text: "No se pudo cambiar la moneda" });
+    } finally {
+      setMonedaBusy(false);
+    }
   };
   const savePassword = async () => {
     if (profileBusy) return;
@@ -962,6 +987,32 @@ export default function ConfigPage() {
               </div>
               );
             })()}
+
+            {/* Moneda principal */}
+            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 13 }}>Moneda</span>
+              <div style={{ display: "flex", gap: 6 }}>
+                {(["USD", "EUR"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => config.meta.monedaPrincipal !== m && setPendingMoneda(m)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: config.meta.monedaPrincipal === m ? "default" : "pointer",
+                      border: `1px solid ${config.meta.monedaPrincipal === m ? "var(--accent)" : "var(--border)"}`,
+                      background: config.meta.monedaPrincipal === m ? "var(--accent-dim)" : "transparent",
+                      color: config.meta.monedaPrincipal === m ? "var(--accent)" : "var(--muted)",
+                      opacity: config.meta.monedaPrincipal === m ? 1 : 0.55,
+                    }}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Sincronización (solo dueño) — la fila abre el historial */}
             {isOwner && (
@@ -1988,6 +2039,25 @@ export default function ConfigPage() {
       {confirmUnlink && (
         <ConfirmModal title={t.googleUnlinkTitle} confirmLabel={t.googleUnlink} cancelLabel={t.cancel} confirmColor="var(--red)"
           onConfirm={handleUnlinkGoogle} onCancel={() => setConfirmUnlink(false)}>{t.googleUnlinkBody}</ConfirmModal>
+      )}
+
+      {pendingMoneda && (
+        <ConfirmModal
+          title="Cambiar moneda"
+          confirmLabel="Cambiar"
+          cancelLabel={t.cancel}
+          confirmColor="var(--blue)"
+          loading={monedaBusy}
+          onConfirm={() => changeMoneda(pendingMoneda)}
+          onCancel={() => setPendingMoneda(null)}
+        >
+          <div>
+            <strong>De {config?.meta.monedaPrincipal || "ARS"} a {pendingMoneda}</strong>
+            {pendingMoneda !== "ARS" && (
+              <><br /><br /><span style={{ color: "var(--orange)", fontWeight: 600 }}>⚠ Se desactivará la inversión</span></>
+            )}
+          </div>
+        </ConfirmModal>
       )}
 
       {showInviteModal && mounted && createPortal(
