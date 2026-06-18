@@ -336,7 +336,9 @@ export default function ConfigPage() {
   const [adminLoading, setAdminLoading] = useState(false);
   const [selectedAdminUid, setSelectedAdminUid] = useState<string | null>(null);
   const selectedAdminUser = adminUsers.find((u) => u.uid === selectedAdminUid) ?? null;
+  const [adminPermisosLog, setAdminPermisosLog] = useState<Array<{ timestamp: Date; key: string; oldValue: boolean; newValue: boolean; motivo: string; changedBy: string }>>([]);
   const [pendingPerm, setPendingPerm] = useState<{ uid: string; key: string; value: boolean; label: string; nombre: string } | null>(null);
+  const [permMotivo, setPermMotivo] = useState<"Fix" | "Bug" | "Error" | null>(null);
   const [permBusy, setPermBusy] = useState(false);
   const [permMsg, setPermMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const generateInviteCode = async () => {
@@ -373,7 +375,28 @@ export default function ConfigPage() {
     } catch { /* ignore */ } finally { setAdminLoading(false); }
   };
   const openAdmin = () => { setShowAdmin(true); loadAdmin(); };
-  const setPermission = async (targetUid: string, key: string, value: boolean) => {
+
+  const loadPermisosLog = async (uid: string) => {
+    if (!user?.uid) return;
+    try {
+      const token = await getIdToken(user);
+      const res = await fetch(`/api/admin/users/${uid}/permisoslog`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        const logs = (data.historial ?? []).map((log: any) => ({
+          ...log,
+          timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
+        }));
+        setAdminPermisosLog(logs.sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime()));
+      }
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => {
+    if (selectedAdminUid) loadPermisosLog(selectedAdminUid);
+    else setAdminPermisosLog([]);
+  }, [selectedAdminUid]);
+  const setPermission = async (targetUid: string, key: string, value: boolean, motivo?: string) => {
     const u = auth.currentUser;
     if (!u || permBusy) return;
     setPermBusy(true);
@@ -383,7 +406,7 @@ export default function ConfigPage() {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: targetUid, key, value }),
+        body: JSON.stringify({ uid: targetUid, key, value, motivo }),
       });
       if (!res.ok) throw new Error("error");
       setPermMsg({ ok: true, text: "Permiso actualizado" });
@@ -393,6 +416,7 @@ export default function ConfigPage() {
     } finally {
       setPermBusy(false);
       setPendingPerm(null);
+      setPermMotivo(null);
       setTimeout(() => setPermMsg(null), 3000);
     }
   };
@@ -1796,6 +1820,25 @@ export default function ConfigPage() {
                       </div>
                     );
                   })}
+                  {adminPermisosLog.length > 0 && (
+                    <>
+                      <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 8px" }}>Historial</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {adminPermisosLog.slice(0, 3).map((log, i) => {
+                          const permLabel = log.key === "comprobantes" ? "Imágenes" : log.key === "inversion" ? "Inversión" : log.key;
+                          const action = log.newValue ? "activó" : "desactivó";
+                          return (
+                            <div key={i} style={{ fontSize: 11, color: "var(--muted)", padding: "6px 0", borderTop: i === 0 ? "1px solid var(--faint)" : "none", paddingTop: 6 }}>
+                              <div>{permLabel} <strong>{action}</strong> • {log.motivo}</div>
+                              <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 2 }}>
+                                {log.timestamp.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
               {permMsg && (
@@ -1808,23 +1851,81 @@ export default function ConfigPage() {
         })()}
       </BottomSheet>
 
-      {pendingPerm && (
-        <ConfirmModal
-          title={pendingPerm.value ? "Activar permiso" : "Desactivar permiso"}
-          confirmLabel={pendingPerm.value ? "Activar" : "Desactivar"}
-          cancelLabel={t.cancel}
-          confirmColor={pendingPerm.value ? "var(--green)" : "var(--red)"}
-          loading={permBusy}
-          onConfirm={() => setPermission(pendingPerm.uid, pendingPerm.key, pendingPerm.value)}
-          onCancel={() => setPendingPerm(null)}
-        >
-          <div>
-            <strong>{pendingPerm.label}</strong> para <strong>{pendingPerm.nombre}</strong>
-            {pendingPerm.value
-              ? <><br />Se enviará una notificación al usuario.</>
-              : <><br />El usuario perderá acceso a esta función. Se enviará una notificación.</>}
+      {pendingPerm && mounted && createPortal(
+        <div data-no-swipe onClick={() => setPendingPerm(null)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 380, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
+            <div style={{ padding: "24px 20px 20px" }}>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{pendingPerm.value ? "Activar" : "Desactivar"} permiso</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 20 }}>
+                <strong>{pendingPerm.label}</strong> para <strong>{pendingPerm.nombre}</strong>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <div className="label" style={{ marginBottom: 10 }}>Motivo</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {(["Fix", "Bug", "Error"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setPermMotivo(m)}
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 10,
+                        border: `1px solid ${permMotivo === m ? "var(--blue)" : "var(--border)"}`,
+                        background: permMotivo === m ? "var(--blue-dim)" : "transparent",
+                        color: permMotivo === m ? "var(--blue)" : "var(--text)",
+                        fontSize: 13,
+                        fontWeight: permMotivo === m ? 700 : 500,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => setPendingPerm(null)}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "transparent",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    color: "var(--text)",
+                  }}
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  onClick={() => permMotivo && setPermission(pendingPerm.uid, pendingPerm.key, pendingPerm.value, permMotivo)}
+                  disabled={!permMotivo || permBusy}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 12,
+                    border: "none",
+                    background: permMotivo ? (pendingPerm.value ? "var(--green)" : "var(--red)") : "var(--surface-alt)",
+                    color: permMotivo ? "var(--bg)" : "var(--muted)",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: permMotivo ? "pointer" : "default",
+                    opacity: permBusy ? 0.5 : 1,
+                  }}
+                >
+                  {permBusy ? "..." : pendingPerm.value ? "Activar" : "Desactivar"}
+                </button>
+              </div>
+            </div>
           </div>
-        </ConfirmModal>
+        </div>,
+        document.body
       )}
 
       {confirmLeave && (

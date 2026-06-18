@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { sendPushToUser } from "@/lib/web-push";
+import { FieldValue } from "firebase-admin/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -22,23 +23,45 @@ async function requireOwner(req: NextRequest): Promise<string | NextResponse> {
   return uid;
 }
 
-// Setea un permiso de un usuario: body { uid, key, value }. Solo el dueño.
+// Setea un permiso de un usuario: body { uid, key, value, motivo }. Solo el dueño.
 export async function POST(req: NextRequest) {
   const owner = await requireOwner(req);
   if (typeof owner !== "string") return owner;
-  const { uid: targetUid, key, value } = await req.json();
+  const { uid: targetUid, key, value, motivo } = await req.json();
   if (!targetUid || !PERMISOS_VALIDOS.includes(key)) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
-  // Los permisos viven en un doc aparte (config/permisos) read-only para el cliente:
-  // solo se escriben acá, con el Admin SDK. Así el usuario no puede auto-activárselos.
+  // Leer el valor anterior del permiso
+  const oldPermisos = (await adminDb().doc(`users/${targetUid}/config/permisos`).get()).data() as Record<string, boolean> | undefined;
+  const oldValue = oldPermisos?.[key] ?? false;
+
+  // Actualizar el permiso
   await adminDb().doc(`users/${targetUid}/config/permisos`).set(
     { [key]: !!value },
     { merge: true }
   );
+
+  // Guardar en el historial
+  const now = new Date();
+  await adminDb().doc(`users/${targetUid}/config/permisosLog`).set(
+    {
+      historial: FieldValue.arrayUnion({
+        timestamp: now,
+        key,
+        oldValue,
+        newValue: !!value,
+        motivo: motivo ?? "Sin motivo",
+        changedBy: owner,
+      }),
+    },
+    { merge: true }
+  );
+
   const labels: Record<string, string> = { comprobantes: "Imágenes", inversion: "Inversión" };
   const label = labels[key] ?? key;
-  const body = value ? `Se activó ${label} en tu cuenta` : `Se desactivó ${label} en tu cuenta`;
+  const body = value
+    ? `Se activó ${label} en tu cuenta por: ${motivo ?? "Sin motivo"}`
+    : `Se desactivó ${label} en tu cuenta por: ${motivo ?? "Sin motivo"}`;
   await sendPushToUser(targetUid, { title: "FinMoves", body, tag: "permission-change", url: "/settings" }).catch(() => {});
   return NextResponse.json({ ok: true });
 }
