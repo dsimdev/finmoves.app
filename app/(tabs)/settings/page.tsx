@@ -1003,9 +1003,9 @@ export default function ConfigPage() {
                       fontSize: 12,
                       fontWeight: 600,
                       cursor: config.meta.monedaPrincipal === m ? "default" : "pointer",
-                      border: `1px solid ${config.meta.monedaPrincipal === m ? "var(--accent)" : "var(--border)"}`,
-                      background: config.meta.monedaPrincipal === m ? "var(--accent-dim)" : "transparent",
-                      color: config.meta.monedaPrincipal === m ? "var(--accent)" : "var(--muted)",
+                      border: `1px solid ${config.meta.monedaPrincipal === m ? "var(--green)" : "var(--border)"}`,
+                      background: config.meta.monedaPrincipal === m ? "var(--green-dim)" : "transparent",
+                      color: config.meta.monedaPrincipal === m ? "var(--green)" : "var(--muted)",
                       opacity: config.meta.monedaPrincipal === m ? 1 : 0.55,
                     }}
                   >
