@@ -1796,16 +1796,17 @@ export default function ConfigPage() {
       <BottomSheet open={!!selectedAdminUser} onClose={() => setSelectedAdminUid(null)} title={selectedAdminUser?.email ?? ""}>
         {selectedAdminUser && (() => {
           const u = selectedAdminUser;
-          const lastSignIn = u.lastSignIn ? new Date(u.lastSignIn).toLocaleString("es-AR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
           return (
             <>
-              <div className="row"><span style={{ fontSize: 13, color: "var(--muted)" }}>Última conexión</span><span style={{ fontSize: 13 }}>{lastSignIn}</span></div>
               <div className="row">
-                <span style={{ fontSize: 13, color: "var(--muted)" }}>Push</span>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>Última conexión</span>
                 {u.pushOn ? (
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
+                    <span style={{ fontSize: 13, color: "var(--green)" }}>online</span>
+                  </div>
                 ) : (
-                  <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                  <span style={{ fontSize: 13 }}>
                     {u.lastSignIn ? new Date(u.lastSignIn).toLocaleString("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }) : "—"}
                   </span>
                 )}
