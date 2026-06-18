@@ -988,31 +988,29 @@ export default function ConfigPage() {
               );
             })()}
 
-            {/* Moneda principal */}
-            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 13 }}>Moneda</span>
-              <div style={{ display: "flex", gap: 6 }}>
-                {(["ARS", "USD", "EUR"] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => config.meta.monedaPrincipal !== m && setPendingMoneda(m)}
-                    disabled={config.meta.monedaPrincipal === m}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: 8,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: config.meta.monedaPrincipal === m ? "default" : "pointer",
-                      border: `2px solid ${config.meta.monedaPrincipal === m ? "var(--green)" : "var(--border)"}`,
-                      background: config.meta.monedaPrincipal === m ? "var(--green-dim)" : "transparent",
-                      color: config.meta.monedaPrincipal === m ? "var(--green)" : "var(--muted)",
-                      fontWeight: config.meta.monedaPrincipal === m ? 700 : 600,
-                    }}
-                  >
-                    {m} {config.meta.monedaPrincipal === m && "✓"}
-                  </button>
-                ))}
-              </div>
+            {/* Vincular / Desvincular Google */}
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <button onClick={googleLinked ? undefined : handleLinkGoogle} disabled={googleLinked} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, background: "none", border: "none", cursor: googleLinked ? "default" : "pointer", textAlign: "left", padding: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: googleLinked ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${googleLinked ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
+                    <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" />
+                  </svg>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13 }}>{googleLinked ? t.googleLinked : t.googleLink}</div>
+                  {(googleErr || !googleLinked) && (
+                    <div style={{ fontSize: 11, color: googleErr ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{googleErr || t.googleLinkSub}</div>
+                  )}
+                </div>
+              </button>
+              {googleLinked && (
+                <button onClick={() => setConfirmUnlink(true)} style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: "var(--muted)", background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
+                  {t.googleUnlink}
+                </button>
+              )}
             </div>
 
             {/* Sincronización (solo dueño) — la fila abre el historial */}
@@ -1055,29 +1053,36 @@ export default function ConfigPage() {
             </button>
             )}
 
-            {/* Vincular / Desvincular Google */}
-            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-              <button onClick={googleLinked ? undefined : handleLinkGoogle} disabled={googleLinked} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, background: "none", border: "none", cursor: googleLinked ? "default" : "pointer", textAlign: "left", padding: 0 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: googleLinked ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${googleLinked ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
-                    <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" />
-                  </svg>
+            {/* Moneda principal */}
+            <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--green-dim)", border: "1px solid var(--green)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>$</span>
                 </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13 }}>{googleLinked ? t.googleLinked : t.googleLink}</div>
-                  {(googleErr || !googleLinked) && (
-                    <div style={{ fontSize: 11, color: googleErr ? "var(--red)" : "var(--muted)", marginTop: 2 }}>{googleErr || t.googleLinkSub}</div>
-                  )}
-                </div>
-              </button>
-              {googleLinked && (
-                <button onClick={() => setConfirmUnlink(true)} style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: "var(--muted)", background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
-                  {t.googleUnlink}
-                </button>
-              )}
+                <span style={{ fontSize: 13 }}>Moneda</span>
+              </span>
+              <div style={{ display: "flex", gap: 6 }}>
+                {(["ARS", "USD", "EUR"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => monedaPrincipal !== m && setPendingMoneda(m)}
+                    disabled={monedaPrincipal === m}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: monedaPrincipal === m ? "default" : "pointer",
+                      border: `2px solid ${monedaPrincipal === m ? "var(--green)" : "var(--border)"}`,
+                      background: monedaPrincipal === m ? "var(--green-dim)" : "transparent",
+                      color: monedaPrincipal === m ? "var(--green)" : "var(--muted)",
+                      opacity: monedaPrincipal === m ? 1 : 0.6,
+                    }}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Backup */}

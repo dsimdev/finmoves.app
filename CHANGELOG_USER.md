@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.24.1] — 2026-06-17
+
+### Mejoras
+- **Selector de moneda mejorado**: la moneda actual ahora se ve con un icono $ en verde. El botón de la moneda seleccionada se resalta en verde y no se puede hacer clic en él. Orden de secciones en Cuenta reorganizado para mejor flujo.
+
+---
+
 ## [2.24.0] — 2026-06-17
 
 ### Nuevo

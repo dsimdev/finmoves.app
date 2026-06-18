@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.24.1] — 2026-06-17
+
+### Changed
+- **Currency selector styling**: Primary currency now displays with green $ icon badge (matching investment currency style). Selected currency button highlights with green background + border. Button disabled when currency matches current selection.
+- **Settings account section reordering**: Rearranged section order: Profile → Google Linked → Google Sheets → Currency → Backup → Admin (improved UX flow).
+
+---
+
 ## [2.24.0] — 2026-06-17
 
 ### Added
