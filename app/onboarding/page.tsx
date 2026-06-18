@@ -132,9 +132,6 @@ export default function OnboardingPage() {
           }}>{m}</button>
         ))}
       </div>
-      <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 10, background: "var(--surface-alt)", border: "1px solid var(--border)", maxWidth: 340, width: "100%" }}>
-        <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>{t.obCurrencyWarning}</div>
-      </div>
     </Screen>,
     // 4 — Período
     <Screen key="p" emoji="📆" title={t.obPeriodTitle} body={t.obPeriodBody} />,
