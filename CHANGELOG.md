@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.5] — 2026-06-18
+
+### Fixed
+- **Move bolsas independientes**: `moveDisponible` and `moveAhorros` are now tracked as separate fields in `PeriodoResumen` instead of a single net `moveTotal`. This fixes auto-ahorro (Move/aAhorro) being mixed into the retiros KPI and move count.
+- **Color distinction**: Move/aAhorro → orange dot/amount; Move/aDisponible → teal (`--teal: #26c6da`). New CSS variable added.
+- **Label**: "Retiros" KPI renamed to "Move disponible" and colored teal.
+- **ahorrosAcum**: `PuntoTendencia.ahorros` now includes `moveAhorros` so projections and `ritmoAhorroActual` correctly account for moves to savings.
+- **Sub-label**: removed "desde ahorros" from Move disponible KPI.
+
+---
+
 ## [2.25.4] — 2026-06-18
 
 ### Added

@@ -31,7 +31,7 @@ export const es = {
   salary: "Sueldo",
   spent: "Gastado",
   savings: "Ahorros",
-  withdrawals: "Retiros",
+  withdrawals: "Move disponible",
   fromSavings: "desde ahorros",
   period: "Período",
   category: "Categoría",

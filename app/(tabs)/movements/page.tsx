@@ -11,11 +11,11 @@ import { MovementModal } from "@/components/movements/MovementModal";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 
-function TipoDot({ tipo, categoria }: { tipo: TipoMovimiento; categoria: string }) {
+function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; categoria: string; direccionMove?: string }) {
   let c = "var(--muted)";
   if (tipo === "CompraUSD" || tipo === "CompraEUR" || tipo === "VentaUSD" || tipo === "VentaEUR") c = "var(--yellow)";
   else if (tipo === "Gasto") c = "var(--red)";
-  else if (tipo === "Move") c = "var(--orange)";
+  else if (tipo === "Move") c = direccionMove === "aAhorro" ? "var(--orange)" : "var(--teal)";
   else if (tipo === "Ingreso") {
     if (categoria === "Ahorros" || categoria === "RESTO") c = "var(--blue)";
     else c = "var(--green)";
@@ -171,7 +171,7 @@ export default function MovimientosPage() {
                 let nGasto = 0, nMove = 0, nUsd = 0, nIngreso = 0;
                 for (const m of movs) {
                   if (m.tipo === "Gasto") nGasto++;
-                  else if (m.tipo === "Move") nMove++;
+                  else if (m.tipo === "Move" && m.descripcion !== "Auto-ahorro") nMove++;
                   else if (m.tipo === "Ingreso") nIngreso++;
                   else nUsd++; // CompraUSD/GastoUSD/CompraEUR/GastoEUR
                 }
@@ -210,7 +210,7 @@ export default function MovimientosPage() {
                           border: "none", borderBottom: i < movs.length - 1 ? "1px solid var(--faint)" : "none",
                           WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none",
                         }}>
-                          <TipoDot tipo={m.tipo} categoria={m.categoria} />
+                          <TipoDot tipo={m.tipo} categoria={m.categoria} direccionMove={m.direccionMove} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                               {m.descripcion || m.categoria}
@@ -219,7 +219,7 @@ export default function MovimientosPage() {
                               {m.categoria}{m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}
                             </div>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? "var(--orange)" : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--orange)" : "var(--teal)") : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
                             {negativo ? "-" : "+"}{money(m.monto)}
                           </span>
                         </button>

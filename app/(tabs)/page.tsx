@@ -107,7 +107,7 @@ export default function Dashboard() {
             <MiniStat basis="1 1 45%" label={t.salary} value={money(p.sueldo)} color="var(--green)" />
             <MiniStat basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)" />
             <MiniStat basis="1 1 45%" label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
-            <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} sub={t.fromSavings} color="var(--yellow)" />
+            <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} color="var(--teal)" />
           </div>
 
           {/* Atajos */}

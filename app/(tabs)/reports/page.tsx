@@ -131,7 +131,8 @@ export default function ReportesPage() {
     ahorros: periodosActivos.reduce((sum, p) => sum + p.ahorros, 0),
     resto: periodosActivos.reduce((sum, p) => sum + p.resto, 0),
     disponible: periodosActivos.reduce((sum, p) => sum + p.disponible, 0),
-    moveTotal: periodosActivos.reduce((sum, p) => sum + p.moveTotal, 0),
+    moveDisponible: periodosActivos.reduce((sum, p) => sum + p.moveDisponible, 0),
+    moveAhorros: periodosActivos.reduce((sum, p) => sum + p.moveAhorros, 0),
     pct: periodosActivos.length > 0 ? Math.round((periodosActivos.reduce((sum, p) => sum + p.gastado, 0) / periodosActivos.reduce((sum, p) => sum + p.total, 0)) * 100) : 0,
     movimientos: periodosActivos.flatMap((p) => p.movimientos),
   } : undefined;
@@ -191,14 +192,14 @@ export default function ReportesPage() {
         .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
     : [];
 
-  const totalIngresos = periodo ? periodo.sueldo + periodo.moveTotal : 0;
+  const totalIngresos = periodo ? periodo.sueldo + periodo.moveDisponible : 0;
   const totalAhorradoDirecto = movIngresosAhorros.reduce((s, m) => s + m.monto, 0);
 
   const ingXCat: { cat: string; monto: number; pct: number }[] = (() => {
     if (!periodo) return [];
     const catMap = new Map<string, number>();
     if (periodo.sueldo > 0) catMap.set("Sueldo", periodo.sueldo);
-    if (periodo.moveTotal > 0) catMap.set("Retiros", periodo.moveTotal);
+    if (periodo.moveDisponible > 0) catMap.set("Move disponible", periodo.moveDisponible);
     for (const m of periodo.movimientos) {
       if (m.tipo === "Ingreso" && m.categoria !== "RESTO" && m.categoria !== "Sueldo") {
         catMap.set(m.categoria, (catMap.get(m.categoria) ?? 0) + m.monto);
@@ -211,7 +212,7 @@ export default function ReportesPage() {
       .sort((a, b) => b.monto - a.monto);
   })();
 
-  const ingresosAnteriores = anterior ? anterior.sueldo + anterior.moveTotal : 0;
+  const ingresosAnteriores = anterior ? anterior.sueldo + anterior.moveDisponible : 0;
   const deltaIngresos = anterior && ingresosAnteriores > 0
     ? Math.round(((totalIngresos - ingresosAnteriores) / ingresosAnteriores) * 100)
     : null;
@@ -652,8 +653,8 @@ export default function ReportesPage() {
                 ) : (
                   <MiniStat center basis="1 1 45%" label={t.salary} value={oculto ? "••" : abbr(periodo.sueldo)} color="var(--green)" />
                 )}
-                {periodo.moveTotal > 0 && <MiniStat center basis="1 1 45%" label={t.withdrawals} value={oculto ? "••" : abbr(periodo.moveTotal)} color="var(--yellow)"
-                  onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveTotal), explain: `${t.kpiWithdrawalsInfo} (${t.fromSavings})`, color: "var(--yellow)" })} />}
+                {periodo.moveDisponible > 0 && <MiniStat center basis="1 1 45%" label={t.withdrawals} value={oculto ? "••" : abbr(periodo.moveDisponible)} color="var(--teal)"
+                  onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveDisponible), explain: t.kpiWithdrawalsInfo, color: "var(--teal)" })} />}
               </div>
 
               {/* Mini-stats: Total ingresado · Ahorros acum. */}
@@ -835,11 +836,11 @@ export default function ReportesPage() {
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{t.incomeEvolution}</div>
                   <VBars
-                    max={Math.max(...evolucionIngresos.map((p) => p.sueldo + p.moveTotal), 1)}
+                    max={Math.max(...evolucionIngresos.map((p) => p.sueldo + p.moveDisponible), 1)}
                     oculto={oculto}
                     data={evolucionIngresos.map((p) => ({
                       label: shortPer(p.periodoId),
-                      value: p.sueldo + p.moveTotal,
+                      value: p.sueldo + p.moveDisponible,
                       color: "var(--green)",
                       hi: activos.includes(p.periodoId),
                     }))}

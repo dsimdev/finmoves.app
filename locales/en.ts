@@ -33,7 +33,7 @@ export const en: AppLocale = {
   salary: "Salary",
   spent: "Spent",
   savings: "Savings",
-  withdrawals: "Withdrawals",
+  withdrawals: "Move disponible",
   fromSavings: "from savings",
   period: "Period",
   category: "Category",

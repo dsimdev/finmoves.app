@@ -201,14 +201,15 @@ export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: strin
   }
   let acum = 0;
   return cron.map((p, i) => {
-    if (i >= startIdx) acum = Math.max(0, acum + p.ahorros - p.moveTotal);
+    const ahorrosDelPeriodo = p.ahorros + p.moveAhorros;
+    if (i >= startIdx) acum = Math.max(0, acum + ahorrosDelPeriodo - p.moveDisponible);
     return {
       periodoId: p.periodoId,
       sueldo: p.sueldo,
       gastado: p.gastado,
       disponible: p.disponible,
       total: p.total,
-      ahorros: p.ahorros,
+      ahorros: ahorrosDelPeriodo,
       ahorrosAcum: acum,
     };
   });

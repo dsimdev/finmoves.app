@@ -28,7 +28,7 @@ export interface Movimiento {
   cotizacion?: number;
   origenAhorro?: string;
   // Dirección del Move. Ausente o "aDisponible" = clásico (Ahorros → Disponible);
-  // "aAhorro" = inverso (Disponible → Ahorros). Netea contra el mismo moveTotal.
+  // "aAhorro" = inverso (Disponible → Ahorros).
   direccionMove?: "aDisponible" | "aAhorro";
   // Comprobante adjunto (imagen en Cloud Storage). url para mostrar, path para borrar.
   comprobanteUrl?: string;

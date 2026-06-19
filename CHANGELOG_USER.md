@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.25.5] — 2026-06-18
+
+### Mejoras
+- **Moves diferenciados**: los moves a ahorros (naranja) y los moves a disponible (teal) ahora tienen colores distintos y se cuentan por separado. Ya no se mezclan ni se netan entre sí.
+- **KPI "Move disponible"**: antes se llamaba "Retiros" y podía verse afectado por el auto-ahorro. Ahora muestra solo los retiros manuales de ahorros hacia disponible.
+- **Ahorros acumulados**: el cálculo ahora incluye los moves a ahorros correctamente, mejorando la proyección y el ritmo de ahorro.
+
+---
+
 ## [2.25.4] — 2026-06-18
 
 ### Nuevo
