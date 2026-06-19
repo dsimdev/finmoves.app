@@ -7,6 +7,7 @@ import { TermsContent } from "@/components/legal/TermsContent";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useTheme } from "@/hooks/useTheme";
+import { IOSInstallBanner } from "@/components/pwa/IOSInstallBanner";
 
 type Modal = "privacy" | "terms" | null;
 type Slide = { title: string; desc: string; img: string };
@@ -304,6 +305,8 @@ export function HomeClient() {
           <div style={{ marginTop: 8 }}>© {new Date().getFullYear()} FinMoves</div>
         </footer>
       </main>
+
+      <IOSInstallBanner />
 
       {/* Legal modal */}
       {modal && (
