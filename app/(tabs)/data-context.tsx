@@ -10,10 +10,11 @@ import type { Movimiento, ConfigUsuario } from "@/types";
 
 interface DataCtx {
   movimientos: Movimiento[];
-  loading: boolean;        // carga de movimientos
-  refresh: () => void;     // re-fetch de movimientos (tras escribir)
-  updateMovimiento: (id: string, patch: Partial<Movimiento>) => void; // patch local (optimista)
-  removeMovimiento: (id: string) => void;                              // quitar local (optimista)
+  loading: boolean;
+  refresh: () => void;
+  updateMovimiento: (id: string, patch: Partial<Movimiento>) => void;
+  removeMovimiento: (id: string) => void;
+  prependMovimiento: (movs: Movimiento[]) => void;
   config: ConfigUsuario | null;
   configLoading: boolean;
   refreshConfig: () => void;
@@ -27,7 +28,7 @@ const Ctx = createContext<DataCtx | null>(null);
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const router = useRouter();
-  const { movimientos, loading, refresh, updateLocal, removeLocal } = useAllMovimientos(user?.uid);
+  const { movimientos, loading, refresh, updateLocal, removeLocal, prependLocal } = useAllMovimientos(user?.uid);
   const { config, loading: configLoading, refresh: refreshConfig } = useConfig(user?.uid);
   const hydratePrefs = useAppPrefs((s) => s.hydrate);
 
@@ -53,7 +54,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [config, router]);
 
   return (
-    <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, config, configLoading, refreshConfig }}>
+    <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig }}>
       {children}
     </Ctx.Provider>
   );

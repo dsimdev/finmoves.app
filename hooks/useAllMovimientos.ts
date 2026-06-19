@@ -62,27 +62,23 @@ export function useAllMovimientos(userId: string | undefined) {
     });
   }, [userId]);
 
+  // Inserta movimientos al inicio (más recientes primero) y actualiza cache.
+  // El count del cache queda igual al servidor, evitando un fullFetch en la próxima sesión.
+  const prependLocal = useCallback((newMovs: Movimiento[]) => {
+    setMovimientos((prev) => {
+      const next = [...newMovs, ...prev];
+      if (userId) saveCache(userId, next);
+      return next;
+    });
+  }, [userId]);
+
   useEffect(() => {
     if (!userId) return;
 
-    const userChanged = prevUserId.current !== userId;
     prevUserId.current = userId;
 
-    // version > 0 y mismo usuario = refresh() explícito tras agregar un movimiento
-    const isExplicitRefresh = version > 0 && !userChanged;
-
     const fetch = async () => {
-      if (isExplicitRefresh) {
-        // Después de agregar: re-fetch completo para traer el doc con ID de Firestore
-        setLoading(true);
-        const data = await fullFetch(userId);
-        setMovimientos(data);
-        saveCache(userId, data);
-        setLoading(false);
-        return;
-      }
-
-      // Carga inicial (o cambio de usuario): mostrar cache mientras verificamos
+      // Mostrar cache mientras verificamos conteo en servidor
       const cached = loadCache(userId);
       if (cached) {
         setMovimientos(cached.movimientos);
@@ -91,18 +87,17 @@ export function useAllMovimientos(userId: string | undefined) {
         setLoading(true);
       }
 
-      // 1 lectura de agregación para comparar el conteo
+      // 1 lectura de agregación (no cobra como lectura de doc)
       const ref = collection(db, `users/${userId}/movimientos`);
       const countSnap = await getCountFromServer(query(ref));
       const serverCount = countSnap.data().count;
 
       if (cached && serverCount === cached.count) {
-        // Cache válido — listo
         setLoading(false);
         return;
       }
 
-      // Conteo distinto (alta o baja desde otra sesión/dispositivo): re-fetch completo
+      // Conteo distinto (otra sesión/dispositivo modificó datos): re-fetch completo
       const data = await fullFetch(userId);
       setMovimientos(data);
       saveCache(userId, data);
@@ -115,5 +110,5 @@ export function useAllMovimientos(userId: string | undefined) {
     });
   }, [userId, version]);
 
-  return { movimientos, loading, refresh, updateLocal, removeLocal };
+  return { movimientos, loading, refresh, updateLocal, removeLocal, prependLocal };
 }

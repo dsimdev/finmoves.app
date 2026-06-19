@@ -25,7 +25,7 @@ function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; cat
 
 export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
-  const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento } = useData();
+  const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
   const t = useT();
 
   const periodos = agruparPorPeriodo(movimientos);
@@ -275,6 +275,7 @@ export default function MovimientosPage() {
       initialView={modalState?.view}
       onClose={() => setModalState(null)}
       onChanged={refresh}
+      onCreated={prependMovimiento}
       onUpdated={updateMovimiento}
       onDeleted={removeMovimiento}
     />

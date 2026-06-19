@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.8] — 2026-06-19
+
+### Performance
+- **Firestore reads ~99% reduction**: eliminated blind full-fetch after every movement creation. `useAllMovimientos` now exposes `prependLocal(movs[])` — on create, `MovementModal` captures the Firestore-generated IDs from `addDoc` responses and inserts the new documents directly into local state + localStorage cache. No round-trip to Firestore needed.
+- **`useAllMovimientos` simplified**: removed `isExplicitRefresh` fast path that bypassed the count check; all refreshes now go through `getCountFromServer` — only fetches the full collection when count actually differs (e.g., changes from another device).
+- **`useConfig` cache**: config (meta + permisos docs) is now cached in localStorage with a 5-minute TTL. Subsequent page loads within the TTL window skip the 2-doc Firestore read entirely.
+- **`data-context`**: `prependMovimiento` added to context and exposed to all pages.
+- Multi-movement creates (main + RESTO + auto-ahorro) all handled optimistically in a single `prependLocal` call.
+
+---
+
 ## [2.25.7] — 2026-06-18
 
 ### Fixed
