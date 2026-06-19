@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.4] — 2026-06-18
+
+### Added
+- **iOS install banner**: bottom sheet that appears in Safari (iPhone, not installed) after 1.8s. Shows two-step guide with icons — share button + add to home screen. Animated arrow pointing to Safari toolbar. Dismissible; persists via localStorage.
+
+---
+
 ## [2.25.3] — 2026-06-18
 
 ### Added

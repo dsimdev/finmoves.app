@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.25.4] — 2026-06-18
+
+### Nuevo
+- **Instalar en iPhone**: la app te guía con dos pasos claros para agregarla a la pantalla de inicio desde Safari.
+
+---
+
 ## [2.25.3] — 2026-06-18
 
 ### Mejoras
