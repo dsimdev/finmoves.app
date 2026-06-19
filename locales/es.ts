@@ -54,6 +54,8 @@ export const es = {
     Gasto: "Gasto",
     Ingreso: "Ingreso",
     Move: "Move",
+    MoveAhorro: "Move ahorros",
+    MoveDisponible: "Move disponible",
     CompraUSD: "CompraUSD",
     GastoUSD: "GastoUSD",
     CompraEUR: "CompraEUR",

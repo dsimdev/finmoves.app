@@ -320,11 +320,16 @@ export default function ReportesPage() {
     if (!periodo) return null;
     const movs = periodo.movimientos;
     const tipoColor: Record<string, string> = {
-      Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--orange)",
+      Gasto: "var(--red)", Ingreso: "var(--green)",
+      Move: "var(--orange)", MoveAhorro: "var(--orange)", MoveDisponible: "#26c6da",
       CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
       GastoUSD: "var(--red)", GastoEUR: "var(--red)",
       VentaUSD: "var(--red)", VentaEUR: "var(--red)",
     };
+    const vTipo = (m: typeof movs[0]) =>
+      m.tipo === "Move" ? (m.direccionMove === "aAhorro" ? "MoveAhorro" : "MoveDisponible") : m.tipo;
+    const vCat = (m: typeof movs[0]) =>
+      m.categoria === "Move" ? (m.direccionMove === "aAhorro" ? "Move ahorros" : "Move disponible") : m.categoria;
     const domColor = (tipoMap: Map<string, number>) => {
       const dom = [...tipoMap.entries()].reduce((a, b) => b[1] > a[1] ? b : a, ["", 0] as [string, number])[0];
       return tipoColor[dom] ?? "var(--accent)";
@@ -335,24 +340,25 @@ export default function ReportesPage() {
       ? [...porFechaMap.entries()].reduce((a, b) => b[1] > a[1] ? b : a)
       : ["—", 0];
     const porTipoMap = new Map<string, number>();
-    for (const m of movs) porTipoMap.set(m.tipo, (porTipoMap.get(m.tipo) ?? 0) + 1);
+    for (const m of movs) { const k = vTipo(m); porTipoMap.set(k, (porTipoMap.get(k) ?? 0) + 1); }
     // Per-group type tracking
     const catTipo = new Map<string, Map<string, number>>();
     const descTipo = new Map<string, Map<string, number>>();
     const medioTipo = new Map<string, Map<string, number>>();
     for (const m of movs) {
-      if (m.categoria && m.categoria !== "RESTO") {
-        if (!catTipo.has(m.categoria)) catTipo.set(m.categoria, new Map());
-        const t = catTipo.get(m.categoria)!; t.set(m.tipo, (t.get(m.tipo) ?? 0) + 1);
+      const cat = vCat(m);
+      if (cat && cat !== "RESTO") {
+        if (!catTipo.has(cat)) catTipo.set(cat, new Map());
+        const t = catTipo.get(cat)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
       }
       const dk = m.descripcion || m.categoria;
       if (dk && dk !== "RESTO") {
         if (!descTipo.has(dk)) descTipo.set(dk, new Map());
-        const t = descTipo.get(dk)!; t.set(m.tipo, (t.get(m.tipo) ?? 0) + 1);
+        const t = descTipo.get(dk)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
       }
       if (m.medioPago) {
         if (!medioTipo.has(m.medioPago)) medioTipo.set(m.medioPago, new Map());
-        const t = medioTipo.get(m.medioPago)!; t.set(m.tipo, (t.get(m.tipo) ?? 0) + 1);
+        const t = medioTipo.get(m.medioPago)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
       }
     }
     const porCat = [...catTipo.entries()].map(([cat, t]) => ({ cat, count: [...t.values()].reduce((a,b)=>a+b,0), color: domColor(t) })).sort((a,b)=>b.count-a.count);
@@ -653,8 +659,8 @@ export default function ReportesPage() {
                 ) : (
                   <MiniStat center basis="1 1 45%" label={t.salary} value={oculto ? "••" : abbr(periodo.sueldo)} color="var(--green)" />
                 )}
-                {periodo.moveDisponible > 0 && <MiniStat center basis="1 1 45%" label={t.withdrawals} value={oculto ? "••" : abbr(periodo.moveDisponible)} color="var(--teal)"
-                  onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveDisponible), explain: t.kpiWithdrawalsInfo, color: "var(--teal)" })} />}
+                {periodo.moveDisponible > 0 && <MiniStat center basis="1 1 45%" label={t.withdrawals} value={oculto ? "••" : abbr(periodo.moveDisponible)} color="#26c6da"
+                  onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveDisponible), explain: t.kpiWithdrawalsInfo, color: "#26c6da" })} />}
               </div>
 
               {/* Mini-stats: Total ingresado · Ahorros acum. */}
@@ -855,7 +861,8 @@ export default function ReportesPage() {
             <>
               {reportOn("movimientos_kpis") && (() => {
                 const tipoColor: Record<string, string> = {
-                  Gasto: "var(--red)", Ingreso: "var(--green)", Move: "var(--orange)",
+                  Gasto: "var(--red)", Ingreso: "var(--green)",
+                  Move: "var(--orange)", MoveAhorro: "var(--orange)", MoveDisponible: "#26c6da",
                   CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)", GastoUSD: "var(--red)", GastoEUR: "var(--red)", VentaUSD: "var(--red)", VentaEUR: "var(--red)",
                 };
                 const promDia = movCounts.diasActivos > 0 ? (movCounts.total / movCounts.diasActivos).toFixed(1) : "0";

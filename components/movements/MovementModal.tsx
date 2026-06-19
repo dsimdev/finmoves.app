@@ -467,14 +467,24 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             <div>
               <div className="label">{t.type}</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {(sinPeriodos ? TIPOS.filter((x) => x.t === "Ingreso") : TIPOS).map(({ t: tt, label, color }) => (
-                  <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); if (sinPeriodos) setCategoria("Sueldo"); }}
-                    className="pill" style={{
-                      borderColor: tipo === tt ? color : "var(--border)",
-                      background: tipo === tt ? color + "22" : "transparent",
-                      color: tipo === tt ? color : "var(--muted)",
-                    }}>{label}</button>
-                ))}
+                {(sinPeriodos ? TIPOS.filter((x) => x.t === "Ingreso") : TIPOS).map(({ t: tt, label, color }) => {
+                  const sel = tipo === tt;
+                  const isMove = tt === "Move";
+                  return (
+                    <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); if (sinPeriodos) setCategoria("Sueldo"); }}
+                      className="pill" style={sel && isMove ? {
+                        border: "1px solid transparent",
+                        backgroundImage: "linear-gradient(#0e1524, #0e1524), linear-gradient(90deg, #26c6da, var(--orange))",
+                        backgroundOrigin: "padding-box, border-box",
+                        backgroundClip: "padding-box, border-box",
+                        color: "var(--text)",
+                      } : {
+                        borderColor: sel ? color : "var(--border)",
+                        background: sel ? color + "22" : "transparent",
+                        color: sel ? color : "var(--muted)",
+                      }}>{label}</button>
+                  );
+                })}
               </div>
             </div>
             {tipo === "Gasto" && (() => {
@@ -526,16 +536,24 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           {esMove && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                {([["aDisponible", t.moveDirToDisponible], ["aAhorro", t.moveDirToAhorro]] as const).map(([d, label]) => (
-                  <button key={d} type="button" onClick={() => setMoveDir(d)} className="pill" style={{
-                    flex: 1,
-                    borderColor: moveDir === d ? "var(--yellow)" : "var(--border)",
-                    background: moveDir === d ? "var(--yellow-dim)" : "transparent",
-                    color: moveDir === d ? "var(--yellow)" : "var(--muted)",
-                  }}>{label}</button>
-                ))}
+                {([["aDisponible", t.moveDirToDisponible], ["aAhorro", t.moveDirToAhorro]] as const).map(([d, label]) => {
+                  const dc = d === "aAhorro" ? "var(--orange)" : "#26c6da";
+                  const dd = d === "aAhorro" ? "var(--orange-dim)" : "#26c6da20";
+                  return (
+                    <button key={d} type="button" onClick={() => setMoveDir(d)} className="pill" style={{
+                      flex: 1,
+                      borderColor: moveDir === d ? dc : "var(--border)",
+                      background: moveDir === d ? dd : "transparent",
+                      color: moveDir === d ? dc : "var(--muted)",
+                    }}>{label}</button>
+                  );
+                })}
               </div>
-              <div style={{ background: "var(--yellow-dim)", border: "1px solid var(--yellow)44", borderRadius: "var(--radius-sm)", padding: 12, fontSize: 12, color: "var(--yellow)" }}>
+              {(() => {
+                const ac = moveDir === "aAhorro" ? "var(--orange)" : "#26c6da";
+                const ad = moveDir === "aAhorro" ? "var(--orange-dim)" : "#26c6da20";
+                return (
+              <div style={{ background: ad, border: `1px solid ${ac}44`, borderRadius: "var(--radius-sm)", padding: 12, fontSize: 12, color: ac }}>
                 {moveDir === "aAhorro" ? t.moveToSavings : t.moveFromSavings}
                 {periodoActual && (
                   <div style={{ color: "var(--muted)", marginTop: 4 }}>
@@ -543,6 +561,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                   </div>
                 )}
               </div>
+                );
+              })()}
             </div>
           )}
 

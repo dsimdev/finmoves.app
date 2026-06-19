@@ -4,6 +4,15 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.6] — 2026-06-18
+
+### Changed
+- **Reports / Movimientos**: Move split into `MoveAhorro` (orange) and `MoveDisponible` (teal) in bar chart, legend, por categoría, and por descripción — no longer grouped as a single "Move" bucket.
+- **Movement modal**: Move type chip shows teal→orange gradient border when selected. "A Disponible" button uses teal; "A Ahorros" uses orange. Info box adapts color to active direction.
+- **Colors**: replaced all `var(--teal)` references with hardcoded `#26c6da` in JS (CSS variable remains in globals.css).
+
+---
+
 ## [2.25.5] — 2026-06-18
 
 ### Fixed

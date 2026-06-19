@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.25.6] — 2026-06-18
+
+### Mejoras
+- **Reportes / Movimientos**: los moves a ahorros (naranja) y a disponible (teal) ahora aparecen separados en la barra, la leyenda y las listas de categoría y descripción.
+- **Carga de Move**: el chip "Move" tiene borde degradado teal→naranja. Los botones "A Disponible" y "A Ahorros" muestran cada uno su color propio, y el recuadro de info se adapta.
+
+---
+
 ## [2.25.5] — 2026-06-18
 
 ### Mejoras

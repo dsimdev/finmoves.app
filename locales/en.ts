@@ -56,6 +56,8 @@ export const en: AppLocale = {
     Gasto: "Expense",
     Ingreso: "Income",
     Move: "Transfer",
+    MoveAhorro: "Move savings",
+    MoveDisponible: "Move disponible",
     CompraUSD: "Buy USD",
     GastoUSD: "Spend USD",
     CompraEUR: "Buy EUR",
