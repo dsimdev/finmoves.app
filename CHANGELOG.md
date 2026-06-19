@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.1] — 2026-06-18
+
+### Performance
+- **Cron notifications**: replaced single unbounded `movimientos` collection read (all docs) with three targeted queries — `checkCargaOlvidada` reads 1 doc, `checkSueldo` reads 50, `checkMeta` filters by investment tipo only. Eliminated duplicate `config/push` read per user per run.
+- **Client movimientos cache**: `useAllMovimientos` now stores movements in `localStorage`. On load, shows cached data instantly and runs a single Firestore aggregation count query; only fetches all documents when the count differs (add/delete from another session). Edit and delete mutations update the cache in-place (0 Firestore reads).
+
+---
+
 ## [2.25.0] — 2026-06-17
 
 ### Added
