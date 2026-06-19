@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.3] — 2026-06-18
+
+### Added
+- **PWA splash screens (iOS)**: added `apple-touch-startup-image` for 6 modern iPhone sizes (SE/8, X/XS/11 Pro, 12/13/14, 14 Pro/15/16, Pro Max variants). Dark background with centered FM mark.
+- **Maskable icon 192px**: added `icon-maskable-192.png` to manifest alongside the existing 512px maskable. `build-logo.js` updated accordingly.
+
+---
+
 ## [2.25.2] — 2026-06-18
 
 ### Fixed

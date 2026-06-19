@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.25.3] — 2026-06-18
+
+### Mejoras
+- **Splash en iOS**: al abrir la app instalada en iPhone ahora aparece una pantalla de carga con el logo de FinMoves en lugar de una pantalla en blanco.
+
+---
+
 ## [2.25.2] — 2026-06-18
 
 ### Corrección
