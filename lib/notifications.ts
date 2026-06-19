@@ -56,10 +56,6 @@ export async function notifyAllUsers(ctx: GlobalCtx): Promise<void> {
 }
 
 async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
-  // Sin suscripción → no hacemos nada (ni leemos movimientos).
-  const pushSnap = await adminDb().doc(`users/${uid}/config/push`).get();
-  if (!pushSnap.exists || !pushSnap.data()?.subscription) return;
-
   const notifyRef = adminDb().doc(`users/${uid}/config/notifyMeta`);
   const notify = (await notifyRef.get()).data() ?? {};
   const updates: Record<string, unknown> = {};
@@ -81,18 +77,12 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
     }
   }
 
-  // Para meta y sueldo necesitamos los movimientos + config del usuario.
+  // Cada check hace su propia query quirúrgica — sin leer todos los movimientos.
   const config = (await adminDb().doc(`users/${uid}/config/meta`).get()).data() as ConfigUsuario | undefined;
   if (config) {
-    const snap = await adminDb().collection(`users/${uid}/movimientos`).get();
-    const movimientos = snap.docs.map((d) => {
-      const data = d.data();
-      return { ...data, id: d.id, timestampCarga: (data.timestampCarga as Timestamp).toDate() } as Movimiento;
-    });
-
-    await checkMeta(uid, movimientos, config, notify, updates);
-    await checkSueldo(uid, movimientos, notify, updates);
-    await checkCargaOlvidada(uid, movimientos, notify, updates);
+    await checkMeta(uid, config, notify, updates);
+    await checkSueldo(uid, notify, updates);
+    await checkCargaOlvidada(uid, notify, updates);
   }
 
   // Recordatorios puntuales del usuario (colección propia, independiente de config).
@@ -103,9 +93,14 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
 
 // Carga olvidada: si pasaron >= N días desde el último movimiento cargado, avisa
 // una sola vez por ese hueco (se re-arma cuando el usuario vuelve a cargar algo).
-async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
-  if (movs.length === 0) return;
-  const ultimo = movs.reduce((mx, m) => (m.timestampCarga > mx ? m.timestampCarga : mx), movs[0].timestampCarga);
+async function checkCargaOlvidada(uid: string, notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  const snap = await adminDb()
+    .collection(`users/${uid}/movimientos`)
+    .orderBy("timestampCarga", "desc")
+    .limit(1)
+    .get();
+  if (snap.empty) return;
+  const ultimo = (snap.docs[0].data().timestampCarga as Timestamp).toDate();
   const dias = Math.floor((Date.now() - ultimo.getTime()) / 86_400_000);
   if (dias < CARGA_OLVIDADA_DIAS) return;
   const key = ultimo.getTime();
@@ -144,7 +139,7 @@ async function checkRecordatorios(uid: string) {
 }
 
 // Meta de ahorro: avisa al cruzar 50/75/100% (una vez cada hito).
-async function checkMeta(uid: string, movs: Movimiento[], config: ConfigUsuario, notify: Record<string, unknown>, updates: Record<string, unknown>) {
+async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<string, unknown>, updates: Record<string, unknown>) {
   const metaMonto = config.meta?.metaMonto;
   if (!metaMonto || metaMonto <= 0) return;
 
@@ -155,6 +150,14 @@ async function checkMeta(uid: string, movs: Movimiento[], config: ConfigUsuario,
   const gasto = moneda === "USD" ? "GastoUSD" : "GastoEUR";
   const venta = moneda === "USD" ? "VentaUSD" : "VentaEUR";
   let total = moneda === "USD" ? (config.meta?.saldoUSD ?? 0) : (config.meta?.saldoEUR ?? 0);
+
+  // Solo leer movimientos de inversión — no toda la colección.
+  const snap = await adminDb()
+    .collection(`users/${uid}/movimientos`)
+    .where("tipo", "in", [compra, gasto, venta])
+    .get();
+  const movs = snap.docs.map((d) => ({ ...d.data(), id: d.id } as Movimiento));
+
   for (const m of movs) {
     if (m.tipo === compra && m.cantidadUSD) total += m.cantidadUSD;
     else if ((m.tipo === gasto || m.tipo === venta) && m.cantidadUSD) total -= m.cantidadUSD;
@@ -174,7 +177,17 @@ async function checkMeta(uid: string, movs: Movimiento[], config: ConfigUsuario,
 }
 
 // Recordatorio de sueldo: si pasó más de ~1 mes desde el último período abierto.
-async function checkSueldo(uid: string, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
+async function checkSueldo(uid: string, notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  // 50 movimientos recientes alcanzan para detectar el período más nuevo.
+  const snap = await adminDb()
+    .collection(`users/${uid}/movimientos`)
+    .orderBy("timestampCarga", "desc")
+    .limit(50)
+    .get();
+  const movs = snap.docs.map((d) => {
+    const data = d.data();
+    return { ...data, id: d.id, timestampCarga: (data.timestampCarga as Timestamp).toDate() } as Movimiento;
+  });
   const periodos = agruparPorPeriodo(movs);
   if (periodos.length === 0) return;
   const ultimo = periodos[0].periodoId;
