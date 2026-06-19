@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.7] — 2026-06-18
+
+### Fixed
+- Include missing logo assets: updated `logo5-cropped.png`, added `logo-fm-1024.png`.
+
+---
+
 ## [2.25.6] — 2026-06-18
 
 ### Changed
