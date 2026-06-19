@@ -341,11 +341,12 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           (!autoAhorroMedios?.length || autoAhorroMedios.includes(medioPago)) &&
           !autoAhorroOmitir.some((d) => d.toLowerCase() === descripcion.trim().toLowerCase())) {
         await crearMovimiento(user.uid, {
-          timestampCarga: new Date(), fecha, tipo: "Ingreso",
-          categoria: "Ahorros", descripcion: "Auto-ahorro",
+          timestampCarga: new Date(), fecha, tipo: "Move",
+          categoria: "Move", descripcion: "Auto-ahorro",
           monto: config.meta.autoAhorro.monto,
           medioPago: "—", observaciones: "por gasto",
           periodoId: periodoIdFinal, userId: user.uid,
+          direccionMove: "aAhorro",
         });
       }
       resetAdd(); onChanged(); onClose();
