@@ -39,15 +39,17 @@ interface MovementModalProps {
   /** Solo lectura (detalle desde el historial de Inversión): muestra el detalle sin editar. */
   readOnly?: boolean;
   onClose: () => void;
-  /** Avisar al padre para que refresque sus datos tras alta/edición/borrado. */
+  /** Fallback para casos sin handler específico. */
   onChanged: () => void;
-  /** Actualización optimista (sin re-leer la colección) al editar/borrar. */
+  /** Alta optimista: recibe los movimientos creados con su ID definitivo. */
+  onCreated?: (movs: Movimiento[]) => void;
+  /** Actualización optimista al editar/borrar. */
   onUpdated?: (id: string, patch: Partial<Movimiento>) => void;
   onDeleted?: (id: string) => void;
 }
 
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
-export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged, onUpdated, onDeleted }: MovementModalProps) {
+export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
   const { user } = useAuth();
   const { cotizacion } = useCotizacion();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
@@ -311,8 +313,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       if (!periodoIdFinal) throw new Error(t.errNoActivePeriod);
       let comprobante: { url: string; path: string } | null = null;
       if (canComprobante && comprobanteFile) comprobante = await uploadComprobante(user.uid, comprobanteFile);
-      await crearMovimiento(user.uid, {
-        timestampCarga: new Date(), fecha, tipo,
+      const now = new Date();
+      const created: Movimiento[] = [];
+
+      const mainData: Omit<Movimiento, "id"> = {
+        timestampCarga: now, fecha, tipo,
         categoria: esMove ? "Move" : esUSD ? tipo : categoria,
         descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esVentaFX ? `Venta ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
         monto: montoFinal,
@@ -323,33 +328,41 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
         ...(esCompraOVenta ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
         ...(esGastoFX ? { cantidadUSD: usdFinal } : {}),
-      });
-      // Cierre del período anterior: si este sueldo abre uno nuevo, el disponible
-      // que sobró se traslada como RESTO (= ahorro) al período nuevo.
+      };
+      const mainId = await crearMovimiento(user.uid, mainData);
+      created.push({ ...mainData, id: mainId });
+
+      // Cierre del período anterior: el disponible sobrante se traslada como RESTO al nuevo período.
       if (abrePeriodo && !sinPeriodos && periodoActual && periodoActual.disponible > 0) {
-        await crearMovimiento(user.uid, {
-          timestampCarga: new Date(), fecha, tipo: "Ingreso",
+        const restoData: Omit<Movimiento, "id"> = {
+          timestampCarga: now, fecha, tipo: "Ingreso",
           categoria: "RESTO", descripcion: "Resto período anterior",
           monto: periodoActual.disponible,
           medioPago: "—", observaciones: `de ${periodoActual.periodoId}`,
           periodoId: periodoIdFinal, userId: user.uid,
-        });
+        };
+        const restoId = await crearMovimiento(user.uid, restoData);
+        created.push({ ...restoData, id: restoId });
       }
       const autoAhorroMedios = config?.meta.autoAhorro?.mediosPago;
       const autoAhorroOmitir = config?.meta.autoAhorro?.omitirDescripciones ?? [];
       if (tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
           (!autoAhorroMedios?.length || autoAhorroMedios.includes(medioPago)) &&
           !autoAhorroOmitir.some((d) => d.toLowerCase() === descripcion.trim().toLowerCase())) {
-        await crearMovimiento(user.uid, {
-          timestampCarga: new Date(), fecha, tipo: "Move",
+        const aaData: Omit<Movimiento, "id"> = {
+          timestampCarga: now, fecha, tipo: "Move",
           categoria: "Move", descripcion: "Auto-ahorro",
           monto: config.meta.autoAhorro.monto,
           medioPago: "—", observaciones: "por gasto",
           periodoId: periodoIdFinal, userId: user.uid,
           direccionMove: "aAhorro",
-        });
+        };
+        const aaId = await crearMovimiento(user.uid, aaData);
+        created.push({ ...aaData, id: aaId });
       }
-      resetAdd(); onChanged(); onClose();
+      resetAdd();
+      if (onCreated) onCreated(created); else onChanged();
+      onClose();
     } catch (err: unknown) {
       setAddError(err instanceof Error ? err.message : t.unexpectedError);
     } finally {

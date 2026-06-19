@@ -4,6 +4,26 @@ import { useEffect, useState, useCallback } from "react";
 import { ConfigUsuario } from "@/types";
 import { obtenerConfig } from "@/services/firebase/config";
 
+const CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+function configCacheKey(uid: string) { return `config_${uid}`; }
+
+function saveConfigCache(uid: string, config: ConfigUsuario) {
+  try {
+    localStorage.setItem(configCacheKey(uid), JSON.stringify({ ts: Date.now(), data: config }));
+  } catch {}
+}
+
+function loadConfigCache(uid: string): ConfigUsuario | null {
+  try {
+    const raw = localStorage.getItem(configCacheKey(uid));
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw) as { ts: number; data: ConfigUsuario };
+    if (Date.now() - ts > CONFIG_CACHE_TTL) return null;
+    return data as ConfigUsuario;
+  } catch { return null; }
+}
+
 export function useConfig(userId: string | undefined) {
   const [config, setConfig] = useState<ConfigUsuario | null>(null);
   const [loading, setLoading] = useState(true);
@@ -14,10 +34,23 @@ export function useConfig(userId: string | undefined) {
   useEffect(() => {
     if (!userId) return;
 
+    const isExplicitRefresh = version > 0;
+
     const fetch = async () => {
+      // En carga inicial, usar cache si está fresco (evita 2 lecturas de Firestore)
+      if (!isExplicitRefresh) {
+        const cached = loadConfigCache(userId);
+        if (cached) {
+          setConfig(cached);
+          setLoading(false);
+          return;
+        }
+      }
+
       try {
         const data = await obtenerConfig(userId);
         setConfig(data);
+        saveConfigCache(userId, data);
       } catch (err) {
         console.error("Error fetching config:", err);
       } finally {

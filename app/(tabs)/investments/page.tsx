@@ -54,7 +54,7 @@ function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
 }
 
 export default function DolaresPage() {
-  const { movimientos, loading, config, refresh: refreshData, updateMovimiento, removeMovimiento } = useData();
+  const { movimientos, loading, config, refresh: refreshData, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
   const { cotizacion, minutosDesdeActualizacion, refresh } = useCotizacion();
 
   // Modal: alta de reserva (+/-) desde el botón, o detalle/edición al tocar una fila del historial.
@@ -389,6 +389,7 @@ export default function DolaresPage() {
       config={config}
       onClose={() => setModal(null)}
       onChanged={refreshData}
+      onCreated={prependMovimiento}
       onUpdated={updateMovimiento}
       onDeleted={removeMovimiento}
     />
