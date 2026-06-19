@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.2] — 2026-06-18
+
+### Fixed
+- **Auto-ahorro**: was creating `Ingreso/Ahorros` (no deduction from disponible) instead of `Move/aAhorro` (correct transfer from disponible to savings). Historical movements migrated via one-off script.
+
+---
+
 ## [2.25.1] — 2026-06-18
 
 ### Performance

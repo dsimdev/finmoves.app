@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.25.2] — 2026-06-18
+
+### Corrección
+- **Auto-ahorro**: corregido un error donde el monto de auto-ahorro no se descontaba del disponible. A partir de ahora funciona como un Move a ahorros: el disponible baja y los ahorros suben correctamente. Los registros anteriores también fueron corregidos.
+
+---
+
 ## [2.25.0] — 2026-06-17
 
 ### Nuevo
