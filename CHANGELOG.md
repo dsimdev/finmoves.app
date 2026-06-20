@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.25.9] — 2026-06-19
+
+### Added
+- **`/api/account/delete`**: new DELETE endpoint — verifies ID token, calls `adminDb().recursiveDelete(userDoc)` to wipe all Firestore subcollections (movimientos, config/*, recordatorios, plantillas), then `adminAuth().deleteUser(uid)`.
+- **Export JSON**: replaced CSV export with a full JSON export (`movimientos[]` + `config.{categorias, mediosPago, origenesAhorro}`). Timestamps serialized as ISO strings. File named `finmoves_YYYY-MM-DD.json`.
+- **Delete account UI** (Settings → Datos): button opens a ConfirmModal that requires re-authentication (email/password credential) before calling the delete API. On success: clears localStorage caches (`moves_uid`, `config_uid`), resets Zustand prefs, signs out, redirects to `/login`.
+- **Permisos log (user-facing)**: non-owner users see their permission change history (key, activated/deactivated, motivo, date) under "Accesos" in the Datos card. Loaded via `getDoc(config/permisosLog)` on settings mount.
+
+### Removed
+- CSV export (`exportCSV`) and all `csvDate/csvType/csvCategory/…` locale keys — replaced by JSON export.
+
+---
+
 ## [2.25.8] — 2026-06-19
 
 ### Performance

@@ -11,7 +11,7 @@ import { db, auth } from "@/services/firebase/firebase";
 import { signOut, getIdToken, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { ConfigUsuario } from "@/types";
-import { formatTimestampAR, isoToFechaAR, sanitizeCell } from "@/lib/sheet-format";
+import { isoToFechaAR } from "@/lib/sheet-format";
 import { dbErrorMessage } from "@/lib/firebase-error";
 import { platformAuthenticatorAvailable, isBiometricEnabledFor, registerBiometric, clearBiometric } from "@/lib/biometric";
 import { linkGoogle, isGoogleLinked } from "@/lib/google-auth";
@@ -515,6 +515,11 @@ export default function ConfigPage() {
   const [showAutoAhorroModal, setShowAutoAhorroModal] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [showGithubConfirm, setShowGithubConfirm] = useState(false);
+  const [permisosLog, setPermisosLog] = useState<Array<{timestamp: Date; key: string; newValue: boolean; motivo: string}>>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePass, setDeletePass] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [localAutoMonto, setLocalAutoMonto] = useState("");
   const [localAutoMedios, setLocalAutoMedios] = useState<string[]>([]);
   const [localAutoOmitir, setLocalAutoOmitir] = useState<string[]>([]);
@@ -589,6 +594,18 @@ export default function ConfigPage() {
   }, [metaFecha, metaMonto, metaSaldo, cotizManualOn, cotizManualVal, config]);
 
   // ── Effects ──
+  useEffect(() => {
+    if (!user?.uid || isOwner) return;
+    getDoc(doc(db, `users/${user.uid}/config/permisosLog`)).then((snap) => {
+      if (!snap.exists()) return;
+      const raw = (snap.data()?.historial ?? []) as Array<{ timestamp: { toDate?: () => Date } | string; key: string; newValue: boolean; motivo: string }>;
+      const sorted = raw
+        .map((l) => ({ ...l, timestamp: typeof l.timestamp === "object" && l.timestamp.toDate ? l.timestamp.toDate() : new Date(l.timestamp as string) }))
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      setPermisosLog(sorted);
+    }).catch(() => {});
+  }, [user?.uid, isOwner]);
+
   useEffect(() => {
     if (!user?.uid) return;
     getDoc(doc(db, `users/${user.uid}/config/syncMeta`)).then((snap) => {
@@ -684,29 +701,56 @@ export default function ConfigPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const exportCSV = () => {
-    const header = ["Timestamp", t.csvDate, t.csvType, t.csvCategory, t.csvDescription, t.csvAmount, t.csvPaymentMethod, t.csvNotes, t.csvPeriod];
-    const rows = [...movimientos]
-      .sort((a, b) => a.timestampCarga.getTime() - b.timestampCarga.getTime())
-      .map(m => [
-        formatTimestampAR(m.timestampCarga),
-        isoToFechaAR(m.fecha),
-        m.tipo,
-        m.categoria,
-        m.descripcion ?? "",
-        m.monto,
-        m.medioPago ?? "",
-        m.observaciones ?? "",
-        m.periodoId,
-      ].map(v => `"${String(sanitizeCell(v)).replace(/"/g, '""')}"`).join(","));
-    const csv = [header.join(","), ...rows].join("\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const exportJSON = () => {
+    const data = {
+      version: process.env.NEXT_PUBLIC_APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      movimientos: [...movimientos]
+        .sort((a, b) => a.timestampCarga.getTime() - b.timestampCarga.getTime())
+        .map(m => ({ ...m, timestampCarga: m.timestampCarga.toISOString() })),
+      config: {
+        categorias: config?.categorias ?? [],
+        mediosPago: config?.mediosPago ?? [],
+        origenesAhorro: config?.origenesAhorro ?? [],
+      },
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `finmoves_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `finmoves_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user || !deletePass) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      const cred = EmailAuthProvider.credential(user.email!, deletePass);
+      await reauthenticateWithCredential(auth.currentUser!, cred);
+      const token = await getIdToken(auth.currentUser!);
+      const res = await fetch("/api/account/delete", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("delete-failed");
+      localStorage.removeItem(`moves_${user.uid}`);
+      localStorage.removeItem(`config_${user.uid}`);
+      useAppPrefs.getState().reset();
+      await signOut(auth);
+      router.replace("/login");
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? "";
+      setDeleteError(
+        code === "auth/wrong-password" || code === "auth/invalid-credential"
+          ? t.wrongCurrentPassword
+          : t.deleteAccountError
+      );
+    } finally {
+      setDeleteBusy(false);
+    }
   };
 
   const appendSyncLog = async (uid: string, entry: { status: "ok" | "error"; type: "manual" | "auto"; at: Date; message: string }, prev: typeof syncLogs) => {
@@ -1085,6 +1129,27 @@ export default function ConfigPage() {
               </div>
             </div>
 
+            {/* Historial de accesos (no-owner) */}
+            {!isOwner && permisosLog.length > 0 && (
+              <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+                <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Accesos</div>
+                {permisosLog.slice(0, 4).map((log, i) => {
+                  const label = log.key === "comprobantes" ? "Imágenes" : log.key === "inversion" ? "Inversión" : log.key;
+                  const color = log.newValue ? "var(--green)" : "var(--red)";
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: i < permisosLog.length - 1 ? 5 : 0 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                      <div style={{ fontSize: 11, lineHeight: 1.4 }}>
+                        <span style={{ color }}>{label} {log.newValue ? "activado" : "desactivado"}</span>
+                        {log.motivo && <span style={{ color: "var(--muted)" }}> · {log.motivo}</span>}
+                        <span style={{ color: "var(--muted)" }}> · {log.timestamp.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Backup */}
             <button onClick={() => setShowExportConfirm(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
@@ -1095,7 +1160,22 @@ export default function ConfigPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: 13 }}>Backup</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.exportCSV}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.exportJSON}</div>
+                </div>
+              </div>
+            </button>
+
+            {/* Eliminar cuenta */}
+            <button onClick={() => { setDeletePass(""); setDeleteError(null); setShowDeleteConfirm(true); }} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--red-dim)", border: "1px solid var(--red)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--red)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, color: "var(--red)" }}>{t.deleteAccount}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.deleteAccountSub}</div>
                 </div>
               </div>
             </button>
@@ -1999,9 +2079,35 @@ export default function ConfigPage() {
       )}
 
       {showExportConfirm && (
-        <ConfirmModal title={t.exportCSV} confirmLabel={t.download} cancelLabel={t.cancel} confirmColor="var(--blue)"
-          onConfirm={() => { exportCSV(); setShowExportConfirm(false); }}
-          onCancel={() => setShowExportConfirm(false)}>{t.exportCSVBody}</ConfirmModal>
+        <ConfirmModal title="Backup" confirmLabel={t.download} cancelLabel={t.cancel} confirmColor="var(--blue)"
+          onConfirm={() => { exportJSON(); setShowExportConfirm(false); }}
+          onCancel={() => setShowExportConfirm(false)}>{t.exportJSONBody}</ConfirmModal>
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title={t.deleteAccountTitle}
+          confirmLabel={t.deleteAccountConfirm}
+          cancelLabel={t.cancel}
+          confirmColor="var(--red)"
+          loading={deleteBusy}
+          onConfirm={handleDeleteAccount}
+          onCancel={() => setShowDeleteConfirm(false)}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{t.deleteAccountBody}</div>
+            <input
+              type="password"
+              value={deletePass}
+              onChange={(e) => setDeletePass(e.target.value)}
+              className="input"
+              placeholder={t.currentPasswordPlaceholder}
+              autoComplete="current-password"
+              autoFocus
+            />
+            {deleteError && <div style={{ fontSize: 12, color: "var(--red)" }}>{deleteError}</div>}
+          </div>
+        </ConfirmModal>
       )}
 
       {showGithubConfirm && (

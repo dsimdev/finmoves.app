@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.25.9] — 2026-06-19
+
+### Nuevo en Configuración
+
+- **Backup JSON**: el botón de Backup ahora descarga un archivo `.json` con todos tus movimientos y tu configuración (categorías, medios de pago, orígenes de ahorro). Más completo y fácil de procesar que el CSV anterior.
+- **Eliminar cuenta**: podés borrar tu cuenta y todos tus datos desde Configuración → Datos. Se te pide la contraseña para confirmar. La acción es irreversible.
+- **Historial de accesos**: si el administrador activó o desactivó un permiso en tu cuenta, ahora lo ves en Configuración → Datos, con la fecha y el motivo.
+
+---
+
 ## [2.25.6] — 2026-06-18
 
 ### Mejoras
