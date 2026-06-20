@@ -1622,7 +1622,7 @@ export default function ConfigPage() {
             {isOpen("guia") && (<div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{t.guideHowTitle}</div>
-                <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6 }}>{t.obHowBody}</div>
+                <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6 }}>{t.hintMovBody}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {[t.guideMovements, t.guideInvestments, t.guideReports].map((txt, i) => (

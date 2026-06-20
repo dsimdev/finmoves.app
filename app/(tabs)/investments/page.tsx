@@ -5,6 +5,8 @@ import { useData } from "../data-context";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useT } from "@/hooks/useTranslation";
+import { useFirstVisit } from "@/hooks/useFirstVisit";
+import { SectionHint } from "@/components/ui/SectionHint";
 
 function fechaCortaConAnio(fecha: string): string {
   if (!fecha) return "";
@@ -85,6 +87,8 @@ export default function DolaresPage() {
   const { oculto, toggle, m: money } = useMoney();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
 
+  const [showHint, dismissHint] = useFirstVisit("investments");
+
   const monedaInversionesEfectiva: "USD" | "EUR" =
     monedaPrincipal === "USD" ? "EUR" :
     monedaPrincipal === "EUR" ? "USD" :
@@ -156,6 +160,7 @@ export default function DolaresPage() {
             <div className="label" style={{ marginBottom: 2 }}>{showUSD && showEUR ? `${t.currencyDollars} · ${t.currencyEuros}` : esEUR ? t.currencyEuros : t.currencyDollars}</div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.portfolio}</div>
           </div>
+          {showHint && <SectionHint title={t.hintInvTitle} body={t.hintInvBody} onDismiss={dismissHint} />}
           {/* ── SECCIÓN USD ── */}
           {showUSD && (<>
           <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>

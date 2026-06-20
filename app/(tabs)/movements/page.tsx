@@ -10,6 +10,8 @@ import { EyeIcon } from "@/components/ui/EyeIcon";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
+import { useFirstVisit } from "@/hooks/useFirstVisit";
+import { SectionHint } from "@/components/ui/SectionHint";
 
 function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; categoria: string; direccionMove?: string }) {
   let c = "var(--muted)";
@@ -27,6 +29,7 @@ export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
   const t = useT();
+  const [showHint, dismissHint] = useFirstVisit("movements");
 
   const periodos = agruparPorPeriodo(movimientos);
   const años = useMemo(() => Array.from(new Set(periodos.map((p) => p.periodoId.split("/")[2] ?? ""))).filter(Boolean), [periodos]);
@@ -129,6 +132,8 @@ export default function MovimientosPage() {
               </div>
             )}
           </div>
+
+          {showHint && movimientos.length > 0 && <SectionHint title={t.hintMovTitle} body={t.hintMovBody} onDismiss={dismissHint} />}
 
           <div style={{ display: "flex", gap: 4, marginBottom: 8, overflowX: "auto", scrollbarWidth: "none", touchAction: "pan-x" }}>
             {años.map((año) => (

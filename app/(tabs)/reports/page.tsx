@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
+import { useFirstVisit } from "@/hooks/useFirstVisit";
+import { SectionHint } from "@/components/ui/SectionHint";
 import { useData } from "../data-context";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
@@ -105,6 +107,7 @@ export default function ReportesPage() {
   // Reportes ya no son configurables: todas las secciones siempre visibles.
   const reportOn = (_id: string) => true;
   const { monedaInversiones } = useAppPrefs();
+  const [showHint, dismissHint] = useFirstVisit("reports");
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const [sub, setSub] = useState<Sub>("gastos");
@@ -389,6 +392,7 @@ export default function ReportesPage() {
             <div className="label" style={{ marginBottom: 2 }}>{t.analysis}</div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleReports}</div>
           </div>
+          {showHint && <SectionHint title={t.hintRepTitle} body={t.hintRepBody} onDismiss={dismissHint} />}
           <div className="subtabs">
             {SUBS.map((s) => {
               const isActive = sub === s.id;
