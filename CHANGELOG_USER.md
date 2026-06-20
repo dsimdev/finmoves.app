@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.26.0] — 2026-06-19
+
+### Configuración inicial
+
+- **Onboarding más rápido**: el proceso de bienvenida pasó de 11 pantallas a 3. Ingresás tu nombre (opcional), elegís la moneda del día a día y si gestionás reservas en divisas, y configurás biometría y notificaciones. Listo.
+- **Reportes activos por defecto**: al completar el onboarding, la sección Reportes queda habilitada automáticamente.
+- **Tips en la primera visita**: la primera vez que abrís Movimientos, Reportes o Inversión aparece una tarjeta con una breve descripción de la sección. Se cierra con ×.
+
+---
+
 ## [2.25.9] — 2026-06-19
 
 ### Nuevo en Configuración

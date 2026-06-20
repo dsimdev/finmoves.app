@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.26.0] — 2026-06-19
+
+### Changed
+- **Onboarding redesigned**: 11-step tutorial replaced by a 3-screen quick setup. Step 0: welcome + optional name input. Step 1: day-to-day currency selector + "manage USD/EUR reserve?" toggle + conditional investment currency selector (USD/EUR). Step 2: biometric + push notification toggles. On finish: writes `nombre`, `monedaPrincipal`, `showAhorros`, `monedaInversiones`, and sets `showReportes: true`.
+
+### Added
+- **`hooks/useFirstVisit`**: localStorage-based hook that returns `[show, dismiss]` for a given key — persists dismissal across sessions.
+- **`components/ui/SectionHint`**: dismissible info card (left accent border) shown once per section.
+- **Contextual first-visit hints**: displayed at the top of Movements (only when movements exist), Reports, and Investments tabs on first visit. Dismissed individually with an ×.
+
+### Removed
+- Educational slide screens from onboarding (`obHowBody`, `obTypesTitle/Body`, `obTypeGasto/Ingreso/Move/Fx`, `obCurrencyTitle/Body`, `obPeriodTitle/Body`, `obSavingsVsInvestTitle/Body`, `obGainCalculationTitle/Body`, `obReportsTitle/Body`, `obInvestTitle/Body`, `obDoneTitle/Body`, `obSecurityBody` locale keys). The settings Guide section now uses `hintMovBody` for the how-it-works blurb.
+
+---
+
 ## [2.25.9] — 2026-06-19
 
 ### Added
