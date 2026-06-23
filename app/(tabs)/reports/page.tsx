@@ -120,7 +120,7 @@ export default function ReportesPage() {
   const reportOn = (_id: string) => true;
   const TIPO_COLOR: Record<string, string> = {
     Gasto: "var(--red)", Ingreso: "var(--green)",
-    Move: "var(--orange)", MoveAhorro: "var(--orange)", MoveDisponible: "#26c6da",
+    Move: "var(--purple)", MoveAhorro: "var(--purple)", MoveDisponible: "#26c6da",
     CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
     GastoUSD: "var(--red)", GastoEUR: "var(--red)",
     VentaUSD: "var(--red)", VentaEUR: "var(--red)",

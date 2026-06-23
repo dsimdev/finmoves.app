@@ -71,7 +71,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   ] : [
     { t: "Gasto", label: t.tipoDisplay["Gasto"], color: "var(--red)" },
     { t: "Ingreso", label: t.tipoDisplay["Ingreso"], color: "var(--green)" },
-    { t: "Move", label: t.tipoDisplay["Move"], color: "var(--orange)" },
+    { t: "Move", label: t.tipoDisplay["Move"], color: "var(--purple)" },
   ];
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
@@ -487,7 +487,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                     <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); if (sinPeriodos) setCategoria("Sueldo"); }}
                       className="pill" style={sel && isMove ? {
                         border: "1px solid transparent",
-                        backgroundImage: "linear-gradient(#0e1524, #0e1524), linear-gradient(90deg, #26c6da, var(--orange))",
+                        backgroundImage: "linear-gradient(#0e1524, #0e1524), linear-gradient(90deg, #26c6da, var(--purple))",
                         backgroundOrigin: "padding-box, border-box",
                         backgroundClip: "padding-box, border-box",
                         color: "var(--text)",
@@ -550,8 +550,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                 {([["aDisponible", t.moveDirToDisponible], ["aAhorro", t.moveDirToAhorro]] as const).map(([d, label]) => {
-                  const dc = d === "aAhorro" ? "var(--orange)" : "#26c6da";
-                  const dd = d === "aAhorro" ? "var(--orange-dim)" : "#26c6da20";
+                  const dc = d === "aAhorro" ? "var(--purple)" : "#26c6da";
+                  const dd = d === "aAhorro" ? "var(--purple-dim)" : "#26c6da20";
                   return (
                     <button key={d} type="button" onClick={() => setMoveDir(d)} className="pill" style={{
                       flex: 1,
@@ -563,8 +563,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 })}
               </div>
               {(() => {
-                const ac = moveDir === "aAhorro" ? "var(--orange)" : "#26c6da";
-                const ad = moveDir === "aAhorro" ? "var(--orange-dim)" : "#26c6da20";
+                const ac = moveDir === "aAhorro" ? "var(--purple)" : "#26c6da";
+                const ad = moveDir === "aAhorro" ? "var(--purple-dim)" : "#26c6da20";
                 return (
               <div style={{ background: ad, border: `1px solid ${ac}44`, borderRadius: "var(--radius-sm)", padding: 12, fontSize: 12, color: ac }}>
                 {moveDir === "aAhorro" ? t.moveToSavings : t.moveFromSavings}

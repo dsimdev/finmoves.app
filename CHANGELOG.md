@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.28.1] — 2026-06-22
+
+### Changed
+- **Move ahorros color**: changed from orange (`--orange`) to purple (`--purple`, `#b06ddb`) across all surfaces — movement list dot, amount text, day-group badge, modal direction pills and info box, dashboard list, reports `TIPO_COLOR` map.
+- Added `--purple` and `--purple-dim` CSS variables to `:root`.
+
+---
+
 ## [2.28.0] — 2026-06-22
 
 ### Changed

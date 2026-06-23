@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.28.1] — 2026-06-22
+
+### Visual
+- Los movimientos de **Move a ahorros** ahora aparecen en violeta en toda la app (lista, modal, reportes, inicio).
+
+---
+
 ## [2.28.0] — 2026-06-22
 
 ### Reportes — Movimientos
