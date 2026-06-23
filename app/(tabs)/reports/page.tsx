@@ -117,15 +117,21 @@ export default function ReportesPage() {
   const { oculto, toggle, m: money } = useMoney();
   const { movimientos, loading, config } = useData();
   const { cotizacion } = useCotizacion();
-  // Reportes ya no son configurables: todas las secciones siempre visibles.
   const reportOn = (_id: string) => true;
+  const TIPO_COLOR: Record<string, string> = {
+    Gasto: "var(--red)", Ingreso: "var(--green)",
+    Move: "var(--orange)", MoveAhorro: "var(--orange)", MoveDisponible: "#26c6da",
+    CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
+    GastoUSD: "var(--red)", GastoEUR: "var(--red)",
+    VentaUSD: "var(--red)", VentaEUR: "var(--red)",
+  };
   const { monedaInversiones } = useAppPrefs();
   const [showHint, dismissHint] = useFirstVisit("reports");
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const [sub, setSub] = useState<Sub>("gastos");
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
-  const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movdescs" | "movcat" | null>(null);
+  const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movcat" | null>(null);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
   const [modalSueldo, setModalSueldo] = useState(false);
   const [modalAhorros, setModalAhorros] = useState(false);
@@ -349,13 +355,7 @@ export default function ReportesPage() {
   const movCounts = useMemo(() => {
     if (!periodo) return null;
     const movs = periodo.movimientos;
-    const tipoColor: Record<string, string> = {
-      Gasto: "var(--red)", Ingreso: "var(--green)",
-      Move: "var(--orange)", MoveAhorro: "var(--orange)", MoveDisponible: "#26c6da",
-      CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
-      GastoUSD: "var(--red)", GastoEUR: "var(--red)",
-      VentaUSD: "var(--red)", VentaEUR: "var(--red)",
-    };
+    const tipoColor = TIPO_COLOR;
     const vTipo = (m: typeof movs[0]) =>
       m.tipo === "Move" ? (m.direccionMove === "aAhorro" ? "MoveAhorro" : "MoveDisponible") : m.tipo;
     const vCat = (m: typeof movs[0]) =>
@@ -373,27 +373,24 @@ export default function ReportesPage() {
     for (const m of movs) { const k = vTipo(m); porTipoMap.set(k, (porTipoMap.get(k) ?? 0) + 1); }
     // Per-group type tracking
     const catTipo = new Map<string, Map<string, number>>();
-    const descTipo = new Map<string, Map<string, number>>();
+    const catMonto = new Map<string, number>();
     const medioTipo = new Map<string, Map<string, number>>();
+    const medioMonto = new Map<string, number>();
     for (const m of movs) {
       const cat = vCat(m);
       if (cat && cat !== "RESTO") {
         if (!catTipo.has(cat)) catTipo.set(cat, new Map());
         const t = catTipo.get(cat)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
-      }
-      const dk = m.descripcion || m.categoria;
-      if (dk && dk !== "RESTO") {
-        if (!descTipo.has(dk)) descTipo.set(dk, new Map());
-        const t = descTipo.get(dk)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
+        catMonto.set(cat, (catMonto.get(cat) ?? 0) + m.monto);
       }
       if (m.medioPago) {
         if (!medioTipo.has(m.medioPago)) medioTipo.set(m.medioPago, new Map());
         const t = medioTipo.get(m.medioPago)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
+        medioMonto.set(m.medioPago, (medioMonto.get(m.medioPago) ?? 0) + m.monto);
       }
     }
-    const porCat = [...catTipo.entries()].map(([cat, t]) => ({ cat, count: [...t.values()].reduce((a,b)=>a+b,0), color: domColor(t) })).sort((a,b)=>b.count-a.count);
-    const porDesc = [...descTipo.entries()].map(([desc, t]) => ({ desc, count: [...t.values()].reduce((a,b)=>a+b,0), color: domColor(t) })).sort((a,b)=>b.count-a.count);
-    const porMedio = [...medioTipo.entries()].map(([medio, t]) => ({ medio, count: [...t.values()].reduce((a,b)=>a+b,0), color: domColor(t) })).sort((a,b)=>b.count-a.count);
+    const porCat = [...catTipo.entries()].map(([cat, t]) => ({ cat, count: [...t.values()].reduce((a,b)=>a+b,0), total: catMonto.get(cat) ?? 0, color: domColor(t) })).sort((a,b)=>b.count-a.count);
+    const porMedio = [...medioTipo.entries()].map(([medio, tMap]) => ({ medio, count: [...tMap.values()].reduce((a,b)=>a+b,0), total: medioMonto.get(medio) ?? 0, color: domColor(tMap), tipos: [...tMap.entries()].sort((a,b)=>b[1]-a[1]) })).sort((a,b)=>b.count-a.count);
     const porDow = [0,0,0,0,0,0,0];
     for (const m of movs) {
       if (m.fecha) porDow[new Date(m.fecha.includes("-") ? m.fecha + "T12:00:00" : m.fecha).getDay()]++;
@@ -403,7 +400,7 @@ export default function ReportesPage() {
       diasActivos: porFechaMap.size,
       diaMasActivo, diaMasActivoN,
       porTipo: [...porTipoMap.entries()].sort((a,b)=>b[1]-a[1]),
-      porCat, porDesc, porMedio, porDow,
+      porCat, porMedio, porDow,
     };
   }, [periodo]);
 
@@ -627,20 +624,6 @@ export default function ReportesPage() {
                 </div>
               )}
 
-              {/* Categoría que más creció */}
-              {catMasCrecio && reportOn("gastos_otros") && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--red-dim, var(--surface-alt)))" }}>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{t.fastestGrowingCat}</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>{catMasCrecio.categoria}</span>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)" }}>{money(catMasCrecio.actual)}</div>
-                      <div style={{ fontSize: 10, color: "var(--red)" }}>{t.vsPrevious(catMasCrecio.deltaPct!)}</div>
-                      <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 1 }}>{t.kpiBefore} {money(catMasCrecio.anterior)}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
 
               {/* Descripción (top) */}
@@ -651,13 +634,6 @@ export default function ReportesPage() {
               </div>
               )}
 
-              {/* Medios de pago */}
-              {reportOn("gastos_otros") && (
-              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byPaymentMethod}</div>
-                {medios.map((m) => <Bar key={m.nombre} nombre={m.nombre} monto={m.monto} pct={m.pct} color="var(--blue)" oculto={oculto} />)}
-              </div>
-              )}
 
               {/* Por fecha */}
               {reportOn("gastos_otros") && porFecha.length > 0 && (
@@ -908,11 +884,7 @@ export default function ReportesPage() {
           {sub === "movimientos" && periodo && movCounts && (
             <>
               {reportOn("movimientos_kpis") && (() => {
-                const tipoColor: Record<string, string> = {
-                  Gasto: "var(--red)", Ingreso: "var(--green)",
-                  Move: "var(--orange)", MoveAhorro: "var(--orange)", MoveDisponible: "#26c6da",
-                  CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)", GastoUSD: "var(--red)", GastoEUR: "var(--red)", VentaUSD: "var(--red)", VentaEUR: "var(--red)",
-                };
+                const tipoColor = TIPO_COLOR;
                 const promDia = movCounts.diasActivos > 0 ? (movCounts.total / movCounts.diasActivos).toFixed(1) : "0";
                 const mayor = periodo.movimientos.filter(m => m.categoria !== "Sueldo" && m.categoria !== "RESTO").reduce<(typeof periodo.movimientos)[number] | null>((mx, m) => (m.monto > (mx?.monto ?? -1) ? m : mx), null);
                 return (
@@ -937,19 +909,30 @@ export default function ReportesPage() {
                     </div>
                   </div>
 
-                  {/* Mini-stats: 2x2 grid */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                    <MiniStat center basis="1 1 45%" label={t.mostActiveDay} value={sinAño(movCounts.diaMasActivo)} color="var(--accent)"
-                      onClick={() => setKpiInfo({ title: t.mostActiveDay, value: sinAño(movCounts.diaMasActivo), explain: `${t.kpiActiveDayInfo} (${t.movCount(movCounts.diaMasActivoN)})`, color: "var(--accent)" })} />
-                    <MiniStat center basis="1 1 45%" label={t.biggestMov} value={mayor ? (oculto ? "••" : abbr(mayor.monto)) : "—"} color="var(--accent)"
-                      onClick={mayor ? () => setKpiInfo({ title: t.biggestMov, value: oculto ? "••" : formatARS(mayor.monto), explain: `${t.kpiBiggestMovInfo} (${mayor.descripcion || mayor.categoria})`, color: "var(--accent)" }) : undefined} />
-                    {tendenciaCantidad !== null && (() => { const c = tendenciaCantidad > 10 ? "var(--green)" : tendenciaCantidad < -10 ? "var(--red)" : "var(--yellow)"; const v = `${tendenciaCantidad >= 0 ? "+" : ""}${tendenciaCantidad}%`; return (
-                      <MiniStat center basis="1 1 45%" label={t.trend} value={v} color={c}
-                        onClick={() => setKpiInfo({ title: `${t.trend} (${t.movCount(1)})`, value: v, explain: "Variación de cantidad de movimientos vs. los 3 períodos anteriores. En verde si menos movs, en rojo si más movs.", color: c })} />
-                    ); })()}
-                    <MiniStat center basis="1 1 45%" label={t.avgMovsPerDay} value={promDia} color="var(--accent)"
-                      onClick={() => setKpiInfo({ title: t.avgMovsPerDay, value: promDia, explain: `${t.kpiAvgMovsInfo} (${t.activeDays(movCounts.diasActivos)})`, color: "var(--accent)" })} />
-                  </div>
+                  {/* Mini-stats: 2x2 grid — opción C */}
+                  {(() => {
+                    const hoy = new Date();
+                    const esMismaFecha = (fecha: string) => { const d = new Date(fecha.includes("-") ? fecha + "T12:00:00" : fecha.split("/").length === 3 ? (() => { const [dd,mm,yy] = fecha.split("/"); return `${yy}-${mm.padStart(2,"0")}-${dd.padStart(2,"0")}T12:00:00`; })() : fecha); return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth() && d.getDate() === hoy.getDate(); };
+                    const esActivo = finPeriodo === null;
+                    const gastoHoy = esActivo
+                      ? periodo.movimientos.filter(m => m.tipo === "Gasto" && esMismaFecha(m.fecha)).reduce((s, m) => s + m.monto, 0)
+                      : null;
+                    const totalDias = Math.max(1, Math.round(((finPeriodo ?? hoy).getTime() - parsePeriodoId(periodo.periodoId).getTime()) / 86400000));
+                    const pctDias = kpis ? Math.round((kpis.diasConGasto / totalDias) * 100) : 0;
+                    const diaCaro = kpis?.diaMayorGasto;
+                    return (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                        <MiniStat center basis="1 1 45%" label="Hoy" value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} color="var(--accent)"
+                          onClick={gastoHoy !== null ? () => setKpiInfo({ title: "Gasto hoy", value: oculto ? "••" : formatARS(gastoHoy), explain: "Total gastado en el día de hoy (período activo).", color: "var(--accent)" }) : undefined} />
+                        {promPorMov !== null && <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} color="var(--red)"
+                          onClick={() => setKpiInfo({ title: t.avgPerExpense, value: oculto ? "••" : formatARS(promPorMov!), explain: `${t.kpiAvgPerExpenseInfo} (${t.transactions(kpis?.cantGastos ?? 0)})`, color: "var(--red)" })} />}
+                        {kpis && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} color="var(--red)"
+                          onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis!.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis!.diasConGasto)})`, color: "var(--red)" })} />}
+                        <MiniStat center basis="1 1 45%" label="Días activos" value={`${pctDias}%`} color="var(--accent)"
+                          onClick={() => setKpiInfo({ title: "Días activos", value: `${pctDias}%`, explain: `${kpis?.diasConGasto ?? 0} de ${totalDias} días del período tuvieron al menos un gasto.`, color: "var(--accent)" })} />
+                      </div>
+                    );
+                  })()}
                   </>
                 );
               })()}
@@ -957,65 +940,52 @@ export default function ReportesPage() {
               {reportOn("movimientos_otros") && (
               <>
 
-              {/* Por categoría (frecuencia) */}
+              {/* Por categoría (frecuencia + total) */}
               {movCounts.porCat.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))", cursor: movCounts.porCat.length > 5 ? "pointer" : undefined }}
                   onClick={movCounts.porCat.length > 5 ? () => setModalTop("movcat") : undefined}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byCategory}</div>
-                  {movCounts.porCat.slice(0, 5).map(({ cat, count, color }) => (
+                  {movCounts.porCat.slice(0, 5).map(({ cat, count, total, color }) => (
                     <div key={cat} style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
                         <div style={{ fontSize: 12 }}>{cat}</div>
-                        <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{count}</div>
-                      </div>
-                      <div style={{ height: 4, background: "var(--faint)", borderRadius: 2 }}>
-                        <div style={{ height: "100%", width: `${Math.round((count / movCounts.total) * 100)}%`, background: color, borderRadius: 2, transition: "width .5s ease" }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Por descripción (frecuencia) */}
-              {movCounts.porDesc.length > 0 && (
-                <div className="soft" style={{ marginBottom: 12, cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}
-                  onClick={movCounts.porDesc.length > 5 ? () => setModalTop("movdescs") : undefined}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.top5Descriptions}</div>
-                  {movCounts.porDesc.slice(0, 5).map(({ desc, count, color }) => (
-                    <div key={desc} style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <div style={{ fontSize: 12 }}>{desc}</div>
-                        <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{count}</div>
-                      </div>
-                      <div style={{ height: 4, background: "var(--faint)", borderRadius: 2 }}>
-                        <div style={{ height: "100%", width: `${Math.round((count / movCounts.total) * 100)}%`, background: color, borderRadius: 2, transition: "width .5s ease" }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Por día de semana */}
-              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byDayOfWeek}</div>
-                {(() => {
-                  const maxDow = Math.max(...movCounts.porDow, 1);
-                  const DIAS = t.dayNames;
-                  return (
-                    <div style={{ display: "flex", gap: 6, alignItems: "flex-end", justifyContent: "space-around" }}>
-                      {movCounts.porDow.map((n, i) => (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--muted)", minHeight: 12 }}>{n > 0 ? n : ""}</div>
-                          <div style={{ height: 72, width: "100%", maxWidth: 28, background: "var(--faint)", borderRadius: 6, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
-                            <div style={{ width: "100%", height: `${Math.round((n / maxDow) * 100)}%`, background: "var(--accent)", borderRadius: 6, transition: "height .5s ease" }} />
-                          </div>
-                          <div style={{ fontSize: 9, color: "var(--muted)" }}>{DIAS[i]}</div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "••" : abbr(total)}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color }}>{count}</span>
                         </div>
-                      ))}
+                      </div>
+                      <div style={{ height: 4, background: "var(--faint)", borderRadius: 2 }}>
+                        <div style={{ height: "100%", width: `${Math.round((count / movCounts.total) * 100)}%`, background: color, borderRadius: 2, transition: "width .5s ease" }} />
+                      </div>
                     </div>
-                  );
-                })()}
-              </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Por medio de pago */}
+              {movCounts.porMedio.length > 0 && (
+                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byPaymentMethod}</div>
+                  {movCounts.porMedio.map(({ medio, count, total, tipos }) => (
+                    <div key={medio} style={{ marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                        <span style={{ fontSize: 12 }}>{medio}</span>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                          <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "••" : abbr(total)}</span>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {tipos.map(([tipo, n]) => (
+                              <span key={tipo} style={{ fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", color: TIPO_COLOR[tipo] ?? "var(--accent)" }}>{n}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ height: 4, background: "var(--faint)", borderRadius: 2 }}>
+                        <div style={{ height: "100%", width: `${Math.round((count / movCounts.total) * 100)}%`, background: "var(--blue)", borderRadius: 2, transition: "width .5s ease" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               </>
               )}
@@ -1069,22 +1039,16 @@ export default function ReportesPage() {
                 </div>
               </div>
             ))}
-            {modalTop === "movdescs" && movCounts && movCounts.porDesc.map(({ desc, count, color }, i) => (
-              <div key={desc} className="row" style={{ padding: "12px 0" }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-                  <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", width: 14, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{i + 1}</span>
-                  <div style={{ fontSize: 13, flex: 1, minWidth: 0 }}>{desc || "—"}</div>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "var(--font-mono)" }}>{count}×</div>
-              </div>
-            ))}
-            {modalTop === "movcat" && movCounts && movCounts.porCat.map(({ cat, count, color }, i) => (
+            {modalTop === "movcat" && movCounts && movCounts.porCat.map(({ cat, count, total, color }, i) => (
               <div key={cat} className="row" style={{ padding: "12px 0" }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
                   <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", width: 14, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{i + 1}</span>
                   <div style={{ fontSize: 13, flex: 1, minWidth: 0 }}>{cat || "—"}</div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "var(--font-mono)" }}>{count}×</div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "var(--font-mono)" }}>{count}×</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "••" : abbr(total)}</div>
+                </div>
               </div>
             ))}
       </BottomSheet>

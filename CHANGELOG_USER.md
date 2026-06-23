@@ -4,6 +4,21 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.28.0] — 2026-06-22
+
+### Reportes — Movimientos
+
+- **Hoy**: nuevo KPI que muestra cuánto gastaste hoy (solo período activo).
+- **Por categoría**: ahora muestra el total en pesos además de la cantidad de movimientos.
+- **Por medio de pago**: se movió al tab Movimientos y ahora desglosa la cantidad por tipo (gasto, ingreso, move, etc.) con colores.
+- Se eliminaron "Top 5 descripciones" y el gráfico por día de semana.
+
+### Reportes — Gastos
+
+- Se eliminaron "Categoría que más creció" y "Por medio de pago" (ahora en Movimientos).
+
+---
+
 ## [2.27.0] — 2026-06-22
 
 ### Presupuestos por período

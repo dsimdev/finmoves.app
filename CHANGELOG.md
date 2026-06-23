@@ -4,6 +4,18 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.28.0] — 2026-06-22
+
+### Changed
+- **Reports > Movimientos subtab — KPIs redesigned**: replaced 6 mixed KPIs with 4 focused ones: Hoy (today's spend, active period only), Prom. ARS/mov (ticket average), Prom. ARS/día (daily average), Días activos % (days with ≥1 expense / total period days). Fixed date comparison to handle both YYYY-MM-DD and D/M/YYYY formats. Fixed total-days calculation (off-by-one removed).
+- **Reports > Movimientos subtab — Por categoría**: now shows ARS total alongside frequency count. Bar width still reflects frequency. Modal "Todas las categorías" updated to match (count × + ARS).
+- **Reports > Movimientos subtab — Por medio de pago**: moved from Gastos tab; now shows total ARS + per-type count breakdown (colored by Gasto/Ingreso/Move/FX) + frequency bar.
+- **Reports > Gastos subtab**: removed "Categoría que más creció" card and "Por medio de pago" card.
+- **Reports > Movimientos subtab**: removed "Top 5 descripciones" and "Por día de semana" chart. Added Prom. ARS/día and Prom. ARS/mov KPIs (moved from Gastos).
+- **`TIPO_COLOR`**: extracted to component level to avoid duplication between movCounts useMemo and render scope.
+
+---
+
 ## [2.27.0] — 2026-06-22
 
 ### Added
