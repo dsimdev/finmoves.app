@@ -69,6 +69,10 @@ export interface OrigenAhorro {
   activo: boolean;
 }
 
+export interface Presupuesto {
+  categorias: Record<string, number>;
+}
+
 export interface ConfigUsuario {
   categorias: Categoria[];
   mediosPago: MedioPago[];
@@ -77,6 +81,7 @@ export interface ConfigUsuario {
   meta: {
     usdMensual: number;
     tipoCambioRef: TipoCambioRef;
+    presupuestoTemplate?: Record<string, number>;
     saldoUSD?: number;
     saldoEUR?: number;
     metaFecha?: string; // YYYY-MM-DD

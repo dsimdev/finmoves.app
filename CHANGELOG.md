@@ -4,6 +4,24 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.27.0] — 2026-06-22
+
+### Added
+- **Per-period budgets**: new Firestore subcollection `users/{uid}/presupuestos/{periodoId}` stores per-category budget amounts per period. CRUD in `services/firebase/presupuestos.ts`.
+- **Budget edit sheet**: pencil button in "Por categoría" card opens a BottomSheet with per-category number inputs, pre-filled from the saved period budget or the default template. Guardar is gated by `isDirty` comparison against Firestore state.
+- **Budget toggle**: "Presupuesto" pill button appears next to the pencil when a budget is saved. Off by default; activating it colors category bars red/yellow/green based on usage percentage and shows the budget cap to the right of each bar track. Resets on period change.
+- **Category drill-down modal**: tapping any category row in "Por categoría" opens a BottomSheet listing all expenses for that category in the selected period, sorted by date desc. Shows budget status in the header when a budget is set.
+- **Budget template in Settings**: new "Presupuestos" collapsible section in Settings for defining a default per-category budget that pre-fills each new period's edit sheet. Save gated by `isDirty`.
+- **`Presupuesto` interface** and `presupuestoTemplate?: Record<string, number>` added to `ConfigUsuario.meta` in `types/index.ts`.
+- **i18n**: budget translation keys added to `locales/es.ts` and `locales/en.ts`.
+- **No number input spinners**: global CSS removes webkit/moz number input arrows.
+
+### Changed
+- **Move badge color in Movements**: daily summary badges now split Move transactions — `aDisponible` shows teal, `aAhorro` shows orange (was always orange).
+- **Removed KPIs**: "Promedio diario" and "Prom. por mov." removed from Gastos KPI row in Reports (will reappear in a restructured Movements tab).
+
+---
+
 ## [2.26.0] — 2026-06-19
 
 ### Changed

@@ -485,4 +485,17 @@ export const en: AppLocale = {
   unlockWithFingerprint: "Unlock with fingerprint",
   unlockFailed: "Could not verify. Try again.",
   usePassword: "Use password",
+  // Budgets
+  budget: "Budget",
+  budgets: "Budgets",
+  budgetPeriod: "Period budget",
+  budgetTemplate: "Default template",
+  budgetTemplateSub: "Pre-loaded when editing the budget of each period",
+  editBudget: "Edit budget",
+  budgetSaved: "Budget saved",
+  templateSaved: "Template saved",
+  noBudgetSet: "No budget defined",
+  budgetUsed: "used",
+  budgetOver: "over budget",
+  settingsTabBudgets: "Budgets",
 };

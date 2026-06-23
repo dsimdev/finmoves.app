@@ -9,6 +9,7 @@ import { useData } from "../data-context";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
 import { agruparPorPeriodo, gastosPorCategoria, formatARS } from "@/utils/periodo";
+import { obtenerPresupuesto, guardarPresupuesto } from "@/services/firebase/presupuestos";
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import {
   gastosPorMedioPago, gastosPorDescripcion, gastosPorFecha,
@@ -45,16 +46,28 @@ const sinAño = (fecha: string) => {
 };
 
 // ── Componentes visuales ─────────────────────────────────────────────────────
-function Bar({ nombre, monto, pct, color = "var(--accent)", oculto }: { nombre: string; monto: number; pct: number; color?: string; oculto?: boolean }) {
+function Bar({ nombre, monto, pct, color = "var(--accent)", oculto, presupuesto, onClick }: { nombre: string; monto: number; pct: number; color?: string; oculto?: boolean; presupuesto?: number; onClick?: () => void }) {
+  const hasBudget = !!presupuesto && presupuesto > 0;
+  const usedPct = hasBudget ? Math.round((monto / presupuesto!) * 100) : 0;
+  const budgetColor = usedPct > 100 ? "var(--red)" : usedPct > 80 ? "var(--yellow)" : "var(--green)";
+  const barColor = hasBudget ? budgetColor : color;
+  const barWidth = hasBudget ? Math.min(usedPct, 100) : Math.min(pct, 100);
   return (
-    <div style={{ marginBottom: 13 }}>
+    <div style={{ marginBottom: 13, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 1, gap: 10 }}>
         <span style={{ fontSize: 13, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombre}</span>
         <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text)", whiteSpace: "nowrap" }}>
           {oculto ? MASK : formatARS(monto)} <span style={{ color: "var(--muted)", fontSize: 11 }}>{pct}%</span>
         </span>
       </div>
-      <div className="bar-track"><div className="bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: color }} /></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 7 }}>
+        <div style={{ flex: 1, height: 8, background: "var(--faint)", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ height: "100%", borderRadius: 999, transition: "width 0.5s ease", width: `${barWidth}%`, background: barColor }} />
+        </div>
+        {hasBudget && !oculto && (
+          <span style={{ fontSize: 10, color: budgetColor, fontFamily: "var(--font-mono)", flexShrink: 0, fontWeight: 600 }}>{abbr(presupuesto!)}</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -119,6 +132,12 @@ export default function ReportesPage() {
   const [diaModal, setDiaModal] = useState<string | null>(null);
   const [proyPeriodos, setProyPeriodos] = useState(3);
   const [compareMode, setCompareMode] = useState(false);
+  const [presupuesto, setPresupuesto] = useState<Record<string, number> | null>(null);
+  const [showBudget, setShowBudget] = useState(false);
+  const [modalBudget, setModalBudget] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<Record<string, string>>({});
+  const [budgetSaving, setBudgetSaving] = useState(false);
+  const [catModal, setCatModal] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
   const activos = periodosSelIds.length > 0 ? periodosSelIds : [periodos[0]?.periodoId].filter(Boolean);
@@ -257,6 +276,14 @@ export default function ReportesPage() {
     if (!newSeedId) return;
     updateDoc(doc(db, `users/${user.uid}/config/meta`), { "meta.ahorrosAcumSeedPeriodoId": newSeedId });
   }, [user?.uid, !!config, !!seedPeriodoId, periodos.length]);
+
+  // Cargar presupuesto del período activo (solo si hay un único período seleccionado)
+  const activoPeriodoId = activos.length === 1 ? (activos[0] ?? null) : null;
+  useEffect(() => {
+    setShowBudget(false);
+    if (!user?.uid || !activoPeriodoId) { setPresupuesto(null); return; }
+    obtenerPresupuesto(user.uid, activoPeriodoId).then(setPresupuesto).catch(() => setPresupuesto(null));
+  }, [user?.uid, activoPeriodoId]);
 
   const serie = useMemo(() => serieTendencia(periodos, seedPeriodoId), [periodos, seedPeriodoId]);
   const serieDesc = useMemo(() => [...serie].reverse(), [serie]);
@@ -538,13 +565,9 @@ export default function ReportesPage() {
               </div>
               )}
 
-              {/* Mini-stats fila 2: 2 columnas */}
+              {/* Mini-stats fila 2 */}
               {reportOn("gastos_kpis") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
-                {ritmo && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} color="var(--red)"
-                  onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis.diasConGasto)})`, color: "var(--red)" })} />}
-                {promPorMov !== null && <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} color="var(--red)"
-                  onClick={() => setKpiInfo({ title: t.avgPerExpense, value: oculto ? "••" : formatARS(promPorMov), explain: `${t.kpiAvgPerExpenseInfo} (${t.transactions(kpis.cantGastos)})`, color: "var(--red)" })} />}
                 {ritmo && <MiniStat center basis="1 1 45%" label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} color="var(--red)"
                   onClick={() => setKpiInfo({ title: t.spendingPace, value: `${oculto ? "••" : formatARS(ritmo.gastadoPorDia)}${t.perDay}`, explain: `${t.kpiPaceInfo} (${t.projection30days(oculto ? "••" : formatARS(ritmo.proyeccionCierre))})`, color: "var(--red)" })} />}
                 {proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} color="var(--red)"
@@ -555,8 +578,29 @@ export default function ReportesPage() {
               {/* Categorías */}
               {reportOn("gastos_otros") && (
               <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byCategory}</div>
-                {cats.map((c) => <Bar key={c.categoria} nombre={c.categoria} monto={c.monto} pct={c.pct} oculto={oculto} />)}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{t.byCategory}</span>
+                  {activos.length === 1 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {presupuesto && Object.keys(presupuesto).length > 0 && (
+                        <button onClick={() => setShowBudget(v => !v)} style={{ background: showBudget ? "var(--accent-dim)" : "transparent", border: `1px solid ${showBudget ? "var(--accent)" : "var(--border)"}`, borderRadius: 6, color: showBudget ? "var(--accent)" : "var(--muted)", fontSize: 10, fontWeight: 600, padding: "3px 8px", cursor: "pointer", transition: "all 0.15s" }}>
+                          {t.budget}
+                        </button>
+                      )}
+                      <button onClick={() => {
+                        const template = config?.meta.presupuestoTemplate ?? {};
+                        const base = presupuesto ?? template;
+                        setEditingBudget(Object.fromEntries(cats.map((c) => [c.categoria, String(base[c.categoria] ?? "")])));
+                        setModalBudget(true);
+                      }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4, display: "flex", alignItems: "center" }} aria-label={t.editBudget}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {cats.map((c) => <Bar key={c.categoria} nombre={c.categoria} monto={c.monto} pct={c.pct} oculto={oculto} presupuesto={showBudget ? presupuesto?.[c.categoria] : undefined} onClick={() => setCatModal(c.categoria)} />)}
               </div>
               )}
 
@@ -1069,6 +1113,103 @@ export default function ReportesPage() {
       </BottomSheet>
 
       {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
+
+      {/* Modal: gastos de una categoría */}
+      <BottomSheet open={!!catModal} onClose={() => setCatModal(null)} title={catModal ?? ""}>
+        {(() => {
+          if (!catModal || !periodo) return null;
+          const movsCat = periodo.movimientos
+            .filter((m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD") && m.categoria === catModal)
+            .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+          const totalCat = movsCat.reduce((s, m) => s + m.monto, 0);
+          const budgetCat = presupuesto?.[catModal];
+          return (
+            <>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
+                <span>{money(totalCat)} · {t.expensesCount(movsCat.length)}</span>
+                {budgetCat && !oculto && (() => {
+                  const usedPct = Math.round((totalCat / budgetCat) * 100);
+                  const bc = usedPct > 100 ? "var(--red)" : usedPct > 80 ? "var(--yellow)" : "var(--green)";
+                  return <span style={{ color: bc, fontWeight: 600 }}>{t.budget}: {money(budgetCat)} · {usedPct}%</span>;
+                })()}
+              </div>
+              {movsCat.map((m) => (
+                <div key={m.id} className="row" style={{ padding: "11px 0" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || "—"}</div>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{sinAño(m.fecha)} · {m.medioPago}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(m.monto)}</div>
+                </div>
+              ))}
+              {movsCat.length === 0 && (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--muted)", fontSize: 13 }}>{t.noMovements}</div>
+              )}
+            </>
+          );
+        })()}
+      </BottomSheet>
+
+      {/* Modal: editar presupuesto del período */}
+      <BottomSheet open={modalBudget} onClose={() => setModalBudget(false)} title={t.budgetPeriod}>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: -10, marginBottom: 16 }}>
+          {activos[0] ? shortPer(activos[0]) : ""}
+          {config?.meta.presupuestoTemplate && Object.keys(config.meta.presupuestoTemplate).length > 0 && (
+            <span style={{ marginLeft: 8, color: "var(--accent)" }}>· {t.budgetTemplate}</span>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+          {cats.map((c) => (
+            <div key={c.categoria} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ flex: 1, fontSize: 13, color: "var(--text)" }}>{c.categoria}</span>
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <span style={{ position: "absolute", left: 10, fontSize: 13, color: "var(--muted)", pointerEvents: "none" }}>$</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={editingBudget[c.categoria] ?? ""}
+                  onChange={(e) => setEditingBudget((prev) => ({ ...prev, [c.categoria]: e.target.value }))}
+                  placeholder="0"
+                  className="input"
+                  style={{ width: 130, paddingLeft: 22, textAlign: "right", fontFamily: "var(--font-mono)" }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        {(() => {
+          const saved = presupuesto ?? {};
+          const budgetIsDirty = cats.some(c => {
+            const editVal = Math.round(parseFloat(editingBudget[c.categoria] ?? "") || 0);
+            const savedVal = Math.round(saved[c.categoria] ?? 0);
+            return editVal !== savedVal;
+          });
+          const disabled = budgetSaving || !budgetIsDirty;
+          return (
+            <button
+              disabled={disabled}
+              onClick={async () => {
+                if (!user?.uid || !activos[0]) return;
+                setBudgetSaving(true);
+                try {
+                  const categorias: Record<string, number> = {};
+                  for (const [cat, val] of Object.entries(editingBudget)) {
+                    const n = parseFloat(val);
+                    if (!isNaN(n) && n > 0) categorias[cat] = n;
+                  }
+                  await guardarPresupuesto(user.uid, activos[0], categorias);
+                  setPresupuesto(categorias);
+                  setModalBudget(false);
+                } finally {
+                  setBudgetSaving(false);
+                }
+              }}
+              style={{ width: "100%", padding: "14px 0", borderRadius: "var(--radius-sm)", background: "var(--accent)", border: "none", color: "#fff", fontSize: 15, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.35 : 1, transition: "opacity 0.2s" }}>
+              {budgetSaving ? "…" : t.save}
+            </button>
+          );
+        })()}
+      </BottomSheet>
     </div>
   );
 }

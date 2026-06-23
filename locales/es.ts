@@ -483,6 +483,19 @@ export const es = {
   unlockWithFingerprint: "Desbloquear con huella",
   unlockFailed: "No se pudo verificar. Intentá de nuevo.",
   usePassword: "Usar contraseña",
+  // Presupuestos
+  budget: "Presupuesto",
+  budgets: "Presupuestos",
+  budgetPeriod: "Presupuesto del período",
+  budgetTemplate: "Template por defecto",
+  budgetTemplateSub: "Se pre-carga al editar el presupuesto de cada período",
+  editBudget: "Editar presupuesto",
+  budgetSaved: "Presupuesto guardado",
+  templateSaved: "Template guardado",
+  noBudgetSet: "Sin presupuesto definido",
+  budgetUsed: "usado",
+  budgetOver: "excedido",
+  settingsTabBudgets: "Presupuestos",
 };
 
 export type AppLocale = typeof es;

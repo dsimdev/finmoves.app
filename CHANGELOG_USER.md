@@ -4,6 +4,21 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.27.0] — 2026-06-22
+
+### Presupuestos por período
+
+- **Presupuesto por categoría**: en Reportes → Por categoría, el nuevo ícono de lápiz abre un panel para definir cuánto querés gastar en cada categoría durante el período activo. Se guarda por período; podés tener distintos presupuestos cada mes.
+- **Template por defecto**: en Ajustes → Presupuestos podés definir valores base que se pre-cargan al abrir el editor de cada período nuevo.
+- **Vista de presupuesto activable**: el botón "Presupuesto" aparece en el encabezado de "Por categoría" cuando hay un presupuesto guardado. Al activarlo, las barras cambian de color (verde / amarillo / rojo según cuánto gastaste) y muestran el monto límite al costado. Por defecto está apagado.
+- **Detalle por categoría**: tocando cualquier categoría se abre un panel con todos los gastos de esa categoría en el período, ordenados por fecha.
+
+### Movimientos
+
+- Los contadores de día ahora diferencian "Mover a disponible" (teal) de "Mover a ahorros" (naranja).
+
+---
+
 ## [2.26.0] — 2026-06-19
 
 ### Configuración inicial
