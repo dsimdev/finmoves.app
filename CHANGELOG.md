@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.29.1] — 2026-06-23
+
+### Fixed
+- **Movements day-group badge**: Move a disponible (aDisponible) now shows in teal (`#26c6da`) instead of purple. Split `nMove` counter into `nMoveDisp` (teal) and `nMoveAhorro` (purple) so each direction renders with its correct color in the collapsed day header.
+
+---
+
 ## [2.29.0] — 2026-06-22
 
 ### Added
