@@ -173,12 +173,15 @@ export default function MovimientosPage() {
                 const abierto = idx === 0 ? true : diasAbiertos.has(fecha);
                 // Conteo por tipo para el resumen colapsado. Orden de izq→der:
                 // ingreso (verde), usd/dólares (amarillo), move (amarillo), gasto (rojo, a la derecha).
-                let nGasto = 0, nMove = 0, nUsd = 0, nIngreso = 0;
+                let nGasto = 0, nMoveAhorro = 0, nMoveDisp = 0, nUsd = 0, nIngreso = 0;
                 for (const m of movs) {
                   if (m.tipo === "Gasto") nGasto++;
-                  else if (m.tipo === "Move" && m.descripcion !== "Auto-ahorro") nMove++;
+                  else if (m.tipo === "Move" && m.descripcion !== "Auto-ahorro") {
+                    if (m.direccionMove === "aAhorro") nMoveAhorro++;
+                    else nMoveDisp++;
+                  }
                   else if (m.tipo === "Ingreso") nIngreso++;
-                  else nUsd++; // CompraUSD/GastoUSD/CompraEUR/GastoEUR
+                  else nUsd++;
                 }
                 return (
                 <div key={fecha} className="card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
@@ -192,7 +195,8 @@ export default function MovimientosPage() {
                       <span style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: 10, fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)" }}>
                         {nIngreso > 0 && <span style={{ color: "var(--green)" }}>{nIngreso}</span>}
                         {nUsd > 0 && <span style={{ color: "var(--yellow)" }}>{nUsd}</span>}
-                        {nMove > 0 && <span style={{ color: "var(--purple)" }}>{nMove}</span>}
+                        {nMoveDisp > 0 && <span style={{ color: "#26c6da" }}>{nMoveDisp}</span>}
+                        {nMoveAhorro > 0 && <span style={{ color: "var(--purple)" }}>{nMoveAhorro}</span>}
                         {nGasto > 0 && <span style={{ color: "var(--red)" }}>{nGasto}</span>}
                       </span>
                     )}
