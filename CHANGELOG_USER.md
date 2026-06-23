@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.29.2] — 2026-06-23
+
+### Correcciones
+- El badge del día en movimientos ahora muestra los Auto-ahorro en violeta (en vez de amarillo).
+
+---
+
 ## [2.29.0] — 2026-06-22
 
 ### Mejoras
