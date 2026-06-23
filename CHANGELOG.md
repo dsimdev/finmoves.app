@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.29.2] — 2026-06-23
+
+### Fixed
+- **Movements day-group badge**: Auto-ahorro moves (tipo=Move, descripcion=Auto-ahorro) were excluded from `nMoveAhorro` counter and falling into `nUsd` (yellow). Now all `tipo === "Move"` entries are counted by `direccionMove` — Auto-ahorro (aAhorro) shows purple, disponible shows teal.
+
+---
+
 ## [2.29.1] — 2026-06-23
 
 ### Fixed
