@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.29.0] — 2026-06-22
+
+### Mejoras
+- El aviso para **instalar la app** ahora aparece como un banner flotante en la parte baja de la pantalla, igual que el de actualización. Queda hasta que la instalés.
+- El **código de invitación** se muestra en una tarjeta centrada con botón para copiar.
+- El botón de **eliminar cuenta** baja al final de configuración. En vez de borrar inmediatamente, envía una solicitud al admin para que confirme la eliminación de tus datos.
+
+---
+
 ## [2.28.1] — 2026-06-22
 
 ### Visual

@@ -353,7 +353,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           timestampCarga: now, fecha, tipo: "Move",
           categoria: "Move", descripcion: "Auto-ahorro",
           monto: config.meta.autoAhorro.monto,
-          medioPago: "—", observaciones: `por ${categoria}`,
+          medioPago: "Mercado Pago", observaciones: `por ${categoria}`,
           periodoId: periodoIdFinal, userId: user.uid,
           direccionMove: "aAhorro",
         };

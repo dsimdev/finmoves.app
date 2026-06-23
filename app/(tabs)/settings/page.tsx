@@ -16,7 +16,6 @@ import { dbErrorMessage } from "@/lib/firebase-error";
 import { platformAuthenticatorAvailable, isBiometricEnabledFor, registerBiometric, clearBiometric } from "@/lib/biometric";
 import { linkGoogle, isGoogleLinked } from "@/lib/google-auth";
 import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/push-client";
-import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -155,7 +154,6 @@ export default function ConfigPage() {
   const { config, configLoading: loading, refreshConfig: refresh, movimientos } = useData();
   const router = useRouter();
 
-  const { canInstall, promptInstall } = useInstallPrompt();
   const { dark, toggle: toggleTheme } = useTheme();
   const { showReportes, showAhorros, monedaInversiones, monedaPrincipal, set: setPref, setMoneda, setMonedaPrincipal, lang, setLang } = useAppPrefs();
   const t = useT();
@@ -352,20 +350,6 @@ export default function ConfigPage() {
   const [genBusy, setGenBusy] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  // Panel de administración (solo owner)
-  type AdminUser = { uid: string; email: string; nombre: string; createdAt: string; lastSignIn: string; pushOn: boolean; permisos: Record<string, boolean>; inviteCode: string | null; isOwner: boolean };
-  type AdminCode = { code: string; createdAt: number };
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
-  const [adminCodes, setAdminCodes] = useState<AdminCode[]>([]);
-  const [adminLoading, setAdminLoading] = useState(false);
-  const [selectedAdminUid, setSelectedAdminUid] = useState<string | null>(null);
-  const selectedAdminUser = adminUsers.find((u) => u.uid === selectedAdminUid) ?? null;
-  const [adminPermisosLog, setAdminPermisosLog] = useState<Array<{ timestamp: Date; key: string; oldValue: boolean; newValue: boolean; motivo: string; changedBy: string }>>([]);
-  const [pendingPerm, setPendingPerm] = useState<{ uid: string; key: string; value: boolean; label: string; nombre: string } | null>(null);
-  const [permMotivo, setPermMotivo] = useState<"Fix" | "Bug" | "Error" | null>(null);
-  const [permBusy, setPermBusy] = useState(false);
-  const [permMsg, setPermMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const generateInviteCode = async () => {
     const u = auth.currentUser;
     if (!u || genBusy) return;
@@ -376,87 +360,11 @@ export default function ConfigPage() {
       const data = await res.json();
       if (res.ok && data.code) {
         setInviteCode(data.code); setShowInviteModal(true);
-        setAdminCodes((prev) => [{ code: data.code, createdAt: Date.now() }, ...prev]);
       }
     } catch { /* ignore */ } finally { setGenBusy(false); }
   };
   const copyInviteCode = async () => {
     try { await navigator.clipboard.writeText(inviteCode); setCodeCopied(true); setTimeout(() => setCodeCopied(false), 2000); } catch { /* ignore */ }
-  };
-  const loadAdmin = async () => {
-    const u = auth.currentUser;
-    if (!u) return;
-    setAdminLoading(true);
-    try {
-      const token = await getIdToken(u);
-      const h = { Authorization: `Bearer ${token}` };
-      const [ru, rc] = await Promise.all([
-        fetch("/api/admin/users", { headers: h }),
-        fetch("/api/invite-codes", { headers: h }),
-      ]);
-      const du = await ru.json(); const dc = await rc.json();
-      if (ru.ok) setAdminUsers(du.users ?? []);
-      if (rc.ok) setAdminCodes(dc.codes ?? []);
-    } catch { /* ignore */ } finally { setAdminLoading(false); }
-  };
-  const openAdmin = () => { setShowAdmin(true); loadAdmin(); };
-
-  const loadPermisosLog = async (uid: string) => {
-    if (!user?.uid) return;
-    try {
-      const token = await getIdToken(user);
-      const res = await fetch(`/api/admin/users/${uid}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) {
-        const data = await res.json();
-        const logs = (data.historial ?? []).map((log: any) => ({
-          ...log,
-          timestamp: log.timestamp instanceof Object && log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp),
-        }));
-        setAdminPermisosLog(logs.sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime()));
-      }
-    } catch (err) { console.error("Error loading permisos log:", err); }
-  };
-
-  useEffect(() => {
-    if (selectedAdminUid) loadPermisosLog(selectedAdminUid);
-    else setAdminPermisosLog([]);
-  }, [selectedAdminUid]);
-  const setPermission = async (targetUid: string, key: string, value: boolean, motivo?: string) => {
-    const u = auth.currentUser;
-    if (!u || permBusy) return;
-    setPermBusy(true);
-    setAdminUsers((prev) => prev.map((x) => x.uid === targetUid ? { ...x, permisos: { ...x.permisos, [key]: value } } : x));
-    try {
-      const token = await getIdToken(u);
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: targetUid, key, value, motivo }),
-      });
-      if (!res.ok) throw new Error("error");
-      setPermMsg({ ok: true, text: "Permiso actualizado" });
-    } catch {
-      setAdminUsers((prev) => prev.map((x) => x.uid === targetUid ? { ...x, permisos: { ...x.permisos, [key]: !value } } : x));
-      setPermMsg({ ok: false, text: "No se pudo actualizar" });
-    } finally {
-      setPermBusy(false);
-      setPendingPerm(null);
-      setPermMotivo(null);
-      setTimeout(() => setPermMsg(null), 3000);
-    }
-  };
-  const delCode = async (code: string) => {
-    const u = auth.currentUser;
-    if (!u) return;
-    setAdminCodes((prev) => prev.filter((c) => c.code !== code));
-    try {
-      const token = await getIdToken(u);
-      await fetch("/api/invite-codes", {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-    } catch { /* ignore */ }
   };
   const [changelog, setChangelog] = useState<string | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -555,11 +463,9 @@ export default function ConfigPage() {
   const [showAutoAhorroModal, setShowAutoAhorroModal] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [showGithubConfirm, setShowGithubConfirm] = useState(false);
-  const [permisosLog, setPermisosLog] = useState<Array<{timestamp: Date; key: string; newValue: boolean; motivo: string}>>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deletePass, setDeletePass] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteRequested, setDeleteRequested] = useState(false);
   const [localAutoMonto, setLocalAutoMonto] = useState("");
   const [localAutoMedios, setLocalAutoMedios] = useState<string[]>([]);
   const [localAutoOmitir, setLocalAutoOmitir] = useState<string[]>([]);
@@ -634,17 +540,6 @@ export default function ConfigPage() {
   }, [metaFecha, metaMonto, metaSaldo, cotizManualOn, cotizManualVal, config]);
 
   // ── Effects ──
-  useEffect(() => {
-    if (!user?.uid || isOwner) return;
-    getDoc(doc(db, `users/${user.uid}/config/permisosLog`)).then((snap) => {
-      if (!snap.exists()) return;
-      const raw = (snap.data()?.historial ?? []) as Array<{ timestamp: { toDate?: () => Date } | string; key: string; newValue: boolean; motivo: string }>;
-      const sorted = raw
-        .map((l) => ({ ...l, timestamp: typeof l.timestamp === "object" && l.timestamp.toDate ? l.timestamp.toDate() : new Date(l.timestamp as string) }))
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-      setPermisosLog(sorted);
-    }).catch(() => {});
-  }, [user?.uid, isOwner]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -763,32 +658,18 @@ export default function ConfigPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleDeleteAccount = async () => {
-    if (!user || !deletePass) return;
+  const handleRequestDeletion = async () => {
+    if (!auth.currentUser) return;
     setDeleteBusy(true);
-    setDeleteError(null);
     try {
-      const cred = EmailAuthProvider.credential(user.email!, deletePass);
-      await reauthenticateWithCredential(auth.currentUser!, cred);
-      const token = await getIdToken(auth.currentUser!);
-      const res = await fetch("/api/account/delete", {
-        method: "DELETE",
+      const token = await getIdToken(auth.currentUser);
+      await fetch("/api/account/request-deletion", {
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("delete-failed");
-      localStorage.removeItem(`moves_${user.uid}`);
-      localStorage.removeItem(`config_${user.uid}`);
-      useAppPrefs.getState().reset();
-      await signOut(auth);
-      router.replace("/login");
-    } catch (err) {
-      const code = (err as { code?: string })?.code ?? "";
-      setDeleteError(
-        code === "auth/wrong-password" || code === "auth/invalid-credential"
-          ? t.wrongCurrentPassword
-          : t.deleteAccountError
-      );
-    } finally {
+      setDeleteRequested(true);
+      setShowDeleteConfirm(false);
+    } catch { /* ignore */ } finally {
       setDeleteBusy(false);
     }
   };
@@ -1014,20 +895,6 @@ export default function ConfigPage() {
       {/* ── Acordeón unificado ── */}
       <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {/* Instalar app (si el navegador lo permite y no está instalada) */}
-          {canInstall && (
-            <button onClick={promptInstall} className="card" style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", border: "1px solid var(--accent)44", background: "linear-gradient(135deg, var(--surface), var(--accent-dim))", textAlign: "left", width: "100%" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--accent-dim)", border: "1px solid var(--accent)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--accent)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--accent)" }}>{t.installApp}</div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.installAppSub}</div>
-              </div>
-            </button>
-          )}
 
           {/* ── Cuenta (incluye Sincronización) ── */}
           <div className="card">
@@ -1169,27 +1036,6 @@ export default function ConfigPage() {
               </div>
             </div>
 
-            {/* Historial de accesos (no-owner) */}
-            {!isOwner && permisosLog.length > 0 && (
-              <div style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Accesos</div>
-                {permisosLog.slice(0, 4).map((log, i) => {
-                  const label = log.key === "comprobantes" ? "Imágenes" : log.key === "inversion" ? "Inversión" : log.key;
-                  const color = log.newValue ? "var(--green)" : "var(--red)";
-                  return (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: i < permisosLog.length - 1 ? 5 : 0 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                      <div style={{ fontSize: 11, lineHeight: 1.4 }}>
-                        <span style={{ color }}>{label} {log.newValue ? "activado" : "desactivado"}</span>
-                        {log.motivo && <span style={{ color: "var(--muted)" }}> · {log.motivo}</span>}
-                        <span style={{ color: "var(--muted)" }}> · {log.timestamp.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
             {/* Backup */}
             <button onClick={() => setShowExportConfirm(true)} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
@@ -1205,33 +1051,18 @@ export default function ConfigPage() {
               </div>
             </button>
 
-            {/* Eliminar cuenta */}
-            <button onClick={() => { setDeletePass(""); setDeleteError(null); setShowDeleteConfirm(true); }} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--red-dim)", border: "1px solid var(--red)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--red)" }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, color: "var(--red)" }}>{t.deleteAccount}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.deleteAccountSub}</div>
-                </div>
-              </div>
-            </button>
 
-            {/* Administración (solo dueño) */}
+            {/* Generar invitación (solo dueño) */}
             {isOwner && (
-              <button onClick={openAdmin} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
+              <button onClick={generateInviteCode} disabled={genBusy} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: genBusy ? "default" : "pointer", textAlign: "left" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-dim)", border: "1px solid var(--accent)44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--accent)" }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" /><path d="m9 12 2 2 4-4" />
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
                     </svg>
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13 }}>{t.adminTitle}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.adminSub}</div>
+                  <div style={{ fontSize: 13, color: genBusy ? "var(--muted)" : "var(--text)" }}>
+                    {genBusy ? "Generando…" : "Generar invitación"}
                   </div>
                 </div>
               </button>
@@ -1744,6 +1575,13 @@ export default function ConfigPage() {
 
         </div>
 
+        {/* Solicitar baja de cuenta */}
+        {!isOwner && (
+          <button onClick={() => setShowDeleteConfirm(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 11, padding: "8px 0 24px", textDecoration: "underline", textUnderlineOffset: 3 }}>
+            solicitar eliminación de cuenta
+          </button>
+        )}
+
       {saveMsg && (
         <div className="fade-up" style={{
           position: "fixed", left: 16, right: 16, bottom: "calc(var(--nav-h) + 16px)",
@@ -1972,184 +1810,6 @@ export default function ConfigPage() {
         document.body
       )}
 
-      <BottomSheet open={showAdmin} onClose={() => setShowAdmin(false)} title={t.adminTitle}>
-        {/* Códigos de invitación (solo disponibles; caducan a las 24h) */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t.adminInviteSection}</span>
-          <button onClick={generateInviteCode} disabled={genBusy} style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: 999, padding: "4px 10px", cursor: genBusy ? "default" : "pointer" }}>+ {t.adminGenerate}</button>
-        </div>
-        {adminCodes.length === 0 ? (
-          <div style={{ color: "var(--muted)", fontSize: 12, padding: "2px 0 12px" }}>{t.adminNoCodes}</div>
-        ) : (
-          <div style={{ marginBottom: 14 }}>
-            {adminCodes.map((c) => (
-              <div key={c.code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--faint)" }}>
-                <button onClick={() => { setInviteCode(c.code); setShowInviteModal(true); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}>
-                  <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: 2, color: "var(--accent)" }}>{c.code}</span>
-                </button>
-                <button onClick={() => delCode(c.code)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px" }}>×</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Usuarios */}
-        <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "6px 0 8px" }}>{t.adminUsersSection}</div>
-        {adminLoading ? (
-          <div style={{ textAlign: "center", padding: "12px 0", color: "var(--muted)", fontSize: 12 }}>…</div>
-        ) : adminUsers.length === 0 ? (
-          <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>{t.adminNoUsers}</div>
-        ) : adminUsers.map((u) => (
-          <button key={u.uid} onClick={() => setSelectedAdminUid(u.uid)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 0", background: "none", border: "none", borderBottom: "1px solid var(--faint)", cursor: "pointer", textAlign: "left" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.pushOn ? "var(--green)" : "var(--border)", flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>{u.email || u.uid}</span>
-            {u.isOwner && <span className="badge" style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)44" }}>owner</span>}
-          </button>
-        ))}
-      </BottomSheet>
-
-      {/* Card flotante de usuario seleccionado */}
-      <BottomSheet open={!!selectedAdminUser} onClose={() => setSelectedAdminUid(null)} title={selectedAdminUser?.email ?? ""}>
-        {selectedAdminUser && (() => {
-          const u = selectedAdminUser;
-          return (
-            <>
-              <div className="row">
-                <span style={{ fontSize: 13, color: "var(--muted)" }}>Última conexión</span>
-                {u.pushOn ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
-                    <span style={{ fontSize: 13, color: "var(--green)" }}>online</span>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 13 }}>
-                    {u.lastSignIn ? new Date(u.lastSignIn).toLocaleString("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }) : "—"}
-                  </span>
-                )}
-              </div>
-              {!u.isOwner && (
-                <>
-                  <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 4px" }}>Permisos</div>
-                  {([["comprobantes", t.permComprobantes], ["inversion", t.permInversion]] as const).map(([key, label]) => {
-                    const on = u.permisos[key] === true;
-                    return (
-                      <div key={key} className="row">
-                        <span style={{ fontSize: 13 }}>{label}</span>
-                        <button onClick={() => setPendingPerm({ uid: u.uid, key, value: !on, label, nombre: u.nombre || u.email })} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                          <span style={{ width: 34, height: 19, borderRadius: 999, background: on ? "var(--green)" : "var(--surface-alt)", border: `1px solid ${on ? "var(--green)" : "var(--border)"}`, position: "relative", display: "block" }}>
-                            <span style={{ position: "absolute", top: 2, left: on ? 16 : 2, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                  {adminPermisosLog.length > 0 && (
-                    <>
-                      <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 8px" }}>Historial</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {adminPermisosLog.slice(0, 3).map((log, i) => {
-                          const permLabel = log.key === "comprobantes" ? "Imágenes" : log.key === "inversion" ? "Inversión" : log.key;
-                          const action = log.newValue ? "activó" : "desactivó";
-                          return (
-                            <div key={i} style={{ fontSize: 11, color: "var(--muted)", padding: "6px 0", borderTop: i === 0 ? "1px solid var(--faint)" : "none", paddingTop: 6 }}>
-                              <div>{permLabel} <strong>{action}</strong> • {log.motivo}</div>
-                              <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 2 }}>
-                                {log.timestamp.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-              {permMsg && (
-                <div style={{ marginTop: 12, padding: "8px 12px", borderRadius: 10, fontSize: 12, background: permMsg.ok ? "var(--green-dim)" : "var(--red-dim)", border: `1px solid ${permMsg.ok ? "var(--green)44" : "var(--red)44"}`, color: permMsg.ok ? "var(--green)" : "var(--red)" }}>
-                  {permMsg.text}
-                </div>
-              )}
-            </>
-          );
-        })()}
-      </BottomSheet>
-
-      {pendingPerm && mounted && createPortal(
-        <div data-no-swipe onClick={() => setPendingPerm(null)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 380, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
-            <div style={{ padding: "24px 20px 20px" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{pendingPerm.value ? "Activar" : "Desactivar"} permiso</div>
-              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 20 }}>
-                <strong>{pendingPerm.label}</strong> para <strong>{pendingPerm.nombre}</strong>
-              </div>
-
-              <div style={{ marginBottom: 20 }}>
-                <div className="label" style={{ marginBottom: 10 }}>Motivo</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {(["Fix", "Bug", "Error"] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setPermMotivo(m)}
-                      style={{
-                        padding: "12px 14px",
-                        borderRadius: 10,
-                        border: `1px solid ${permMotivo === m ? "var(--blue)" : "var(--border)"}`,
-                        background: permMotivo === m ? "var(--blue-dim)" : "transparent",
-                        color: permMotivo === m ? "var(--blue)" : "var(--text)",
-                        fontSize: 13,
-                        fontWeight: permMotivo === m ? 700 : 500,
-                        cursor: "pointer",
-                        textAlign: "left",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  onClick={() => setPendingPerm(null)}
-                  style={{
-                    flex: 1,
-                    height: 44,
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "transparent",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    color: "var(--text)",
-                  }}
-                >
-                  {t.cancel}
-                </button>
-                <button
-                  onClick={() => permMotivo && setPermission(pendingPerm.uid, pendingPerm.key, pendingPerm.value, permMotivo)}
-                  disabled={!permMotivo || permBusy}
-                  style={{
-                    flex: 1,
-                    height: 44,
-                    borderRadius: 12,
-                    border: "none",
-                    background: permMotivo ? (pendingPerm.value ? "var(--green)" : "var(--red)") : "var(--surface-alt)",
-                    color: permMotivo ? "var(--bg)" : "var(--muted)",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: permMotivo ? "pointer" : "default",
-                    opacity: permBusy ? 0.5 : 1,
-                  }}
-                >
-                  {permBusy ? "..." : pendingPerm.value ? "Activar" : "Desactivar"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {confirmLeave && (
         <ConfirmModal title={t.leaveSiteTitle} confirmLabel={t.leaveSiteConfirm} cancelLabel={t.cancel}
@@ -2165,26 +1825,31 @@ export default function ConfigPage() {
 
       {showDeleteConfirm && (
         <ConfirmModal
-          title={t.deleteAccountTitle}
-          confirmLabel={t.deleteAccountConfirm}
+          title="Solicitar eliminación"
+          confirmLabel="Enviar solicitud"
           cancelLabel={t.cancel}
           confirmColor="var(--red)"
           loading={deleteBusy}
-          onConfirm={handleDeleteAccount}
+          onConfirm={handleRequestDeletion}
           onCancel={() => setShowDeleteConfirm(false)}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{t.deleteAccountBody}</div>
-            <input
-              type="password"
-              value={deletePass}
-              onChange={(e) => setDeletePass(e.target.value)}
-              className="input"
-              placeholder={t.currentPasswordPlaceholder}
-              autoComplete="current-password"
-              autoFocus
-            />
-            {deleteError && <div style={{ fontSize: 12, color: "var(--red)" }}>{deleteError}</div>}
+          <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+            Se notificará al administrador para que confirme la eliminación de tus datos. Tu cuenta se desactivará hasta que el admin complete el proceso.
+          </div>
+        </ConfirmModal>
+      )}
+
+      {deleteRequested && (
+        <ConfirmModal
+          title="Solicitud enviada"
+          confirmLabel="Aceptar"
+          cancelLabel=""
+          confirmColor="var(--green)"
+          onConfirm={() => setDeleteRequested(false)}
+          onCancel={() => setDeleteRequested(false)}
+        >
+          <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+            Tu solicitud fue recibida. El administrador confirmará la eliminación de tus datos y te avisará.
           </div>
         </ConfirmModal>
       )}
@@ -2252,13 +1917,12 @@ export default function ConfigPage() {
       )}
 
       {showInviteModal && mounted && createPortal(
-        <div data-no-swipe onClick={() => setShowInviteModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 36px" }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
+        <div data-no-swipe onClick={() => setShowInviteModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 380, boxShadow: "0 12px 40px rgba(0,0,0,0.5)", padding: "24px 20px" }}>
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>{t.inviteCodeModalTitle}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: 14, padding: "16px 18px" }}>
               <span style={{ flex: 1, fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 4, color: "var(--accent)", textAlign: "center" }}>{inviteCode}</span>
-              <button onClick={copyInviteCode} aria-label={t.copy} style={{ background: codeCopied ? "var(--green-dim)" : "var(--accent-dim)", border: `1px solid ${codeCopied ? "var(--green)" : "var(--accent)"}44`, borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: codeCopied ? "var(--green)" : "var(--accent)", flexShrink: 0 }}>
+              <button onClick={copyInviteCode} aria-label={t.copy} style={{ background: codeCopied ? "var(--green-dim)" : "var(--surface)", border: `1px solid ${codeCopied ? "var(--green)" : "var(--border)"}`, borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: codeCopied ? "var(--green)" : "var(--muted)", flexShrink: 0 }}>
                 {codeCopied ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                 ) : (
