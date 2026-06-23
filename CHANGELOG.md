@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.29.0] — 2026-06-22
+
+### Added
+- **InstallBanner**: persistent floating PWA install prompt (same style as UpdateBanner) — replaces the settings card; shows until app is installed, no close button. Added `components/pwa/InstallBanner.tsx`, wired into `app/(tabs)/layout.tsx`.
+- **Account deletion request flow**: new `POST /api/account/request-deletion` endpoint — marks `pendingDeletion: true` + `pendingDeletionAt` on user's Firestore doc and sends push notification to owner. No actual deletion, no reauth required.
+
+### Changed
+- **Invite code modal**: changed from bottom-sheet to centered floating card (matching ConfirmModal/Backup style); accent-dim background, icon-only copy button.
+- **Delete account**: moved from inside Cuenta card to bottom of settings page (subtle underline link, non-owner only); action now triggers deactivation request instead of immediate deletion.
+- **Settings**: removed `useInstallPrompt` import and `canInstall`/`promptInstall` usage (install prompt now lives in `InstallBanner`). Removed `deletePass`, `deleteError` state; replaced `handleDeleteAccount` with `handleRequestDeletion`.
+
+---
+
 ## [2.28.1] — 2026-06-22
 
 ### Changed

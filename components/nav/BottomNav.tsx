@@ -90,7 +90,7 @@ export function BottomNav() {
   });
 
   return (
-    <nav style={{
+    <nav className="bottom-nav" style={{
       position: "fixed", bottom: 0, left: 0, right: 0,
       height: "var(--nav-h)",
       background: "var(--nav-bg)",

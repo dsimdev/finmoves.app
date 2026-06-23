@@ -256,6 +256,31 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: 18px;
 }
 
+/* ── Desktop sidebar nav ── */
+.sidenav {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 200px;
+  height: 100dvh;
+  background: var(--nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid var(--border);
+  flex-direction: column;
+  padding: 20px 10px;
+  z-index: 100;
+}
+
+@media (min-width: 768px) {
+  .sidenav { display: flex; }
+  .bottom-nav { display: none !important; }
+  .page {
+    margin: 0 auto 0 200px;
+    padding-bottom: 20px;
+  }
+}
+
 /* ── Header title gradient (logo colors) ── */
 .title-gradient {
   background: linear-gradient(110deg, var(--blue) 10%, var(--green) 90%);

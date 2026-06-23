@@ -6,10 +6,12 @@ import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebase/firebase";
 import { BottomNav } from "@/components/nav/BottomNav";
+import { SideNav } from "@/components/nav/SideNav";
 import { SwipeNav } from "@/components/nav/SwipeNav";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { UpdateBanner } from "@/components/pwa/UpdateBanner";
+import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { LockScreen } from "@/components/pwa/LockScreen";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -56,10 +58,12 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <DataProvider>
+      <SideNav />
       <SwipeNav>{children}</SwipeNav>
       <BottomNav />
       <OfflineBanner />
       <UpdateBanner />
+      <InstallBanner />
     </DataProvider>
   );
 }
