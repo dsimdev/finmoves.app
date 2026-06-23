@@ -176,7 +176,7 @@ export default function MovimientosPage() {
                 let nGasto = 0, nMoveAhorro = 0, nMoveDisp = 0, nUsd = 0, nIngreso = 0;
                 for (const m of movs) {
                   if (m.tipo === "Gasto") nGasto++;
-                  else if (m.tipo === "Move" && m.descripcion !== "Auto-ahorro") {
+                  else if (m.tipo === "Move") {
                     if (m.direccionMove === "aAhorro") nMoveAhorro++;
                     else nMoveDisp++;
                   }
