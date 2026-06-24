@@ -202,7 +202,7 @@ export const es = {
   nextPeriodProjection: "Proyección próx. período",
   avgLast3: "promedio últimos 3",
   kpiFreeDaysInfo: "Días del período en los que no registraste ningún gasto.",
-  kpiTrendInfo: "Variación de tu gasto: promedio de los últimos 3 períodos contra los 3 anteriores. En rojo gastás más; en verde gastás menos.",
+  kpiTrendInfo: "Período actual vs. promedio histórico de todos los anteriores.",
   kpiHighestDayInfo: "El día en que más gastaste dentro del período.",
   kpiAvgDayInfo: "Promedio gastado por cada día en que tuviste al menos un gasto.",
   kpiAvgPerExpenseInfo: "Promedio de cada gasto: total gastado dividido la cantidad de gastos.",

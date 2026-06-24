@@ -339,17 +339,11 @@ export default function ReportesPage() {
   const promGastoPorPeriodo = periodos.length > 0
     ? Math.round(periodos.reduce((s, p) => s + p.gastado, 0) / periodos.length) : 0;
   const estadPeriodos = useMemo(() => estadisticasPeriodos(periodos), [periodos]);
-  const avgUlt3 = periodos.slice(0, 3).reduce((s, p) => s + p.gastado, 0) / Math.max(periodos.slice(0, 3).length, 1);
-  const avgPrev3 = periodos.slice(3, 6).reduce((s, p) => s + p.gastado, 0) / Math.max(periodos.slice(3, 6).length, 1);
-  const tendenciaGasto = periodos.length >= 4
-    ? Math.round(((avgUlt3 - avgPrev3) / avgPrev3) * 100) : null;
-  const proyeccionGasto = periodos.length >= 2 ? Math.round(avgUlt3) : null;
-
-  // Tendencia de cantidad de movimientos
-  const cantUlt3 = periodos.slice(0, 3).reduce((s, p) => s + p.movimientos.length, 0) / Math.max(periodos.slice(0, 3).length, 1);
-  const cantPrev3 = periodos.slice(3, 6).reduce((s, p) => s + p.movimientos.length, 0) / Math.max(periodos.slice(3, 6).length, 1);
-  const tendenciaCantidad = periodos.length >= 4 && cantPrev3 > 0
-    ? Math.round(((cantUlt3 - cantPrev3) / cantPrev3) * 100) : null;
+  const avgHistorico = periodos.length >= 2
+    ? periodos.slice(1).reduce((s, p) => s + p.gastado, 0) / (periodos.length - 1) : 0;
+  const tendenciaGasto = periodos.length >= 2 && avgHistorico > 0
+    ? Math.round(((periodos[0].gastado - avgHistorico) / avgHistorico) * 100) : null;
+  const proyeccionGasto = periodos.length >= 2 ? Math.round(avgHistorico) : null;
 
   // ── Movimientos: estadísticas de frecuencia ──
   const movCounts = useMemo(() => {
@@ -422,10 +416,22 @@ export default function ReportesPage() {
               const isActive = sub === s.id;
               const tabColor = s.id === "gastos" ? "var(--red)" : s.id === "ingresos" ? "var(--green)" : "var(--blue)";
               const tabDim   = s.id === "gastos" ? "var(--red-dim)" : s.id === "ingresos" ? "var(--green-dim)" : "var(--blue-dim)";
+              const tabGrad  = s.id === "movimientos" ? "linear-gradient(90deg, #26c6da, var(--purple))"
+                             : s.id === "periodos"    ? "linear-gradient(90deg, var(--red), var(--green))"
+                             : null;
               return (
                 <button key={s.id} onClick={() => setSub(s.id)} className="subtab"
-                  style={isActive ? { background: `linear-gradient(135deg, var(--surface-alt) 0%, ${tabDim} 100%)`, color: tabColor, border: `1px solid ${tabColor}44` } : {}}>
-                  {s.label}
+                  style={isActive ? (tabGrad ? {
+                    border: "1px solid transparent",
+                    backgroundImage: `linear-gradient(var(--surface-alt), var(--surface-alt)), ${tabGrad}`,
+                    backgroundOrigin: "padding-box, border-box",
+                    backgroundClip: "padding-box, border-box",
+                  } : { background: `linear-gradient(135deg, var(--surface-alt) 0%, ${tabDim} 100%)`, color: tabColor, border: `1px solid ${tabColor}44` }) : {}}>
+                  {isActive && tabGrad ? (
+                    <span style={{ background: tabGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                      {s.label}
+                    </span>
+                  ) : s.label}
                 </button>
               );
             })}
@@ -435,6 +441,16 @@ export default function ReportesPage() {
           {sub !== "periodos" && (() => {
             const subColor = sub === "gastos" ? "var(--red)" : sub === "ingresos" ? "var(--green)" : "var(--blue)";
             const subDim   = sub === "gastos" ? "var(--red-dim)" : sub === "ingresos" ? "var(--green-dim)" : "var(--blue-dim)";
+            const isMovSub = sub === "movimientos";
+            const movGrad  = "linear-gradient(90deg, #26c6da, var(--purple))";
+            const activePill: React.CSSProperties = isMovSub ? {
+              border: "1px solid transparent",
+              backgroundImage: `linear-gradient(var(--bg), var(--bg)), ${movGrad}`,
+              backgroundOrigin: "padding-box, border-box",
+              backgroundClip: "padding-box, border-box",
+              color: "var(--text)",
+            } : { border: `1px solid ${subColor}`, background: subDim, color: subColor };
+            const inactivePill: React.CSSProperties = { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)" };
             const años = Array.from(new Set(periodos.map((p) => periodoAnio(p.periodoId))));
             const añosActivos = new Set(activos.map((id) => periodoAnio(id)));
             // En comparar multi-año mostramos todos los activos; si no, los del año en vista.
@@ -480,12 +496,10 @@ export default function ReportesPage() {
                         <button key={año} onClick={() => selectYear(año)}
                           style={{
                             flexShrink: 0, padding: "5px 13px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
-                            border: `1px solid ${isAñoActivo ? subColor : "var(--border)"}`,
-                            background: isAñoActivo ? subDim : "transparent",
-                            color: isAñoActivo ? subColor : "var(--muted)",
                             transition: "all 0.15s",
+                            ...(isAñoActivo ? activePill : inactivePill),
                           }}
-                        >{año}</button>
+                        >{isMovSub && isAñoActivo ? <span style={{ background: movGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{año}</span> : año}</button>
                       );
                     })}
                   </div>
@@ -494,9 +508,7 @@ export default function ReportesPage() {
                       style={{
                         flexShrink: 0, display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 999,
                         fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                        border: `1px solid ${compareMode ? subColor : "var(--border)"}`,
-                        background: compareMode ? subDim : "transparent",
-                        color: compareMode ? subColor : "var(--muted)",
+                        ...(compareMode ? activePill : inactivePill),
                       }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M7 10h14M7 10l-4 4 4 4"/><path d="M17 14H3M17 14l4-4-4-4" transform="translate(0 -4)"/>
@@ -513,12 +525,10 @@ export default function ReportesPage() {
                       <button key={p.periodoId} onClick={() => togglePill(p.periodoId)}
                         style={{
                           flexShrink: 0, padding: "6px 14px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
-                          border: `1px solid ${isSelected ? subColor : "var(--border)"}`,
-                          background: isSelected ? subDim : "transparent",
-                          color: isSelected ? subColor : "var(--muted)",
                           transition: "all 0.15s",
+                          ...(isSelected ? activePill : inactivePill),
                         }}
-                      >{shortPer(p.periodoId)}</button>
+                      >{isMovSub && isSelected ? <span style={{ background: movGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{shortPer(p.periodoId)}</span> : shortPer(p.periodoId)}</button>
                     );
                   })}
                 </div>
@@ -533,7 +543,7 @@ export default function ReportesPage() {
               {reportOn("gastos_kpis") && (() => {
                 const pctColor = colorPct(periodo.pct);
                 return (
-                  <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                  <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--red-dim))" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                       <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.spent}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -557,8 +567,8 @@ export default function ReportesPage() {
                   <MiniStat center label={t.trend} value={v} color={c}
                     onClick={() => setKpiInfo({ title: t.trend, value: v, explain: t.kpiTrendInfo, color: c })} />
                 ); })()}
-                <MiniStat center label={t.highestSpendingDay} value={kpis.diaMayorGasto ? (oculto ? "••" : abbr(kpis.diaMayorGasto.monto)) : "—"} color="var(--red)"
-                  onClick={kpis.diaMayorGasto ? () => setKpiInfo({ title: t.highestSpendingDay, value: oculto ? "••" : formatARS(kpis.diaMayorGasto!.monto), explain: `${t.kpiHighestDayInfo} (${sinAño(kpis.diaMayorGasto!.fecha)})`, color: "var(--red)" }) : undefined} />
+                {periodo.moveAhorros > 0 && <MiniStat center label="A ahorros" value={oculto ? "••" : abbr(periodo.moveAhorros)} color="var(--purple)"
+                  onClick={() => setKpiInfo({ title: "Move a ahorros", value: oculto ? "••" : formatARS(periodo.moveAhorros), explain: "Total transferido a ahorros este período.", color: "var(--purple)" })} />}
               </div>
               )}
 
@@ -652,7 +662,7 @@ export default function ReportesPage() {
               {/* Hero + KPIs */}
               {reportOn("ingresos_kpis") && (
               <>
-              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--green-dim))" }}>
+              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(160deg, var(--surface) 50%, #00e67610 100%)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.availableIncome}</div>
                   <button onClick={toggle} aria-label={t.hideValues} style={{
@@ -662,7 +672,7 @@ export default function ReportesPage() {
                     <EyeIcon off={oculto} />
                   </button>
                 </div>
-                <div style={{ fontSize: 34, fontWeight: 700, color: "var(--green)", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontSize: 34, fontWeight: 700, color: "#00e676cc", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
                   {money(totalIngresos)}
                 </div>
                 {deltaIngresos !== null && (
@@ -789,7 +799,7 @@ export default function ReportesPage() {
           {sub === "periodos" && periodo && (
             <>
               {reportOn("periodos_kpis") && (
-              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--red-dim), var(--surface), var(--green-dim))" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.periodAvgSpent}</div>
                   <button onClick={toggle} aria-label={t.hideValues} style={{ background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}><EyeIcon off={oculto} /></button>
@@ -890,7 +900,7 @@ export default function ReportesPage() {
                 return (
                   <>
                   {/* Hero: total + distribución por tipo */}
-                  <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--blue-dim))" }}>
+                  <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--teal-dim) 60%, var(--purple-dim))" }}>
                     <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t.totalMovements}</div>
                     <div style={{ fontSize: 30, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{movCounts.total}</div>
                     <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, marginBottom: 12 }}>{t.activeDays(movCounts.diasActivos)}</div>
@@ -924,8 +934,8 @@ export default function ReportesPage() {
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                         <MiniStat center basis="1 1 45%" label="Hoy" value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} color="var(--accent)"
                           onClick={gastoHoy !== null ? () => setKpiInfo({ title: "Gasto hoy", value: oculto ? "••" : formatARS(gastoHoy), explain: "Total gastado en el día de hoy (período activo).", color: "var(--accent)" }) : undefined} />
-                        {promPorMov !== null && <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} color="var(--red)"
-                          onClick={() => setKpiInfo({ title: t.avgPerExpense, value: oculto ? "••" : formatARS(promPorMov!), explain: `${t.kpiAvgPerExpenseInfo} (${t.transactions(kpis?.cantGastos ?? 0)})`, color: "var(--red)" })} />}
+                        {diaCaro && <MiniStat center basis="1 1 45%" label={t.highestSpendingDay} value={oculto ? "••" : abbr(diaCaro.monto)} color="var(--red)"
+                          onClick={() => setKpiInfo({ title: t.highestSpendingDay, value: oculto ? "••" : formatARS(diaCaro.monto), explain: `${t.kpiHighestDayInfo} (${sinAño(diaCaro.fecha)})`, color: "var(--red)" })} />}
                         {kpis && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} color="var(--red)"
                           onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis!.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis!.diasConGasto)})`, color: "var(--red)" })} />}
                         <MiniStat center basis="1 1 45%" label="Días activos" value={`${pctDias}%`} color="var(--accent)"

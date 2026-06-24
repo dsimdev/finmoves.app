@@ -204,7 +204,7 @@ export const en: AppLocale = {
   nextPeriodProjection: "Next period projection",
   avgLast3: "average of last 3",
   kpiFreeDaysInfo: "Days in the period with no expense recorded.",
-  kpiTrendInfo: "Your spending change: average of the last 3 periods vs the previous 3. Red = spending more; green = spending less.",
+  kpiTrendInfo: "Current period vs. historical average of all previous periods.",
   kpiHighestDayInfo: "The day you spent the most within the period.",
   kpiAvgDayInfo: "Average spent per day on days you had at least one expense.",
   kpiAvgPerExpenseInfo: "Average per expense: total spent divided by the number of expenses.",

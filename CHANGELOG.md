@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.30.0] — 2026-06-23
+
+### Changed
+- **Reports / Movimientos KPIs**: replaced "avg per movement" stat with "peak spending day" (`kpis.diaMayorGasto`) in red.
+- **Reports / Gastos KPIs**: replaced "peak spending day" with "moved to savings" (`periodo.moveAhorros`) in purple; shown only when > 0.
+- **Reports / Tendencia**: changed comparison from last-3 vs previous-3 periods to current period vs historical average of all previous periods (`periodos.slice(1)` mean). Requires ≥ 2 periods instead of ≥ 4. Updated locale strings for `kpiTrendInfo`.
+- **Reports / Colors**: Movimientos tab, year pills, period pills, and hero card now use a teal→purple gradient (matching the Move pill in the entry modal). Períodos tab and hero use a red→green gradient. Gastos hero now has a red-dim background. Ingresos hero background and number color softened.
+
+---
+
 ## [2.29.2] — 2026-06-23
 
 ### Fixed

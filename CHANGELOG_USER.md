@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.30.0] — 2026-06-23
+
+### Mejoras en Reportes
+- La sección **Movimientos** ahora muestra el **día pico de gasto** del período en vez del promedio por movimiento.
+- La sección **Gastos** ahora muestra el total **movido a ahorros** del período (en violeta).
+- La **tendencia** compara el período actual contra el promedio histórico de todos los períodos anteriores, en lugar de los últimos 3 vs. los 3 previos — más representativo cuando tenés muchos meses cargados.
+- Nuevo esquema de colores en Reportes: **Movimientos** usa un gradiente teal→violeta, **Períodos** usa rojo→verde. Cada sección tiene su propio tono de fondo en la tarjeta principal.
+
+---
+
 ## [2.29.2] — 2026-06-23
 
 ### Correcciones
