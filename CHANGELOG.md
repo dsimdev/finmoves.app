@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.31.0] — 2026-06-23
+
+### Added
+- **Reports / Movimientos hero**: interactive SVG donut chart showing movement distribution by type. Tap a segment to highlight it and display its percentage in the center; tap again to deselect.
+- **Reports / Períodos**: new "Días por período" bar chart with color coding — green ≤29 days, yellow 30–31, red ≥32.
+
+### Changed
+- **Reports / Movimientos KPIs — Tendencia**: now computes trend based on movement count (not expense amount) vs. historical average. Explanation modal shows current count and historical average for direct comparison.
+- **Reports / Movimientos hero**: removed "período" subtitle; restored "días activos" subtitle. Legend row (`visibility: hidden` when empty) prevents layout shift on segment selection.
+- **Reports / Períodos KPIs**: removed "Mejor período" / "Peor período" MiniStats; best and worst periods are now highlighted directly in the "Gastado por período" bar chart (green/red labels).
+- **Reports / Medios de pago**: gastos without `medioPago` or with `medioPago === "-"` are attributed to "Mercado Pago" in the chart visualization only.
+- **Dashboard**: active period display now shows elapsed days ("X días") instead of the period start date.
+- **VBars**: added optional `valueLabel` per-bar prop to override the default currency-formatted label.
+
+---
+
 ## [2.30.0] — 2026-06-23
 
 ### Changed

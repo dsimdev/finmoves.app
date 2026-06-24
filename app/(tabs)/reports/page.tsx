@@ -87,17 +87,56 @@ function Stat({ label, value, sub, color, danger, dimVar }: { label: string; val
   );
 }
 
+function DonutChart({ data, size = 80, strokeWidth = 13, selected, onSelect }: {
+  data: { value: number; color: string; key: string; label: string }[];
+  size?: number; strokeWidth?: number;
+  selected?: string | null;
+  onSelect?: (key: string | null) => void;
+}) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0) return null;
+  const r = (size - strokeWidth) / 2;
+  const c = 2 * Math.PI * r;
+  const cx = size / 2;
+  let acc = 0;
+  const sel = selected ? data.find(d => d.key === selected) : null;
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }} onClick={() => onSelect?.(null)}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        {data.filter(d => d.value > 0).map(({ value, color, key }, i) => {
+          const dash = (value / total) * c;
+          const offset = -acc;
+          acc += dash;
+          return <circle key={i} cx={cx} cy={cx} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
+            strokeDasharray={`${dash} ${c - dash}`} strokeDashoffset={offset}
+            opacity={selected && selected !== key ? 0.2 : 1}
+            style={{ cursor: "pointer", transition: "opacity 0.2s" }}
+            onClick={(e) => { e.stopPropagation(); onSelect?.(selected === key ? null : key); }} />;
+        })}
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none", gap: 1 }}>
+        {sel ? (
+          <>
+            <div style={{ fontSize: 14, fontWeight: 700, color: sel.color, fontFamily: "var(--font-mono)", lineHeight: 1 }}>{Math.round((sel.value / total) * 100)}%</div>
+            <div style={{ fontSize: 7, color: "var(--muted)", textAlign: "center", lineHeight: 1.2, maxWidth: size - strokeWidth * 2 - 4 }}>{sel.label}</div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 // Mini-stat compacto, fondo neutro, color sólo en el número.
-function VBars({ data, max, oculto, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean }[]; max: number; oculto?: boolean; onBarClick?: (label: string) => void }) {
+function VBars({ data, max, oculto, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string }[]; max: number; oculto?: boolean; onBarClick?: (label: string) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
       {data.map((d, i) => (
         <div key={i} onClick={() => onBarClick?.(d.label)} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: onBarClick ? "pointer" : "default" }}>
-          <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "•" : abbr(d.value)}</div>
+          <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "•" : (d.valueLabel ?? abbr(d.value))}</div>
           <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
             <div style={{ width: "100%", height: `${max > 0 ? Math.round((d.value / max) * 100) : 0}%`, background: d.color, borderRadius: 7, transition: "height .5s ease" }} />
           </div>
-          <div style={{ fontSize: 8, color: d.hi ? "var(--accent)" : "var(--muted)", fontWeight: d.hi ? 700 : 400 }}>{shortPer(d.label)}</div>
+          <div style={{ fontSize: 8, fontWeight: (d.best || d.worst || d.hi) ? 700 : 400, color: d.best ? "var(--green)" : d.worst ? "var(--red)" : d.hi ? "var(--accent)" : "var(--muted)" }}>{shortPer(d.label)}</div>
         </div>
       ))}
     </div>
@@ -144,6 +183,7 @@ export default function ReportesPage() {
   const [editingBudget, setEditingBudget] = useState<Record<string, string>>({});
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [catModal, setCatModal] = useState<string | null>(null);
+  const [selectedMovTipo, setSelectedMovTipo] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
   const activos = periodosSelIds.length > 0 ? periodosSelIds : [periodos[0]?.periodoId].filter(Boolean);
@@ -344,6 +384,10 @@ export default function ReportesPage() {
   const tendenciaGasto = periodos.length >= 2 && avgHistorico > 0
     ? Math.round(((periodos[0].gastado - avgHistorico) / avgHistorico) * 100) : null;
   const proyeccionGasto = periodos.length >= 2 ? Math.round(avgHistorico) : null;
+  const avgHistoricoMovs = periodos.length >= 2
+    ? periodos.slice(1).reduce((s, p) => s + p.movimientos.length, 0) / (periodos.length - 1) : 0;
+  const tendenciaMovs = periodos.length >= 2 && avgHistoricoMovs > 0
+    ? Math.round(((periodos[0].movimientos.length - avgHistoricoMovs) / avgHistoricoMovs) * 100) : null;
 
   // ── Movimientos: estadísticas de frecuencia ──
   const movCounts = useMemo(() => {
@@ -377,10 +421,11 @@ export default function ReportesPage() {
         const t = catTipo.get(cat)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
         catMonto.set(cat, (catMonto.get(cat) ?? 0) + m.monto);
       }
-      if (m.medioPago) {
-        if (!medioTipo.has(m.medioPago)) medioTipo.set(m.medioPago, new Map());
-        const t = medioTipo.get(m.medioPago)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
-        medioMonto.set(m.medioPago, (medioMonto.get(m.medioPago) ?? 0) + m.monto);
+      const mp = (m.medioPago && m.medioPago !== "-") ? m.medioPago : (m.tipo === "Gasto" ? "Mercado Pago" : null);
+      if (mp) {
+        if (!medioTipo.has(mp)) medioTipo.set(mp, new Map());
+        const t = medioTipo.get(mp)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
+        medioMonto.set(mp, (medioMonto.get(mp) ?? 0) + m.monto);
       }
     }
     const porCat = [...catTipo.entries()].map(([cat, t]) => ({ cat, count: [...t.values()].reduce((a,b)=>a+b,0), total: catMonto.get(cat) ?? 0, color: domColor(t) })).sort((a,b)=>b.count-a.count);
@@ -513,7 +558,6 @@ export default function ReportesPage() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M7 10h14M7 10l-4 4 4 4"/><path d="M17 14H3M17 14l4-4-4-4" transform="translate(0 -4)"/>
                       </svg>
-                      {compareMode && activos.length > 1 ? `${activos.length}×` : t.compare}
                     </button>
                   )}
                 </div>
@@ -796,7 +840,11 @@ export default function ReportesPage() {
           )}
 
           {/* ══ PERÍODOS ══ */}
-          {sub === "periodos" && periodo && (
+          {sub === "periodos" && periodo && (() => {
+            const valid = serieDesc.filter((s) => s.total > 0);
+            const mejor = valid.length > 0 ? valid.reduce((b, s) => s.gastado / s.total < b.gastado / b.total ? s : b) : null;
+            const peor  = valid.length > 0 ? valid.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
+            return (
             <>
               {reportOn("periodos_kpis") && (
               <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--red-dim), var(--surface), var(--green-dim))" }}>
@@ -809,32 +857,23 @@ export default function ReportesPage() {
               </div>
               )}
 
-              {/* KPIs período: mejor/peor + mediana/variación */}
-              {reportOn("periodos_kpis") && (() => {
-                const valid = serieDesc.filter((s) => s.total > 0);
-                const mejor = valid.length > 0 ? valid.reduce((b, s) => s.gastado / s.total < b.gastado / b.total ? s : b) : null;
-                const peor = valid.length > 0 ? valid.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
-                return (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                    {mejor && <MiniStat center basis="1 1 45%" label={t.bestPeriod} value={shortPer(mejor.periodoId)} color="var(--green)"
-                      onClick={() => setKpiInfo({ title: t.bestPeriod, value: shortPer(mejor.periodoId), explain: `${t.kpiBestPeriodInfo} (${Math.round((mejor.gastado / mejor.total) * 100)}%)`, color: "var(--green)" })} />}
-                    {peor && <MiniStat center basis="1 1 45%" label={t.worstPeriod} value={shortPer(peor.periodoId)} color="var(--red)"
-                      onClick={() => setKpiInfo({ title: t.worstPeriod, value: shortPer(peor.periodoId), explain: `${t.kpiWorstPeriodInfo} (${Math.round((peor.gastado / peor.total) * 100)}%)`, color: "var(--red)" })} />}
-                    {estadPeriodos && <MiniStat center basis="1 1 45%" label={t.medianSpent} value={oculto ? "••" : abbr(estadPeriodos.mediana)} color="var(--accent)"
-                      onClick={() => setKpiInfo({ title: t.medianSpent, value: oculto ? "••" : formatARS(estadPeriodos.mediana), explain: t.kpiMedianInfo, color: "var(--accent)" })} />}
-                    {estadPeriodos && (() => { const c = estadPeriodos.cv <= 25 ? "var(--green)" : estadPeriodos.cv <= 50 ? "var(--yellow)" : "var(--red)"; return (
-                      <MiniStat center basis="1 1 45%" label={t.spendVariation} value={`±${estadPeriodos.cv}%`} color={c}
-                        onClick={() => setKpiInfo({ title: t.spendVariation, value: `±${estadPeriodos.cv}%`, explain: t.kpiVariationInfo, color: c })} />
-                    ); })()}
-                  </div>
-                );
-              })()}
+              {/* KPIs período: mediana/variación */}
+              {reportOn("periodos_kpis") && estadPeriodos && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                  <MiniStat center basis="1 1 45%" label={t.medianSpent} value={oculto ? "••" : abbr(estadPeriodos.mediana)} color="var(--accent)"
+                    onClick={() => setKpiInfo({ title: t.medianSpent, value: oculto ? "••" : formatARS(estadPeriodos.mediana), explain: t.kpiMedianInfo, color: "var(--accent)" })} />
+                  {(() => { const c = estadPeriodos.cv <= 25 ? "var(--green)" : estadPeriodos.cv <= 50 ? "var(--yellow)" : "var(--red)"; return (
+                    <MiniStat center basis="1 1 45%" label={t.spendVariation} value={`±${estadPeriodos.cv}%`} color={c}
+                      onClick={() => setKpiInfo({ title: t.spendVariation, value: `±${estadPeriodos.cv}%`, explain: t.kpiVariationInfo, color: c })} />
+                  ); })()}
+                </div>
+              )}
 
               {/* Gastado por período */}
               {reportOn("periodos_otros") && serieDesc.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.spentPerPeriod}</div>
-                  <VBars max={maxTotal} oculto={oculto} data={serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId) }))} />
+                  <VBars max={maxTotal} oculto={oculto} data={serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejor?.periodoId, worst: s.periodoId === peor?.periodoId }))} />
                 </div>
               )}
 
@@ -887,8 +926,27 @@ export default function ReportesPage() {
                   />
                 </div>
               )}
+
+              {/* Días por período */}
+              {serieDesc.length > 1 && (() => {
+                const hoy = new Date();
+                const diasData = serieDesc.map((s, i) => {
+                  const inicio = parsePeriodoId(s.periodoId);
+                  const fin = i === 0 ? hoy : parsePeriodoId(serieDesc[i - 1].periodoId);
+                  const dias = Math.max(1, Math.round((fin.getTime() - inicio.getTime()) / 86400000));
+                  const color = dias <= 29 ? "var(--green)" : dias <= 31 ? "var(--yellow)" : "var(--red)";
+                  return { label: shortPer(s.periodoId), value: dias, color, valueLabel: `${dias}d`, hi: activos.includes(s.periodoId) };
+                });
+                return (
+                  <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Días por período</div>
+                    <VBars max={Math.max(...diasData.map((d) => d.value), 1)} data={diasData} />
+                  </div>
+                );
+              })()}
             </>
-          )}
+            );
+          })()}
 
           {/* ══ MOVIMIENTOS ══ */}
           {sub === "movimientos" && periodo && movCounts && (
@@ -900,24 +958,28 @@ export default function ReportesPage() {
                 return (
                   <>
                   {/* Hero: total + distribución por tipo */}
-                  <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--teal-dim) 60%, var(--purple-dim))" }}>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t.totalMovements}</div>
-                    <div style={{ fontSize: 30, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{movCounts.total}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, marginBottom: 12 }}>{t.activeDays(movCounts.diasActivos)}</div>
-                    <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", gap: 2 }}>
-                      {movCounts.porTipo.map(([tipo, count]) => (
-                        <div key={tipo} style={{ flex: count, background: tipoColor[tipo] ?? "var(--accent)" }} />
-                      ))}
+                  {(() => {
+                    const selEntry = selectedMovTipo ? movCounts.porTipo.find(([tipo]) => tipo === selectedMovTipo) : null;
+                    return (
+                    <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--teal-dim) 60%, var(--purple-dim))" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t.totalMovements}</div>
+                          <div style={{ fontSize: 30, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{movCounts.total}</div>
+                          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.activeDays(movCounts.diasActivos)}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 11, minHeight: 16, visibility: selEntry ? "visible" : "hidden" }}>
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: selEntry ? (tipoColor[selEntry[0]] ?? "var(--accent)") : "transparent", flexShrink: 0 }} />
+                            <span style={{ color: "var(--muted)" }}>{selEntry ? (t.tipoDisplay[selEntry[0]] ?? selEntry[0]) : ""}</span>
+                            <b style={{ color: "var(--text)", fontFamily: "var(--font-mono)" }}>{selEntry ? selEntry[1] : ""}</b>
+                          </div>
+                        </div>
+                        <DonutChart size={115} strokeWidth={15}
+                          selected={selectedMovTipo} onSelect={setSelectedMovTipo}
+                          data={movCounts.porTipo.map(([tipo, count]) => ({ key: tipo, value: count, color: tipoColor[tipo] ?? "var(--accent)", label: t.tipoDisplay[tipo] ?? tipo }))} />
+                      </div>
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 10 }}>
-                      {movCounts.porTipo.map(([tipo, count]) => (
-                        <span key={tipo} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)" }}>
-                          <span style={{ width: 8, height: 8, borderRadius: 2, background: tipoColor[tipo] ?? "var(--accent)" }} />
-                          {t.tipoDisplay[tipo] ?? tipo} <b style={{ color: "var(--text)", fontFamily: "var(--font-mono)" }}>{count}</b>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Mini-stats: 2x2 grid — opción C */}
                   {(() => {
@@ -932,14 +994,16 @@ export default function ReportesPage() {
                     const diaCaro = kpis?.diaMayorGasto;
                     return (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                        <MiniStat center basis="1 1 45%" label="Hoy" value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} color="var(--accent)"
-                          onClick={gastoHoy !== null ? () => setKpiInfo({ title: "Gasto hoy", value: oculto ? "••" : formatARS(gastoHoy), explain: "Total gastado en el día de hoy (período activo).", color: "var(--accent)" }) : undefined} />
+                        <MiniStat center basis="1 1 45%" label="Hoy" value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} gradient="linear-gradient(90deg, #26c6da, var(--purple))"
+                          onClick={gastoHoy !== null ? () => setKpiInfo({ title: "Gasto hoy", value: oculto ? "••" : formatARS(gastoHoy), explain: "Total gastado en el día de hoy (período activo).", color: "#26c6da" }) : undefined} />
                         {diaCaro && <MiniStat center basis="1 1 45%" label={t.highestSpendingDay} value={oculto ? "••" : abbr(diaCaro.monto)} color="var(--red)"
                           onClick={() => setKpiInfo({ title: t.highestSpendingDay, value: oculto ? "••" : formatARS(diaCaro.monto), explain: `${t.kpiHighestDayInfo} (${sinAño(diaCaro.fecha)})`, color: "var(--red)" })} />}
-                        {kpis && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} color="var(--red)"
-                          onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis!.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis!.diasConGasto)})`, color: "var(--red)" })} />}
-                        <MiniStat center basis="1 1 45%" label="Días activos" value={`${pctDias}%`} color="var(--accent)"
-                          onClick={() => setKpiInfo({ title: "Días activos", value: `${pctDias}%`, explain: `${kpis?.diasConGasto ?? 0} de ${totalDias} días del período tuvieron al menos un gasto.`, color: "var(--accent)" })} />
+                        {kpis && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} gradient="linear-gradient(90deg, #26c6da, var(--purple))"
+                          onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis!.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis!.diasConGasto)})`, color: "#26c6da" })} />}
+                        {tendenciaMovs !== null && (() => { const c = tendenciaMovs > 10 ? "var(--red)" : tendenciaMovs < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaMovs >= 0 ? "+" : ""}${tendenciaMovs}%`; return (
+                          <MiniStat center basis="1 1 45%" label={t.trend} value={v} color={c}
+                            onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `Período actual: ${periodos[0]?.movimientos.length ?? 0} movimientos · Promedio histórico: ${Math.round(avgHistoricoMovs)}`, color: c })} />
+                        ); })()}
                       </div>
                     );
                   })()}

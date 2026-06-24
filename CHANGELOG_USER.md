@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.31.0] — 2026-06-23
+
+### Reportes
+- **Gráfico de torta interactivo** en la tarjeta de Movimientos: tocás un segmento y te muestra el porcentaje de ese tipo de movimiento en el centro. Tocás de nuevo para deseleccionar.
+- **Días por período** — nuevo gráfico en la sección Períodos. Verde si el período duró hasta 29 días, amarillo 30–31, rojo 32 o más.
+- La **tendencia** en Movimientos ahora compara la cantidad de movimientos (no el monto gastado). El detalle muestra cuántos movimientos tuvo este período y cuál es el promedio histórico.
+- Los **medios de pago**: los gastos sin medio de pago asignado ahora aparecen bajo "Mercado Pago" en el gráfico.
+
+### Inicio
+- El período activo ahora muestra **cuántos días lleva** en curso en vez de la fecha de inicio.
+
+---
+
 ## [2.30.0] — 2026-06-23
 
 ### Mejoras en Reportes
