@@ -421,7 +421,8 @@ export default function ReportesPage() {
         const t = catTipo.get(cat)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
         catMonto.set(cat, (catMonto.get(cat) ?? 0) + m.monto);
       }
-      const mp = (m.medioPago && m.medioPago !== "-") ? m.medioPago : (m.tipo === "Gasto" ? "Mercado Pago" : null);
+      const mpRaw = m.medioPago?.trim();
+      const mp = (mpRaw && mpRaw !== "-" && mpRaw !== "–") ? mpRaw : (m.tipo === "Gasto" ? "Mercado Pago" : null);
       if (mp) {
         if (!medioTipo.has(mp)) medioTipo.set(mp, new Map());
         const t = medioTipo.get(mp)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);

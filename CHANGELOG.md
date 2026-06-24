@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.31.1] — 2026-06-24
+
+### Fixed
+- **Reports / Medios de pago**: `medioPago` values are now trimmed before comparison; both hyphen (`-`) and en-dash (`–`) variants are treated as "no payment method" and attributed to "Mercado Pago" for Gastos.
+
+---
+
 ## [2.31.0] — 2026-06-23
 
 ### Added
