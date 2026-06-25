@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.32.1] — 2026-06-24
+
+### Reportes
+- Con el **presupuesto** tildado, ahora cada categoría muestra cuánto te **pasaste** (en rojo) o cuánto te **falta** para llegar (en verde), tanto en plata como en porcentaje, en vez del gasto absoluto.
+
+---
+
 ## [2.32.0] — 2026-06-24
 
 ### Novedades

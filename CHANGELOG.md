@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.32.1] — 2026-06-24
+
+### Changed
+- **Reports / Categorías budget mode**: when the budget toggle is on, the per-category amount and percentage now show the delta vs. budget (over with `+`, under with `−`) colored by budget status, instead of the absolute spend and its share of total.
+
+---
+
 ## [2.32.0] — 2026-06-24
 
 ### Added

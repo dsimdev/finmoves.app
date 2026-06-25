@@ -52,12 +52,19 @@ function Bar({ nombre, monto, pct, color = "var(--accent)", oculto, presupuesto,
   const budgetColor = usedPct > 100 ? "var(--red)" : usedPct > 80 ? "var(--yellow)" : "var(--green)";
   const barColor = hasBudget ? budgetColor : color;
   const barWidth = hasBudget ? Math.min(usedPct, 100) : Math.min(pct, 100);
+  // En modo presupuesto los números muestran el delta: cuánto se pasó (+) o falta (−).
+  const deltaMonto = monto - (presupuesto ?? 0);
+  const deltaPct = usedPct - 100;
   return (
     <div style={{ marginBottom: 13, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 1, gap: 10 }}>
         <span style={{ fontSize: 13, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombre}</span>
-        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text)", whiteSpace: "nowrap" }}>
-          {oculto ? MASK : formatARS(monto)} <span style={{ color: "var(--muted)", fontSize: 11 }}>{pct}%</span>
+        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: hasBudget ? budgetColor : "var(--text)", whiteSpace: "nowrap" }}>
+          {hasBudget ? (
+            oculto ? MASK : <>{deltaMonto >= 0 ? "+" : "−"}{formatARS(Math.abs(deltaMonto))} <span style={{ fontSize: 11, opacity: 0.85 }}>{deltaPct >= 0 ? "+" : "−"}{Math.abs(deltaPct)}%</span></>
+          ) : (
+            <>{oculto ? MASK : formatARS(monto)} <span style={{ color: "var(--muted)", fontSize: 11 }}>{pct}%</span></>
+          )}
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 7 }}>
