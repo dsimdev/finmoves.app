@@ -52,14 +52,17 @@ export async function GET(req: NextRequest) {
     try {
       const { synced } = await syncUserMovimientosToSheet(ownerUid);
       await syncMetaRef.set({ lastAutoSync: Timestamp.now() }, { merge: true });
-      await appendLog({ status: "ok", type: "auto", at: Timestamp.now(), message: `Sync automática · ${synced} movimientos` });
+      const message = `Sync automática · ${synced} movimientos`;
+      await appendLog({ status: "ok", type: "auto", at: Timestamp.now(), message });
+      // Aviso de sync OK con el mismo detalle del log — solo al dueño.
+      await sendPushToUser(ownerUid, { title: "Sheets sincronizado", body: message, tag: "sync-ok", url: "/settings" });
       result = { ok: true, synced };
     } catch (err) {
       console.error("[cron/sync-sheets]", err);
       const message = err instanceof Error ? err.message : String(err);
       await appendLog({ status: "error", type: "auto", at: Timestamp.now(), message });
-      // Aviso de fallo de sync — solo al dueño.
-      await sendPushToUser(ownerUid, { title: "FinMoves", body: "Falló la sincronización con Google Sheets", tag: "sync-error", url: "/settings" });
+      // Aviso de fallo de sync con el detalle del error — solo al dueño.
+      await sendPushToUser(ownerUid, { title: "Falló sync Sheets", body: message, tag: "sync-error", url: "/settings" });
       result = { ok: false, error: message };
     }
   }

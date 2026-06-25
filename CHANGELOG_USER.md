@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.32.0] — 2026-06-24
+
+### Novedades
+- **Globo en el ícono de la app**: cuando te llega una notificación, ahora aparece un contador en el ícono de FinMoves (como en otras apps). Se borra recién cuando entrás a la app, no si descartás la notificación. Necesitás tener la app instalada en la pantalla de inicio y las notificaciones activadas.
+- **Aviso de versión nueva**: cuando sale una actualización importante, te llega una notificación. Al entrar, el cartel de "Actualizar" hace el resto.
+
+---
+
 ## [2.31.0] — 2026-06-23
 
 ### Reportes

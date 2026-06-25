@@ -77,6 +77,10 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
     }
   }
 
+  // Versión nueva: push una vez por release MINOR/MAJOR (los patches se actualizan
+  // solos). Convive con el banner in-app, que es quien hace el hard-refresh.
+  await checkVersion(uid, notify, updates);
+
   // Cada check hace su propia query quirúrgica — sin leer todos los movimientos.
   const config = (await adminDb().doc(`users/${uid}/config/meta`).get()).data() as ConfigUsuario | undefined;
   if (config) {
@@ -89,6 +93,28 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
   await checkRecordatorios(uid);
 
   await notifyRef.set(updates, { merge: true });
+}
+
+// ¿`to` es un salto MINOR o MAJOR respecto de `from`? (los PATCH no avisan).
+function esMinorOMajor(from: string, to: string): boolean {
+  const [fM, fm] = from.split(".").map(Number);
+  const [tM, tm] = to.split(".").map(Number);
+  if ([fM, fm, tM, tm].some(Number.isNaN)) return false;
+  return tM > fM || (tM === fM && tm > fm);
+}
+
+// Aviso de versión nueva. Baseline silencioso para usuarios nuevos (no spamear en
+// su primer cron). Avanza el baseline aun en patches, para no acumular el salto.
+async function checkVersion(uid: string, notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  const current = process.env.NEXT_PUBLIC_APP_VERSION;
+  if (!current || current === "0") return;
+  const last = notify.lastVersionNotified as string | undefined;
+  if (!last) { updates.lastVersionNotified = current; return; } // primer registro
+  if (current === last) return;
+  if (esMinorOMajor(last, current)) {
+    await sendPushToUser(uid, { title: "FinMoves actualizado", body: `Nueva versión v${current} disponible`, tag: `version-${current}`, url: "/" });
+  }
+  updates.lastVersionNotified = current;
 }
 
 // Carga olvidada: si pasaron >= N días desde el último movimiento cargado, avisa

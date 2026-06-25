@@ -40,21 +40,66 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// ── Contador de notificaciones sin leer (Badging API) ──────────────────────────
+// Persistido en IndexedDB porque el SW se reinicia entre pushes y perdería una
+// variable en memoria. getAppBadge no existe, así que llevamos el conteo nosotros.
+function badgeDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("finmoves-badge", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("kv");
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function badgeGet(db) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("kv", "readonly").objectStore("kv").get("count");
+    tx.onsuccess = () => resolve(tx.result || 0);
+    tx.onerror = () => resolve(0);
+  });
+}
+function badgePut(db, n) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("kv", "readwrite").objectStore("kv").put(n, "count");
+    tx.onsuccess = () => resolve();
+    tx.onerror = () => resolve();
+  });
+}
+async function bumpBadge() {
+  try {
+    const db = await badgeDB();
+    const n = (await badgeGet(db)) + 1;
+    await badgePut(db, n);
+    if (self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(n);
+  } catch (e) {}
+}
+async function resetBadge() {
+  try {
+    const db = await badgeDB();
+    await badgePut(db, 0);
+    if (self.navigator && self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
+  } catch (e) {}
+}
+
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
+  if (event.data && event.data.type === "CLEAR_BADGE") event.waitUntil(resetBadge());
 });
 
 self.addEventListener("push", (event) => {
   let data = { title: "FinMoves", body: "", tag: "finmoves", url: "/" };
   try { if (event.data) data = Object.assign(data, event.data.json()); } catch (e) {}
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      tag: data.tag,
-      icon: "/favicon.png",
-      badge: "/favicon.png",
-      data: { url: data.url || "/" },
-    })
+    Promise.all([
+      self.registration.showNotification(data.title, {
+        body: data.body,
+        tag: data.tag,
+        icon: "/favicon.png",
+        badge: "/favicon.png",
+        data: { url: data.url || "/" },
+      }),
+      bumpBadge(),
+    ])
   );
 });
 

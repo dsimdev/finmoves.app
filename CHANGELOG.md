@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.32.0] — 2026-06-24
+
+### Added
+- **App icon badge for push notifications**: the service worker now keeps an unread counter in IndexedDB (`finmoves-badge`); each `push` increments it and calls `setAppBadge(n)`. The badge clears only when the app is opened/focused (via a `CLEAR_BADGE` message + `clearAppBadge()` in `ServiceWorkerRegister`), not when the notification is swiped away. Requires an installed PWA with notifications granted (iOS 16.4+).
+- **New-version push**: `notifyUser` sends a one-time push on MINOR/MAJOR releases (patches excluded), deduped via `notifyMeta.lastVersionNotified` with a silent baseline for existing/new users. Complements the in-app update banner (which performs the actual hard refresh).
+- **Sheets sync push on success (owner)**: the cron now pushes the owner on successful auto-sync with the same detail as the log (`Sync automática · N movimientos`), in addition to failures.
+
+### Changed
+- **Sheets sync failure push (owner)**: now includes the real error message instead of a generic string.
+- Removed the movement-count app badge from the dashboard (`useAppBadge`) — it only ran while the dashboard was open and never reliably rendered on mobile. Hook `hooks/useAppBadge.ts` deleted.
+
+---
+
 ## [2.31.1] — 2026-06-24
 
 ### Fixed
