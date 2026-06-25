@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.32.2] — 2026-06-24
+
+### Fixed
+- **Reports / Por medio de pago**: `medioPago` placeholder dashes now cover all variants (`-`, `–`, `—`) and are attributed to "Mercado Pago" regardless of movement type, so the stray "—" row no longer appears and its movements merge into Mercado Pago. Genuinely empty `medioPago` (e.g. income) is excluded from the chart.
+
+---
+
 ## [2.32.1] — 2026-06-24
 
 ### Changed

@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.32.2] — 2026-06-24
+
+### Reportes
+- En **Por medio de pago** ya no aparece la fila "—": los movimientos sin medio asignado se suman a Mercado Pago.
+
+---
+
 ## [2.32.1] — 2026-06-24
 
 ### Reportes

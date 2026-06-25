@@ -428,8 +428,11 @@ export default function ReportesPage() {
         const t = catTipo.get(cat)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
         catMonto.set(cat, (catMonto.get(cat) ?? 0) + m.monto);
       }
+      // Caso border: medioPago es un guión placeholder (- – —) → data basura que se
+      // atribuye a Mercado Pago. Vacío/sin medio (ej. Ingreso) queda fuera del gráfico.
       const mpRaw = m.medioPago?.trim();
-      const mp = (mpRaw && mpRaw !== "-" && mpRaw !== "–") ? mpRaw : (m.tipo === "Gasto" ? "Mercado Pago" : null);
+      const esGuion = !!mpRaw && /^[-–—]+$/.test(mpRaw);
+      const mp = esGuion ? "Mercado Pago" : (mpRaw || null);
       if (mp) {
         if (!medioTipo.has(mp)) medioTipo.set(mp, new Map());
         const t = medioTipo.get(mp)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
