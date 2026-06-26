@@ -253,6 +253,8 @@ export const en: AppLocale = {
   spendVariation: "Variation",
   kpiMedianInfo: "Your typical period spending: the middle value, not skewed by an unusual period (unlike the average).",
   kpiVariationInfo: "How regular your spending is across periods. Low = steady; high = irregular. It's the deviation from the average.",
+  spendSpread: "Spread",
+  kpiSpendSpreadInfo: "How spread out your individual expenses are. High = a few big ones; low = mostly even.",
   expensesVsSalary: "Expenses vs salary",
   incomeEvolution: "Income evolution",
   totalMovements: "Total movements",

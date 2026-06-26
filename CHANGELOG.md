@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.33.0] — 2026-06-25
+
+### Changed
+- **Dashboard KPIs**: replaced the four period-level stats (salary, spent, savings, withdrawals) with four cross-cutting metrics — Gastado, Ahorros acum., Prom. por mov., and Desvío (coefficient of variation as `±X%`). All four are centered and open a `KpiInfoModal` on tap with a brief explanation.
+- Added `spendSpread` and `kpiSpendSpreadInfo` translation keys (es/en).
+
+---
+
 ## [2.32.2] — 2026-06-24
 
 ### Fixed

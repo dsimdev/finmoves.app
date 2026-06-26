@@ -251,6 +251,8 @@ export const es = {
   spendVariation: "Variación",
   kpiMedianInfo: "El gasto típico de un período: el valor del medio, que no se distorsiona por un período atípico (a diferencia del promedio).",
   kpiVariationInfo: "Qué tan regular es tu gasto entre períodos. Bajo = parejo; alto = irregular. Es el desvío respecto al promedio.",
+  spendSpread: "Desvío",
+  kpiSpendSpreadInfo: "Qué tan dispares son tus gastos entre sí. Alto = pocos gastos grandes; bajo = gastos parejos.",
   expensesVsSalary: "Gastos vs sueldo",
   incomeEvolution: "Evolución ingresos",
   totalMovements: "Total movimientos",

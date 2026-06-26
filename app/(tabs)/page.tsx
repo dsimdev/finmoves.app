@@ -10,6 +10,7 @@ import { EyeIcon } from "@/components/ui/EyeIcon";
 import { Movimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
+import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
@@ -32,6 +33,7 @@ export default function Dashboard() {
 
   // Modal de alta/edición abierto desde el propio inicio (sin navegar).
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
+  const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
   const bindLongPress = useLongPress();
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
@@ -41,9 +43,17 @@ export default function Dashboard() {
       new Date(a.timestampCarga).getTime() > new Date(b.timestampCarga).getTime() ? a : b
     ).timestampCarga;
   }, [movimientos]);
-  const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const p = periodos[0];
+  const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const ahorrosAcum = serie.length ? serie[serie.length - 1].ahorrosAcum : 0;
+  const gastos = useMemo(() => p?.movimientos.filter((m) => m.tipo === "Gasto" || m.tipo === "CompraUSD") ?? [], [p]);
+  const promPorMov = gastos.length > 0 ? Math.round(p.gastado / gastos.length) : 0;
+  const desvioCV = useMemo(() => {
+    if (gastos.length < 2 || promPorMov === 0) return 0;
+    const avg = gastos.reduce((s, m) => s + m.monto, 0) / gastos.length;
+    const sd = Math.sqrt(gastos.reduce((s, m) => s + (m.monto - avg) ** 2, 0) / gastos.length);
+    return Math.round((sd / avg) * 100);
+  }, [gastos, promPorMov]);
   const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR").slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
@@ -101,10 +111,16 @@ export default function Dashboard() {
 
           {/* KPIs */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-            <MiniStat basis="1 1 45%" label={t.salary} value={money(p.sueldo)} color="var(--green)" />
-            <MiniStat basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)" />
-            <MiniStat basis="1 1 45%" label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
-            <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} color="#26c6da" />
+            <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)"
+              onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastado), explain: "Total gastado en el período actual.", color: "var(--red)" })} />
+            <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
+              onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
+            <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={promPorMov > 0 ? money(promPorMov) : "—"} color="var(--yellow)"
+              onClick={() => setKpiInfo({ title: t.avgPerExpense, value: money(promPorMov), explain: t.kpiAvgPerExpenseInfo, color: "var(--yellow)" })} />
+            {(() => { const c = desvioCV <= 25 ? "var(--green)" : desvioCV <= 50 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
+              <MiniStat center basis="1 1 45%" label={t.spendSpread} value={v} color={c}
+                onClick={() => setKpiInfo({ title: t.spendSpread, value: v, explain: t.kpiSpendSpreadInfo, color: c })} />
+            ); })()}
           </div>
 
           {/* Atajos */}
@@ -177,6 +193,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
       <MovementModal
         open={modalState !== null}
         mode={modalState?.mode ?? "add"}

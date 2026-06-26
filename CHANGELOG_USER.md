@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.33.0] — 2026-06-25
+
+### Inicio
+- Los **4 indicadores del dashboard** son nuevos: Gastado · Ahorros acumulados · Promedio por movimiento · Desvío. Tocando cualquiera aparece una explicación breve.
+
+---
+
 ## [2.32.2] — 2026-06-24
 
 ### Reportes
