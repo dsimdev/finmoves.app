@@ -59,9 +59,9 @@ function Bar({ nombre, monto, pct, color = "var(--accent)", oculto, presupuesto,
     <div style={{ marginBottom: 13, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 1, gap: 10 }}>
         <span style={{ fontSize: 13, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombre}</span>
-        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: hasBudget ? budgetColor : "var(--text)", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text)", whiteSpace: "nowrap" }}>
           {hasBudget ? (
-            oculto ? MASK : <>{deltaMonto >= 0 ? "+" : "−"}{formatARS(Math.abs(deltaMonto))} <span style={{ fontSize: 11, opacity: 0.85 }}>{deltaPct >= 0 ? "+" : "−"}{Math.abs(deltaPct)}%</span></>
+            oculto ? MASK : <>{deltaMonto >= 0 ? "+" : "−"}{formatARS(Math.abs(deltaMonto))} <span style={{ fontSize: 11, color: budgetColor, fontWeight: 600 }}>{deltaPct >= 0 ? "+" : "−"}{Math.abs(deltaPct)}%</span></>
           ) : (
             <>{oculto ? MASK : formatARS(monto)} <span style={{ color: "var(--muted)", fontSize: 11 }}>{pct}%</span></>
           )}
@@ -72,7 +72,7 @@ function Bar({ nombre, monto, pct, color = "var(--accent)", oculto, presupuesto,
           <div style={{ height: "100%", borderRadius: 999, transition: "width 0.5s ease", width: `${barWidth}%`, background: barColor }} />
         </div>
         {hasBudget && !oculto && (
-          <span style={{ fontSize: 10, color: budgetColor, fontFamily: "var(--font-mono)", flexShrink: 0, fontWeight: 600 }}>{abbr(presupuesto!)}</span>
+          <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--font-mono)", flexShrink: 0, fontWeight: 600 }}>{abbr(presupuesto!)}</span>
         )}
       </div>
     </div>
@@ -187,6 +187,7 @@ export default function ReportesPage() {
   const [editingBudget, setEditingBudget] = useState<Record<string, string>>({});
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [catModal, setCatModal] = useState<string | null>(null);
+  const [medioModal, setMedioModal] = useState<string | null>(null);
   const [selectedMovTipo, setSelectedMovTipo] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
@@ -222,6 +223,15 @@ export default function ReportesPage() {
   const medios = periodo ? gastosPorMedioPago(periodo.movimientos, periodo.gastado) : [];
   const descs = periodo ? gastosPorDescripcion(periodo.movimientos, periodo.gastado, 5) : [];
   const descsModal = periodo ? gastosPorDescripcion(periodo.movimientos, periodo.gastado, 20) : [];
+  // Descripciones que provienen de compras de divisa → su barra va en amarillo (el resto, gasto → rojo).
+  const descsCompra = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of (periodo?.movimientos ?? [])) {
+      if (m.tipo === "CompraUSD" || m.tipo === "CompraEUR") s.add(m.descripcion || "—");
+    }
+    return s;
+  }, [periodo]);
+  const esCatCompra = (cat: string) => cat === "CompraUSD" || cat === "CompraEUR";
   const porFecha = periodo ? gastosPorFecha(periodo.movimientos, periodo.gastado) : [];
   // Split por día: gasto (rojo) vs compra USD (amarillo). Clave = fecha original.
   const splitPorFecha = useMemo(() => {
@@ -430,6 +440,7 @@ export default function ReportesPage() {
     const catMonto = new Map<string, number>();
     const medioTipo = new Map<string, Map<string, number>>();
     const medioMonto = new Map<string, number>();
+    const medioTipoMonto = new Map<string, Map<string, number>>();
     for (const m of movs) {
       const cat = vCat(m);
       if (cat && cat !== "RESTO") {
@@ -446,10 +457,12 @@ export default function ReportesPage() {
         if (!medioTipo.has(mp)) medioTipo.set(mp, new Map());
         const t = medioTipo.get(mp)!; const vt = vTipo(m); t.set(vt, (t.get(vt) ?? 0) + 1);
         medioMonto.set(mp, (medioMonto.get(mp) ?? 0) + m.monto);
+        if (!medioTipoMonto.has(mp)) medioTipoMonto.set(mp, new Map());
+        const tmAmt = medioTipoMonto.get(mp)!; tmAmt.set(vt, (tmAmt.get(vt) ?? 0) + m.monto);
       }
     }
     const porCat = [...catTipo.entries()].map(([cat, t]) => ({ cat, count: [...t.values()].reduce((a,b)=>a+b,0), total: catMonto.get(cat) ?? 0, color: domColor(t) })).sort((a,b)=>b.count-a.count);
-    const porMedio = [...medioTipo.entries()].map(([medio, tMap]) => ({ medio, count: [...tMap.values()].reduce((a,b)=>a+b,0), total: medioMonto.get(medio) ?? 0, color: domColor(tMap), tipos: [...tMap.entries()].sort((a,b)=>b[1]-a[1]) })).sort((a,b)=>b.count-a.count);
+    const porMedio = [...medioTipo.entries()].map(([medio, tMap]) => ({ medio, count: [...tMap.values()].reduce((a,b)=>a+b,0), total: medioMonto.get(medio) ?? 0, color: domColor(tMap), tipos: [...tMap.entries()].map(([tipo, n]) => ({ tipo, n, monto: medioTipoMonto.get(medio)?.get(tipo) ?? 0 })).sort((a,b)=>b.n-a.n) })).sort((a,b)=>b.count-a.count);
     const porDow = [0,0,0,0,0,0,0];
     for (const m of movs) {
       if (m.fecha) porDow[new Date(m.fecha.includes("-") ? m.fecha + "T12:00:00" : m.fecha).getDay()]++;
@@ -671,7 +684,7 @@ export default function ReportesPage() {
                     </div>
                   )}
                 </div>
-                {cats.map((c) => <Bar key={c.categoria} nombre={c.categoria} monto={c.monto} pct={c.pct} oculto={oculto} presupuesto={showBudget ? presupuesto?.[c.categoria] : undefined} onClick={() => setCatModal(c.categoria)} />)}
+                {cats.map((c) => <Bar key={c.categoria} nombre={c.categoria} monto={c.monto} pct={c.pct} color={esCatCompra(c.categoria) ? "var(--yellow)" : "var(--red)"} oculto={oculto} presupuesto={showBudget ? presupuesto?.[c.categoria] : undefined} onClick={() => setCatModal(c.categoria)} />)}
               </div>
               )}
 
@@ -704,7 +717,7 @@ export default function ReportesPage() {
               {reportOn("gastos_otros") && (
               <div className="soft" style={{ marginBottom: 12, cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }} onClick={() => setModalTop("descs")}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.top5Descriptions}</div>
-                {descs.map((d) => <Bar key={d.nombre} nombre={d.nombre} monto={d.monto} pct={d.pct} color="var(--yellow)" oculto={oculto} />)}
+                {descs.map((d) => <Bar key={d.nombre} nombre={d.nombre} monto={d.monto} pct={d.pct} color={descsCompra.has(d.nombre || "—") ? "var(--yellow)" : "var(--red)"} oculto={oculto} />)}
               </div>
               )}
 
@@ -832,7 +845,7 @@ export default function ReportesPage() {
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byDescription}</div>
                   {ingXDesc.map((c) => (
-                    <Bar key={c.cat} nombre={c.cat} monto={c.monto} pct={c.pct} color="var(--blue)" oculto={oculto} />
+                    <Bar key={c.cat} nombre={c.cat} monto={c.monto} pct={c.pct} color={c.cat === "Sueldo" ? "var(--green)" : "var(--blue)"} oculto={oculto} />
                   ))}
                 </div>
               )}
@@ -1099,21 +1112,22 @@ export default function ReportesPage() {
               {movCounts.porMedio.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byPaymentMethod}</div>
-                  {movCounts.porMedio.map(({ medio, count, total, tipos }) => (
-                    <div key={medio} style={{ marginBottom: 12 }}>
+                  {movCounts.porMedio.map(({ medio, count, tipos }) => (
+                    <div key={medio} style={{ marginBottom: 12, cursor: "pointer" }} onClick={() => setMedioModal(medio)}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
                         <span style={{ fontSize: 12 }}>{medio}</span>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                          <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "••" : abbr(total)}</span>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            {tipos.map(([tipo, n]) => (
-                              <span key={tipo} style={{ fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", color: TIPO_COLOR[tipo] ?? "var(--accent)" }}>{n}</span>
-                            ))}
-                          </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {tipos.map(({ tipo, n }) => (
+                            <span key={tipo} style={{ fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", color: TIPO_COLOR[tipo] ?? "var(--accent)" }}>{n}</span>
+                          ))}
                         </div>
                       </div>
-                      <div style={{ height: 4, background: "var(--faint)", borderRadius: 2 }}>
-                        <div style={{ height: "100%", width: `${Math.round((count / movCounts.total) * 100)}%`, background: "var(--blue)", borderRadius: 2, transition: "width .5s ease" }} />
+                      <div style={{ height: 5, background: "var(--faint)", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${Math.round((count / movCounts.total) * 100)}%`, display: "flex", borderRadius: 999, overflow: "hidden", transition: "width .5s ease" }}>
+                          {tipos.map(({ tipo, n }) => (
+                            <div key={tipo} style={{ flex: n, background: TIPO_COLOR[tipo] ?? "var(--accent)" }} />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1167,7 +1181,7 @@ export default function ReportesPage() {
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)" }}>{money(d.monto)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{money(d.monto)}</div>
                   <div style={{ fontSize: 10, color: "var(--muted)" }}>{d.pct}%</div>
                 </div>
               </div>
@@ -1236,12 +1250,36 @@ export default function ReportesPage() {
                     <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || "—"}</div>
                     <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{sinAño(m.fecha)} · {m.medioPago}</div>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(m.monto)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(m.monto)}</div>
                 </div>
               ))}
               {movsCat.length === 0 && (
                 <div style={{ textAlign: "center", padding: "24px 0", color: "var(--muted)", fontSize: 13 }}>{t.noMovements}</div>
               )}
+            </>
+          );
+        })()}
+      </BottomSheet>
+
+      {/* Modal: detalle por medio de pago — totales por tipo de movimiento */}
+      <BottomSheet open={!!medioModal} onClose={() => setMedioModal(null)} title={medioModal ?? ""}>
+        {(() => {
+          if (!medioModal) return null;
+          const data = movCounts?.porMedio.find((p) => p.medio === medioModal);
+          if (!data) return null;
+          return (
+            <>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16 }}>{money(data.total)} · {data.count}×</div>
+              {data.tipos.map(({ tipo, n, monto }) => (
+                <div key={tipo} className="row" style={{ padding: "11px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: TIPO_COLOR[tipo] ?? "var(--accent)", flexShrink: 0 }} />
+                    <span style={{ fontSize: 13 }}>{t.tipoDisplay[tipo] ?? tipo}</span>
+                    <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{n}×</span>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(monto)}</div>
+                </div>
+              ))}
             </>
           );
         })()}

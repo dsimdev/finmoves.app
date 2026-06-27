@@ -1629,7 +1629,6 @@ export default function ConfigPage() {
                   type="number" value={localAutoMonto} placeholder="0" className="input"
                   style={{ fontFamily: "var(--font-mono)", fontSize: 15 }}
                   onChange={e => setLocalAutoMonto(e.target.value)}
-                  autoFocus
                 />
               </div>
               <div>

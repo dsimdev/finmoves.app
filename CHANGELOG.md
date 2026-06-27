@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.37.0] — 2026-06-27
+
+### Changed
+- **Reports / budget bars (Por categoría)**: the over/under-budget color now lives on the bar and the delta percentage only; the delta amount and the budget target render neutral, so the status color reads at a glance without tinting the whole figure.
+- **Reports / category & description bars (non-budget)**: bar color now encodes the row type — red for gasto, yellow for FX buys (`CompraUSD`/`CompraEUR`) — in both Por categoría and Top descripciones. Amounts stay white/gray.
+- **Reports / detail sheets**: amounts in the description and category modals now render neutral (white) instead of yellow/red.
+- **Reports / Por medio de pago**: the preview row drops the aggregate amount and keeps only the per-type count badges; tapping a method opens a sheet detailing totals per movement type (count `×` + amount).
+
+### Added
+- **New movement / category pills**: now a single horizontally-scrollable row sorted by usage (most-used first, counted from the user's `Gasto` movements) instead of a wrapping multi-row block.
+- **Reserva / FX spend**: the helper under the amount now shows the current FX reserve and, once an amount is entered, the remaining reserve (`Reserva: USD X · Restante: USD Y`), colored green/yellow/red by how much of the reserve the spend consumes — replacing the line that merely echoed the amount as "Total".
+
+### Fixed
+- **Settings opened the keyboard on load**: the Auto-ahorro amount input kept its `autoFocus`, but since modals now use the always-mounted `BottomSheet` (children stay mounted for the drag-peek), the attribute fired on page mount and popped the on-screen keyboard when entering Settings. Removed the `autoFocus`.
+
+---
+
 ## [2.36.0] — 2026-06-27
 
 ### Changed

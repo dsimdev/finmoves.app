@@ -4,6 +4,25 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.37.0] — 2026-06-27
+
+### Movimientos
+- En **Nuevo movimiento**, las categorías ahora van en una sola fila (con scroll lateral si no entran) y ordenadas por las que más usás.
+
+### Reportes
+- En **Por categoría** con presupuesto, el color (verde/amarillo/rojo) queda en la barra y el porcentaje; el monto y la meta se ven en neutro.
+- En **Por categoría** y **Top descripciones**, las barras ahora van en rojo para gastos y amarillo para compras de dólares. Los montos quedan en blanco/gris.
+- En los detalles (descripciones y categoría) los montos se ven en blanco.
+- En **Por medio de pago**, la vista previa muestra solo los contadores por tipo; tocando un medio se abre el detalle con los totales por tipo de movimiento (cantidad y plata).
+
+### Inversión
+- Al cargar un **gasto en dólares**, debajo del monto ahora ves cuánta reserva tenés y cuánto te queda después del gasto (en verde/amarillo/rojo según cuánto consume).
+
+### Configuración
+- Se corrigió que el **teclado se abría solo** al entrar a Ajustes.
+
+---
+
 ## [2.36.0] — 2026-06-27
 
 ### Toda la app

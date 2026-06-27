@@ -258,6 +258,28 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     ? parseFloat(cantidadUSD || "0") * cotizActual
     : parseFloat(montoARSInput || "0");
 
+  // Reserva FX actual (misma cuenta que Inversión): saldo base + compras − gastos/ventas.
+  const reservaActualFX = useMemo(() => {
+    if (!reserveMode) return 0;
+    const eur = esEURMode;
+    const base = (eur ? config?.meta.saldoEUR : config?.meta.saldoUSD) ?? 0;
+    return movimientos.reduce((tot, m) => {
+      if (!m.cantidadUSD) return tot;
+      if (m.tipo === (eur ? "CompraEUR" : "CompraUSD")) return tot + m.cantidadUSD;
+      if (m.tipo === (eur ? "GastoEUR" : "GastoUSD") || m.tipo === (eur ? "VentaEUR" : "VentaUSD")) return tot - m.cantidadUSD;
+      return tot;
+    }, base);
+  }, [reserveMode, esEURMode, movimientos, config?.meta.saldoUSD, config?.meta.saldoEUR]);
+
+  // Frecuencia de uso por categoría de gasto (para ordenar las pills).
+  const catUso = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const mv of movimientos) {
+      if (mv.tipo === "Gasto" && mv.categoria) m.set(mv.categoria, (m.get(mv.categoria) ?? 0) + 1);
+    }
+    return m;
+  }, [movimientos]);
+
   const fechaAPeriodoId = (f: string) => {
     const [y, m, d] = f.split("-");
     return d && m && y ? `${parseInt(d)}/${parseInt(m)}/${y}` : f;
@@ -589,10 +611,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           {!esMove && !esUSD && (
             <div style={{ marginBottom: 18 }}>
               <div className="label">{t.category}</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {categoriasFiltradas.map((c) => (
+              <div style={{ display: "flex", gap: 6, flexWrap: "nowrap", overflowX: "auto", paddingBottom: 2, scrollbarWidth: "none" }}>
+                {[...categoriasFiltradas].sort((a, b) => (catUso.get(b.nombre) ?? 0) - (catUso.get(a.nombre) ?? 0)).map((c) => (
                   <button key={c.nombre} type="button" onClick={() => setCategoria(c.nombre)}
                     className="pill" style={{
+                      flexShrink: 0,
                       borderColor: categoria === c.nombre ? tipoColor : "var(--border)",
                       background: categoria === c.nombre ? tipoColor + "22" : "transparent",
                       color: categoria === c.nombre ? tipoColor : "var(--muted)",
@@ -724,11 +747,15 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             <div style={{ marginBottom: 18 }}>
               <div className="label">{t.fxAmountSpent(fxLabel)}</div>
               <input ref={reserveRef} className="input" type="number" value={cantidadUSD} onChange={(e) => setCantidadUSD(e.target.value)} placeholder="0" style={{ fontFamily: "var(--font-mono)" }} />
-              {usdFinal > 0 && (
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
-                  Total: {fxLabel} {usdFinal.toFixed(2)}
-                </div>
-              )}
+              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
+                {t.reserve}: <span style={{ fontFamily: "var(--font-mono)" }}>{fxLabel} {reservaActualFX.toFixed(2)}</span>
+                {usdFinal > 0 && (() => {
+                  const queda = reservaActualFX - usdFinal;
+                  const ratio = reservaActualFX > 0 ? usdFinal / reservaActualFX : 1;
+                  const color = ratio < 0.30 ? "var(--green)" : ratio <= 0.70 ? "var(--yellow)" : "var(--red)";
+                  return <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color }}>{fxLabel} {queda.toFixed(2)}</span></>;
+                })()}
+              </div>
             </div>
           )}
 
