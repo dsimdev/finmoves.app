@@ -4,6 +4,27 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.36.0] — 2026-06-27
+
+### Toda la app
+- Los **ventanas/modals** ahora son todos iguales: el mismo panel que sube desde abajo (como el Historial de sync), con su tirador para arrastrar y cerrar. Se unificaron los de Ajustes (Auto-ahorro, Historial de sync, Changelog, Recordatorios, Invitaciones) con los de Reportes y carga.
+- Cuando aparece el **teclado**, los modals suben para no quedar tapados.
+
+### Movimientos
+- Al abrir **Nuevo movimiento** el cursor va directo al **monto**, y si cambiás de tipo (Gasto/Ingreso/Move) vuelve al monto. En **+ Reserva** también arranca con el foco puesto.
+- El **detalle** de una compra se rediseñó: el monto se ve grande y claro, sin quedar apretado.
+
+### Inicio
+- Un **Move "a disponible"** ahora se muestra en celeste (antes salía en violeta); solo los Move "a ahorro" quedan en violeta.
+
+### Reportes
+- En la **tendencia de gastos**, al tocarla ahora ves los números: lo gastado este período vs. el promedio histórico.
+
+### Inversión
+- El indicador **Por período** ya no se corta; el promedio y la meta se ven al tocar la card.
+
+---
+
 ## [2.35.0] — 2026-06-26
 
 ### Inversión

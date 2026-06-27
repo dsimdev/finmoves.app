@@ -629,7 +629,7 @@ export default function ReportesPage() {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                 {tendenciaGasto !== null && (() => { const c = tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`; return (
                   <MiniStat center label={t.trend} value={v} color={c}
-                    onClick={() => setKpiInfo({ title: t.trend, value: v, explain: t.kpiTrendInfo, color: c })} />
+                    onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `${t.kpiTrendInfo} Período actual: ${oculto ? "••" : formatARS(periodos[0].gastado)} · Promedio histórico: ${oculto ? "••" : formatARS(Math.round(avgHistorico))}`, color: c })} />
                 ); })()}
                 {periodo.moveAhorros > 0 && <MiniStat center label="A ahorros" value={oculto ? "••" : abbr(periodo.moveAhorros)} color="var(--purple)"
                   onClick={() => setKpiInfo({ title: "Move a ahorros", value: oculto ? "••" : formatARS(periodo.moveAhorros), explain: "Total transferido a ahorros este período.", color: "var(--purple)" })} />}

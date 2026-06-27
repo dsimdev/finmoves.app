@@ -18,7 +18,7 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 
 function TipoColor(m: Movimiento) {
   if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
-  if (m.tipo === "Move") return "var(--purple)";
+  if (m.tipo === "Move") return m.direccionMove === "aAhorro" ? "var(--purple)" : "#26c6da";
   return "var(--green)";
 }
 function TipoPrefix(m: Movimiento) {

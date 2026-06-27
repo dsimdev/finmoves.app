@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../data-context";
 import { agruparPorPeriodo } from "@/utils/periodo";
@@ -382,8 +381,6 @@ export default function ConfigPage() {
       : part
   );
   const [showSyncLog, setShowSyncLog] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncError, setSyncError] = useState<{ message: string; at: Date } | null>(null);
   const [syncLogs, setSyncLogs] = useState<{ status: "ok" | "error"; type: "manual" | "auto"; at: Date; message: string }[]>([]);
@@ -1624,16 +1621,8 @@ export default function ConfigPage() {
         </div>
       )}
 
-      {showAutoAhorroModal && mounted && createPortal(
-        <div data-no-swipe onClick={() => setShowAutoAhorroModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 380, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
-            <div style={{ padding: "18px 18px 0" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-                <span style={{ fontSize: 16, fontWeight: 700 }}>Auto-ahorro</span>
-                <button onClick={() => setShowAutoAhorroModal(false)} style={{ background: "none", border: "none", color: "var(--red)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
-              </div>
-            </div>
-            <div style={{ padding: "0 18px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
+      <BottomSheet open={showAutoAhorroModal} onClose={() => setShowAutoAhorroModal(false)} title="Auto-ahorro">
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <div>
                 <div className="label" style={{ marginBottom: 8 }}>{t.autoSavingsAmountPerExpense(monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$")}</div>
                 <input
@@ -1712,19 +1701,10 @@ export default function ConfigPage() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </BottomSheet>
 
-      {showSyncLog && mounted && createPortal(
-        <div data-no-swipe onClick={() => setShowSyncLog(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 15 }}>{t.syncHistory}</span>
-              <button onClick={() => setShowSyncLog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
-            </div>
-            <div style={{ overflowY: "auto", padding: "12px 20px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <BottomSheet open={showSyncLog} onClose={() => setShowSyncLog(false)} title={t.syncHistory}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {syncLogs.length === 0 ? (
                 <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: 24 }}>{t.noRecords}</div>
               ) : syncLogs.map((log, i) => (
@@ -1756,19 +1736,10 @@ export default function ConfigPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </BottomSheet>
 
-      {showChangelog && mounted && createPortal(
-        <div data-no-swipe onClick={() => setShowChangelog(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "75vh", display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 15 }}>Changelog</span>
-              <button onClick={() => setShowChangelog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
-            </div>
-            <div style={{ overflowY: "auto", padding: "16px 20px 32px", fontSize: 13, lineHeight: 1.65, color: "var(--text)" }}>
+      <BottomSheet open={showChangelog} onClose={() => setShowChangelog(false)} title="Changelog">
+            <div style={{ fontSize: 13, lineHeight: 1.65, color: "var(--text)" }}>
               {changelog ? (() => {
                 // Sólo las últimas 5 versiones (cada versión empieza con "## [")
                 const all = changelog.split("\n");
@@ -1789,18 +1760,9 @@ export default function ConfigPage() {
               }) : <div style={{ color: "var(--muted)" }}>Loading…</div>}
               <button onClick={() => setConfirmLeave(true)} aria-label={t.viewFullChangelog} title={t.viewFullChangelog} style={{ display: "block", width: "100%", textAlign: "center", margin: "20px auto 2px", background: "none", border: "none", color: "var(--muted)", fontSize: 12, fontStyle: "italic", cursor: "pointer" }}>{t.seeMore}</button>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </BottomSheet>
 
-      {showRecordatorios && mounted && createPortal(
-        <div data-no-swipe onClick={() => setShowRecordatorios(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 380, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.5)", padding: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{t.reminders}</span>
-              <button onClick={() => setShowRecordatorios(false)} style={{ background: "none", border: "none", color: "var(--red)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
-            </div>
+      <BottomSheet open={showRecordatorios} onClose={() => setShowRecordatorios(false)} title={t.reminders}>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <input className="input" type="text" placeholder={t.reminderTextPlaceholder} value={recTexto} onChange={(e) => setRecTexto(e.target.value)} style={{ flex: 1 }} />
           <input className="input" type="date" value={recFecha} onChange={(e) => setRecFecha(e.target.value)} style={{ width: 140 }} />
@@ -1821,10 +1783,7 @@ export default function ConfigPage() {
             <button onClick={() => delRecordatorio(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
           </div>
         ))}
-          </div>
-        </div>,
-        document.body
-      )}
+      </BottomSheet>
 
 
       {confirmLeave && (
@@ -1932,10 +1891,7 @@ export default function ConfigPage() {
         </ConfirmModal>
       )}
 
-      {showInviteModal && mounted && createPortal(
-        <div data-no-swipe onClick={() => setShowInviteModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 380, boxShadow: "0 12px 40px rgba(0,0,0,0.5)", padding: "24px 20px" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>{t.inviteCodeModalTitle}</div>
+      <BottomSheet open={showInviteModal} onClose={() => setShowInviteModal(false)} title={t.inviteCodeModalTitle}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: 14, padding: "16px 18px" }}>
               <span style={{ flex: 1, fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 4, color: "var(--accent)", textAlign: "center" }}>{inviteCode}</span>
               <button onClick={copyInviteCode} aria-label={t.copy} style={{ background: codeCopied ? "var(--green-dim)" : "var(--surface)", border: `1px solid ${codeCopied ? "var(--green)" : "var(--border)"}`, borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: codeCopied ? "var(--green)" : "var(--muted)", flexShrink: 0 }}>
@@ -1946,10 +1902,7 @@ export default function ConfigPage() {
                 )}
               </button>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </BottomSheet>
 
       {pendingLang && (
         <ConfirmModal title={t.changeLanguageTitle} confirmLabel={t.confirm} cancelLabel={t.cancel} confirmColor="var(--blue)"

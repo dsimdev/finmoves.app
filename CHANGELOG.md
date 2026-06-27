@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.36.0] — 2026-06-27
+
+### Changed
+- **Modals unified to a single bottom-sheet**: the shared `BottomSheet` component now matches the sync-history look (muted ×, divider under the header, `--surface` panel) while keeping the draggable handle. Settings modals that were centered cards or bespoke sheets (Auto-ahorro, Historial de sync, Changelog, Recordatorios, Invitaciones) were migrated to the shared component, so reports, add/edit and settings all render the same sheet. Removed the now-unused `createPortal`/`mounted` plumbing in Settings.
+- **Movement detail (read-only, from Investments history)**: redesigned and moved to the unified sheet. The amount is now a hero figure (large mono, centered) with `tipo · categoría` above and date below; quantity/rate and description/notes sit in roomy cells — the cramped 30%-width amount column is gone.
+
+### Added
+- **Bottom-sheets follow the on-screen keyboard**: `BottomSheet` tracks `window.visualViewport` and pins the container height/offset to the visible viewport, so the sheet rises above the keyboard instead of being covered. Applies to every modal via the shared component.
+- **New movement / Reserva — auto focus on amount**: opening the add sheet focuses the amount input (after the open animation); switching tipo (Gasto/Ingreso/Move) re-focuses it. Reserve mode focuses its primary amount input (USD/ARS or FX spend).
+- **Reports / Gastos trend**: the trend KPI modal now spells out the actual figures — current period spend vs. historical average — like the movements trend.
+
+### Fixed
+- **Dashboard / Move color**: a Move "a disponible" on the home screen now renders teal instead of purple; only "a ahorro" stays purple (matching the movements list).
+- **Investments / Por período KPI**: no longer truncates ("1.044 / …"). The card shows the average; the average-vs-goal pair is shown in the KPI detail on tap.
+
+---
+
 ## [2.35.0] — 2026-06-26
 
 ### Changed

@@ -292,9 +292,12 @@ export default function DolaresPage() {
 
                 {/* Mini-stats */}
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  {(() => { const v = `${oculto ? "••" : (promAhorroUSD !== null ? Math.round(promAhorroUSD).toLocaleString("es-AR") : "—")} / ${Math.round(metaUSD).toLocaleString("es-AR")}`; return (
-                    <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statPerPeriod} value={v}
-                      onClick={() => setKpiInfo({ title: t.statPerPeriod, value: v, explain: t.kpiPerPeriodInfo, color: "var(--yellow)" })} />
+                  {(() => {
+                    const avg = oculto ? "••" : (promAhorroUSD !== null ? Math.round(promAhorroUSD).toLocaleString("es-AR") : "—");
+                    const goal = Math.round(metaUSD).toLocaleString("es-AR");
+                    return (
+                    <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statPerPeriod} value={avg}
+                      onClick={() => setKpiInfo({ title: t.statPerPeriod, value: `${avg} / ${goal}`, explain: t.kpiPerPeriodInfo, color: "var(--yellow)" })} />
                   ); })()}
                   {proyUSD !== null && (
                     <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statProjection}
