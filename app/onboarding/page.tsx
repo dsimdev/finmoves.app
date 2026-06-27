@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
 import { useAuth } from "@/hooks/useAuth";
-import { useConfig } from "@/hooks/useConfig";
+import { useConfig, saveConfigCache } from "@/hooks/useConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useT } from "@/hooks/useTranslation";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -66,7 +66,7 @@ export default function OnboardingPage() {
     setMonedaPrincipal(moneda);
     setPref("showAhorros", invierte);
     try {
-      await setDoc(doc(db, `users/${user.uid}/config/meta`), {
+      const nuevaConfig = {
         ...config,
         meta: {
           ...config.meta,
@@ -77,7 +77,11 @@ export default function OnboardingPage() {
           showReportes: true,
           onboardingCompleto: true,
         },
-      });
+      };
+      await setDoc(doc(db, `users/${user.uid}/config/meta`), nuevaConfig);
+      // Refrescar el cache de config: si no, el guard del home lee el cache viejo
+      // (onboardingCompleto:false) y rebota de vuelta al onboarding → loop.
+      saveConfigCache(user.uid, nuevaConfig);
       router.replace("/");
     } catch {
       setSaving(false);

@@ -8,7 +8,7 @@ const CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 function configCacheKey(uid: string) { return `config_${uid}`; }
 
-function saveConfigCache(uid: string, config: ConfigUsuario) {
+export function saveConfigCache(uid: string, config: ConfigUsuario) {
   try {
     localStorage.setItem(configCacheKey(uid), JSON.stringify({ ts: Date.now(), data: config }));
   } catch {}

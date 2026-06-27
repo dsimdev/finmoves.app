@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.38.1] — 2026-06-27
+
+### Fixed
+- **Onboarding infinite loop for new users**: after completing onboarding the local config cache was not updated, so the home-page guard read the stale `onboardingCompleto: false` value and redirected back to `/onboarding`. Fix: `saveConfigCache` is now called with the updated config immediately after the Firestore write, before the redirect.
+
+---
+
 ## [2.38.0] — 2026-06-27
 
 ### Changed
