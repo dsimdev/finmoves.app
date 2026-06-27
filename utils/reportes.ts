@@ -11,6 +11,12 @@ export function esGasto(m: Movimiento): boolean {
   return m.tipo === "Gasto" || m.tipo === "CompraUSD";
 }
 
+// Gasto "puro": excluye compras de divisa, que disparan promedios/desvíos/proyecciones.
+// Se usa solo en cálculos estadísticos; los totales y el detalle por categoría usan esGasto.
+export function esGastoPuro(m: Movimiento): boolean {
+  return m.tipo === "Gasto";
+}
+
 // "D/M/YYYY" → Date
 export function parsePeriodoId(s: string): Date {
   const [d, m, y] = s.split("/").map(Number);
@@ -23,7 +29,7 @@ const DIA_MS = 86_400_000;
 // La mediana resiste outliers (un período atípico no la mueve). El CV resume qué
 // tan regular es tu gasto entre períodos: bajo = parejo, alto = irregular.
 export function estadisticasPeriodos(periodos: PeriodoResumen[]): { mediana: number; desvio: number; cv: number } | null {
-  const vals = periodos.map((p) => p.gastado).filter((v) => v > 0);
+  const vals = periodos.map((p) => p.gastadoPuro).filter((v) => v > 0);
   if (vals.length === 0) return null;
   const sorted = [...vals].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
@@ -90,12 +96,14 @@ export function kpisPeriodo(p: PeriodoResumen): KpisPeriodo {
   const porFechaCant = new Map<string, number>();
   let cantGastos = 0;
   let cantIngresos = 0;
+  let gastoPuro = 0; // suma de tipo Gasto, para el promedio diario sin divisa
 
   for (const m of p.movimientos) {
     porFechaCant.set(m.fecha, (porFechaCant.get(m.fecha) ?? 0) + 1);
     if (esGasto(m)) {
       cantGastos++;
       porFechaMonto.set(m.fecha, (porFechaMonto.get(m.fecha) ?? 0) + m.monto);
+      if (esGastoPuro(m)) gastoPuro += m.monto;
     } else if (m.tipo === "Ingreso") {
       cantIngresos++;
     }
@@ -110,7 +118,7 @@ export function kpisPeriodo(p: PeriodoResumen): KpisPeriodo {
     diaMasMovimientos: diaMasMov ? { fecha: diaMasMov[0], cant: diaMasMov[1] } : null,
     cantGastos,
     cantIngresos,
-    promedioDiario: diasConGasto > 0 ? p.gastado / diasConGasto : 0,
+    promedioDiario: diasConGasto > 0 ? gastoPuro / diasConGasto : 0,
     diasConGasto,
   };
 }
@@ -137,7 +145,7 @@ export function ritmoGasto(p: PeriodoResumen, finPeriodo: Date | null, hoy = new
   const enCurso = finPeriodo === null;
   const corte = enCurso ? hoy : finPeriodo;
   const dias = Math.max(1, Math.round((corte.getTime() - inicio.getTime()) / DIA_MS));
-  const gastadoPorDia = p.gastado / dias;
+  const gastadoPorDia = p.gastadoPuro / dias;
   return {
     diasTranscurridos: dias,
     gastadoPorDia,
@@ -182,6 +190,7 @@ export interface PuntoTendencia {
   periodoId: string;
   sueldo: number;
   gastado: number;
+  gastadoPuro: number;
   disponible: number;
   total: number;
   ahorros: number;
@@ -207,6 +216,7 @@ export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: strin
       periodoId: p.periodoId,
       sueldo: p.sueldo,
       gastado: p.gastado,
+      gastadoPuro: p.gastadoPuro,
       disponible: p.disponible,
       total: p.total,
       ahorros: ahorrosDelPeriodo,

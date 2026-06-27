@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.40.0] — 2026-06-27
+
+### Changed
+- **Statistical calculations now exclude FX buys** (`CompraUSD`/`CompraEUR`), which were inflating averages, variation and projections. Introduced `gastadoPuro` (sum of `Gasto` only) on `PeriodoResumen` and `PuntoTendencia`, plus an `esGastoPuro` helper. Routed through it: personal inflation, median/average spend per period, spend trend, next-period projection, spending pace (`ritmoGasto`), avg-per-day-with-expense (`kpisPeriodo.promedioDiario`), spend dispersion/CV (`estadisticasPeriodos`), best/worst-period markers, the per-period spend bar chart and the spend/salary ratio chart, and the home dashboard's avg-per-movement + deviation (CV).
+- **Totals and breakdowns keep FX**: period total `gastado`, `% spent`, by-category / by-payment-method / by-description / by-date distributions and top expenses still include `CompraUSD`, so FX buys remain visible where they're a real outflow.
+
+---
+
 ## [2.39.0] — 2026-06-27
 
 ### Reports · Periods

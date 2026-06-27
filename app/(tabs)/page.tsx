@@ -48,8 +48,9 @@ export default function Dashboard() {
   const p = periodos[0];
   const serie = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const ahorrosAcum = serie.length ? serie[serie.length - 1].ahorrosAcum : 0;
-  const gastos = useMemo(() => p?.movimientos.filter((m) => m.tipo === "Gasto" || m.tipo === "CompraUSD") ?? [], [p]);
-  const promPorMov = gastos.length > 0 ? Math.round(p.gastado / gastos.length) : 0;
+  // Solo gasto puro (sin compras de divisa, que disparan promedio y desvío).
+  const gastos = useMemo(() => p?.movimientos.filter((m) => m.tipo === "Gasto") ?? [], [p]);
+  const promPorMov = gastos.length > 0 ? Math.round(gastos.reduce((s, m) => s + m.monto, 0) / gastos.length) : 0;
   const desvioCV = useMemo(() => {
     if (gastos.length < 2 || promPorMov === 0) return 0;
     const avg = gastos.reduce((s, m) => s + m.monto, 0) / gastos.length;

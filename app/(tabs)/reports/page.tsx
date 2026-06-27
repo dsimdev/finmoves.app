@@ -202,6 +202,7 @@ export default function ReportesPage() {
     extras: periodosActivos.reduce((sum, p) => sum + p.extras, 0),
     total: periodosActivos.reduce((sum, p) => sum + p.total, 0),
     gastado: periodosActivos.reduce((sum, p) => sum + p.gastado, 0),
+    gastadoPuro: periodosActivos.reduce((sum, p) => sum + p.gastadoPuro, 0),
     ahorros: periodosActivos.reduce((sum, p) => sum + p.ahorros, 0),
     resto: periodosActivos.reduce((sum, p) => sum + p.resto, 0),
     disponible: periodosActivos.reduce((sum, p) => sum + p.disponible, 0),
@@ -252,7 +253,10 @@ export default function ReportesPage() {
   const comp = periodo && activos.length === 1 ? comparativaCategorias(periodo, anterior) : [];
 
   // ── Estadísticas avanzadas (Gastos) ──
-  const promPorMov = periodo && kpis && kpis.cantGastos > 0 ? periodo.gastado / kpis.cantGastos : null;
+  const promPorMov = periodo ? (() => {
+    const n = periodo.movimientos.filter((m) => m.tipo === "Gasto").length;
+    return n > 0 ? periodo.gastadoPuro / n : null;
+  })() : null;
   const diasLibres = periodo ? (() => {
     if (activos.length === 1) {
       const start = parsePeriodoId(activos[0]!);
@@ -364,8 +368,8 @@ export default function ReportesPage() {
 
   // ── Resumen general de períodos ──
   const validPeriodos = useMemo(() => serieDesc.filter((s) => s.total > 0), [serieDesc]);
-  const mejorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total < b.gastado / b.total ? s : b) : null;
-  const peorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
+  const mejorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastadoPuro / s.total < b.gastadoPuro / b.total ? s : b) : null;
+  const peorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastadoPuro / s.total > b.gastadoPuro / b.total ? s : b) : null;
   // Inflación personal: variación promedio del gasto puro (sin compras de divisa,
   // que dispararían el número) entre períodos consecutivos.
   const inflacionPersonal = useMemo(() => {
@@ -450,7 +454,7 @@ export default function ReportesPage() {
 
   // ── Tendencias: Gastos ──
   const promGastoPorPeriodo = periodos.length > 0
-    ? Math.round(periodos.reduce((s, p) => s + p.gastado, 0) / periodos.length) : 0;
+    ? Math.round(periodos.reduce((s, p) => s + p.gastadoPuro, 0) / periodos.length) : 0;
   // Mediana por período (más robusta que el promedio ante períodos atípicos).
   const mediana = (arr: number[]) => {
     const v = arr.filter((x) => x > 0).sort((a, b) => a - b);
@@ -458,7 +462,7 @@ export default function ReportesPage() {
     const mid = Math.floor(v.length / 2);
     return v.length % 2 ? v[mid] : Math.round((v[mid - 1] + v[mid]) / 2);
   };
-  const medianaGastoPeriodo = useMemo(() => mediana(periodos.map((p) => p.gastado)), [periodos]);
+  const medianaGastoPeriodo = useMemo(() => mediana(periodos.map((p) => p.gastadoPuro)), [periodos]);
   const medianaIngresoPeriodo = useMemo(() => mediana(periodos.map((p) => p.sueldo + p.moveDisponible)), [periodos]);
   // Lo que entró a ahorros por período: depósitos (moveAhorros) + ingresos directos a ahorro.
   const medianaAhorroPeriodo = useMemo(() => mediana(periodos.map((p) => p.moveAhorros + p.ahorros)), [periodos]);
@@ -467,9 +471,9 @@ export default function ReportesPage() {
     ? Math.round(periodos.slice(1).reduce((s, p) => s + p.moveAhorros + p.ahorros, 0) / (periodos.length - 1)) : null;
   const estadPeriodos = useMemo(() => estadisticasPeriodos(periodos), [periodos]);
   const avgHistorico = periodos.length >= 2
-    ? periodos.slice(1).reduce((s, p) => s + p.gastado, 0) / (periodos.length - 1) : 0;
+    ? periodos.slice(1).reduce((s, p) => s + p.gastadoPuro, 0) / (periodos.length - 1) : 0;
   const tendenciaGasto = periodos.length >= 2 && avgHistorico > 0
-    ? Math.round(((periodos[0].gastado - avgHistorico) / avgHistorico) * 100) : null;
+    ? Math.round(((periodos[0].gastadoPuro - avgHistorico) / avgHistorico) * 100) : null;
   const proyeccionGasto = periodos.length >= 2 ? Math.round(avgHistorico) : null;
   const avgHistoricoMovs = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.movimientos.length, 0) / (periodos.length - 1) : 0;
@@ -703,7 +707,7 @@ export default function ReportesPage() {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                 {tendenciaGasto !== null && (() => { const c = tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`; return (
                   <MiniStat center label={t.trend} value={v} color={c}
-                    onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `${t.kpiTrendInfo} Período actual: ${oculto ? "••" : formatARS(periodos[0].gastado)} · Promedio histórico: ${oculto ? "••" : formatARS(Math.round(avgHistorico))}`, color: c })} />
+                    onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `${t.kpiTrendInfo} Período actual: ${oculto ? "••" : formatARS(periodos[0].gastadoPuro)} · Promedio histórico: ${oculto ? "••" : formatARS(Math.round(avgHistorico))}`, color: c })} />
                 ); })()}
                 {periodo.moveAhorros > 0 && <MiniStat center label="A ahorros" value={oculto ? "••" : abbr(periodo.moveAhorros)} color="var(--purple)"
                   onClick={() => setKpiInfo({ title: "Move a ahorros", value: oculto ? "••" : formatARS(periodo.moveAhorros), explain: "Total transferido a ahorros este período.", color: "var(--purple)" })} />}
@@ -1012,7 +1016,7 @@ export default function ReportesPage() {
                 let data: BarDatum[] = [];
                 let max = 1; let refFrac: number | undefined; let mask = false;
                 if (periodMetric === "gasto") {
-                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId }));
+                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastadoPuro, color: colorPct(s.total > 0 ? Math.round((s.gastadoPuro / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId }));
                   max = maxTotal; mask = true;
                 } else if (periodMetric === "ingreso") {
                   data = evolucionIngresos.map((p) => ({ label: shortPer(p.periodoId), value: p.sueldo + p.moveDisponible, color: "var(--green)", hi: activos.includes(p.periodoId) }));
@@ -1029,7 +1033,7 @@ export default function ReportesPage() {
                   max = Math.max(...data.map((d) => d.value), 1);
                 } else {
                   data = serieDesc.filter((s) => s.sueldo > 0).map((s) => {
-                    const pct = Math.round((s.gastado / s.sueldo) * 100);
+                    const pct = Math.round((s.gastadoPuro / s.sueldo) * 100);
                     return { label: shortPer(s.periodoId), value: pct, color: pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)", valueLabel: `${pct}%`, hi: activos.includes(s.periodoId) };
                   });
                   max = Math.max(...data.map((d) => d.value), 110);

@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.40.0] — 2026-06-27
+
+### Reportes
+- Los **promedios, tendencias, desvíos, proyecciones y el ritmo de gasto** ya no se distorsionan por las **compras de dólares/euros**: esos cálculos ahora miran solo tu gasto real. El gráfico de gasto por período también queda más legible.
+- Tranquilo: en el **total gastado** y en el detalle **por categoría** las compras de divisa se siguen viendo como siempre.
+
+---
+
 ## [2.39.0] — 2026-06-27
 
 ### Reportes · Períodos
