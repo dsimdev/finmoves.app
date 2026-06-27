@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.38.0] — 2026-06-27
+
+### Reportes · Períodos
+- La sección quedó como un **resumen general**: arriba tu **inflación personal** (cuánto fue cambiando tu gasto período a período, sin contar compras de dólares).
+- Sumamos tu **gasto más frecuente** (categoría, cuántas veces y total) y el **ingreso y gasto típico** por período. Tocá cada uno para ver el número exacto y la explicación.
+- Los 4 gráficos de períodos ahora son **uno solo** con un selector (Gasto · Ingreso · Días · Gasto/Sueldo) y un texto abajo que aclara qué estás viendo.
+
+---
+
 ## [2.37.0] — 2026-06-27
 
 ### Movimientos

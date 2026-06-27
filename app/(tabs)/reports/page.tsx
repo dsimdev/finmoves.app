@@ -131,13 +131,14 @@ function DonutChart({ data, size = 80, strokeWidth = 13, selected, onSelect }: {
 }
 
 // Mini-stat compacto, fondo neutro, color sólo en el número.
-function VBars({ data, max, oculto, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string }[]; max: number; oculto?: boolean; onBarClick?: (label: string) => void }) {
+function VBars({ data, max, oculto, refFrac, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string }[]; max: number; oculto?: boolean; refFrac?: number; onBarClick?: (label: string) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
       {data.map((d, i) => (
         <div key={i} onClick={() => onBarClick?.(d.label)} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: onBarClick ? "pointer" : "default" }}>
           <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "•" : (d.valueLabel ?? abbr(d.value))}</div>
-          <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
+          <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, display: "flex", alignItems: "flex-end", overflow: "hidden", position: "relative" }}>
+            {refFrac != null && <div style={{ position: "absolute", left: 0, right: 0, bottom: `${Math.round(refFrac * 96)}px`, height: 1, background: "var(--text)44", zIndex: 1 }} />}
             <div style={{ width: "100%", height: `${max > 0 ? Math.round((d.value / max) * 100) : 0}%`, background: d.color, borderRadius: 7, transition: "height .5s ease" }} />
           </div>
           <div style={{ fontSize: 8, fontWeight: (d.best || d.worst || d.hi) ? 700 : 400, color: d.best ? "var(--green)" : d.worst ? "var(--red)" : d.hi ? "var(--accent)" : "var(--muted)" }}>{shortPer(d.label)}</div>
@@ -188,6 +189,7 @@ export default function ReportesPage() {
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [catModal, setCatModal] = useState<string | null>(null);
   const [medioModal, setMedioModal] = useState<string | null>(null);
+  const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo">("gasto");
   const [selectedMovTipo, setSelectedMovTipo] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
@@ -361,6 +363,39 @@ export default function ReportesPage() {
   const serieDesc = useMemo(() => [...serie].reverse(), [serie]);
   const maxTotal = Math.max(...serie.map((s) => s.total), 1);
 
+  // ── Resumen general de períodos ──
+  const validPeriodos = useMemo(() => serieDesc.filter((s) => s.total > 0), [serieDesc]);
+  const mejorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total < b.gastado / b.total ? s : b) : null;
+  const peorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
+  // Inflación personal: variación promedio del gasto puro (sin compras de divisa,
+  // que dispararían el número) entre períodos consecutivos.
+  const inflacionPersonal = useMemo(() => {
+    const chron = periodos
+      .map((p) => ({ id: p.periodoId, gasto: p.movimientos.filter((m) => m.tipo === "Gasto").reduce((s, m) => s + m.monto, 0) }))
+      .filter((p) => p.gasto > 0)
+      .sort((a, b) => parsePeriodoId(a.id).getTime() - parsePeriodoId(b.id).getTime());
+    if (chron.length < 2) return null;
+    let sum = 0, n = 0;
+    for (let i = 1; i < chron.length; i++) {
+      const prev = chron[i - 1].gasto;
+      if (prev > 0) { sum += (chron[i].gasto - prev) / prev; n++; }
+    }
+    return n > 0 ? Math.round((sum / n) * 100) : null;
+  }, [periodos]);
+  // Gasto más frecuente: categoría con más movimientos de tipo Gasto + su total acumulado.
+  const gastoFrecuente = useMemo(() => {
+    const cnt = new Map<string, { n: number; monto: number }>();
+    for (const p of periodos) for (const m of p.movimientos) {
+      if (m.tipo === "Gasto" && m.categoria) {
+        const e = cnt.get(m.categoria) ?? { n: 0, monto: 0 };
+        e.n += 1; e.monto += m.monto; cnt.set(m.categoria, e);
+      }
+    }
+    let best: { cat: string; n: number; monto: number } | null = null;
+    for (const [cat, e] of cnt) if (!best || e.n > best.n) best = { cat, n: e.n, monto: e.monto };
+    return best;
+  }, [periodos]);
+
   // Ahorros acumulados al cierre del período seleccionado (para mostrar en Períodos)
   const ahorrosAcumPeriodo = activos.length === 1
     ? (serie.find((s) => s.periodoId === activos[0])?.ahorrosAcum ?? 0)
@@ -404,6 +439,15 @@ export default function ReportesPage() {
   // ── Tendencias: Gastos ──
   const promGastoPorPeriodo = periodos.length > 0
     ? Math.round(periodos.reduce((s, p) => s + p.gastado, 0) / periodos.length) : 0;
+  // Mediana por período (más robusta que el promedio ante períodos atípicos).
+  const mediana = (arr: number[]) => {
+    const v = arr.filter((x) => x > 0).sort((a, b) => a - b);
+    if (v.length === 0) return 0;
+    const mid = Math.floor(v.length / 2);
+    return v.length % 2 ? v[mid] : Math.round((v[mid - 1] + v[mid]) / 2);
+  };
+  const medianaGastoPeriodo = useMemo(() => mediana(periodos.map((p) => p.gastado)), [periodos]);
+  const medianaIngresoPeriodo = useMemo(() => mediana(periodos.map((p) => p.sueldo + p.moveDisponible)), [periodos]);
   const estadPeriodos = useMemo(() => estadisticasPeriodos(periodos), [periodos]);
   const avgHistorico = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.gastado, 0) / (periodos.length - 1) : 0;
@@ -902,113 +946,97 @@ export default function ReportesPage() {
           )}
 
           {/* ══ PERÍODOS ══ */}
-          {sub === "periodos" && periodo && (() => {
-            const valid = serieDesc.filter((s) => s.total > 0);
-            const mejor = valid.length > 0 ? valid.reduce((b, s) => s.gastado / s.total < b.gastado / b.total ? s : b) : null;
-            const peor  = valid.length > 0 ? valid.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
-            return (
+          {sub === "periodos" && periodo && (
             <>
+              {/* Hero: inflación personal (variación promedio del gasto entre períodos) */}
               {reportOn("periodos_kpis") && (
-              <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--red-dim), var(--surface), var(--green-dim))" }}>
+              <div className="soft" onClick={inflacionPersonal != null ? () => setKpiInfo({ title: t.inflationTitle, value: `${inflacionPersonal >= 0 ? "+" : ""}${inflacionPersonal}%`, explain: t.kpiInflationInfo, color: inflacionPersonal > 0 ? "var(--red)" : "var(--green)" }) : undefined}
+                style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--red-dim), var(--surface), var(--green-dim))", cursor: inflacionPersonal != null ? "pointer" : "default" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.periodAvgSpent}</div>
-                  <button onClick={toggle} aria-label={t.hideValues} style={{ background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}><EyeIcon off={oculto} /></button>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.inflationTitle}</div>
+                  <button onClick={(e) => { e.stopPropagation(); toggle(); }} aria-label={t.hideValues} style={{ background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}><EyeIcon off={oculto} /></button>
                 </div>
-                <div style={{ fontSize: 30, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{oculto ? "••" : money(promGastoPorPeriodo)}</div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.periodsCount(periodos.length)}</div>
+                <div style={{ fontSize: 32, fontWeight: 700, color: inflacionPersonal == null ? "var(--muted)" : inflacionPersonal > 0 ? "var(--red)" : inflacionPersonal < 0 ? "var(--green)" : "var(--text)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>
+                  {inflacionPersonal == null ? "—" : `${inflacionPersonal >= 0 ? "+" : ""}${inflacionPersonal}%`}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.inflationSub} · {t.periodsCount(periodos.length)}</div>
               </div>
               )}
 
-              {/* KPIs período: mediana/variación */}
-              {reportOn("periodos_kpis") && estadPeriodos && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                  <MiniStat center basis="1 1 45%" label={t.medianSpent} value={oculto ? "••" : abbr(estadPeriodos.mediana)} color="var(--accent)"
-                    onClick={() => setKpiInfo({ title: t.medianSpent, value: oculto ? "••" : formatARS(estadPeriodos.mediana), explain: t.kpiMedianInfo, color: "var(--accent)" })} />
-                  {(() => { const c = estadPeriodos.cv <= 25 ? "var(--green)" : estadPeriodos.cv <= 50 ? "var(--yellow)" : "var(--red)"; return (
-                    <MiniStat center basis="1 1 45%" label={t.spendVariation} value={`±${estadPeriodos.cv}%`} color={c}
-                      onClick={() => setKpiInfo({ title: t.spendVariation, value: `±${estadPeriodos.cv}%`, explain: t.kpiVariationInfo, color: c })} />
-                  ); })()}
+              {/* Gasto más frecuente: categoría que más se repite + su total */}
+              {reportOn("periodos_kpis") && gastoFrecuente && (
+                <div className="soft" style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{t.mostFrequentExpense}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{gastoFrecuente.cat}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.timesCount(gastoFrecuente.n)}</div>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{oculto ? "••" : abbr(gastoFrecuente.monto)}</div>
                 </div>
               )}
 
-              {/* Gastado por período */}
-              {reportOn("periodos_otros") && serieDesc.length > 0 && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.spentPerPeriod}</div>
-                  <VBars max={maxTotal} oculto={oculto} data={serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejor?.periodoId, worst: s.periodoId === peor?.periodoId }))} />
+              {/* Promedios por período: gasto e ingreso */}
+              {reportOn("periodos_kpis") && (
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  <MiniStat center basis="1 1 0" label={t.avgIncome} value={oculto ? "••" : abbr(medianaIngresoPeriodo)} color="var(--green)"
+                    onClick={() => setKpiInfo({ title: t.avgIncome, value: oculto ? "••" : money(medianaIngresoPeriodo), explain: t.kpiTypicalInfo, color: "var(--green)" })} />
+                  <MiniStat center basis="1 1 0" label={t.avgSpent} value={oculto ? "••" : abbr(medianaGastoPeriodo)} color="var(--red)"
+                    onClick={() => setKpiInfo({ title: t.avgSpent, value: oculto ? "••" : money(medianaGastoPeriodo), explain: t.kpiTypicalInfo, color: "var(--red)" })} />
                 </div>
               )}
 
-              {/* Gastos vs sueldo por período */}
-              {reportOn("periodos_otros") && serieDesc.filter((s) => s.sueldo > 0).length > 0 && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.expensesVsSalary}</div>
-                  {(() => {
-                    const data = serieDesc.filter((s) => s.sueldo > 0).map((s) => ({
-                      label: shortPer(s.periodoId),
-                      pct: Math.round((s.gastado / s.sueldo) * 100),
-                      hi: activos.includes(s.periodoId),
-                    }));
-                    const maxPct = Math.max(...data.map((d) => d.pct), 110);
-                    const lineBottom = Math.round((100 / maxPct) * 96);
-                    const color = (pct: number) => pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)";
-                    return (
-                      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
-                        {data.map((d, i) => (
-                          <div key={i} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                            <div style={{ fontSize: 8, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, minHeight: 10 }}>
-                              {!oculto && d.pct > 100 ? `+${d.pct - 100}%` : ""}
-                            </div>
-                            <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, position: "relative", display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
-                              <div style={{ position: "absolute", bottom: lineBottom, left: 0, right: 0, height: 1, background: "var(--text)44", zIndex: 1 }} />
-                              <div style={{ width: "100%", height: `${Math.min(Math.round((d.pct / maxPct) * 100), 100)}%`, background: color(d.pct), borderRadius: 7, transition: "height .5s ease" }} />
-                            </div>
-                            <div style={{ fontSize: 8, color: d.hi ? "var(--accent)" : "var(--muted)", fontWeight: d.hi ? 700 : 400 }}>{d.label}</div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {/* Evolución ingresos */}
-              {evolucionIngresos.length > 1 && (
-                <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{t.incomeEvolution}</div>
-                  <VBars
-                    max={Math.max(...evolucionIngresos.map((p) => p.sueldo + p.moveDisponible), 1)}
-                    oculto={oculto}
-                    data={evolucionIngresos.map((p) => ({
-                      label: shortPer(p.periodoId),
-                      value: p.sueldo + p.moveDisponible,
-                      color: "var(--green)",
-                      hi: activos.includes(p.periodoId),
-                    }))}
-                  />
-                </div>
-              )}
-
-              {/* Días por período */}
-              {serieDesc.length > 1 && (() => {
-                const hoy = new Date();
-                const diasData = serieDesc.map((s, i) => {
-                  const inicio = parsePeriodoId(s.periodoId);
-                  const fin = i === 0 ? hoy : parsePeriodoId(serieDesc[i - 1].periodoId);
-                  const dias = Math.max(1, Math.round((fin.getTime() - inicio.getTime()) / 86400000));
-                  const color = dias <= 29 ? "var(--green)" : dias <= 31 ? "var(--yellow)" : "var(--red)";
-                  return { label: shortPer(s.periodoId), value: dias, color, valueLabel: `${dias}d`, hi: activos.includes(s.periodoId) };
-                });
+              {/* Por período — un solo gráfico con selector de métrica */}
+              {reportOn("periodos_otros") && serieDesc.length > 0 && (() => {
+                const metrics = [
+                  { id: "gasto", label: t.mPeriodSpent },
+                  { id: "ingreso", label: t.mPeriodIncome },
+                  { id: "dias", label: t.mPeriodDays },
+                  { id: "gastoSueldo", label: t.mPeriodRatio },
+                ] as const;
+                type BarDatum = { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string };
+                let data: BarDatum[] = [];
+                let max = 1; let refFrac: number | undefined; let mask = false;
+                if (periodMetric === "gasto") {
+                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId }));
+                  max = maxTotal; mask = true;
+                } else if (periodMetric === "ingreso") {
+                  data = evolucionIngresos.map((p) => ({ label: shortPer(p.periodoId), value: p.sueldo + p.moveDisponible, color: "var(--green)", hi: activos.includes(p.periodoId) }));
+                  max = Math.max(...evolucionIngresos.map((p) => p.sueldo + p.moveDisponible), 1); mask = true;
+                } else if (periodMetric === "dias") {
+                  const hoy = new Date();
+                  data = serieDesc.map((s, i) => {
+                    const inicio = parsePeriodoId(s.periodoId);
+                    const fin = i === 0 ? hoy : parsePeriodoId(serieDesc[i - 1].periodoId);
+                    const dias = Math.max(1, Math.round((fin.getTime() - inicio.getTime()) / 86400000));
+                    const color = dias <= 29 ? "var(--green)" : dias <= 31 ? "var(--yellow)" : "var(--red)";
+                    return { label: shortPer(s.periodoId), value: dias, color, valueLabel: `${dias}d`, hi: activos.includes(s.periodoId) };
+                  });
+                  max = Math.max(...data.map((d) => d.value), 1);
+                } else {
+                  data = serieDesc.filter((s) => s.sueldo > 0).map((s) => {
+                    const pct = Math.round((s.gastado / s.sueldo) * 100);
+                    return { label: shortPer(s.periodoId), value: pct, color: pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)", valueLabel: `${pct}%`, hi: activos.includes(s.periodoId) };
+                  });
+                  max = Math.max(...data.map((d) => d.value), 110);
+                  refFrac = 100 / max;
+                }
+                const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : t.subMetricRatio;
                 return (
                   <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Días por período</div>
-                    <VBars max={Math.max(...diasData.map((d) => d.value), 1)} data={diasData} />
+                    <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", marginBottom: 14 }}>
+                      {metrics.map((mt) => (
+                        <button key={mt.id} type="button" onClick={() => setPeriodMetric(mt.id)} className="pill" style={{ flexShrink: 0, fontSize: 11, padding: "4px 10px", borderColor: periodMetric === mt.id ? "var(--accent)" : "var(--border)", background: periodMetric === mt.id ? "var(--accent-dim)" : "transparent", color: periodMetric === mt.id ? "var(--accent)" : "var(--muted)" }}>{mt.label}</button>
+                      ))}
+                    </div>
+                    {data.length > 0
+                      ? <VBars data={data} max={max} oculto={mask ? oculto : undefined} refFrac={refFrac} />
+                      : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>}
+                    <div style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", marginTop: 10 }}>{sub}</div>
                   </div>
                 );
               })()}
             </>
-            );
-          })()}
+          )}
 
           {/* ══ MOVIMIENTOS ══ */}
           {sub === "movimientos" && periodo && movCounts && (

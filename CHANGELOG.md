@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.38.0] — 2026-06-27
+
+### Changed
+- **Reports / Periods section reworked into a general overview**. The four separate per-period charts (spent, spent-vs-salary, income, days) are now a single chart with a metric selector (Spent · Income · Days · Spend/Salary); `VBars` gained an optional reference line for the Spend/Salary ratio (100% marker). A subtitle under the chart explains the active metric.
+- **New period summary** above the chart: hero is now **personal inflation** (average period-over-period spending growth, excluding FX buys so it isn't skewed), plus **most frequent expense** (category · times · total) and **typical income/spent** per period using the **median** (robust to atypical periods), each with a tap-to-explain `KpiInfoModal`. Removed the previous net-average hero, the average/median + best/worst stacks.
+
+### Added
+- i18n keys for the period overview (`inflationTitle`, `kpiInflationInfo`, `mostFrequentExpense`, `timesCount`, `avgSpent`/`avgIncome`, `kpiTypicalInfo`, `subMetric*`, `mPeriod*`, `byPeriod`) in es/en.
+
+---
+
 ## [2.37.0] — 2026-06-27
 
 ### Changed
