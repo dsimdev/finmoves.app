@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.34.0] — 2026-06-26
+
+### Added
+- **Settings > General / Dashboard clásico**: toggle that switches the four dashboard KPIs between the new set (gastado, ahorros acum., prom. por mov., desvío CV%) and the classic set (salary, spent, savings, withdrawals). Persisted per-device in `finmoves_app_prefs` (localStorage via Zustand).
+
+---
+
 ## [2.33.0] — 2026-06-25
 
 ### Changed

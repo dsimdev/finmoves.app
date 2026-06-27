@@ -14,6 +14,7 @@ import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 
 function TipoColor(m: Movimiento) {
   if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
   const t = useT();
+  const { dashboardClasico } = useAppPrefs();
 
   // Modal de alta/edición abierto desde el propio inicio (sin navegar).
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
@@ -111,16 +113,23 @@ export default function Dashboard() {
 
           {/* KPIs */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-            <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)"
-              onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastado), explain: "Total gastado en el período actual.", color: "var(--red)" })} />
-            <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
-              onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
-            <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={promPorMov > 0 ? money(promPorMov) : "—"} color="var(--yellow)"
-              onClick={() => setKpiInfo({ title: t.avgPerExpense, value: money(promPorMov), explain: t.kpiAvgPerExpenseInfo, color: "var(--yellow)" })} />
-            {(() => { const c = desvioCV <= 25 ? "var(--green)" : desvioCV <= 50 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
-              <MiniStat center basis="1 1 45%" label={t.spendSpread} value={v} color={c}
-                onClick={() => setKpiInfo({ title: t.spendSpread, value: v, explain: t.kpiSpendSpreadInfo, color: c })} />
-            ); })()}
+            {dashboardClasico ? (<>
+              <MiniStat basis="1 1 45%" label={t.salary} value={money(p.sueldo)} color="var(--green)" />
+              <MiniStat basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)" />
+              <MiniStat basis="1 1 45%" label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
+              <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} color="#26c6da" />
+            </>) : (<>
+              <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)"
+                onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastado), explain: "Total gastado en el período actual.", color: "var(--red)" })} />
+              <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
+                onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
+              <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={promPorMov > 0 ? money(promPorMov) : "—"} color="var(--yellow)"
+                onClick={() => setKpiInfo({ title: t.avgPerExpense, value: money(promPorMov), explain: t.kpiAvgPerExpenseInfo, color: "var(--yellow)" })} />
+              {(() => { const c = desvioCV <= 25 ? "var(--green)" : desvioCV <= 50 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
+                <MiniStat center basis="1 1 45%" label={t.spendSpread} value={v} color={c}
+                  onClick={() => setKpiInfo({ title: t.spendSpread, value: v, explain: t.kpiSpendSpreadInfo, color: c })} />
+              ); })()}
+            </>)}
           </div>
 
           {/* Atajos */}

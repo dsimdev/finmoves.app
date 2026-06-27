@@ -287,6 +287,8 @@ export const es = {
   mainCurrency: "Moneda principal",
   showReportsLabel: "Mostrar sección de reportes",
   showInvestmentsLabel: "Mostrar sección de inversión",
+  dashboardClasico: "Dashboard clásico",
+  dashboardClasicoSub: "Muestra sueldo, gastado, ahorros y retiros",
   investmentCurrency: "Moneda de inversión",
   activeGoal: "meta activa",
   cantChangeWithGoal: "No se puede cambiar mientras haya una meta de ahorro activa.",

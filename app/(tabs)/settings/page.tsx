@@ -155,7 +155,7 @@ export default function ConfigPage() {
   const router = useRouter();
 
   const { dark, toggle: toggleTheme } = useTheme();
-  const { showReportes, showAhorros, monedaInversiones, monedaPrincipal, set: setPref, setMoneda, setMonedaPrincipal, lang, setLang } = useAppPrefs();
+  const { showReportes, showAhorros, dashboardClasico, monedaInversiones, monedaPrincipal, set: setPref, setMoneda, setMonedaPrincipal, lang, setLang } = useAppPrefs();
   const t = useT();
 
 
@@ -1105,6 +1105,22 @@ export default function ConfigPage() {
                 </div>
               </div>
               <Toggle activo={dark} onClick={toggleTheme} />
+            </div>
+
+            {/* Dashboard clásico */}
+            <div className="row" style={{ padding: "12px 0", borderTop: "1px solid var(--faint)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--surface-alt)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.dashboardClasico}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.dashboardClasicoSub}</div>
+                </div>
+              </div>
+              <Toggle activo={dashboardClasico} onClick={() => setPref("dashboardClasico", !dashboardClasico)} />
             </div>
 
             {/* Notificaciones */}

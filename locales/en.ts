@@ -289,6 +289,8 @@ export const en: AppLocale = {
   mainCurrency: "Main currency",
   showReportsLabel: "Show reports section",
   showInvestmentsLabel: "Show investments section",
+  dashboardClasico: "Classic dashboard",
+  dashboardClasicoSub: "Shows salary, spent, savings and withdrawals",
   investmentCurrency: "Investment currency",
   activeGoal: "active goal",
   cantChangeWithGoal: "Cannot change while a savings goal is active.",

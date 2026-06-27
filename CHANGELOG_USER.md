@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.34.0] — 2026-06-26
+
+### Configuración
+- En **Ajustes > General** hay una nueva opción "Dashboard clásico" para volver a los KPIs anteriores (sueldo, gastado, ahorros, retiros).
+
+---
+
 ## [2.33.0] — 2026-06-25
 
 ### Inicio
