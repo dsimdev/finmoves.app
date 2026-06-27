@@ -180,7 +180,6 @@ export default function ReportesPage() {
   const [modalSueldo, setModalSueldo] = useState(false);
   const [modalAhorros, setModalAhorros] = useState(false);
   const [diaModal, setDiaModal] = useState<string | null>(null);
-  const [proyPeriodos, setProyPeriodos] = useState(3);
   const [compareMode, setCompareMode] = useState(false);
   const [presupuesto, setPresupuesto] = useState<Record<string, number> | null>(null);
   const [showBudget, setShowBudget] = useState(false);
@@ -395,6 +394,19 @@ export default function ReportesPage() {
     for (const [cat, e] of cnt) if (!best || e.n > best.n) best = { cat, n: e.n, monto: e.monto };
     return best;
   }, [periodos]);
+  // Mayor gasto: categoría con más monto acumulado (distinta de la más frecuente).
+  const gastoMayor = useMemo(() => {
+    const cnt = new Map<string, { n: number; monto: number }>();
+    for (const p of periodos) for (const m of p.movimientos) {
+      if (m.tipo === "Gasto" && m.categoria) {
+        const e = cnt.get(m.categoria) ?? { n: 0, monto: 0 };
+        e.n += 1; e.monto += m.monto; cnt.set(m.categoria, e);
+      }
+    }
+    let best: { cat: string; n: number; monto: number } | null = null;
+    for (const [cat, e] of cnt) if (!best || e.monto > best.monto) best = { cat, n: e.n, monto: e.monto };
+    return best;
+  }, [periodos]);
 
   // Ahorros acumulados al cierre del período seleccionado (para mostrar en Períodos)
   const ahorrosAcumPeriodo = activos.length === 1
@@ -448,6 +460,11 @@ export default function ReportesPage() {
   };
   const medianaGastoPeriodo = useMemo(() => mediana(periodos.map((p) => p.gastado)), [periodos]);
   const medianaIngresoPeriodo = useMemo(() => mediana(periodos.map((p) => p.sueldo + p.moveDisponible)), [periodos]);
+  // Lo que entró a ahorros por período: depósitos (moveAhorros) + ingresos directos a ahorro.
+  const medianaAhorroPeriodo = useMemo(() => mediana(periodos.map((p) => p.moveAhorros + p.ahorros)), [periodos]);
+  // Proyección del próximo período: promedio histórico (excluye el período en curso, incompleto).
+  const proyeccionAhorro = periodos.length >= 2
+    ? Math.round(periodos.slice(1).reduce((s, p) => s + p.moveAhorros + p.ahorros, 0) / (periodos.length - 1)) : null;
   const estadPeriodos = useMemo(() => estadisticasPeriodos(periodos), [periodos]);
   const avgHistorico = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.gastado, 0) / (periodos.length - 1) : 0;
@@ -859,28 +876,6 @@ export default function ReportesPage() {
                   onClick={ahorrosAcumPeriodo > 0 ? () => setKpiInfo({ title: t.accumSavings, value: oculto ? "••" : formatARS(ahorrosAcumPeriodo), explain: deltaAhorros !== null ? `${t.kpiAccumSavingsInfo} (${deltaAhorros >= 0 ? "+" : ""}${oculto ? "••" : formatARS(deltaAhorros)}${deltaAhorrosPct !== null ? ` · ${deltaAhorrosPct >= 0 ? "+" : ""}${deltaAhorrosPct}%` : ""})` : t.kpiAccumSavingsInfo, color: "var(--blue)" }) : undefined} />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginBottom: 12 }}>
-                {serie.length >= 2 && (
-                  <div className="soft" style={{ padding: 15, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.savingsProjection}</div>
-                      <div style={{ display: "flex", gap: 4 }}>
-                        {[3, 6, 12].map((n) => (
-                          <button key={n} onClick={() => setProyPeriodos(n)} style={{
-                            padding: "4px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
-                            border: `1px solid ${proyPeriodos === n ? "var(--blue)" : "var(--border)"}`,
-                            background: proyPeriodos === n ? "var(--blue-dim)" : "transparent",
-                            color: proyPeriodos === n ? "var(--blue)" : "var(--muted)",
-                          }}>{n}p</button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 19, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)", lineHeight: 1.05 }}>
-                      {money(proyectarAhorros(serie, proyPeriodos))}
-                    </div>
-                  </div>
-                )}
-              </div>
               </>
               )}
 
@@ -963,25 +958,45 @@ export default function ReportesPage() {
               </div>
               )}
 
-              {/* Gasto más frecuente: categoría que más se repite + su total */}
-              {reportOn("periodos_kpis") && gastoFrecuente && (
-                <div className="soft" style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{t.mostFrequentExpense}</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{gastoFrecuente.cat}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.timesCount(gastoFrecuente.n)}</div>
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{oculto ? "••" : abbr(gastoFrecuente.monto)}</div>
+              {/* Categorías top: más frecuente (por cantidad) y mayor gasto (por monto). El monto se ve al tocar. */}
+              {reportOn("periodos_kpis") && (gastoFrecuente || gastoMayor) && (
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  {gastoFrecuente && (
+                    <div className="soft" onClick={() => setKpiInfo({ title: t.mostFrequentExpense, value: `${gastoFrecuente.cat} · ${t.timesCount(gastoFrecuente.n)}`, explain: t.kpiMostFrequentInfo, color: "var(--red)" })}
+                      style={{ flex: "1 1 0", minWidth: 0, textAlign: "center", cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{t.mostFrequentExpense}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{gastoFrecuente.cat}</div>
+                    </div>
+                  )}
+                  {gastoMayor && (
+                    <div className="soft" onClick={() => setKpiInfo({ title: t.highestExpense, value: oculto ? "••" : `${gastoMayor.cat} · ${money(gastoMayor.monto)}`, explain: t.kpiHighestInfo, color: "var(--red)" })}
+                      style={{ flex: "1 1 0", minWidth: 0, textAlign: "center", cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{t.highestExpense}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{gastoMayor.cat}</div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Promedios por período: gasto e ingreso */}
+              {/* Típicos por período (mediana): ingreso y gasto */}
               {reportOn("periodos_kpis") && (
                 <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                   <MiniStat center basis="1 1 0" label={t.avgIncome} value={oculto ? "••" : abbr(medianaIngresoPeriodo)} color="var(--green)"
                     onClick={() => setKpiInfo({ title: t.avgIncome, value: oculto ? "••" : money(medianaIngresoPeriodo), explain: t.kpiTypicalInfo, color: "var(--green)" })} />
                   <MiniStat center basis="1 1 0" label={t.avgSpent} value={oculto ? "••" : abbr(medianaGastoPeriodo)} color="var(--red)"
                     onClick={() => setKpiInfo({ title: t.avgSpent, value: oculto ? "••" : money(medianaGastoPeriodo), explain: t.kpiTypicalInfo, color: "var(--red)" })} />
+                </div>
+              )}
+
+              {/* Ahorro: típico (mediana) y proyección del próximo período */}
+              {reportOn("periodos_kpis") && (
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  <MiniStat center basis="1 1 0" label={t.avgSavings} value={oculto ? "••" : abbr(medianaAhorroPeriodo)} color="var(--blue)"
+                    onClick={() => setKpiInfo({ title: t.avgSavings, value: oculto ? "••" : money(medianaAhorroPeriodo), explain: t.kpiTypicalSavingsInfo, color: "var(--blue)" })} />
+                  {proyeccionAhorro != null && (
+                    <MiniStat center basis="1 1 0" label={t.projSavings} value={oculto ? "••" : abbr(proyeccionAhorro)} color="var(--blue)"
+                      onClick={() => setKpiInfo({ title: t.projSavings, value: oculto ? "••" : money(proyeccionAhorro), explain: t.kpiProjInfo, color: "var(--blue)" })} />
+                  )}
                 </div>
               )}
 

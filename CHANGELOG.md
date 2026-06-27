@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.39.0] — 2026-06-27
+
+### Reports · Periods
+- **Top categories split into two cards**: "most frequent expense" (by movement count) and a new **"highest expense"** (by total amount). Amounts are no longer shown inline — content is centered and the detail opens on tap (`KpiInfoModal`): the frequent card reveals the movement count, the highest-spend card reveals the full (non-abbreviated) amount.
+- **New savings metrics**: **typical savings** (median of what goes to savings per period — `moveAhorros + ahorros`) and a **savings forecast** for the next period (historical average, excluding the in-progress period). KPI rows reorganized into a 2-2-2 grid; removed the spend forecast from this overview. Savings metrics use `--blue` (purple stays reserved for move-to-savings).
+
+### Reports · Income
+- Removed the standalone savings projection widget (3p/6p/12p selector).
+
+### Reports · Movements
+- Pie-chart legend simplified: move types now read **"Ahorros"/"Disponible"** (the color already conveys it's a move) and **CompraUSD** reads **"USD"**.
+
+### i18n
+- Added `highestExpense`, `avgSavings`, `projSavings`, `kpiTypicalSavingsInfo`, `kpiProjInfo`, `kpiMostFrequentInfo`, `kpiHighestInfo` (es/en); updated `tipoDisplay` labels for `MoveAhorro`/`MoveDisponible`/`CompraUSD`.
+
+---
+
 ## [2.38.1] — 2026-06-27
 
 ### Fixed

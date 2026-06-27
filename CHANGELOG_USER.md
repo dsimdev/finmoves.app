@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.39.0] — 2026-06-27
+
+### Reportes · Períodos
+- Tu gasto top ahora son **dos tarjetas**: **gasto más frecuente** (la categoría con más movimientos) y **mayor gasto** (la que más plata se llevó). Para que entre mejor, el detalle se ve al tocar: la frecuente te muestra las veces y la de mayor gasto el monto exacto.
+- Sumamos **ahorro típico** por período y una **proyección de ahorro** para el próximo período.
+
+### Reportes · Movimientos
+- En la torta, la leyenda quedó más limpia: **Ahorros** y **Disponible** (el color ya indica que es un move) y **USD** para las compras de dólares.
+
+---
+
 ## [2.38.0] — 2026-06-27
 
 ### Reportes · Períodos
