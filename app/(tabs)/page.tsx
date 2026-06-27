@@ -126,7 +126,7 @@ export default function Dashboard() {
                 onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
               <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={promPorMov > 0 ? money(promPorMov) : "—"} color="var(--yellow)"
                 onClick={() => setKpiInfo({ title: t.avgPerExpense, value: money(promPorMov), explain: t.kpiAvgPerExpenseInfo, color: "var(--yellow)" })} />
-              {(() => { const c = desvioCV <= 25 ? "var(--green)" : desvioCV <= 50 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
+              {(() => { const c = desvioCV <= 100 ? "var(--green)" : desvioCV <= 200 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
                 <MiniStat center basis="1 1 45%" label={t.spendSpread} value={v} color={c}
                   onClick={() => setKpiInfo({ title: t.spendSpread, value: v, explain: t.kpiSpendSpreadInfo, color: c })} />
               ); })()}

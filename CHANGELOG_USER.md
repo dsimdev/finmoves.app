@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.41.0] — 2026-06-27
+
+### Reportes · Períodos
+- Ahora podés **tocar una barra del gráfico** y te pregunta si querés ir a ese período: desde el gráfico de **gasto** te lleva a Gastos y desde el de **ingreso** a Ingresos, ya filtrados por ese período.
+- **El sueldo ahora muestra el del período que estás viendo** (antes mostraba siempre el del último período).
+- La **tendencia** y la **proyección** se muestran solo en el período vigente, que es donde tienen sentido.
+- Las tarjetas de "gasto más frecuente" y "mayor gasto" muestran el detalle más limpio al tocarlas, y la explicación de los valores típicos quedó más corta.
+
+### Inicio
+- Recalibramos los colores del **desvío** para que el verde/amarillo/rojo tenga sentido (antes casi todo daba rojo).
+
+---
+
 ## [2.40.0] — 2026-06-27
 
 ### Reportes

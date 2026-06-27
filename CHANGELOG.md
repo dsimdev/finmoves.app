@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.41.0] — 2026-06-27
+
+### Added
+- **Tap a bar in the Periods chart to jump to that period**: opens a confirm card and, on confirm, selects the period and switches to the matching sub-tab — the Spent chart goes to **Expenses**, the Income chart to **Income** (Days / spend-salary go to Expenses). `VBars` now carries `periodoId` per bar and exposes it via `onBarClick`.
+
+### Fixed
+- **Salary KPI now reflects the selected period** instead of always showing the most recent period's salary. Replaced the global `evolucionSueldo` read with a per-active-period computation (`evolSueldoActivo`) that also derives the variation vs the previous distinct, non-leave salary level.
+- **Trend and next-period projection only render on the current (most recent) period** — they're meaningless when browsing an older period. Gated behind a new `esPeriodoVigente` flag.
+
+### Changed
+- **Period spend chart counts FX buys again** (bars, best/worst markers and the spend/salary ratio): reverted to `gastado` so the chart stays aligned with the income-side totals without touching income logic. Numeric KPIs (trend, average, median, projection, pace, deviation) keep using pure spend.
+- **Spend-dispersion (CV) color thresholds recalibrated** on the home dashboard: green ≤100%, yellow ≤200%, red >200% (was 25/50, which flagged nearly everything red since per-movement amounts vary widely).
+- **Top-category cards** (most frequent / highest) now show only the data in the expanded modal (count / amount), since the minimized card already shows the category.
+- **Shortened the median explanation** (typical income/spent/savings KPIs) — the previous copy was overly long.
+
+---
+
 ## [2.40.0] — 2026-06-27
 
 ### Changed

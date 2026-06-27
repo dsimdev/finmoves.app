@@ -15,7 +15,7 @@ import {
   gastosPorMedioPago, gastosPorDescripcion, gastosPorFecha,
   kpisPeriodo, ritmoGasto, comparativaCategorias,
   serieTendencia, parsePeriodoId, diasSinGastos,
-  evolucionSueldo, historialSueldo, proyectarAhorros,
+  historialSueldo, proyectarAhorros,
   progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
 } from "@/utils/reportes";
 import { useCotizacion } from "@/hooks/useCotizacion";
@@ -131,11 +131,11 @@ function DonutChart({ data, size = 80, strokeWidth = 13, selected, onSelect }: {
 }
 
 // Mini-stat compacto, fondo neutro, color sólo en el número.
-function VBars({ data, max, oculto, refFrac, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string }[]; max: number; oculto?: boolean; refFrac?: number; onBarClick?: (label: string) => void }) {
+function VBars({ data, max, oculto, refFrac, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string; periodoId?: string }[]; max: number; oculto?: boolean; refFrac?: number; onBarClick?: (periodoId: string) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
       {data.map((d, i) => (
-        <div key={i} onClick={() => onBarClick?.(d.label)} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: onBarClick ? "pointer" : "default" }}>
+        <div key={i} onClick={() => d.periodoId && onBarClick?.(d.periodoId)} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: (onBarClick && d.periodoId) ? "pointer" : "default" }}>
           <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "•" : (d.valueLabel ?? abbr(d.value))}</div>
           <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, display: "flex", alignItems: "flex-end", overflow: "hidden", position: "relative" }}>
             {refFrac != null && <div style={{ position: "absolute", left: 0, right: 0, bottom: `${Math.round(refFrac * 96)}px`, height: 1, background: "var(--text)44", zIndex: 1 }} />}
@@ -177,6 +177,7 @@ export default function ReportesPage() {
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
   const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movcat" | null>(null);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
+  const [navPeriodo, setNavPeriodo] = useState<{ periodoId: string; target: Sub } | null>(null);
   const [modalSueldo, setModalSueldo] = useState(false);
   const [modalAhorros, setModalAhorros] = useState(false);
   const [diaModal, setDiaModal] = useState<string | null>(null);
@@ -194,6 +195,8 @@ export default function ReportesPage() {
   // Multi-select: si no hay selección, usa el primero
   const activos = periodosSelIds.length > 0 ? periodosSelIds : [periodos[0]?.periodoId].filter(Boolean);
   const periodosActivos = periodos.filter((p) => activos.includes(p.periodoId));
+  // Tendencia y proyección sólo tienen sentido en el período vigente (el más reciente).
+  const esPeriodoVigente = activos.length === 1 && activos[0] === periodos[0]?.periodoId;
 
   // Combina todos los períodos seleccionados en uno virtual
   const periodo = periodosActivos.length > 0 ? {
@@ -339,7 +342,19 @@ export default function ReportesPage() {
   );
 
   // ── Estadísticas avanzadas ──
-  const evolSueldo = evolucionSueldo(periodos);
+  // Sueldo del período activo (no del más reciente) + variación vs el nivel salarial previo.
+  const evolSueldoActivo = useMemo(() => {
+    if (!periodo) return null;
+    const ultimo = periodo.sueldo;
+    if (activos.length !== 1) return { sueldo: ultimo, deltaPct: null as number | null, esVacaciones: false };
+    const maxSueldo = Math.max(...periodos.map((p) => p.sueldo), 0);
+    const esVac = (s: number) => s > 0 && s < maxSueldo * 0.5;
+    const idx = periodos.findIndex((p) => p.periodoId === activos[0]);
+    const ref = idx >= 0 ? periodos.slice(idx + 1).find((p) => p.sueldo > 0 && !esVac(p.sueldo) && p.sueldo !== ultimo) : undefined;
+    const anteriorS = ref?.sueldo ?? null;
+    const deltaPct = anteriorS ? Math.round(((ultimo - anteriorS) / anteriorS) * 100) : null;
+    return { sueldo: ultimo, deltaPct, esVacaciones: esVac(ultimo) };
+  }, [periodo, activos, periodos]);
   const suelHistorial = useMemo(() => historialSueldo(periodos), [periodos]);
 
   // ── Tendencias ──
@@ -368,8 +383,8 @@ export default function ReportesPage() {
 
   // ── Resumen general de períodos ──
   const validPeriodos = useMemo(() => serieDesc.filter((s) => s.total > 0), [serieDesc]);
-  const mejorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastadoPuro / s.total < b.gastadoPuro / b.total ? s : b) : null;
-  const peorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastadoPuro / s.total > b.gastadoPuro / b.total ? s : b) : null;
+  const mejorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total < b.gastado / b.total ? s : b) : null;
+  const peorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
   // Inflación personal: variación promedio del gasto puro (sin compras de divisa,
   // que dispararían el número) entre períodos consecutivos.
   const inflacionPersonal = useMemo(() => {
@@ -705,7 +720,7 @@ export default function ReportesPage() {
               {/* Mini-stats fila 1: 3 columnas */}
               {reportOn("gastos_kpis") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                {tendenciaGasto !== null && (() => { const c = tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`; return (
+                {esPeriodoVigente && tendenciaGasto !== null && (() => { const c = tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`; return (
                   <MiniStat center label={t.trend} value={v} color={c}
                     onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `${t.kpiTrendInfo} Período actual: ${oculto ? "••" : formatARS(periodos[0].gastadoPuro)} · Promedio histórico: ${oculto ? "••" : formatARS(Math.round(avgHistorico))}`, color: c })} />
                 ); })()}
@@ -719,7 +734,7 @@ export default function ReportesPage() {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
                 {ritmo && <MiniStat center basis="1 1 45%" label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} color="var(--red)"
                   onClick={() => setKpiInfo({ title: t.spendingPace, value: `${oculto ? "••" : formatARS(ritmo.gastadoPorDia)}${t.perDay}`, explain: `${t.kpiPaceInfo} (${t.projection30days(oculto ? "••" : formatARS(ritmo.proyeccionCierre))})`, color: "var(--red)" })} />}
-                {proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} color="var(--red)"
+                {esPeriodoVigente && proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} color="var(--red)"
                   onClick={() => setKpiInfo({ title: t.nextPeriodProjection, value: oculto ? "••" : formatARS(proyeccionGasto), explain: t.kpiNextProjInfo, color: "var(--red)" })} />}
               </div>
               )}
@@ -855,11 +870,11 @@ export default function ReportesPage() {
 
               {/* Mini-stats: Sueldo · Retiros */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                {evolSueldo ? (
+                {evolSueldoActivo ? (
                   <MiniStat center basis="1 1 45%" label={t.salary}
-                    value={oculto ? "••" : abbr(evolSueldo.ultimo)}
-                    sub={evolSueldo.esVacaciones ? t.leave : evolSueldo.deltaPct !== null ? `${evolSueldo.deltaPct >= 0 ? "+" : ""}${evolSueldo.deltaPct}%` : undefined}
-                    color={evolSueldo.esVacaciones ? "var(--yellow)" : "var(--green)"}
+                    value={oculto ? "••" : abbr(evolSueldoActivo.sueldo)}
+                    sub={evolSueldoActivo.esVacaciones ? t.leave : evolSueldoActivo.deltaPct !== null ? `${evolSueldoActivo.deltaPct >= 0 ? "+" : ""}${evolSueldoActivo.deltaPct}%` : undefined}
+                    color={evolSueldoActivo.esVacaciones ? "var(--yellow)" : "var(--green)"}
                     onClick={suelHistorial.length > 0 ? () => setModalSueldo(true) : undefined} />
                 ) : (
                   <MiniStat center basis="1 1 45%" label={t.salary} value={oculto ? "••" : abbr(periodo.sueldo)} color="var(--green)" />
@@ -966,14 +981,14 @@ export default function ReportesPage() {
               {reportOn("periodos_kpis") && (gastoFrecuente || gastoMayor) && (
                 <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                   {gastoFrecuente && (
-                    <div className="soft" onClick={() => setKpiInfo({ title: t.mostFrequentExpense, value: `${gastoFrecuente.cat} · ${t.timesCount(gastoFrecuente.n)}`, explain: t.kpiMostFrequentInfo, color: "var(--red)" })}
+                    <div className="soft" onClick={() => setKpiInfo({ title: t.mostFrequentExpense, value: t.timesCount(gastoFrecuente.n), explain: t.kpiMostFrequentInfo, color: "var(--red)" })}
                       style={{ flex: "1 1 0", minWidth: 0, textAlign: "center", cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{t.mostFrequentExpense}</div>
                       <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{gastoFrecuente.cat}</div>
                     </div>
                   )}
                   {gastoMayor && (
-                    <div className="soft" onClick={() => setKpiInfo({ title: t.highestExpense, value: oculto ? "••" : `${gastoMayor.cat} · ${money(gastoMayor.monto)}`, explain: t.kpiHighestInfo, color: "var(--red)" })}
+                    <div className="soft" onClick={() => setKpiInfo({ title: t.highestExpense, value: oculto ? "••" : money(gastoMayor.monto), explain: t.kpiHighestInfo, color: "var(--red)" })}
                       style={{ flex: "1 1 0", minWidth: 0, textAlign: "center", cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{t.highestExpense}</div>
                       <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{gastoMayor.cat}</div>
@@ -1012,14 +1027,14 @@ export default function ReportesPage() {
                   { id: "dias", label: t.mPeriodDays },
                   { id: "gastoSueldo", label: t.mPeriodRatio },
                 ] as const;
-                type BarDatum = { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string };
+                type BarDatum = { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string; periodoId?: string };
                 let data: BarDatum[] = [];
                 let max = 1; let refFrac: number | undefined; let mask = false;
                 if (periodMetric === "gasto") {
-                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastadoPuro, color: colorPct(s.total > 0 ? Math.round((s.gastadoPuro / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId }));
+                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId, periodoId: s.periodoId }));
                   max = maxTotal; mask = true;
                 } else if (periodMetric === "ingreso") {
-                  data = evolucionIngresos.map((p) => ({ label: shortPer(p.periodoId), value: p.sueldo + p.moveDisponible, color: "var(--green)", hi: activos.includes(p.periodoId) }));
+                  data = evolucionIngresos.map((p) => ({ label: shortPer(p.periodoId), value: p.sueldo + p.moveDisponible, color: "var(--green)", hi: activos.includes(p.periodoId), periodoId: p.periodoId }));
                   max = Math.max(...evolucionIngresos.map((p) => p.sueldo + p.moveDisponible), 1); mask = true;
                 } else if (periodMetric === "dias") {
                   const hoy = new Date();
@@ -1028,13 +1043,13 @@ export default function ReportesPage() {
                     const fin = i === 0 ? hoy : parsePeriodoId(serieDesc[i - 1].periodoId);
                     const dias = Math.max(1, Math.round((fin.getTime() - inicio.getTime()) / 86400000));
                     const color = dias <= 29 ? "var(--green)" : dias <= 31 ? "var(--yellow)" : "var(--red)";
-                    return { label: shortPer(s.periodoId), value: dias, color, valueLabel: `${dias}d`, hi: activos.includes(s.periodoId) };
+                    return { label: shortPer(s.periodoId), value: dias, color, valueLabel: `${dias}d`, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   });
                   max = Math.max(...data.map((d) => d.value), 1);
                 } else {
                   data = serieDesc.filter((s) => s.sueldo > 0).map((s) => {
-                    const pct = Math.round((s.gastadoPuro / s.sueldo) * 100);
-                    return { label: shortPer(s.periodoId), value: pct, color: pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)", valueLabel: `${pct}%`, hi: activos.includes(s.periodoId) };
+                    const pct = Math.round((s.gastado / s.sueldo) * 100);
+                    return { label: shortPer(s.periodoId), value: pct, color: pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)", valueLabel: `${pct}%`, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   });
                   max = Math.max(...data.map((d) => d.value), 110);
                   refFrac = 100 / max;
@@ -1048,7 +1063,8 @@ export default function ReportesPage() {
                       ))}
                     </div>
                     {data.length > 0
-                      ? <VBars data={data} max={max} oculto={mask ? oculto : undefined} refFrac={refFrac} />
+                      ? <VBars data={data} max={max} oculto={mask ? oculto : undefined} refFrac={refFrac}
+                          onBarClick={(pid) => setNavPeriodo({ periodoId: pid, target: periodMetric === "ingreso" ? "ingresos" : "gastos" })} />
                       : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>}
                     <div style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", marginTop: 10 }}>{sub}</div>
                   </div>
@@ -1187,6 +1203,22 @@ export default function ReportesPage() {
           )}
         </div>
       )}
+
+      {/* Card: ir al período seleccionado en el gráfico */}
+      <BottomSheet open={!!navPeriodo} onClose={() => setNavPeriodo(null)} title={t.goToPeriodTitle}>
+        {navPeriodo && (
+          <>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginTop: -8, marginBottom: 20 }}>
+              {(navPeriodo.target === "ingresos" ? t.goToPeriodIncome : t.goToPeriodSpent)(shortPer(navPeriodo.periodoId))}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setNavPeriodo(null)} style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>{t.cancel}</button>
+              <button onClick={() => { setPeriodosSelIds([navPeriodo.periodoId]); setSub(navPeriodo.target); setNavPeriodo(null); }}
+                className="btn" style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: "pointer", color: "#fff", border: "none", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)" }}>{t.goToPeriodConfirm}</button>
+            </div>
+          </>
+        )}
+      </BottomSheet>
 
       {/* Modal: Historial de aumentos de sueldo */}
       <BottomSheet open={modalSueldo} onClose={() => setModalSueldo(false)} title={t.salaryHistory}>
