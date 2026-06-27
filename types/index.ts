@@ -92,6 +92,8 @@ export interface ConfigUsuario {
     cotizacionManual?: number;
     cotizacionManualActiva?: boolean;
     ahorrosAcumSeedPeriodoId?: string;
+    /** Período desde el cual se promedia el ritmo de compra FX (la ventana crece período a período). */
+    inversionSeedPeriodoId?: string;
     monedaPrincipal?: "ARS" | "USD" | "EUR";
     /** Prefs de UI persistidas por-usuario (fuente de verdad; el store local es solo caché). */
     monedaInversiones?: "USD" | "EUR";

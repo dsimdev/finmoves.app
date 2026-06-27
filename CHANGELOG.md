@@ -4,6 +4,18 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.35.0] — 2026-06-26
+
+### Changed
+- **Investments / period stats (Por período, Proyección, Para la meta)**: now computed from actual net FX bought per period (`CompraUSD/EUR − GastoUSD/EUR − VentaUSD/EUR` by `cantidadUSD`), not from ARS leftover savings converted at the current rate. The averaging window is anchored to a seed period (`config/meta.inversionSeedPeriodoId`, auto-set to the current period on first load) and grows period by period. If no FX was bought in the window, the three stats show "—".
+- **Dashboard investment shortcut**: hidden when the user lacks the `showAhorros` pref (was always visible).
+
+### Added
+- **Reports / Por día**: bars are now stacked — red segment for gastos, yellow for `CompraUSD` — so FX purchases no longer visually inflate a day's spend without context. A legend appears when the period has FX buys, and the day modal lists the `CompraUSD` movements (yellow, with `cantidadUSD`) alongside gastos; the modal total now matches the bar.
+- **Reports / Movimientos donut**: card is now a 3-column grid (total · donut · legend). The legend is a tappable list of rows (color + type + count) that selects/highlights a slice — much easier to hit on mobile than thin arcs. Removed the redundant selected-type row under "días activos" and the label under the center percentage.
+
+---
+
 ## [2.34.0] — 2026-06-26
 
 ### Added

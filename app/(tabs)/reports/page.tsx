@@ -16,7 +16,7 @@ import {
   kpisPeriodo, ritmoGasto, comparativaCategorias,
   serieTendencia, parsePeriodoId, diasSinGastos,
   evolucionSueldo, historialSueldo, proyectarAhorros,
-  progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos,
+  progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
 } from "@/utils/reportes";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -123,10 +123,7 @@ function DonutChart({ data, size = 80, strokeWidth = 13, selected, onSelect }: {
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none", gap: 1 }}>
         {sel ? (
-          <>
-            <div style={{ fontSize: 14, fontWeight: 700, color: sel.color, fontFamily: "var(--font-mono)", lineHeight: 1 }}>{Math.round((sel.value / total) * 100)}%</div>
-            <div style={{ fontSize: 7, color: "var(--muted)", textAlign: "center", lineHeight: 1.2, maxWidth: size - strokeWidth * 2 - 4 }}>{sel.label}</div>
-          </>
+          <div style={{ fontSize: 18, fontWeight: 700, color: sel.color, fontFamily: "var(--font-mono)", lineHeight: 1 }}>{Math.round((sel.value / total) * 100)}%</div>
         ) : null}
       </div>
     </div>
@@ -226,6 +223,18 @@ export default function ReportesPage() {
   const descs = periodo ? gastosPorDescripcion(periodo.movimientos, periodo.gastado, 5) : [];
   const descsModal = periodo ? gastosPorDescripcion(periodo.movimientos, periodo.gastado, 20) : [];
   const porFecha = periodo ? gastosPorFecha(periodo.movimientos, periodo.gastado) : [];
+  // Split por día: gasto (rojo) vs compra USD (amarillo). Clave = fecha original.
+  const splitPorFecha = useMemo(() => {
+    const map = new Map<string, { gasto: number; compra: number }>();
+    if (periodo) for (const m of periodo.movimientos) {
+      if (!esGasto(m)) continue;
+      const k = m.fecha || "—";
+      const cur = map.get(k) ?? { gasto: 0, compra: 0 };
+      if (m.tipo === "CompraUSD") cur.compra += m.monto; else cur.gasto += m.monto;
+      map.set(k, cur);
+    }
+    return map;
+  }, [periodo]);
   const kpis = periodo ? kpisPeriodo(periodo) : null;
   // Ritmo y comparativa sólo aplican a un período individual
   const ritmo = periodo && activos.length === 1 ? ritmoGasto(periodo, finPeriodo) : null;
@@ -700,11 +709,40 @@ export default function ReportesPage() {
               )}
 
 
-              {/* Por fecha */}
+              {/* Por fecha — barra apilada: rojo gasto, amarillo compra USD */}
               {reportOn("gastos_otros") && porFecha.length > 0 && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byDay}</div>
-                  <VBars max={Math.max(...porFecha.map((f) => f.monto), 1)} oculto={oculto} data={porFecha.map((f) => ({ label: sinAño(f.nombre), value: f.monto, color: "var(--red)" }))} onBarClick={(label) => setDiaModal(label)} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{t.byDay}</span>
+                    {[...splitPorFecha.values()].some((v) => v.compra > 0) && (
+                      <div style={{ display: "flex", gap: 10, fontSize: 9, color: "var(--muted)" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "var(--red)" }} />{t.spent}</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "var(--yellow)" }} />USD</span>
+                      </div>
+                    )}
+                  </div>
+                  {(() => {
+                    const maxTotal = Math.max(...porFecha.map((f) => f.monto), 1);
+                    return (
+                      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
+                        {porFecha.map((f, i) => {
+                          const sp = splitPorFecha.get(f.nombre) ?? { gasto: f.monto, compra: 0 };
+                          const gH = Math.round((sp.gasto / maxTotal) * 96);
+                          const cH = Math.round((sp.compra / maxTotal) * 96);
+                          return (
+                            <div key={i} onClick={() => setDiaModal(sinAño(f.nombre))} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: "pointer" }}>
+                              <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "•" : abbr(f.monto)}</div>
+                              <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, display: "flex", flexDirection: "column", justifyContent: "flex-end", overflow: "hidden" }}>
+                                {cH > 0 && <div style={{ width: "100%", height: cH, background: "var(--yellow)", transition: "height .5s ease" }} />}
+                                {gH > 0 && <div style={{ width: "100%", height: gH, background: "var(--red)", transition: "height .5s ease" }} />}
+                              </div>
+                              <div style={{ fontSize: 8, color: "var(--muted)" }}>{sinAño(f.nombre)}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -970,23 +1008,33 @@ export default function ReportesPage() {
                   <>
                   {/* Hero: total + distribución por tipo */}
                   {(() => {
-                    const selEntry = selectedMovTipo ? movCounts.porTipo.find(([tipo]) => tipo === selectedMovTipo) : null;
                     return (
-                    <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--teal-dim) 60%, var(--purple-dim))" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t.totalMovements}</div>
-                          <div style={{ fontSize: 30, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{movCounts.total}</div>
-                          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.activeDays(movCounts.diasActivos)}</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 11, minHeight: 16, visibility: selEntry ? "visible" : "hidden" }}>
-                            <span style={{ width: 8, height: 8, borderRadius: 2, background: selEntry ? (tipoColor[selEntry[0]] ?? "var(--accent)") : "transparent", flexShrink: 0 }} />
-                            <span style={{ color: "var(--muted)" }}>{selEntry ? (t.tipoDisplay[selEntry[0]] ?? selEntry[0]) : ""}</span>
-                            <b style={{ color: "var(--text)", fontFamily: "var(--font-mono)" }}>{selEntry ? selEntry[1] : ""}</b>
-                          </div>
-                        </div>
-                        <DonutChart size={115} strokeWidth={15}
+                    <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--teal-dim) 60%, var(--purple-dim))", display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: 10 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>{t.totalMovements}</div>
+                        <div style={{ fontSize: 26, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{movCounts.total}</div>
+                        <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{t.activeDays(movCounts.diasActivos)}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "center" }}>
+                        <DonutChart size={92} strokeWidth={13}
                           selected={selectedMovTipo} onSelect={setSelectedMovTipo}
                           data={movCounts.porTipo.map(([tipo, count]) => ({ key: tipo, value: count, color: tipoColor[tipo] ?? "var(--accent)", label: t.tipoDisplay[tipo] ?? tipo }))} />
+                      </div>
+                      {/* Leyenda tocable: una fila por tipo, selecciona/resalta el slice */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {movCounts.porTipo.map(([tipo, count]) => {
+                          const active = selectedMovTipo === tipo;
+                          const col = tipoColor[tipo] ?? "var(--accent)";
+                          return (
+                            <button key={tipo} onClick={() => setSelectedMovTipo(active ? null : tipo)}
+                              style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 8px", borderRadius: 999, cursor: "pointer", transition: "all 0.15s",
+                                border: `1px solid ${active ? col : "transparent"}`, background: active ? `${col}1a` : "transparent" }}>
+                              <span style={{ width: 7, height: 7, borderRadius: 2, background: col, flexShrink: 0 }} />
+                              <span style={{ fontSize: 10, color: active ? "var(--text)" : "var(--muted)", whiteSpace: "nowrap" }}>{t.tipoDisplay[tipo] ?? tipo}</span>
+                              <b style={{ fontSize: 10, color: "var(--text)", fontFamily: "var(--font-mono)", marginLeft: "auto" }}>{count}</b>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     );
@@ -1142,20 +1190,20 @@ export default function ReportesPage() {
         {(() => {
           if (!diaModal) return null;
           const fechaOriginal = porFecha.find((f) => sinAño(f.nombre) === diaModal)?.nombre ?? diaModal;
-          const movsDia = (periodo?.movimientos ?? []).filter((m) => m.tipo === "Gasto" && (sinAño(m.fecha) === diaModal || m.fecha === fechaOriginal)).sort((a, b) => b.monto - a.monto);
+          const movsDia = (periodo?.movimientos ?? []).filter((m) => esGasto(m) && (sinAño(m.fecha) === diaModal || m.fecha === fechaOriginal)).sort((a, b) => b.monto - a.monto);
           const totalDia = movsDia.reduce((s, m) => s + m.monto, 0);
           return (
             <>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16 }}>{`${money(totalDia)} · ${t.expensesCount(movsDia.length)}`}</div>
-              {movsDia.map((m, i) => (
+              {movsDia.map((m, i) => { const esCompra = m.tipo === "CompraUSD"; return (
                 <div key={i} className="row" style={{ padding: "11px 0" }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{m.descripcion || "—"}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{m.categoria} · {m.medioPago}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{m.descripcion || (esCompra ? "Compra U$D" : "—")}</div>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{esCompra ? `${m.cantidadUSD ? `U$D ${m.cantidadUSD}` : "Reserva"}${m.medioPago ? ` · ${m.medioPago}` : ""}` : `${m.categoria} · ${m.medioPago}`}</div>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(m.monto)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: esCompra ? "var(--yellow)" : "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(m.monto)}</div>
                 </div>
-              ))}
+              ); })}
             </>
           );
         })()}

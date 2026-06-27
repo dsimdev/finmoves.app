@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/services/firebase/firebase";
+import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../data-context";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useCotizacion } from "@/hooks/useCotizacion";
@@ -21,7 +24,6 @@ function fechaCortaConAnio(fecha: string): string {
   return fecha;
 }
 import { agruparPorPeriodo } from "@/utils/periodo";
-import { serieTendencia, periodosParaMetaUSD } from "@/utils/reportes";
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -57,6 +59,7 @@ function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
 
 export default function DolaresPage() {
   const { movimientos, loading, config, refresh: refreshData, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
+  const { user } = useAuth();
   const { cotizacion, minutosDesdeActualizacion, refresh } = useCotizacion();
 
   // Modal: alta de reserva (+/-) desde el botón, o detalle/edición al tocar una fila del historial.
@@ -136,18 +139,41 @@ export default function DolaresPage() {
 
   // ── Tendencias de inversión ──
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
-  const serie = useMemo(() => serieTendencia(periodos), [periodos]);
-  const cotizOficial = cotizacion?.oficial ?? null;
   const metaMonto = config?.meta.metaMonto ?? null;
-  // Ventana unificada: promedio de ahorro de los últimos 3 períodos (clamp ≥ 0).
-  const ultimos3 = serie.slice(-Math.min(3, serie.length));
-  const promAhorroARS = ultimos3.length > 0
-    ? ultimos3.reduce((s, p) => s + Math.max(0, p.ahorros), 0) / ultimos3.length : 0;
-  const promAhorroUSD = cotizOficial && serie.length > 0 ? promAhorroARS / cotizOficial : null;
-  const periodosParaMeta = metaMonto && cotizOficial ? periodosParaMetaUSD(serie, metaMonto, cotizOficial) : null;
-  // Proyección: acumulado actual + promedio (últimos 3) × 3 períodos.
-  const proyUSD = cotizOficial && serie.length >= 2
-    ? ((serie[serie.length - 1]?.ahorrosAcum ?? 0) + promAhorroARS * 3) / cotizOficial : null;
+  const inversionSeedId = config?.meta.inversionSeedPeriodoId;
+
+  // Auto-anclar el seed la primera vez: el período actual es desde cuando se
+  // empezó a corregir bien la carga FX. La ventana de promedio crece período a período.
+  useEffect(() => {
+    if (!user?.uid || !config || inversionSeedId || periodos.length === 0) return;
+    updateDoc(doc(db, `users/${user.uid}/config/meta`), { "meta.inversionSeedPeriodoId": periodos[0].periodoId });
+  }, [user?.uid, !!config, !!inversionSeedId, periodos.length]);
+
+  // FX neto comprado por período (CompraFX - GastoFX - VentaFX por cantidadUSD).
+  const tipoCompraFX = esEUR ? "CompraEUR" : "CompraUSD";
+  const tipoGastoFX  = esEUR ? "GastoEUR"  : "GastoUSD";
+  const tipoVentaFX  = esEUR ? "VentaEUR"  : "VentaUSD";
+  const netFXDe = (movs: Movimiento[]) => movs.reduce((s, m) => {
+    if (m.tipo === tipoCompraFX && m.cantidadUSD) return s + m.cantidadUSD;
+    if ((m.tipo === tipoGastoFX || m.tipo === tipoVentaFX) && m.cantidadUSD) return s - m.cantidadUSD;
+    return s;
+  }, 0);
+
+  // Promedio del ritmo FX sobre la ventana desde el seed (incluido) hasta el actual.
+  // periodos[0] es el más nuevo; el seed queda más atrás → tomamos del 0 al seed.
+  const promAhorroUSD = useMemo(() => {
+    if (periodos.length === 0) return null;
+    const seedIdx = inversionSeedId ? periodos.findIndex((p) => p.periodoId === inversionSeedId) : 0;
+    const ventana = periodos.slice(0, (seedIdx >= 0 ? seedIdx : 0) + 1);
+    if (ventana.length === 0) return null;
+    const prom = ventana.reduce((s, p) => s + netFXDe(p.movimientos), 0) / ventana.length;
+    return prom > 0 ? prom : null;
+  }, [periodos, inversionSeedId, tipoCompraFX, tipoGastoFX, tipoVentaFX]);
+
+  const ritmoFX = promAhorroUSD ?? 0;
+  const periodosParaMeta = metaMonto && ritmoFX > 0
+    ? Math.ceil(Math.max(0, metaMonto - totalDisplay) / ritmoFX) : null;
+  const proyUSD = ritmoFX > 0 ? totalDisplay + ritmoFX * 3 : null;
 
   return (
     <>

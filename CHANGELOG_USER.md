@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.35.0] — 2026-06-26
+
+### Inversión
+- Los indicadores **Por período**, **Proyección** y **Para la meta** ahora se calculan según lo que realmente comprás de dólares/euros cada período (no según lo que sobra en pesos). El promedio arranca en el período actual y se va afinando mes a mes.
+
+### Reportes
+- En **Por día** las barras ahora muestran en rojo los gastos y en amarillo las compras de dólares, así un día con compra grande no parece todo gasto. Al abrir el día también se listan esas compras.
+- En **Movimientos**, el gráfico de torta quedó centrado y debajo hay una leyenda con cada tipo: tocás el tipo (en vez de la porción del gráfico) y se resalta. Mucho más fácil en el celular.
+
+---
+
 ## [2.34.0] — 2026-06-26
 
 ### Configuración
