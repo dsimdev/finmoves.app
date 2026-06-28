@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.43.2] — 2026-06-28
+
+### Fixed
+- **Firebase re-initialization on Fast Refresh**: guard `initializeApp` with `getApps()` and `initializeFirestore` with try/catch so HMR module re-evaluation doesn't throw `initializeFirestore() has already been called with different options`.
+
+---
+
 ## [2.43.1] — 2026-06-28
 
 ### Fixed

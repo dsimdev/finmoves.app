@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
@@ -21,7 +21,7 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? "G-7M1GF7F4WD",
 };
 
-export const app = initializeApp(firebaseConfig);
+export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 // App Check (anti-abuso): exige que las llamadas a Firestore/Storage/Auth vengan de
 // una instancia legítima de la app, no de un script con la API key pública. Se activa
@@ -46,9 +46,13 @@ export const storage = getStorage(app);
 // no hay IndexedDB, así que se usa la instancia estándar en memoria.
 let _db: Firestore;
 if (typeof window !== "undefined") {
-  _db = initializeFirestore(app, {
-    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-  });
+  try {
+    _db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    });
+  } catch {
+    _db = getFirestore(app);
+  }
 } else {
   _db = getFirestore(app);
 }
