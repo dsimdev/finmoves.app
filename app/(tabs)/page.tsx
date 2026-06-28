@@ -121,7 +121,7 @@ export default function Dashboard() {
               <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} color="#26c6da" />
             </>) : (<>
               <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)"
-                onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastado), explain: "Total gastado en el período actual.", color: "var(--red)" })} />
+                onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastado), explain: t.kpiSpentPeriodInfo, color: "var(--red)" })} />
               <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
                 onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
               <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={promPorMov > 0 ? money(promPorMov) : "—"} color="var(--yellow)"

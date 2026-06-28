@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.42.0] — 2026-06-27
+
+### Interfaz
+- El **tema oscuro ahora es el predeterminado** (el diseñado). El claro sigue disponible desde Configuración.
+- **Botones más fáciles de tocar**: agrandamos los selectores de período/métrica en Movimientos y Reportes.
+- Si tenés activado **"reducir movimiento"** en tu teléfono, ahora la app respeta esa preferencia y baja las animaciones.
+- Corregimos textos que aparecían en español estando la app en inglés.
+
+---
+
 ## [2.41.1] — 2026-06-27
 
 ### Privacidad y seguridad

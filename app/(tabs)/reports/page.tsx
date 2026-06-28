@@ -724,8 +724,8 @@ export default function ReportesPage() {
                   <MiniStat center label={t.trend} value={v} color={c}
                     onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `${t.kpiTrendInfo} Período actual: ${oculto ? "••" : formatARS(periodos[0].gastadoPuro)} · Promedio histórico: ${oculto ? "••" : formatARS(Math.round(avgHistorico))}`, color: c })} />
                 ); })()}
-                {periodo.moveAhorros > 0 && <MiniStat center label="A ahorros" value={oculto ? "••" : abbr(periodo.moveAhorros)} color="var(--purple)"
-                  onClick={() => setKpiInfo({ title: "Move a ahorros", value: oculto ? "••" : formatARS(periodo.moveAhorros), explain: "Total transferido a ahorros este período.", color: "var(--purple)" })} />}
+                {periodo.moveAhorros > 0 && <MiniStat center label={t.toSavingsLabel} value={oculto ? "••" : abbr(periodo.moveAhorros)} color="var(--purple)"
+                  onClick={() => setKpiInfo({ title: t.moveToSavingsTitle, value: oculto ? "••" : formatARS(periodo.moveAhorros), explain: t.kpiMoveToSavingsInfo, color: "var(--purple)" })} />}
               </div>
               )}
 
@@ -1129,8 +1129,8 @@ export default function ReportesPage() {
                     const diaCaro = kpis?.diaMayorGasto;
                     return (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                        <MiniStat center basis="1 1 45%" label="Hoy" value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} gradient="linear-gradient(90deg, #26c6da, var(--purple))"
-                          onClick={gastoHoy !== null ? () => setKpiInfo({ title: "Gasto hoy", value: oculto ? "••" : formatARS(gastoHoy), explain: "Total gastado en el día de hoy (período activo).", color: "#26c6da" }) : undefined} />
+                        <MiniStat center basis="1 1 45%" label={t.today} value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} gradient="linear-gradient(90deg, #26c6da, var(--purple))"
+                          onClick={gastoHoy !== null ? () => setKpiInfo({ title: t.todaySpent, value: oculto ? "••" : formatARS(gastoHoy), explain: t.kpiTodaySpentInfo, color: "#26c6da" }) : undefined} />
                         {diaCaro && <MiniStat center basis="1 1 45%" label={t.highestSpendingDay} value={oculto ? "••" : abbr(diaCaro.monto)} color="var(--red)"
                           onClick={() => setKpiInfo({ title: t.highestSpendingDay, value: oculto ? "••" : formatARS(diaCaro.monto), explain: `${t.kpiHighestDayInfo} (${sinAño(diaCaro.fecha)})`, color: "var(--red)" })} />}
                         {kpis && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} gradient="linear-gradient(90deg, #26c6da, var(--purple))"
@@ -1291,8 +1291,8 @@ export default function ReportesPage() {
               {movsDia.map((m, i) => { const esCompra = m.tipo === "CompraUSD"; return (
                 <div key={i} className="row" style={{ padding: "11px 0" }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{m.descripcion || (esCompra ? "Compra U$D" : "—")}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{esCompra ? `${m.cantidadUSD ? `U$D ${m.cantidadUSD}` : "Reserva"}${m.medioPago ? ` · ${m.medioPago}` : ""}` : `${m.categoria} · ${m.medioPago}`}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{m.descripcion || (esCompra ? t.buyUsd : "—")}</div>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{esCompra ? `${m.cantidadUSD ? `U$D ${m.cantidadUSD}` : t.reserve}${m.medioPago ? ` · ${m.medioPago}` : ""}` : `${m.categoria} · ${m.medioPago}`}</div>
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: esCompra ? "var(--yellow)" : "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(m.monto)}</div>
                 </div>

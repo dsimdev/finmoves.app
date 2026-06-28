@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.42.0] — 2026-06-27
+
+### Changed
+- **Dark is now the default theme** (the designed palette); light is opt-in. Flipped the default in `useTheme` and the pre-paint `themeInitScript` (light applies only when `finmoves-theme === "light"`). New users no longer land on the under-contrasted light theme.
+- **Tap targets**: `.pill` now has `min-height: 32px` + flex centering, raising the many sub-32px period/metric pills in Movements & Reports above the mis-tap threshold.
+
+### Added
+- **`prefers-reduced-motion` support**: global CSS that collapses animations/transitions for users who request reduced motion (spinner keeps spinning so it doesn't look hung). (A11y)
+- **Firebase App Check scaffolding** (anti-abuse): client initializes App Check with reCAPTCHA v3 when `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY` is set; no-op otherwise (dev stays unaffected). Added `adminBucket` earlier; this is the F2 item from the security review.
+
+### Fixed
+- **i18n leaks**: routed remaining hardcoded Spanish through the dictionary (es/en) — Reports "A ahorros"/"Move a ahorros"/"Hoy"/"Compra U$D"/"Reserva" and their KPI explainers, Dashboard "spent" explainer, Settings currency toasts + "Auto-ahorro", and the login footer Privacy/Terms links.
+
+> Enablement note: App Check is dormant until you (1) register a reCAPTCHA v3 provider in Firebase App Check, (2) add `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY` (Secret Manager + `apphosting.yaml` BUILD var), then redeploy, and (3) flip enforcement to ON in the console (after a monitor period). The code ships safe-by-default (off) so nothing breaks before those steps.
+
+---
+
 ## [2.41.1] — 2026-06-27
 
 ### Security

@@ -202,10 +202,10 @@ export default function ConfigPage() {
       await setDoc(doc(db, `users/${user.uid}/config/meta`), { ...config, meta: newMeta });
       setMonedaPrincipal(newMoneda);
       setPendingMoneda(null);
-      setProfileMsg({ ok: true, text: "Moneda actualizada" });
+      setProfileMsg({ ok: true, text: t.currencyUpdated });
       setTimeout(() => setProfileMsg(null), 3000);
     } catch {
-      setProfileMsg({ ok: false, text: "No se pudo cambiar la moneda" });
+      setProfileMsg({ ok: false, text: t.currencyUpdateError });
     } finally {
       setMonedaBusy(false);
     }
@@ -1222,7 +1222,7 @@ export default function ConfigPage() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Auto-ahorro</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{t.autoSavings}</div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
                     {config.meta.autoAhorro?.activo && config.meta.autoAhorro.monto > 0 ? (() => {
                       const sym = monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$";
@@ -1621,7 +1621,7 @@ export default function ConfigPage() {
         </div>
       )}
 
-      <BottomSheet open={showAutoAhorroModal} onClose={() => setShowAutoAhorroModal(false)} title="Auto-ahorro">
+      <BottomSheet open={showAutoAhorroModal} onClose={() => setShowAutoAhorroModal(false)} title={t.autoSavings}>
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <div>
                 <div className="label" style={{ marginBottom: 8 }}>{t.autoSavingsAmountPerExpense(monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$")}</div>

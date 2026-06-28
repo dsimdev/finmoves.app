@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import {
@@ -21,6 +22,22 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
+
+// App Check (anti-abuso): exige que las llamadas a Firestore/Storage/Auth vengan de
+// una instancia legítima de la app, no de un script con la API key pública. Se activa
+// solo si hay site key de reCAPTCHA v3 configurada; sin ella (dev local) es no-op.
+// Para forzar en producción: registrar reCAPTCHA v3 en Firebase App Check, setear
+// NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY y habilitar enforcement en la consola.
+if (typeof window !== "undefined") {
+  const appCheckSiteKey = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;
+  if (appCheckSiteKey) {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  }
+}
+
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 

@@ -129,6 +129,10 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* ── Pills ── */
 .pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 11px;
@@ -209,6 +213,18 @@ input[type="number"] { -moz-appearance: textfield; }
   to { transform: rotate(360deg); }
 }
 .spin { animation: spin 0.8s linear infinite; }
+
+/* Respeta la preferencia del sistema de movimiento reducido (accesibilidad).
+   El spinner conserva su giro para no parecer "colgado". */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .spin { animation: spin 0.8s linear infinite !important; }
+}
 
 /* ── Reportes: segmented control ── */
 .subtabs {

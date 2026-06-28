@@ -19,11 +19,12 @@ export function applyTheme(isLight: boolean) {
 }
 
 export function useTheme() {
-  const [dark, setDark] = useState(false);
+  // Dark es el tema por defecto (la paleta diseñada); claro es opt-in.
+  const [dark, setDark] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem(LS_KEY);
-    const isDark = saved === "dark";
+    const isDark = saved !== "light";
     setDark(isDark);
     applyTheme(!isDark);
   }, []);

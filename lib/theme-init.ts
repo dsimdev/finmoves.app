@@ -25,7 +25,7 @@ export const THEME_COLOR = { dark: "#07090f", light: "#c8c8c8" };
 // Corre en el <head> antes del primer paint: aplica el tema claro guardado en
 // localStorage (evita el flash de oscuro) y ajusta la barra del navegador.
 // Debe ser autocontenido (sin imports) porque se serializa e inyecta inline.
-export const themeInitScript = `try{if(localStorage.getItem('finmoves-theme')!=='dark'){var v=${JSON.stringify(
+export const themeInitScript = `try{if(localStorage.getItem('finmoves-theme')==='light'){var v=${JSON.stringify(
   LIGHT_VARS
 )},s=document.documentElement.style;for(var k in v)s.setProperty(k,v[k]);document.documentElement.setAttribute('data-theme','light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',${JSON.stringify(
   THEME_COLOR.light
