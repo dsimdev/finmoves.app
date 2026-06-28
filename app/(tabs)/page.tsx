@@ -32,8 +32,9 @@ export default function Dashboard() {
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
   const t = useT();
-  const { dashboardClasico, showAhorros } = useAppPrefs();
+  const { dashboardClasico, showAhorros, monedaPrincipal } = useAppPrefs();
   const { deflatar } = useInflacionIPC();
+  const esARS = monedaPrincipal === "ARS";
 
   // Modal de alta/edición abierto desde el propio inicio (sin navegar).
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
@@ -67,12 +68,12 @@ export default function Dashboard() {
     if (chron.length < 2) return null;
     const prevP = chron[chron.length - 2];
     const currP = chron[chron.length - 1];
-    // Gasto real: deflactado por IPC (Argly) a pesos de hoy. La variación real
-    // muestra si gastás por encima o por debajo de la inflación.
-    const prev = deflatar(prevP.gasto, prevP.id);
-    const curr = deflatar(currP.gasto, currP.id);
+    // Solo ARS: gasto deflactado por IPC argentino (Argly) → variación real.
+    // No-ARS: variación nominal (el IPC argentino no aplica a su moneda).
+    const prev = esARS ? deflatar(prevP.gasto, prevP.id) : prevP.gasto;
+    const curr = esARS ? deflatar(currP.gasto, currP.id) : currP.gasto;
     return prev > 0 ? Math.round(((curr - prev) / prev) * 100) : null;
-  }, [periodos, deflatar]);
+  }, [periodos, deflatar, esARS]);
   const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR").slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
@@ -142,7 +143,7 @@ export default function Dashboard() {
                 onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
               {(() => { const ip = inflacionPersonal; const c = ip == null ? "var(--muted)" : ip > 0 ? "var(--red)" : "var(--green)"; const v = ip == null ? "—" : `${ip >= 0 ? "+" : ""}${ip}%`; return (
                 <MiniStat center basis="1 1 45%" label="Inflación" value={v} color={c}
-                  onClick={() => setKpiInfo({ title: "Inflación", value: v, explain: t.kpiInflationInfo, color: c })} />
+                  onClick={() => setKpiInfo({ title: "Inflación", value: v, explain: esARS ? t.kpiInflationInfo : t.kpiInflationInfoNominal, color: c })} />
               ); })()}
               {(() => { const c = desvioCV <= 100 ? "var(--green)" : desvioCV <= 200 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
                 <MiniStat center basis="1 1 45%" label={t.spendSpread} value={v} color={c}

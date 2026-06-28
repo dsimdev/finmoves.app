@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.45.1] — 2026-06-28
+
+### Mejoras
+- **Gráfico de inflación (IP)**: ahora incluye el período actual y muestra arriba tu inflación personal promedio. Antes escondía el período en curso y calculaba el cambio al revés.
+- **Inflación nominal vs real**: la card de Reportes pasó a llamarse "Inflación nominal" (sin ajustar por inflación) para diferenciarla del gráfico IP, que sí ajusta por IPC.
+
+---
+
 ## [2.45.0] — 2026-06-28
 
 ### Novedades

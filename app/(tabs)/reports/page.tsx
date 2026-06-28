@@ -212,7 +212,7 @@ export default function ReportesPage() {
     GastoUSD: "var(--red)", GastoEUR: "var(--red)",
     VentaUSD: "var(--red)", VentaEUR: "var(--red)",
   };
-  const { monedaInversiones } = useAppPrefs();
+  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const [showHint, dismissHint] = useFirstVisit("reports");
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
@@ -1070,7 +1070,7 @@ export default function ReportesPage() {
                   { id: "ingreso", label: t.mPeriodIncome },
                   { id: "dias", label: t.mPeriodDays },
                   { id: "gastoSueldo", label: t.mPeriodRatio },
-                  { id: "inflacion", label: "IP" },
+                  ...(monedaPrincipal === "ARS" ? [{ id: "inflacion", label: "IP" }] : []),
                 ] as const;
                 type BarDatum = { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string; periodoId?: string };
                 let data: BarDatum[] = [];
@@ -1101,11 +1101,12 @@ export default function ReportesPage() {
                   refFrac = 100 / max;
                 }
                 // Inflación real por período: variación del gasto puro deflactado por IPC
-                // contra el período anterior (puede ser +/-). Excluye el más viejo (sin previo).
+                // contra el período anterior (puede ser +/-). serieDesc va nuevo→viejo,
+                // así que el anterior es serieDesc[i+1]. Excluye el más viejo (sin previo).
                 const inflData = periodMetric !== "inflacion" ? [] : serieDesc
                   .map((s, i) => {
-                    if (i === 0) return null;
-                    const prevP = serieDesc[i - 1];
+                    const prevP = serieDesc[i + 1];
+                    if (!prevP) return null;
                     const prev = deflatar(prevP.gastadoPuro, prevP.periodoId);
                     const curr = deflatar(s.gastadoPuro, s.periodoId);
                     if (prev <= 0) return null;
@@ -1113,6 +1114,8 @@ export default function ReportesPage() {
                     return { label: shortPer(s.periodoId), value: pct, color: pct > 0 ? "var(--red)" : "var(--green)", hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   })
                   .filter((d): d is NonNullable<typeof d> => d !== null);
+                // Promedio de la inflación real = tu inflación personal (en términos reales).
+                const promedioInfl = inflData.length > 0 ? Math.round(inflData.reduce((s, d) => s + d.value, 0) / inflData.length) : null;
                 const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : periodMetric === "inflacion" ? t.subMetricInflation : t.subMetricRatio;
                 return (
                   <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
@@ -1123,7 +1126,15 @@ export default function ReportesPage() {
                     </div>
                     {periodMetric === "inflacion"
                       ? (inflData.length > 0
-                          ? <DivergingBars data={inflData} onBarClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
+                          ? <>
+                              {promedioInfl != null && (
+                                <div style={{ textAlign: "center", marginBottom: 12 }}>
+                                  <span style={{ fontSize: 11, color: "var(--muted)" }}>{t.inflationAvg} </span>
+                                  <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: promedioInfl > 0 ? "var(--red)" : promedioInfl < 0 ? "var(--green)" : "var(--text)" }}>{promedioInfl >= 0 ? "+" : ""}{promedioInfl}%</span>
+                                </div>
+                              )}
+                              <DivergingBars data={inflData} onBarClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
+                            </>
                           : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
                       : data.length > 0
                       ? <VBars data={data} max={max} oculto={mask ? oculto : undefined} refFrac={refFrac}
