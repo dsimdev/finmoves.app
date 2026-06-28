@@ -195,6 +195,7 @@ function DotChart({ data, refValue, series2, series2Color, signed, onPointClick 
           const clickable = !!(onPointClick && p.d.periodoId);
           return (
             <g key={i} onClick={() => p.d.periodoId && onPointClick?.(p.d.periodoId)} style={{ cursor: clickable ? "pointer" : "default" }}>
+              <rect x={p.x - PX / 2} y={0} width={PX} height={totalH} fill="transparent" />
               <text x={p.x} y={p.y - 9} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" style={{ fill: "var(--muted)" }}>{fmt(p.d.value)}</text>
               <circle cx={p.x} cy={p.y} r={5} style={{ fill: p.d.color, stroke: "var(--surface)" }} strokeWidth={1.5} />
               <text x={p.x} y={totalH - 4} textAnchor="middle" fontSize={8} fontWeight={p.d.hi ? 700 : 400} style={{ fill: p.d.hi ? "var(--accent)" : "var(--muted)" }}>{p.d.label}</text>
@@ -228,6 +229,7 @@ function AreaChart({ data, onPointClick }: { data: { label: string; value: numbe
           const clickable = !!(onPointClick && p.d.periodoId);
           return (
             <g key={i} onClick={() => p.d.periodoId && onPointClick?.(p.d.periodoId)} style={{ cursor: clickable ? "pointer" : "default" }}>
+              <rect x={p.x - PX / 2} y={0} width={PX} height={totalH} fill="transparent" />
               <text x={p.x} y={p.y - 9} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" style={{ fill: "var(--muted)" }}>{p.d.valueLabel ?? p.d.value}</text>
               <circle cx={p.x} cy={p.y} r={4} style={{ fill: p.d.color, stroke: "var(--surface)" }} strokeWidth={1.5} />
               <text x={p.x} y={totalH - 4} textAnchor="middle" fontSize={8} fontWeight={p.d.hi ? 700 : 400} style={{ fill: p.d.hi ? "var(--accent)" : "var(--muted)" }}>{p.d.label}</text>
@@ -269,6 +271,7 @@ function TwoLineChart({ points, colorA, onPointClick }: {
           const clickable = !!(onPointClick && p.p.periodoId);
           return (
             <g key={i} onClick={() => p.p.periodoId && onPointClick?.(p.p.periodoId)} style={{ cursor: clickable ? "pointer" : "default" }}>
+              <rect x={p.x - PX / 2} y={0} width={PX} height={totalH} fill="transparent" />
               <circle cx={p.x} cy={p.y} r={4} style={{ fill: colorA, stroke: "var(--surface)" }} strokeWidth={1.5} />
               <text x={p.x} y={totalH - 4} textAnchor="middle" fontSize={8} fontWeight={p.p.hi ? 700 : 400} style={{ fill: p.p.hi ? "var(--accent)" : "var(--muted)" }}>{p.p.label}</text>
             </g>
@@ -1179,12 +1182,10 @@ export default function ReportesPage() {
                   max = Math.max(...data.map((d) => d.value), 110);
                   refFrac = 100 / max;
                 }
-                // Inflación personal NOMINAL por período: variación del gasto puro vs el
-                // período anterior (serieDesc va nuevo→viejo: anterior = serieDesc[i+1]).
-                // Junto con la inflación del país (IPC) para comparar. Excluye el más viejo.
                 // Inflación ACUMULADA: tu gasto puro vs el período base (el más viejo con
-                // gasto>0) y la del país (IPC compuesto) desde el mismo mes base. serie va
-                // viejo→nuevo, así que acumula hacia adelante.
+                // gasto>0) y la del país (IPC compuesto) desde el mismo mes base. Se calcula
+                // viejo→nuevo y se invierte para mostrar el más reciente a la izquierda,
+                // como el resto de los gráficos.
                 let inflPoints: { label: string; a: number; b: number | null; hi?: boolean; periodoId?: string }[] = [];
                 let vosAcum: number | null = null, paisAcum: number | null = null;
                 if (periodMetric === "inflacion") {
@@ -1192,15 +1193,16 @@ export default function ReportesPage() {
                   if (baseIdx >= 0) {
                     const baseG = serie[baseIdx]!.gastadoPuro;
                     const baseId = serie[baseIdx]!.periodoId;
-                    inflPoints = serie.slice(baseIdx).map((s) => {
+                    const ordered = serie.slice(baseIdx).map((s) => {
                       const vos = (s.gastadoPuro / baseG - 1) * 100;
                       const pais = ipcVar(baseId, s.periodoId);
                       return { label: shortPer(s.periodoId), a: Math.round(vos), b: pais != null ? Math.round(pais) : null, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                     });
-                    if (inflPoints.length > 0) {
-                      vosAcum = inflPoints[inflPoints.length - 1]!.a;
-                      paisAcum = inflPoints[inflPoints.length - 1]!.b;
+                    if (ordered.length > 0) {
+                      vosAcum = ordered[ordered.length - 1]!.a;
+                      paisAcum = ordered[ordered.length - 1]!.b;
                     }
+                    inflPoints = ordered.reverse();
                   }
                 }
                 const vosColor = vosAcum != null && paisAcum != null ? (vosAcum > paisAcum ? "var(--red)" : "var(--green)") : "var(--text)";

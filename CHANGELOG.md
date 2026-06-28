@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.46.1] — 2026-06-28
+
+### Fixed
+- **IP chart order**: accumulated inflation chart now renders most-recent-first (left), matching the other period charts.
+- **Chart click targets**: días (area), G/Sueldo and IP (dots/lines) now navigate to the period when tapping anywhere in the column, not only exactly on the point — a transparent full-height hit area per point.
+
+---
+
 ## [2.46.0] — 2026-06-28
 
 ### Added
