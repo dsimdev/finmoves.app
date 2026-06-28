@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.46.1] — 2026-06-28
+
+### Mejoras
+- **Gráfico de inflación**: ahora muestra el período más reciente a la izquierda, igual que los demás.
+- **Tocar los gráficos**: en Días, Gasto/Sueldo e Inflación ahora podés tocar en cualquier parte de la columna para ir al período, no solo justo en el punto.
+
+---
+
 ## [2.46.0] — 2026-06-28
 
 ### Novedades
