@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.45.0] — 2026-06-28
+
+### Novedades
+- **Gráfico de inflación personal**: en Reportes > Períodos, nueva opción "IP" que muestra, período a período, cuánto cambió tu gasto real (ajustado por inflación) contra el período anterior. Barras hacia arriba en rojo (gastaste más que la inflación) o hacia abajo en verde (le ganaste).
+
+### Mejoras
+- **Inflación ajustada de verdad**: ahora usamos datos de inflación (IPC) actualizados, así el dato de inflación del inicio refleja si gastás por encima o por debajo de la inflación real, no solo cuánto subió tu gasto.
+
+---
+
 ## [2.44.1] — 2026-06-28
 
 ### Mejoras

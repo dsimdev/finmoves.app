@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.45.0] — 2026-06-28
+
+### Added
+- **Nonce-based CSP** (F8): `proxy.ts` (Next.js 16 convention, replaces `middleware.ts`) generates a per-request cryptographic nonce and emits `script-src 'self' 'nonce-{n}' 'strict-dynamic'`. Modern browsers ignore `'unsafe-inline'` for scripts, mitigating inline-script XSS. The root layout reads `x-nonce` and applies it to the theme-init inline script. CSP moved out of `next.config.ts` into the proxy; other static security headers unchanged. `'unsafe-inline'` retained on `style-src` (inline `style={{}}` used app-wide).
+- **Personal inflation chart** (Reports → Períodos): new "IP" pill renders a diverging bar chart of real per-period inflation — pure spending (tipo "Gasto") deflated by CPI vs the previous period. Zero baseline: positive up (red, spent more in real terms), negative down (green). Oldest period excluded (no prior to compare).
+
+### Changed
+- **CPI source switched to Argly** (`useInflacionIPC`): `https://www.argly.com.ar/v1/ipc?historico=true` (coverage Dec 2022 → present), replacing the INDEC series that didn't cover 2025–2026. Monthly variations compounded into a cumulative index; cached 24h in localStorage.
+- **Dashboard "Inflación"**: now CPI-adjusted (real) vs the previous period instead of nominal. Positive = spending above inflation. Modal text updated (ES/EN).
+- Reports → Períodos "Inflación personal" modal text corrected: it's the nominal historical average across periods (was wrongly claiming CPI adjustment / "vs previous period").
+
+### Removed
+- **"Real" metric pill** (added in 2.44.0): replaced by the diverging-bar "IP" chart. The absolute deflated-spending bars were dominated by single large periods and conveyed no useful trend.
+
+---
+
 ## [2.44.1] — 2026-06-28
 
 ### Changed

@@ -15,6 +15,7 @@ import { MovementModal } from "@/components/movements/MovementModal";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 
 function TipoColor(m: Movimiento) {
   if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
   const t = useT();
   const { dashboardClasico, showAhorros } = useAppPrefs();
+  const { deflatar } = useInflacionIPC();
 
   // Modal de alta/edición abierto desde el propio inicio (sin navegar).
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
@@ -63,10 +65,14 @@ export default function Dashboard() {
       .filter((p) => p.gasto > 0)
       .sort((a, b) => parsePeriodoId(a.id).getTime() - parsePeriodoId(b.id).getTime());
     if (chron.length < 2) return null;
-    const prev = chron[chron.length - 2].gasto;
-    const curr = chron[chron.length - 1].gasto;
+    const prevP = chron[chron.length - 2];
+    const currP = chron[chron.length - 1];
+    // Gasto real: deflactado por IPC (Argly) a pesos de hoy. La variación real
+    // muestra si gastás por encima o por debajo de la inflación.
+    const prev = deflatar(prevP.gasto, prevP.id);
+    const curr = deflatar(currP.gasto, currP.id);
     return prev > 0 ? Math.round(((curr - prev) / prev) * 100) : null;
-  }, [periodos]);
+  }, [periodos, deflatar]);
   const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR").slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
