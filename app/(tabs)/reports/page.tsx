@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
+import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { SectionHint } from "@/components/ui/SectionHint";
 import { useData } from "../data-context";
 import { doc, updateDoc } from "firebase/firestore";
@@ -178,7 +179,7 @@ export default function ReportesPage() {
     GastoUSD: "var(--red)", GastoEUR: "var(--red)",
     VentaUSD: "var(--red)", VentaEUR: "var(--red)",
   };
-  const { monedaInversiones } = useAppPrefs();
+  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const [showHint, dismissHint] = useFirstVisit("reports");
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
@@ -198,7 +199,8 @@ export default function ReportesPage() {
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [catModal, setCatModal] = useState<string | null>(null);
   const [medioModal, setMedioModal] = useState<string | null>(null);
-  const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo">("gasto");
+  const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo" | "real">("gasto");
+  const { deflatar, ipcDisponible } = useInflacionIPC();
   const [selectedMovTipo, setSelectedMovTipo] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
@@ -1035,6 +1037,7 @@ export default function ReportesPage() {
                   { id: "ingreso", label: t.mPeriodIncome },
                   { id: "dias", label: t.mPeriodDays },
                   { id: "gastoSueldo", label: t.mPeriodRatio },
+                  ...(monedaPrincipal === "ARS" ? [{ id: "real", label: "Real" }] : []),
                 ] as const;
                 type BarDatum = { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string; periodoId?: string };
                 let data: BarDatum[] = [];
@@ -1056,6 +1059,9 @@ export default function ReportesPage() {
                     return { label: shortPer(s.periodoId), value: dias, color, valueLabel: `${dias}d`, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   });
                   max = Math.max(...data.map((d) => d.value), 1);
+                } else if (periodMetric === "real") {
+                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastadoPuro, color: colorPct(s.total > 0 ? Math.round((s.gastadoPuro / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId, periodoId: s.periodoId }));
+                  max = Math.max(...data.map((d) => d.value), 1); mask = true;
                 } else {
                   data = serieDesc.filter((s) => s.sueldo > 0).map((s) => {
                     const pct = Math.round((s.gastado / s.sueldo) * 100);
@@ -1064,12 +1070,12 @@ export default function ReportesPage() {
                   max = Math.max(...data.map((d) => d.value), 110);
                   refFrac = 100 / max;
                 }
-                const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : t.subMetricRatio;
+                const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : periodMetric === "real" ? "gasto sin compras de divisas" : t.subMetricRatio;
                 return (
                   <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                     <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", marginBottom: 14 }}>
                       {metrics.map((mt) => (
-                        <button key={mt.id} type="button" onClick={() => setPeriodMetric(mt.id)} className="pill" style={{ flexShrink: 0, fontSize: 11, padding: "4px 10px", borderColor: periodMetric === mt.id ? "var(--accent)" : "var(--border)", background: periodMetric === mt.id ? "var(--accent-dim)" : "transparent", color: periodMetric === mt.id ? "var(--accent)" : "var(--muted)" }}>{mt.label}</button>
+                        <button key={mt.id} type="button" onClick={() => setPeriodMetric(mt.id as typeof periodMetric)} className="pill" style={{ flexShrink: 0, fontSize: 11, padding: "4px 10px", borderColor: periodMetric === mt.id ? "var(--accent)" : "var(--border)", background: periodMetric === mt.id ? "var(--accent-dim)" : "transparent", color: periodMetric === mt.id ? "var(--accent)" : "var(--muted)" }}>{mt.label}</button>
                       ))}
                     </div>
                     {data.length > 0
@@ -1080,6 +1086,7 @@ export default function ReportesPage() {
                   </div>
                 );
               })()}
+
             </>
           )}
 

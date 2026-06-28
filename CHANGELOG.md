@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.44.0] — 2026-06-28
+
+### Added
+- **Personal inflation on dashboard**: replaced "Avg. per expense" KPI with "Personal inflation" — average % change in pure spending (tipo "Gasto" only, FX purchases excluded) between consecutive periods. Green when decreasing, red when increasing; tappable for explanation modal. Same computation already present in Reports → Períodos.
+- **"Real" metric pill in Reports**: new fifth pill in the period chart selector (ARS users only). Shows `gastadoPuro` (spending without FX purchases) in nominal ARS, with eye-mask and best/worst period markers — isolates spending trend from FX noise.
+
+---
+
 ## [2.43.2] — 2026-06-28
 
 ### Fixed

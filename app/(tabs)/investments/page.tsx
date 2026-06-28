@@ -24,6 +24,7 @@ function fechaCortaConAnio(fecha: string): string {
   return fecha;
 }
 import { agruparPorPeriodo } from "@/utils/periodo";
+import { serieTendencia } from "@/utils/reportes";
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -139,8 +140,21 @@ export default function DolaresPage() {
 
   // ── Tendencias de inversión ──
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
+
   const metaMonto = config?.meta.metaMonto ?? null;
   const inversionSeedId = config?.meta.inversionSeedPeriodoId;
+
+  // ── Net worth ──
+  const disponibleActual = periodos[0]?.disponible ?? 0;
+  const ahorrosTotales = useMemo(() => {
+    const serie = serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId ?? undefined);
+    return serie.length > 0 ? serie[serie.length - 1].ahorrosAcum : 0;
+  }, [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
+  const fxEnARS = (reservaUSDenARS ?? 0) + (reservaEURenARS ?? 0);
+  const totalPatrimonio = disponibleActual + ahorrosTotales + fxEnARS;
+  const totalEnUSD = cotizacionUSD && cotizacionUSD > 0 ? totalPatrimonio / cotizacionUSD : null;
+  const showNetWorth = fxEnARS > 0;
+  const fxLabel = historialUSD.length > 0 && historialEUR.length > 0 ? "divisas" : historialEUR.length > 0 ? "EUR" : "U$D";
 
   // Auto-anclar el seed la primera vez: el período actual es desde cuando se
   // empezó a corregir bien la carga FX. La ventana de promedio crece período a período.
@@ -187,6 +201,45 @@ export default function DolaresPage() {
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.portfolio}</div>
           </div>
           {showHint && <SectionHint title={t.hintInvTitle} body={t.hintInvBody} onDismiss={dismissHint} />}
+
+          {/* ── NET WORTH ── */}
+          {showNetWorth && (
+            <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--green) 8%, var(--surface)) 100%)", border: "1px solid color-mix(in srgb, var(--green) 20%, var(--border))", marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div className="label" style={{ marginBottom: 0 }}>patrimonio</div>
+                <button onClick={toggle} aria-label={t.hideValues} style={{ background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}>
+                  <EyeIcon off={oculto} />
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[
+                  { label: "disponible", value: disponibleActual },
+                  { label: "ahorros", value: ahorrosTotales },
+                  { label: fxLabel, value: fxEnARS },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>{label}</span>
+                    <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", color: "var(--text)" }}>{oculto ? "••••" : money(value)}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ height: 1, background: "color-mix(in srgb, var(--green) 25%, var(--border))", margin: "12px 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                <span style={{ fontSize: 11, color: "var(--muted)", paddingBottom: 4 }}>total</span>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: -1, lineHeight: 1, background: "linear-gradient(110deg, var(--green) 0%, var(--blue) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                    {oculto ? "••••" : money(totalPatrimonio)}
+                  </div>
+                  {totalEnUSD !== null && (
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                      {oculto ? "≈ U$D ••••" : `≈ U$D ${totalEnUSD.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · oficial`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── SECCIÓN USD ── */}
           {showUSD && (<>
           <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>

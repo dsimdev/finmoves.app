@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.44.0] — 2026-06-28
+
+### Novedades
+- **Inflación personal en el inicio**: reemplazamos "Prom. por mov." por tu inflación personal — cuánto subió (o bajó) tu gasto de un período al otro, sin contar compras de divisas. Verde si bajó, rojo si subió.
+- **Gasto sin divisas en Reportes**: nueva opción "Real" en el gráfico de períodos (solo si tu moneda es ARS), que muestra cuánto gastás sin contar compras de dólares o euros.
+
+---
+
 ## [2.43.1] — 2026-06-28
 
 ### Mejoras
