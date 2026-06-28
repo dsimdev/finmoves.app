@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.45.1] — 2026-06-28
+
+### Fixed
+- **Personal inflation chart period mapping**: `serieDesc` runs newest→oldest, so the previous period is `serieDesc[i+1]`, not `[i-1]`. The chart was excluding the current (open) period instead of the oldest, and computing the change with reversed sign. Now the current period is included (its prior is the second-newest) and the oldest is excluded (no prior to compare).
+
+### Added
+- **Average personal inflation** shown above the "IP" diverging-bar chart — the mean of the real per-period inflation bars.
+
+### Changed
+- **Argentine CPI gating**: the "IP" pill (Reports) and the CPI-adjusted dashboard "Inflación" now apply only when `monedaPrincipal === "ARS"`. Non-ARS users get nominal dashboard inflation (Argentine CPI doesn't apply to their currency) and don't see the IP pill. Dashboard modal text varies by case.
+- **Reports period card** renamed "Inflación personal" → "Inflación nominal" to contrast with the CPI-adjusted (real) IP chart.
+
+---
+
 ## [2.45.0] — 2026-06-28
 
 ### Added
