@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.43.0] — 2026-06-28
+
+### Accessibility
+- **BottomSheet** (the app's primary modal, used by the movement form + ~10 Reports sheets) now has `role="dialog"`/`aria-modal`, **Escape to close**, a **focus trap** (Tab cycles within the sheet), focus moved into the sheet on open and **restored to the trigger on close**, plus an `aria-label` on the close button.
+- **Settings toggles** are now real `<button role="switch" aria-checked>` (keyboard-operable, announced as switches) instead of `div onClick`; added an optional `label` for `aria-label`.
+- **Period bar chart** (`VBars`): clickable bars are now `<button>`s with an `aria-label` (period + value) instead of `div onClick`.
+- **Type donut** (`DonutChart`): wrapper exposes `role="img"` + a percentage summary `aria-label`, the SVG is `aria-hidden`, and the tappable legend buttons gained `aria-pressed` + `aria-label` (the legend is the keyboard/SR-accessible control).
+
+### Security
+- **Durable rate limiting for `/api/register`** (F4): moved the per-IP limiter from per-instance memory to a Firestore counter (`rateLimits/{ip}`), so it survives cold starts and works across instances; now keys on the first `x-forwarded-for` hop. Expired counters are swept by the daily cron. The collection is client-denied by the default Firestore rules (Admin SDK only).
+
+---
+
 ## [2.42.1] — 2026-06-27
 
 ### Security

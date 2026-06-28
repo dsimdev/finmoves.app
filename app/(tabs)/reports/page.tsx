@@ -107,9 +107,11 @@ function DonutChart({ data, size = 80, strokeWidth = 13, selected, onSelect }: {
   const cx = size / 2;
   let acc = 0;
   const sel = selected ? data.find(d => d.key === selected) : null;
+  const ariaSummary = data.filter(d => d.value > 0)
+    .map(d => `${d.label} ${Math.round((d.value / total) * 100)}%`).join(", ");
   return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }} onClick={() => onSelect?.(null)}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+    <div role="img" aria-label={ariaSummary} style={{ position: "relative", width: size, height: size, flexShrink: 0 }} onClick={() => onSelect?.(null)}>
+      <svg width={size} height={size} aria-hidden="true" style={{ transform: "rotate(-90deg)" }}>
         {data.filter(d => d.value > 0).map(({ value, color, key }, i) => {
           const dash = (value / total) * c;
           const offset = -acc;
@@ -134,16 +136,23 @@ function DonutChart({ data, size = 80, strokeWidth = 13, selected, onSelect }: {
 function VBars({ data, max, oculto, refFrac, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string; periodoId?: string }[]; max: number; oculto?: boolean; refFrac?: number; onBarClick?: (periodoId: string) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
-      {data.map((d, i) => (
-        <div key={i} onClick={() => d.periodoId && onBarClick?.(d.periodoId)} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: (onBarClick && d.periodoId) ? "pointer" : "default" }}>
+      {data.map((d, i) => {
+        const clickable = !!(onBarClick && d.periodoId);
+        const Comp: "button" | "div" = clickable ? "button" : "div";
+        return (
+        <Comp key={i} type={clickable ? "button" : undefined}
+          onClick={() => d.periodoId && onBarClick?.(d.periodoId)}
+          aria-label={clickable ? `${shortPer(d.label)}: ${oculto ? "" : (d.valueLabel ?? abbr(d.value))}` : undefined}
+          style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: clickable ? "pointer" : "default", background: "transparent", border: "none", padding: 0, font: "inherit" }}>
           <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "•" : (d.valueLabel ?? abbr(d.value))}</div>
           <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, display: "flex", alignItems: "flex-end", overflow: "hidden", position: "relative" }}>
             {refFrac != null && <div style={{ position: "absolute", left: 0, right: 0, bottom: `${Math.round(refFrac * 96)}px`, height: 1, background: "var(--text)44", zIndex: 1 }} />}
             <div style={{ width: "100%", height: `${max > 0 ? Math.round((d.value / max) * 100) : 0}%`, background: d.color, borderRadius: 7, transition: "height .5s ease" }} />
           </div>
           <div style={{ fontSize: 8, fontWeight: (d.best || d.worst || d.hi) ? 700 : 400, color: d.best ? "var(--green)" : d.worst ? "var(--red)" : d.hi ? "var(--accent)" : "var(--muted)" }}>{shortPer(d.label)}</div>
-        </div>
-      ))}
+        </Comp>
+        );
+      })}
     </div>
   );
 }
@@ -1102,7 +1111,7 @@ export default function ReportesPage() {
                           const active = selectedMovTipo === tipo;
                           const col = tipoColor[tipo] ?? "var(--accent)";
                           return (
-                            <button key={tipo} onClick={() => setSelectedMovTipo(active ? null : tipo)}
+                            <button key={tipo} type="button" aria-pressed={active} aria-label={`${t.tipoDisplay[tipo] ?? tipo}: ${count}`} onClick={() => setSelectedMovTipo(active ? null : tipo)}
                               style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 8px", borderRadius: 999, cursor: "pointer", transition: "all 0.15s",
                                 border: `1px solid ${active ? col : "transparent"}`, background: active ? `${col}1a` : "transparent" }}>
                               <span style={{ width: 7, height: 7, borderRadius: 2, background: col, flexShrink: 0 }} />

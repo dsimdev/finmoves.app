@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.43.0] — 2026-06-28
+
+### Accesibilidad
+- Mejoras para teclado y lectores de pantalla: ahora podés **cerrar las ventanas con Esc**, el foco se maneja bien al abrirlas/cerrarlas, y los interruptores y gráficos se anuncian correctamente.
+
+---
+
 ## [2.42.0] — 2026-06-27
 
 ### Interfaz

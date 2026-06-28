@@ -30,6 +30,33 @@ export function BottomSheet({ open, onClose, title, children }: {
 
   useEffect(() => { if (open) setTy(0); }, [open]);
 
+  // Accesibilidad: al abrir, mover el foco al panel y atrapar Tab dentro del diálogo;
+  // Escape cierra; al cerrar, devolver el foco al elemento que lo abrió.
+  const lastFocused = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    lastFocused.current = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    const raf = requestAnimationFrame(() => panel?.focus());
+    const focusablesSel = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key === "Tab" && panel) {
+        const f = Array.from(panel.querySelectorAll<HTMLElement>(focusablesSel));
+        if (f.length === 0) { e.preventDefault(); panel.focus(); return; }
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("keydown", onKey);
+      lastFocused.current?.focus?.();
+    };
+  }, [open, onClose]);
+
   // Acompañar el teclado: el visualViewport se achica al abrirse el teclado, pero
   // los elementos position:fixed siguen el layout viewport (no se mueven). Atamos
   // la altura/top del contenedor al visualViewport para que el sheet quede arriba
@@ -68,7 +95,7 @@ export function BottomSheet({ open, onClose, title, children }: {
   return createPortal(
     <div data-no-swipe style={{ position: "fixed", left: 0, top: vv ? vv.top : 0, width: "100%", height: vv ? vv.h : "100%", zIndex: 200, pointerEvents: open ? "all" : "none" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: open ? "blur(4px)" : "blur(0px)", WebkitBackdropFilter: open ? "blur(4px)" : "blur(0px)", opacity: open ? 1 : 0, transition: "opacity 0.35s ease, backdrop-filter 0.35s ease" }} />
-      <div ref={panelRef} style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "var(--surface)", borderRadius: "26px 26px 0 0", maxHeight: "92%", overflowY: "auto", border: "1px solid var(--border)", borderBottom: "none", boxShadow: "0 -16px 50px rgba(0,0,0,0.5)", transform: open ? `translateY(${ty}px)` : "translateY(101%)", opacity: open ? 1 : 0.4, transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease", willChange: "transform" }}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "var(--surface)", borderRadius: "26px 26px 0 0", maxHeight: "92%", overflowY: "auto", border: "1px solid var(--border)", borderBottom: "none", boxShadow: "0 -16px 50px rgba(0,0,0,0.5)", transform: open ? `translateY(${ty}px)` : "translateY(101%)", opacity: open ? 1 : 0.4, transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease", willChange: "transform", outline: "none" }}>
         <div style={{ padding: "4px 16px 0", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
           <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
             style={{ display: "flex", justifyContent: "center", padding: "8px 0 12px", cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}>
@@ -77,7 +104,7 @@ export function BottomSheet({ open, onClose, title, children }: {
           {title !== undefined && (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 0 12px", marginBottom: 16, borderBottom: "1px solid var(--border)" }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>{title}</span>
-              <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
+              <button onClick={onClose} aria-label="Cerrar" style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
             </div>
           )}
         </div>

@@ -2,29 +2,36 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { TEMPLATE_CONFIG } from "@/lib/default-config";
 import { Timestamp } from "firebase-admin/firestore";
+import type { Firestore } from "firebase-admin/firestore";
 
-// Rate limit en memoria: [ip]: {count, resetAt}
-const rateLimitMap = new Map<string, {count: number; resetAt: number}>();
-
-function checkRateLimit(ip: string, limit = 10, windowMs = 60000): {allowed: boolean; retryAfter: number} {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || entry.resetAt <= now) {
-    rateLimitMap.set(ip, {count: 1, resetAt: now + windowMs});
-    return {allowed: true, retryAfter: 0};
-  }
-  if (entry.count >= limit) {
-    return {allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000)};
-  }
-  entry.count++;
-  return {allowed: true, retryAfter: 0};
+// Rate limit durable en Firestore (no en memoria): así funciona aunque haya varias
+// instancias de Cloud Run y no se resetea en cada cold start. Doc por IP en
+// `rateLimits/{ip}`; lo escribe solo el Admin SDK (las reglas niegan al cliente).
+async function checkRateLimit(db: Firestore, ip: string, limit = 10, windowMs = 60000): Promise<{ allowed: boolean; retryAfter: number }> {
+  const id = ip.replace(/[^a-zA-Z0-9._:-]/g, "_").slice(0, 200) || "unknown";
+  const ref = db.doc(`rateLimits/${id}`);
+  return db.runTransaction(async (tx) => {
+    const now = Date.now();
+    const data = (await tx.get(ref)).data() as { count?: number; resetAt?: number } | undefined;
+    if (!data || (data.resetAt ?? 0) <= now) {
+      tx.set(ref, { count: 1, resetAt: now + windowMs });
+      return { allowed: true, retryAfter: 0 };
+    }
+    if ((data.count ?? 0) >= limit) {
+      return { allowed: false, retryAfter: Math.ceil(((data.resetAt ?? now) - now) / 1000) };
+    }
+    tx.update(ref, { count: (data.count ?? 0) + 1 });
+    return { allowed: true, retryAfter: 0 };
+  });
 }
 
 // Alta de cuenta por código de invitación. El signup público de Firebase queda
 // cerrado: las cuentas se crean SOLO aquí, validando un código de un solo uso.
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
-  const {allowed, retryAfter} = checkRateLimit(ip, 10, 60000); // 10 intentos / minuto
+  const db = adminDb();
+  const fwd = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+  const ip = fwd.split(",")[0].trim(); // primer hop = IP del cliente
+  const { allowed, retryAfter } = await checkRateLimit(db, ip, 10, 60000); // 10 intentos / minuto
   if (!allowed) {
     return NextResponse.json({error: "rate-limit"}, {status: 429, headers: {"Retry-After": retryAfter.toString()}});
   }
@@ -38,7 +45,6 @@ export async function POST(req: NextRequest) {
   if (!email || !password || !code) return NextResponse.json({ error: "missing-fields" }, { status: 400 });
   if (password.length < 6) return NextResponse.json({ error: "weak-password" }, { status: 400 });
 
-  const db = adminDb();
   const codeRef = db.doc(`inviteCodes/${code}`);
 
   // Reservar el código de forma atómica: si dos requests usan el mismo código en

@@ -82,6 +82,14 @@ export async function GET(req: NextRequest) {
     console.error("[cron/codes-cleanup]", err);
   }
 
+  // ── 1.6) Limpieza de contadores de rate-limit vencidos (resetAt en el pasado) ──
+  try {
+    const rlSnap = await adminDb().collection("rateLimits").where("resetAt", "<", Date.now()).get();
+    await Promise.all(rlSnap.docs.map((d) => d.ref.delete().catch(() => {})));
+  } catch (err) {
+    console.error("[cron/ratelimit-cleanup]", err);
+  }
+
   // ── 2) Avisos para TODOS los usuarios (versión, dólar, meta, sueldo) ──
   // Idempotente: deduplica vía config/notifyMeta, así correrlo más seguido no spamea.
   try {

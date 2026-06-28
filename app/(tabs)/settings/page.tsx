@@ -25,10 +25,10 @@ import { listarRecordatorios, crearRecordatorio, eliminarRecordatorio, type Reco
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useT } from "@/hooks/useTranslation";
 
-function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
+function Toggle({ activo, onClick, label }: { activo: boolean; onClick: () => void; label?: string }) {
   return (
-    <div onClick={onClick} style={{
-      width: 44, height: 26, borderRadius: 13,
+    <button type="button" role="switch" aria-checked={activo} aria-label={label} onClick={onClick} style={{
+      width: 44, height: 26, borderRadius: 13, border: "none", padding: 0,
       background: activo ? "var(--accent)" : "var(--border)",
       boxShadow: activo ? "0 0 0 3px var(--accent)30" : "inset 0 1px 3px rgba(0,0,0,0.15)",
       position: "relative", cursor: "pointer",
@@ -41,7 +41,7 @@ function Toggle({ activo, onClick }: { activo: boolean; onClick: () => void }) {
         boxShadow: "0 1px 4px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(0,0,0,0.06)",
         transition: "left .22s cubic-bezier(0.34,1.56,0.64,1)",
       }} />
-    </div>
+    </button>
   );
 }
 
