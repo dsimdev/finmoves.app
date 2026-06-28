@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.43.1] — 2026-06-28
+
+### Mejoras
+- **Sesión**: ahora dura 3 días sin uso (antes 8 horas) — más cómodo si recibís una notificación y abrís la app sin haberla tocado ese día.
+- **Ícono de notificación**: corregido para que muestre el logo de FinMoves en Android.
+- **Gráfico de días por período**: el período actual ya muestra el valor correcto, consistente con lo que aparece en el inicio.
+
+---
+
 ## [2.43.0] — 2026-06-28
 
 ### Accesibilidad

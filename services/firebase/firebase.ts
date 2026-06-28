@@ -28,7 +28,7 @@ export const app = initializeApp(firebaseConfig);
 // solo si hay site key de reCAPTCHA v3 configurada; sin ella (dev local) es no-op.
 // Para forzar en producción: registrar reCAPTCHA v3 en Firebase App Check, setear
 // NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY y habilitar enforcement en la consola.
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
   const appCheckSiteKey = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;
   if (appCheckSiteKey) {
     initializeAppCheck(app, {

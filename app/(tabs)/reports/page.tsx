@@ -1050,7 +1050,8 @@ export default function ReportesPage() {
                   data = serieDesc.map((s, i) => {
                     const inicio = parsePeriodoId(s.periodoId);
                     const fin = i === 0 ? hoy : parsePeriodoId(serieDesc[i - 1].periodoId);
-                    const dias = Math.max(1, Math.round((fin.getTime() - inicio.getTime()) / 86400000));
+                    const rawDias = (fin.getTime() - inicio.getTime()) / 86400000;
+                    const dias = Math.max(1, i === 0 ? Math.floor(rawDias) + 1 : Math.round(rawDias));
                     const color = dias <= 29 ? "var(--green)" : dias <= 31 ? "var(--yellow)" : "var(--red)";
                     return { label: shortPer(s.periodoId), value: dias, color, valueLabel: `${dias}d`, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   });

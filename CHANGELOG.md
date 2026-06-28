@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.43.1] — 2026-06-28
+
+### Fixed
+- **Period duration chart**: current period bar now uses `floor + 1` (inclusive) to match the home-page counter — no more 30d vs 31d discrepancy.
+- **App Check in dev**: `initializeAppCheck` is now guarded by `NODE_ENV === "production"`, eliminating the `appCheck/recaptcha-error` console noise in local dev.
+- **Push notification icon**: changed from `/favicon.png` to `/icon-192.png` (correct Android notification icon size, already precached by the SW).
+- **Inactivity logout timeout**: increased from 8 hours to 3 days — push notifications are only useful if the user doesn't have to re-login every time they open the app.
+
+---
+
 ## [2.43.0] — 2026-06-28
 
 ### Accessibility

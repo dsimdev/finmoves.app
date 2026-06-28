@@ -5,7 +5,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebase/firebase";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 
-const TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 horas
+const TIMEOUT_MS = 3 * 24 * 60 * 60 * 1000; // 3 días
 const STORAGE_KEY = "finmoves_last_activity";
 const ACTIVITY_EVENTS = ["mousedown", "keydown", "touchstart", "scroll"] as const;
 
