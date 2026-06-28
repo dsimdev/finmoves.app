@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.45.2] — 2026-06-28
+
+### Mejoras
+- **Gráfico de inflación más moderno**: ahora es de puntos conectados por una línea, en vez de barras. Cada punto es un período (arriba en rojo si gastaste más, abajo en verde si gastaste menos).
+
+---
+
 ## [2.45.1] — 2026-06-28
 
 ### Mejoras

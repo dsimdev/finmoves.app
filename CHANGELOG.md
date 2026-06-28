@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.45.2] — 2026-06-28
+
+### Changed
+- **Personal inflation chart redesigned** as a connected dot/point chart (SVG): each period is a dot above/below the dashed zero baseline (red above, green below), joined by a trend line, with the % above each dot. Replaces the diverging bars for a cleaner, more modern look.
+
+---
+
 ## [2.45.1] — 2026-06-28
 
 ### Fixed
