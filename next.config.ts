@@ -8,14 +8,16 @@ import { version } from "./package.json";
 const CSP = [
   "default-src 'self'",
   // apis.google.com + gstatic: Firebase Auth / login con Google. googletagmanager: analytics.
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://apis.google.com https://www.gstatic.com",
+  // www.google.com: reCAPTCHA v3 (App Check) carga recaptcha/api.js desde ahí.
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://apis.google.com https://www.gstatic.com https://www.google.com",
   // fonts.googleapis.com: hoja de estilos de Google Fonts (import en globals.css).
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https: wss:",
   // accounts.google.com + apis.google.com: popup/iframe del login con Google.
-  "frame-src 'self' https://*.firebaseapp.com https://firebasestorage.googleapis.com https://apis.google.com https://accounts.google.com",
+  // www.google.com: iframe de reCAPTCHA (App Check).
+  "frame-src 'self' https://*.firebaseapp.com https://firebasestorage.googleapis.com https://apis.google.com https://accounts.google.com https://www.google.com",
   "worker-src 'self'",
   "manifest-src 'self'",
   "object-src 'none'",

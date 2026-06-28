@@ -14,6 +14,7 @@ All notable changes to FinMoves are documented here.
 
 ### Security
 - **Durable rate limiting for `/api/register`** (F4): moved the per-IP limiter from per-instance memory to a Firestore counter (`rateLimits/{ip}`), so it survives cold starts and works across instances; now keys on the first `x-forwarded-for` hop. Expired counters are swept by the daily cron. The collection is client-denied by the default Firestore rules (Admin SDK only).
+- **CSP fix for App Check / reCAPTCHA**: added `https://www.google.com` to `script-src` and `frame-src` so reCAPTCHA v3 (`recaptcha/api.js` + challenge iframe) can load. Without it App Check couldn't obtain a token and, under enforcement, all Firestore calls were rejected (production hung on load). Unblocks enabling App Check enforcement safely.
 
 ---
 
