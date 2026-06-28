@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.41.1] — 2026-06-27
+
+### Security
+- **Account deletion now also wipes Cloud Storage** (receipts + avatar under `users/{uid}/`), which previously survived a hard delete as orphaned PII. Added `adminBucket()` helper and a best-effort `deleteFiles({ prefix })` in the delete route. (ISO A.8.10 / A.5.34)
+- **Sheets sync errors no longer leak internals to clients**: the manual sync route returns a generic message and the cron failure push says "check Settings" — full detail stays in server logs and the owner-only sync log. (ISO A.8.15)
+- **Storage rule added for `users/{uid}/avatar.jpg`** (owner read/write/delete, image-only, <5 MB) — the avatar write path was previously denied by the catch-all rule, silently breaking profile-photo copy. (ISO A.8.3)
+
+> Deploy note: storage rule changes require `firebase deploy --only storage` (not applied by the App Hosting push).
+
+---
+
 ## [2.41.0] — 2026-06-27
 
 ### Added

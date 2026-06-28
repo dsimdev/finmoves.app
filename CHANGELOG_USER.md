@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.41.1] — 2026-06-27
+
+### Privacidad y seguridad
+- Cuando **eliminás tu cuenta**, ahora también se borran tus **comprobantes y foto de perfil** (antes quedaban guardados).
+- Arreglamos la **foto de perfil** (la copia desde Google funcionaba mal por un permiso).
+
+---
+
 ## [2.41.0] — 2026-06-27
 
 ### Reportes · Períodos

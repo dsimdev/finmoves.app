@@ -28,8 +28,9 @@ export async function POST(req: NextRequest) {
     const { synced } = await syncUserMovimientosToSheet(uid);
     return NextResponse.json({ synced, message: `Sync completa · ${synced} movimientos` });
   } catch (err) {
+    // Detalle solo en logs del servidor; al cliente, mensaje genérico (evita filtrar
+    // IDs de spreadsheet, email del service-account, etc.).
     console.error("Sync error:", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Sync failed" }, { status: 500 });
   }
 }

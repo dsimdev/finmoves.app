@@ -61,8 +61,8 @@ export async function GET(req: NextRequest) {
       console.error("[cron/sync-sheets]", err);
       const message = err instanceof Error ? err.message : String(err);
       await appendLog({ status: "error", type: "auto", at: Timestamp.now(), message });
-      // Aviso de fallo de sync con el detalle del error — solo al dueño.
-      await sendPushToUser(ownerUid, { title: "Falló sync Sheets", body: message, tag: "sync-error", url: "/settings" });
+      // Push genérico (el detalle queda en el log que el dueño ve en Configuración).
+      await sendPushToUser(ownerUid, { title: "Falló sync Sheets", body: "Revisá el detalle en Configuración.", tag: "sync-error", url: "/settings" });
       result = { ok: false, error: message };
     }
   }

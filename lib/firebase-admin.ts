@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
+import { getStorage } from "firebase-admin/storage";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -23,4 +24,8 @@ export function adminDb() {
 
 export function adminAuth() {
   return getAuth(initAdmin());
+}
+
+export function adminBucket() {
+  return getStorage(initAdmin()).bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
 }
