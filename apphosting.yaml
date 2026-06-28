@@ -45,6 +45,11 @@ env:
   - variable: NEXT_PUBLIC_VAPID_PUBLIC_KEY
     secret: NEXT_PUBLIC_VAPID_PUBLIC_KEY
     availability: [BUILD, RUNTIME]
+  # App Check (reCAPTCHA v3). La site key es PÚBLICA por diseño → va como value directo
+  # (no es secreto). La clave SECRETA vive solo en Firebase App Check, nunca acá.
+  - variable: NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY
+    value: "6LdAcTktAAAAANdroWrcETNQUKvgI4dIQXWdoJhD"
+    availability: [BUILD, RUNTIME]
   # ── Servidor / API routes (sólo runtime) ──
   - variable: FIREBASE_SERVICE_ACCOUNT_JSON
     secret: FIREBASE_SERVICE_ACCOUNT_JSON

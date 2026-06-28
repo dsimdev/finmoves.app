@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.42.1] — 2026-06-27
+
+### Security
+- **Firebase App Check activated in monitor mode**: wired the public reCAPTCHA v3 site key via `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY` (plain `value` in `apphosting.yaml` — the site key is public by design; the secret key lives only in the Firebase App Check console). Clients now attach App Check tokens to Firestore/Storage/Auth calls. Enforcement stays OFF until the console metrics confirm legitimate traffic is passing.
+
+---
+
 ## [2.42.0] — 2026-06-27
 
 ### Changed
