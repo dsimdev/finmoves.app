@@ -158,35 +158,34 @@ function VBars({ data, max, oculto, refFrac, onBarClick }: { data: { label: stri
   );
 }
 
-// Barras divergentes desde una línea base en 0: valores positivos hacia arriba,
-// negativos hacia abajo. Usado para la inflación real por período (puede ser +/-).
+// Gráfico de puntos conectados sobre una línea base en 0: cada período es un punto
+// (arriba = positivo, abajo = negativo) unido por una línea de tendencia. Usado para
+// la inflación real por período (puede ser +/-).
 function DivergingBars({ data, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; periodoId?: string }[]; onBarClick?: (periodoId: string) => void }) {
-  const H = 48; // alto de cada mitad (px)
+  const H = 44, topPad = 16, botPad = 16, PX = 46;
   const maxAbs = Math.max(...data.map((d) => Math.abs(d.value)), 1);
+  const W = Math.max(data.length * PX, PX);
+  const baseline = topPad + H;
+  const totalH = topPad + H * 2 + botPad;
+  const pts = data.map((d, i) => ({ x: i * PX + PX / 2, y: baseline - (d.value / maxAbs) * H, d }));
+  const linePts = pts.map((p) => `${p.x},${p.y}`).join(" ");
   return (
-    <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-start", scrollbarWidth: "none" }}>
-      {data.map((d, i) => {
-        const clickable = !!(onBarClick && d.periodoId);
-        const Comp: "button" | "div" = clickable ? "button" : "div";
-        const frac = Math.abs(d.value) / maxAbs;
-        const pos = d.value >= 0;
-        return (
-          <Comp key={i} type={clickable ? "button" : undefined}
-            onClick={() => d.periodoId && onBarClick?.(d.periodoId)}
-            aria-label={clickable ? `${shortPer(d.label)}: ${d.value >= 0 ? "+" : ""}${d.value}%` : undefined}
-            style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: clickable ? "pointer" : "default", background: "transparent", border: "none", padding: 0, font: "inherit" }}>
-            <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{d.value >= 0 ? "+" : ""}{d.value}%</div>
-            <div style={{ height: H * 2, width: 20, position: "relative" }}>
-              <div style={{ position: "absolute", left: 0, right: 0, top: H, height: 1, background: "var(--border-hi)", zIndex: 1 }} />
-              <div style={{ position: "absolute", left: 0, width: "100%", background: d.color, borderRadius: 7,
-                ...(pos
-                  ? { bottom: H, height: `${Math.round(frac * H)}px` }
-                  : { top: H, height: `${Math.round(frac * H)}px` }) }} />
-            </div>
-            <div style={{ fontSize: 8, fontWeight: d.hi ? 700 : 400, color: d.hi ? "var(--accent)" : "var(--muted)" }}>{shortPer(d.label)}</div>
-          </Comp>
-        );
-      })}
+    <div style={{ overflowX: "auto", scrollbarWidth: "none" }}>
+      <svg width={W} height={totalH} style={{ display: "block" }}>
+        <line x1={0} x2={W} y1={baseline} y2={baseline} style={{ stroke: "var(--border-hi)" }} strokeWidth={1} strokeDasharray="3 3" />
+        {pts.length > 1 && <polyline points={linePts} fill="none" style={{ stroke: "var(--border-hi)" }} strokeWidth={1.5} opacity={0.45} />}
+        {pts.map((p, i) => {
+          const clickable = !!(onBarClick && p.d.periodoId);
+          return (
+            <g key={i} onClick={() => p.d.periodoId && onBarClick?.(p.d.periodoId)}
+              style={{ cursor: clickable ? "pointer" : "default" }}>
+              <text x={p.x} y={p.d.value >= 0 ? p.y - 9 : p.y + 15} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" style={{ fill: "var(--muted)" }}>{p.d.value >= 0 ? "+" : ""}{p.d.value}%</text>
+              <circle cx={p.x} cy={p.y} r={5} style={{ fill: p.d.color, stroke: "var(--surface)" }} strokeWidth={1.5} />
+              <text x={p.x} y={totalH - 4} textAnchor="middle" fontSize={8} fontWeight={p.d.hi ? 700 : 400} style={{ fill: p.d.hi ? "var(--accent)" : "var(--muted)" }}>{p.d.label}</text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
