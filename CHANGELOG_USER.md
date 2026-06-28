@@ -4,6 +4,20 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.46.0] — 2026-06-28
+
+### Novedades
+- **Poder de compra de tu sueldo**: card nueva en Reportes > Períodos que te dice, en puntos, si tu sueldo le gana o le pierde a la inflación acumulada del país.
+- **Gráfico de inflación acumulada**: en la pestaña IP ahora ves tu inflación acumulada vs la del país, lado a lado, desde tu período más viejo.
+
+### Mejoras
+- **Reportes más ordenados**: Gasto típico junto a su proyección, Ahorro típico junto a la suya. Sacamos "Ingreso típico".
+- **Proyección más precisa**: ahora ajusta por inflación (lleva los períodos viejos a pesos de hoy y proyecta al próximo mes).
+- **IPC más fiel a tus períodos**: como cargás el sueldo a fin de mes, el cálculo usa el mes que el período realmente abarca.
+- Gráficos variados: Días en área, Gasto/Sueldo en puntos.
+
+---
+
 ## [2.45.2] — 2026-06-28
 
 ### Mejoras

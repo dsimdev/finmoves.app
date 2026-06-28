@@ -158,30 +158,119 @@ function VBars({ data, max, oculto, refFrac, onBarClick }: { data: { label: stri
   );
 }
 
-// Gráfico de puntos conectados sobre una línea base en 0: cada período es un punto
-// (arriba = positivo, abajo = negativo) unido por una línea de tendencia. Usado para
-// la inflación real por período (puede ser +/-).
-function DivergingBars({ data, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; periodoId?: string }[]; onBarClick?: (periodoId: string) => void }) {
-  const H = 44, topPad = 16, botPad = 16, PX = 46;
-  const maxAbs = Math.max(...data.map((d) => Math.abs(d.value)), 1);
+type DotDatum = { label: string; value: number; color: string; hi?: boolean; periodoId?: string };
+
+// Gráfico de puntos conectados por una línea de tendencia, con escala automática al
+// rango de datos. Soporta una línea de referencia (refValue: 0 para inflación, 100
+// para gasto/sueldo) y una segunda serie opcional (series2, p.ej. IPC país).
+function DotChart({ data, refValue, series2, series2Color, signed, onPointClick }: {
+  data: DotDatum[];
+  refValue?: number;
+  series2?: (number | null)[];
+  series2Color?: string;
+  signed?: boolean;
+  onPointClick?: (periodoId: string) => void;
+}) {
+  const topPad = 16, botPad = 16, chartH = 92, PX = 46;
+  const s2vals = (series2 ?? []).filter((v): v is number => v != null);
+  const all = [...data.map((d) => d.value), ...(refValue != null ? [refValue] : []), ...s2vals];
+  let min = Math.min(...all), max = Math.max(...all);
+  if (min === max) { min -= 1; max += 1; }
+  const pad = (max - min) * 0.18; min -= pad; max += pad;
   const W = Math.max(data.length * PX, PX);
-  const baseline = topPad + H;
-  const totalH = topPad + H * 2 + botPad;
-  const pts = data.map((d, i) => ({ x: i * PX + PX / 2, y: baseline - (d.value / maxAbs) * H, d }));
+  const totalH = topPad + chartH + botPad;
+  const y = (v: number) => topPad + chartH - ((v - min) / (max - min)) * chartH;
+  const fmt = (v: number) => `${signed && v >= 0 ? "+" : ""}${v}%`;
+  const pts = data.map((d, i) => ({ x: i * PX + PX / 2, y: y(d.value), d }));
   const linePts = pts.map((p) => `${p.x},${p.y}`).join(" ");
+  const s2pts = series2 ? series2.map((v, i) => v == null ? null : `${i * PX + PX / 2},${y(v)}`).filter(Boolean).join(" ") : "";
   return (
     <div style={{ overflowX: "auto", scrollbarWidth: "none" }}>
       <svg width={W} height={totalH} style={{ display: "block" }}>
-        <line x1={0} x2={W} y1={baseline} y2={baseline} style={{ stroke: "var(--border-hi)" }} strokeWidth={1} strokeDasharray="3 3" />
+        {refValue != null && <line x1={0} x2={W} y1={y(refValue)} y2={y(refValue)} style={{ stroke: "var(--border-hi)" }} strokeWidth={1} strokeDasharray="3 3" />}
+        {s2pts && <polyline points={s2pts} fill="none" style={{ stroke: series2Color ?? "var(--accent)" }} strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />}
         {pts.length > 1 && <polyline points={linePts} fill="none" style={{ stroke: "var(--border-hi)" }} strokeWidth={1.5} opacity={0.45} />}
+        {series2 && pts.map((p, i) => { const v = series2[i]; return v == null ? null : <circle key={`s2-${i}`} cx={p.x} cy={y(v)} r={2.5} style={{ fill: series2Color ?? "var(--accent)" }} />; })}
         {pts.map((p, i) => {
-          const clickable = !!(onBarClick && p.d.periodoId);
+          const clickable = !!(onPointClick && p.d.periodoId);
           return (
-            <g key={i} onClick={() => p.d.periodoId && onBarClick?.(p.d.periodoId)}
-              style={{ cursor: clickable ? "pointer" : "default" }}>
-              <text x={p.x} y={p.d.value >= 0 ? p.y - 9 : p.y + 15} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" style={{ fill: "var(--muted)" }}>{p.d.value >= 0 ? "+" : ""}{p.d.value}%</text>
+            <g key={i} onClick={() => p.d.periodoId && onPointClick?.(p.d.periodoId)} style={{ cursor: clickable ? "pointer" : "default" }}>
+              <text x={p.x} y={p.y - 9} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" style={{ fill: "var(--muted)" }}>{fmt(p.d.value)}</text>
               <circle cx={p.x} cy={p.y} r={5} style={{ fill: p.d.color, stroke: "var(--surface)" }} strokeWidth={1.5} />
               <text x={p.x} y={totalH - 4} textAnchor="middle" fontSize={8} fontWeight={p.d.hi ? 700 : 400} style={{ fill: p.d.hi ? "var(--accent)" : "var(--muted)" }}>{p.d.label}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// Gráfico de área (línea rellena), escala automática al rango de datos. Usado para días.
+function AreaChart({ data, onPointClick }: { data: { label: string; value: number; color: string; hi?: boolean; valueLabel?: string; periodoId?: string }[]; onPointClick?: (periodoId: string) => void }) {
+  const topPad = 16, botPad = 16, chartH = 92, PX = 46;
+  let min = Math.min(...data.map((d) => d.value)), max = Math.max(...data.map((d) => d.value));
+  if (min === max) { min -= 1; max += 1; }
+  const padv = (max - min) * 0.18; min -= padv; max += padv;
+  const W = Math.max(data.length * PX, PX);
+  const totalH = topPad + chartH + botPad;
+  const baseY = topPad + chartH;
+  const y = (v: number) => topPad + chartH - ((v - min) / (max - min)) * chartH;
+  const pts = data.map((d, i) => ({ x: i * PX + PX / 2, y: y(d.value), d }));
+  const linePts = pts.map((p) => `${p.x},${p.y}`).join(" ");
+  const areaPts = pts.length ? `${pts[0].x},${baseY} ${linePts} ${pts[pts.length - 1].x},${baseY}` : "";
+  return (
+    <div style={{ overflowX: "auto", scrollbarWidth: "none" }}>
+      <svg width={W} height={totalH} style={{ display: "block" }}>
+        {pts.length > 0 && <polygon points={areaPts} style={{ fill: "var(--accent)" }} opacity={0.14} />}
+        {pts.length > 1 && <polyline points={linePts} fill="none" style={{ stroke: "var(--accent)" }} strokeWidth={2} />}
+        {pts.map((p, i) => {
+          const clickable = !!(onPointClick && p.d.periodoId);
+          return (
+            <g key={i} onClick={() => p.d.periodoId && onPointClick?.(p.d.periodoId)} style={{ cursor: clickable ? "pointer" : "default" }}>
+              <text x={p.x} y={p.y - 9} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" style={{ fill: "var(--muted)" }}>{p.d.valueLabel ?? p.d.value}</text>
+              <circle cx={p.x} cy={p.y} r={4} style={{ fill: p.d.color, stroke: "var(--surface)" }} strokeWidth={1.5} />
+              <text x={p.x} y={totalH - 4} textAnchor="middle" fontSize={8} fontWeight={p.d.hi ? 700 : 400} style={{ fill: p.d.hi ? "var(--accent)" : "var(--muted)" }}>{p.d.label}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// Dos líneas acumuladas (serie A = vos, serie B = país) para comparar la inflación
+// acumulada propia vs la del país a lo largo de los períodos.
+function TwoLineChart({ points, colorA, onPointClick }: {
+  points: { label: string; a: number; b: number | null; hi?: boolean; periodoId?: string }[];
+  colorA: string;
+  onPointClick?: (periodoId: string) => void;
+}) {
+  const topPad = 16, botPad = 16, chartH = 100, PX = 46;
+  const bs = points.map((p) => p.b).filter((v): v is number => v != null);
+  const all = [0, ...points.map((p) => p.a), ...bs];
+  let min = Math.min(...all), max = Math.max(...all);
+  if (min === max) { min -= 1; max += 1; }
+  const pad = (max - min) * 0.15; min -= pad; max += pad;
+  const W = Math.max(points.length * PX, PX);
+  const totalH = topPad + chartH + botPad;
+  const y = (v: number) => topPad + chartH - ((v - min) / (max - min)) * chartH;
+  const aPts = points.map((p, i) => ({ x: i * PX + PX / 2, y: y(p.a), p }));
+  const aLine = aPts.map((p) => `${p.x},${p.y}`).join(" ");
+  const bLine = points.map((p, i) => p.b == null ? null : `${i * PX + PX / 2},${y(p.b)}`).filter(Boolean).join(" ");
+  return (
+    <div style={{ overflowX: "auto", scrollbarWidth: "none" }}>
+      <svg width={W} height={totalH} style={{ display: "block" }}>
+        {min < 0 && max > 0 && <line x1={0} x2={W} y1={y(0)} y2={y(0)} style={{ stroke: "var(--border-hi)" }} strokeWidth={1} strokeDasharray="3 3" />}
+        {bLine && <polyline points={bLine} fill="none" style={{ stroke: "var(--accent)" }} strokeWidth={2} strokeDasharray="4 3" />}
+        {aPts.length > 1 && <polyline points={aLine} fill="none" style={{ stroke: colorA }} strokeWidth={2} />}
+        {points.map((p, i) => p.b == null ? null : <circle key={`b-${i}`} cx={i * PX + PX / 2} cy={y(p.b)} r={3} style={{ fill: "var(--accent)" }} />)}
+        {aPts.map((p, i) => {
+          const clickable = !!(onPointClick && p.p.periodoId);
+          return (
+            <g key={i} onClick={() => p.p.periodoId && onPointClick?.(p.p.periodoId)} style={{ cursor: clickable ? "pointer" : "default" }}>
+              <circle cx={p.x} cy={p.y} r={4} style={{ fill: colorA, stroke: "var(--surface)" }} strokeWidth={1.5} />
+              <text x={p.x} y={totalH - 4} textAnchor="middle" fontSize={8} fontWeight={p.p.hi ? 700 : 400} style={{ fill: p.p.hi ? "var(--accent)" : "var(--muted)" }}>{p.p.label}</text>
             </g>
           );
         })}
@@ -232,7 +321,7 @@ export default function ReportesPage() {
   const [catModal, setCatModal] = useState<string | null>(null);
   const [medioModal, setMedioModal] = useState<string | null>(null);
   const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo" | "inflacion">("gasto");
-  const { deflatar } = useInflacionIPC();
+  const { deflatar, ipcVar, ipcMensualUltimo } = useInflacionIPC();
   const [selectedMovTipo, setSelectedMovTipo] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
@@ -444,31 +533,18 @@ export default function ReportesPage() {
     return n > 0 ? Math.round((sum / n) * 100) : null;
   }, [periodos]);
   // Gasto más frecuente: categoría con más movimientos de tipo Gasto + su total acumulado.
-  const gastoFrecuente = useMemo(() => {
-    const cnt = new Map<string, { n: number; monto: number }>();
-    for (const p of periodos) for (const m of p.movimientos) {
-      if (m.tipo === "Gasto" && m.categoria) {
-        const e = cnt.get(m.categoria) ?? { n: 0, monto: 0 };
-        e.n += 1; e.monto += m.monto; cnt.set(m.categoria, e);
-      }
-    }
-    let best: { cat: string; n: number; monto: number } | null = null;
-    for (const [cat, e] of cnt) if (!best || e.n > best.n) best = { cat, n: e.n, monto: e.monto };
-    return best;
-  }, [periodos]);
-  // Mayor gasto: categoría con más monto acumulado (distinta de la más frecuente).
-  const gastoMayor = useMemo(() => {
-    const cnt = new Map<string, { n: number; monto: number }>();
-    for (const p of periodos) for (const m of p.movimientos) {
-      if (m.tipo === "Gasto" && m.categoria) {
-        const e = cnt.get(m.categoria) ?? { n: 0, monto: 0 };
-        e.n += 1; e.monto += m.monto; cnt.set(m.categoria, e);
-      }
-    }
-    let best: { cat: string; n: number; monto: number } | null = null;
-    for (const [cat, e] of cnt) if (!best || e.monto > best.monto) best = { cat, n: e.n, monto: e.monto };
-    return best;
-  }, [periodos]);
+  // ¿Tu sueldo le gana a la inflación? Suba salarial acumulada (primer nivel → último,
+  // sin contar vacaciones) vs inflación país acumulada en toda tu historia.
+  const sueldoVsInflacion = useMemo(() => {
+    if (suelHistorial.length === 0 || periodos.length < 2) return null;
+    const firstSalary = suelHistorial[suelHistorial.length - 1]!.de;
+    const lastSalary = suelHistorial[0]!.a;
+    if (firstSalary <= 0) return null;
+    const suba = (lastSalary / firstSalary - 1) * 100;
+    const pais = ipcVar(periodos[periodos.length - 1]!.periodoId, periodos[0]!.periodoId);
+    if (pais == null) return null;
+    return { gap: Math.round(suba - pais), suba: Math.round(suba), pais: Math.round(pais) };
+  }, [suelHistorial, periodos, ipcVar]);
 
   // Ahorros acumulados al cierre del período seleccionado (para mostrar en Períodos)
   const ahorrosAcumPeriodo = activos.length === 1
@@ -521,7 +597,6 @@ export default function ReportesPage() {
     return v.length % 2 ? v[mid] : Math.round((v[mid - 1] + v[mid]) / 2);
   };
   const medianaGastoPeriodo = useMemo(() => mediana(periodos.map((p) => p.gastadoPuro)), [periodos]);
-  const medianaIngresoPeriodo = useMemo(() => mediana(periodos.map((p) => p.sueldo + p.moveDisponible)), [periodos]);
   // Lo que entró a ahorros por período: depósitos (moveAhorros) + ingresos directos a ahorro.
   const medianaAhorroPeriodo = useMemo(() => mediana(periodos.map((p) => p.moveAhorros + p.ahorros)), [periodos]);
   // Proyección del próximo período: promedio histórico (excluye el período en curso, incompleto).
@@ -532,7 +607,15 @@ export default function ReportesPage() {
     ? periodos.slice(1).reduce((s, p) => s + p.gastadoPuro, 0) / (periodos.length - 1) : 0;
   const tendenciaGasto = periodos.length >= 2 && avgHistorico > 0
     ? Math.round(((periodos[0].gastadoPuro - avgHistorico) / avgHistorico) * 100) : null;
-  const proyeccionGasto = periodos.length >= 2 ? Math.round(avgHistorico) : null;
+  // Proyección mejorada: deflacta cada período histórico a pesos de hoy (los viejos
+  // valían "menos pesos" y subestimaban) y proyecta al próximo período sumando el
+  // último IPC mensual conocido.
+  const proyeccionGasto = periodos.length >= 2 ? (() => {
+    const hist = periodos.slice(1); // excluye el período en curso (incompleto)
+    const realAvg = hist.reduce((s, p) => s + deflatar(p.gastadoPuro, p.periodoId), 0) / hist.length;
+    const factor = ipcMensualUltimo != null ? 1 + ipcMensualUltimo / 100 : 1;
+    return Math.round(realAvg * factor);
+  })() : null;
   const avgHistoricoMovs = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.movimientos.length, 0) / (periodos.length - 1) : 0;
   const tendenciaMovs = periodos.length >= 2 && avgHistoricoMovs > 0
@@ -777,8 +860,8 @@ export default function ReportesPage() {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
                 {ritmo && <MiniStat center basis="1 1 45%" label={t.spendingPace} value={`${oculto ? "••" : abbr(ritmo.gastadoPorDia)}${t.perDay}`} color="var(--red)"
                   onClick={() => setKpiInfo({ title: t.spendingPace, value: `${oculto ? "••" : formatARS(ritmo.gastadoPorDia)}${t.perDay}`, explain: `${t.kpiPaceInfo} (${t.projection30days(oculto ? "••" : formatARS(ritmo.proyeccionCierre))})`, color: "var(--red)" })} />}
-                {esPeriodoVigente && proyeccionGasto !== null && <MiniStat center basis="1 1 45%" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} color="var(--red)"
-                  onClick={() => setKpiInfo({ title: t.nextPeriodProjection, value: oculto ? "••" : formatARS(proyeccionGasto), explain: t.kpiNextProjInfo, color: "var(--red)" })} />}
+                {promPorMov != null && <MiniStat center basis="1 1 45%" label={t.avgPerExpense} value={oculto ? "••" : abbr(promPorMov)} color="var(--red)"
+                  onClick={() => setKpiInfo({ title: t.avgPerExpense, value: oculto ? "••" : formatARS(promPorMov), explain: t.kpiAvgPerExpenseInfo, color: "var(--red)" })} />}
               </div>
               )}
 
@@ -1020,33 +1103,15 @@ export default function ReportesPage() {
               </div>
               )}
 
-              {/* Categorías top: más frecuente (por cantidad) y mayor gasto (por monto). El monto se ve al tocar. */}
-              {reportOn("periodos_kpis") && (gastoFrecuente || gastoMayor) && (
-                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                  {gastoFrecuente && (
-                    <div className="soft" onClick={() => setKpiInfo({ title: t.mostFrequentExpense, value: t.timesCount(gastoFrecuente.n), explain: t.kpiMostFrequentInfo, color: "var(--red)" })}
-                      style={{ flex: "1 1 0", minWidth: 0, textAlign: "center", cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{t.mostFrequentExpense}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{gastoFrecuente.cat}</div>
-                    </div>
-                  )}
-                  {gastoMayor && (
-                    <div className="soft" onClick={() => setKpiInfo({ title: t.highestExpense, value: oculto ? "••" : money(gastoMayor.monto), explain: t.kpiHighestInfo, color: "var(--red)" })}
-                      style={{ flex: "1 1 0", minWidth: 0, textAlign: "center", cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{t.highestExpense}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{gastoMayor.cat}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Típicos por período (mediana): ingreso y gasto */}
+              {/* Gasto: típico (mediana) y proyección del próximo período */}
               {reportOn("periodos_kpis") && (
                 <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                  <MiniStat center basis="1 1 0" label={t.avgIncome} value={oculto ? "••" : abbr(medianaIngresoPeriodo)} color="var(--green)"
-                    onClick={() => setKpiInfo({ title: t.avgIncome, value: oculto ? "••" : money(medianaIngresoPeriodo), explain: t.kpiTypicalInfo, color: "var(--green)" })} />
                   <MiniStat center basis="1 1 0" label={t.avgSpent} value={oculto ? "••" : abbr(medianaGastoPeriodo)} color="var(--red)"
                     onClick={() => setKpiInfo({ title: t.avgSpent, value: oculto ? "••" : money(medianaGastoPeriodo), explain: t.kpiTypicalInfo, color: "var(--red)" })} />
+                  {proyeccionGasto != null && (
+                    <MiniStat center basis="1 1 0" label={t.nextPeriodProjection} value={oculto ? "••" : abbr(proyeccionGasto)} color="var(--red)"
+                      onClick={() => setKpiInfo({ title: t.nextPeriodProjection, value: oculto ? "••" : formatARS(proyeccionGasto), explain: t.kpiNextProjInfo, color: "var(--red)" })} />
+                  )}
                 </div>
               )}
 
@@ -1061,6 +1126,20 @@ export default function ReportesPage() {
                   )}
                 </div>
               )}
+
+              {/* ¿Tu sueldo le gana a la inflación? Veredicto + brecha. */}
+              {reportOn("periodos_kpis") && sueldoVsInflacion != null && (() => {
+                const { gap, suba, pais } = sueldoVsInflacion;
+                const c = gap > 0 ? "var(--green)" : gap < 0 ? "var(--red)" : "var(--muted)";
+                const verdict = gap > 0 ? t.salaryBeatsInflation : gap < 0 ? t.salaryLosesInflation : t.salaryTiesInflation;
+                return (
+                  <div className="soft" onClick={() => setKpiInfo({ title: t.salaryVsInflation, value: `${gap >= 0 ? "+" : ""}${gap} pts`, explain: t.kpiSalaryVsInflationInfo(suba, pais), color: c })}
+                    style={{ marginBottom: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+                    <div style={{ fontSize: 12, color: c, minWidth: 0 }}>{verdict}</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1, color: c, flexShrink: 0 }}>{gap >= 0 ? "+" : ""}{gap} pts</div>
+                  </div>
+                );
+              })()}
 
               {/* Por período — un solo gráfico con selector de métrica */}
               {reportOn("periodos_otros") && serieDesc.length > 0 && (() => {
@@ -1092,29 +1171,39 @@ export default function ReportesPage() {
                   });
                   max = Math.max(...data.map((d) => d.value), 1);
                 } else if (periodMetric === "gastoSueldo") {
+                  // Gasto real (sin FX) sobre sueldo. La referencia es el 100%.
                   data = serieDesc.filter((s) => s.sueldo > 0).map((s) => {
-                    const pct = Math.round((s.gastado / s.sueldo) * 100);
+                    const pct = Math.round((s.gastadoPuro / s.sueldo) * 100);
                     return { label: shortPer(s.periodoId), value: pct, color: pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)", valueLabel: `${pct}%`, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   });
                   max = Math.max(...data.map((d) => d.value), 110);
                   refFrac = 100 / max;
                 }
-                // Inflación real por período: variación del gasto puro deflactado por IPC
-                // contra el período anterior (puede ser +/-). serieDesc va nuevo→viejo,
-                // así que el anterior es serieDesc[i+1]. Excluye el más viejo (sin previo).
-                const inflData = periodMetric !== "inflacion" ? [] : serieDesc
-                  .map((s, i) => {
-                    const prevP = serieDesc[i + 1];
-                    if (!prevP) return null;
-                    const prev = deflatar(prevP.gastadoPuro, prevP.periodoId);
-                    const curr = deflatar(s.gastadoPuro, s.periodoId);
-                    if (prev <= 0) return null;
-                    const pct = Math.round(((curr - prev) / prev) * 100);
-                    return { label: shortPer(s.periodoId), value: pct, color: pct > 0 ? "var(--red)" : "var(--green)", hi: activos.includes(s.periodoId), periodoId: s.periodoId };
-                  })
-                  .filter((d): d is NonNullable<typeof d> => d !== null);
-                // Promedio de la inflación real = tu inflación personal (en términos reales).
-                const promedioInfl = inflData.length > 0 ? Math.round(inflData.reduce((s, d) => s + d.value, 0) / inflData.length) : null;
+                // Inflación personal NOMINAL por período: variación del gasto puro vs el
+                // período anterior (serieDesc va nuevo→viejo: anterior = serieDesc[i+1]).
+                // Junto con la inflación del país (IPC) para comparar. Excluye el más viejo.
+                // Inflación ACUMULADA: tu gasto puro vs el período base (el más viejo con
+                // gasto>0) y la del país (IPC compuesto) desde el mismo mes base. serie va
+                // viejo→nuevo, así que acumula hacia adelante.
+                let inflPoints: { label: string; a: number; b: number | null; hi?: boolean; periodoId?: string }[] = [];
+                let vosAcum: number | null = null, paisAcum: number | null = null;
+                if (periodMetric === "inflacion") {
+                  const baseIdx = serie.findIndex((s) => s.gastadoPuro > 0);
+                  if (baseIdx >= 0) {
+                    const baseG = serie[baseIdx]!.gastadoPuro;
+                    const baseId = serie[baseIdx]!.periodoId;
+                    inflPoints = serie.slice(baseIdx).map((s) => {
+                      const vos = (s.gastadoPuro / baseG - 1) * 100;
+                      const pais = ipcVar(baseId, s.periodoId);
+                      return { label: shortPer(s.periodoId), a: Math.round(vos), b: pais != null ? Math.round(pais) : null, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
+                    });
+                    if (inflPoints.length > 0) {
+                      vosAcum = inflPoints[inflPoints.length - 1]!.a;
+                      paisAcum = inflPoints[inflPoints.length - 1]!.b;
+                    }
+                  }
+                }
+                const vosColor = vosAcum != null && paisAcum != null ? (vosAcum > paisAcum ? "var(--red)" : "var(--green)") : "var(--text)";
                 const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : periodMetric === "inflacion" ? t.subMetricInflation : t.subMetricRatio;
                 return (
                   <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
@@ -1124,16 +1213,32 @@ export default function ReportesPage() {
                       ))}
                     </div>
                     {periodMetric === "inflacion"
-                      ? (inflData.length > 0
+                      ? (inflPoints.length > 1
                           ? <>
-                              {promedioInfl != null && (
-                                <div style={{ textAlign: "center", marginBottom: 12 }}>
-                                  <span style={{ fontSize: 11, color: "var(--muted)" }}>{t.inflationAvg} </span>
-                                  <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: promedioInfl > 0 ? "var(--red)" : promedioInfl < 0 ? "var(--green)" : "var(--text)" }}>{promedioInfl >= 0 ? "+" : ""}{promedioInfl}%</span>
+                              {vosAcum != null && (
+                                <div style={{ textAlign: "center", marginBottom: 12, display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
+                                  <span>
+                                    <span style={{ fontSize: 11, color: "var(--muted)" }}>{t.inflationAccYou} </span>
+                                    <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: vosColor }}>{vosAcum >= 0 ? "+" : ""}{vosAcum}%</span>
+                                  </span>
+                                  {paisAcum != null && (
+                                    <span>
+                                      <span style={{ fontSize: 11, color: "var(--muted)" }}>{t.inflationAccCountry} </span>
+                                      <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--accent)" }}>+{paisAcum}%</span>
+                                    </span>
+                                  )}
                                 </div>
                               )}
-                              <DivergingBars data={inflData} onBarClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
+                              <TwoLineChart points={inflPoints} colorA={vosColor} onPointClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
                             </>
+                          : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
+                      : periodMetric === "gastoSueldo"
+                      ? (data.length > 0
+                          ? <DotChart data={data} refValue={100} onPointClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
+                          : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
+                      : periodMetric === "dias"
+                      ? (data.length > 0
+                          ? <AreaChart data={data} onPointClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
                           : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
                       : data.length > 0
                       ? <VBars data={data} max={max} oculto={mask ? oculto : undefined} refFrac={refFrac}
