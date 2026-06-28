@@ -158,6 +158,39 @@ function VBars({ data, max, oculto, refFrac, onBarClick }: { data: { label: stri
   );
 }
 
+// Barras divergentes desde una línea base en 0: valores positivos hacia arriba,
+// negativos hacia abajo. Usado para la inflación real por período (puede ser +/-).
+function DivergingBars({ data, onBarClick }: { data: { label: string; value: number; color: string; hi?: boolean; periodoId?: string }[]; onBarClick?: (periodoId: string) => void }) {
+  const H = 48; // alto de cada mitad (px)
+  const maxAbs = Math.max(...data.map((d) => Math.abs(d.value)), 1);
+  return (
+    <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-start", scrollbarWidth: "none" }}>
+      {data.map((d, i) => {
+        const clickable = !!(onBarClick && d.periodoId);
+        const Comp: "button" | "div" = clickable ? "button" : "div";
+        const frac = Math.abs(d.value) / maxAbs;
+        const pos = d.value >= 0;
+        return (
+          <Comp key={i} type={clickable ? "button" : undefined}
+            onClick={() => d.periodoId && onBarClick?.(d.periodoId)}
+            aria-label={clickable ? `${shortPer(d.label)}: ${d.value >= 0 ? "+" : ""}${d.value}%` : undefined}
+            style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: clickable ? "pointer" : "default", background: "transparent", border: "none", padding: 0, font: "inherit" }}>
+            <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{d.value >= 0 ? "+" : ""}{d.value}%</div>
+            <div style={{ height: H * 2, width: 20, position: "relative" }}>
+              <div style={{ position: "absolute", left: 0, right: 0, top: H, height: 1, background: "var(--border-hi)", zIndex: 1 }} />
+              <div style={{ position: "absolute", left: 0, width: "100%", background: d.color, borderRadius: 7,
+                ...(pos
+                  ? { bottom: H, height: `${Math.round(frac * H)}px` }
+                  : { top: H, height: `${Math.round(frac * H)}px` }) }} />
+            </div>
+            <div style={{ fontSize: 8, fontWeight: d.hi ? 700 : 400, color: d.hi ? "var(--accent)" : "var(--muted)" }}>{shortPer(d.label)}</div>
+          </Comp>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Página ───────────────────────────────────────────────────────────────────
 export default function ReportesPage() {
   const t = useT();
@@ -179,7 +212,7 @@ export default function ReportesPage() {
     GastoUSD: "var(--red)", GastoEUR: "var(--red)",
     VentaUSD: "var(--red)", VentaEUR: "var(--red)",
   };
-  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
+  const { monedaInversiones } = useAppPrefs();
   const [showHint, dismissHint] = useFirstVisit("reports");
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
@@ -199,8 +232,8 @@ export default function ReportesPage() {
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [catModal, setCatModal] = useState<string | null>(null);
   const [medioModal, setMedioModal] = useState<string | null>(null);
-  const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo" | "real">("gasto");
-  const { deflatar, ipcDisponible } = useInflacionIPC();
+  const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo" | "inflacion">("gasto");
+  const { deflatar } = useInflacionIPC();
   const [selectedMovTipo, setSelectedMovTipo] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
@@ -975,7 +1008,7 @@ export default function ReportesPage() {
             <>
               {/* Hero: inflación personal (variación promedio del gasto entre períodos) */}
               {reportOn("periodos_kpis") && (
-              <div className="soft" onClick={inflacionPersonal != null ? () => setKpiInfo({ title: t.inflationTitle, value: `${inflacionPersonal >= 0 ? "+" : ""}${inflacionPersonal}%`, explain: t.kpiInflationInfo, color: inflacionPersonal > 0 ? "var(--red)" : "var(--green)" }) : undefined}
+              <div className="soft" onClick={inflacionPersonal != null ? () => setKpiInfo({ title: t.inflationTitle, value: `${inflacionPersonal >= 0 ? "+" : ""}${inflacionPersonal}%`, explain: t.kpiInflationAvgInfo, color: inflacionPersonal > 0 ? "var(--red)" : "var(--green)" }) : undefined}
                 style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--red-dim), var(--surface), var(--green-dim))", cursor: inflacionPersonal != null ? "pointer" : "default" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.inflationTitle}</div>
@@ -1037,7 +1070,7 @@ export default function ReportesPage() {
                   { id: "ingreso", label: t.mPeriodIncome },
                   { id: "dias", label: t.mPeriodDays },
                   { id: "gastoSueldo", label: t.mPeriodRatio },
-                  ...(monedaPrincipal === "ARS" ? [{ id: "real", label: "Real" }] : []),
+                  { id: "inflacion", label: "IP" },
                 ] as const;
                 type BarDatum = { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string; periodoId?: string };
                 let data: BarDatum[] = [];
@@ -1059,10 +1092,7 @@ export default function ReportesPage() {
                     return { label: shortPer(s.periodoId), value: dias, color, valueLabel: `${dias}d`, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   });
                   max = Math.max(...data.map((d) => d.value), 1);
-                } else if (periodMetric === "real") {
-                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastadoPuro, color: colorPct(s.total > 0 ? Math.round((s.gastadoPuro / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId, periodoId: s.periodoId }));
-                  max = Math.max(...data.map((d) => d.value), 1); mask = true;
-                } else {
+                } else if (periodMetric === "gastoSueldo") {
                   data = serieDesc.filter((s) => s.sueldo > 0).map((s) => {
                     const pct = Math.round((s.gastado / s.sueldo) * 100);
                     return { label: shortPer(s.periodoId), value: pct, color: pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)", valueLabel: `${pct}%`, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
@@ -1070,7 +1100,20 @@ export default function ReportesPage() {
                   max = Math.max(...data.map((d) => d.value), 110);
                   refFrac = 100 / max;
                 }
-                const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : periodMetric === "real" ? "gasto sin compras de divisas" : t.subMetricRatio;
+                // Inflación real por período: variación del gasto puro deflactado por IPC
+                // contra el período anterior (puede ser +/-). Excluye el más viejo (sin previo).
+                const inflData = periodMetric !== "inflacion" ? [] : serieDesc
+                  .map((s, i) => {
+                    if (i === 0) return null;
+                    const prevP = serieDesc[i - 1];
+                    const prev = deflatar(prevP.gastadoPuro, prevP.periodoId);
+                    const curr = deflatar(s.gastadoPuro, s.periodoId);
+                    if (prev <= 0) return null;
+                    const pct = Math.round(((curr - prev) / prev) * 100);
+                    return { label: shortPer(s.periodoId), value: pct, color: pct > 0 ? "var(--red)" : "var(--green)", hi: activos.includes(s.periodoId), periodoId: s.periodoId };
+                  })
+                  .filter((d): d is NonNullable<typeof d> => d !== null);
+                const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : periodMetric === "inflacion" ? t.subMetricInflation : t.subMetricRatio;
                 return (
                   <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                     <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", marginBottom: 14 }}>
@@ -1078,7 +1121,11 @@ export default function ReportesPage() {
                         <button key={mt.id} type="button" onClick={() => setPeriodMetric(mt.id as typeof periodMetric)} className="pill" style={{ flexShrink: 0, fontSize: 11, padding: "4px 10px", borderColor: periodMetric === mt.id ? "var(--accent)" : "var(--border)", background: periodMetric === mt.id ? "var(--accent-dim)" : "transparent", color: periodMetric === mt.id ? "var(--accent)" : "var(--muted)" }}>{mt.label}</button>
                       ))}
                     </div>
-                    {data.length > 0
+                    {periodMetric === "inflacion"
+                      ? (inflData.length > 0
+                          ? <DivergingBars data={inflData} onBarClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
+                          : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
+                      : data.length > 0
                       ? <VBars data={data} max={max} oculto={mask ? oculto : undefined} refFrac={refFrac}
                           onBarClick={(pid) => setNavPeriodo({ periodoId: pid, target: periodMetric === "ingreso" ? "ingresos" : "gastos" })} />
                       : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>}
