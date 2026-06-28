@@ -7,9 +7,14 @@ const TTL = 24 * 60 * 60 * 1000;
 
 type IpcEntry = { fecha: string; valor: number }; // "YYYY-MM" → cumulative index
 
+// El período arranca el día del sueldo (casi siempre a fin de mes) y cubre ~1 mes.
+// Si arranca pasado el 15, la mayoría de los días caen en el mes SIGUIENTE → usamos
+// ese mes para el IPC (el mes que el período realmente abarca, no el de inicio).
 function periodoIdToYM(periodoId: string): string {
-  const [, m, y] = periodoId.split("/");
-  return `${y}-${m.padStart(2, "0")}`;
+  const [dStr, mStr, yStr] = periodoId.split("/");
+  let d = parseInt(dStr, 10), m = parseInt(mStr, 10), y = parseInt(yStr, 10);
+  if (d > 15) { m += 1; if (m > 12) { m = 1; y += 1; } }
+  return `${y}-${String(m).padStart(2, "0")}`;
 }
 
 export function useInflacionIPC() {
@@ -55,5 +60,28 @@ export function useInflacionIPC() {
     [data]
   );
 
-  return { deflatar, ipcDisponible: !!data };
+  // Inflación del país (IPC acumulado) entre los meses de dos períodos.
+  // Devuelve el % de variación del índice, o null si no hay datos.
+  const ipcVar = useCallback(
+    (prevPeriodoId: string, currPeriodoId: string): number | null => {
+      if (!data || data.length === 0) return null;
+      const find = (id: string) => {
+        const ym = periodoIdToYM(id);
+        return data.find((e) => e.fecha === ym)
+          ?? [...data].reverse().find((e) => e.fecha <= ym)
+          ?? null;
+      };
+      const a = find(prevPeriodoId), b = find(currPeriodoId);
+      if (!a || !b || a.valor <= 0) return null;
+      return (b.valor / a.valor - 1) * 100;
+    },
+    [data]
+  );
+
+  // Última variación mensual conocida del IPC (para proyectar al próximo período).
+  const ipcMensualUltimo = data && data.length >= 2
+    ? (data[data.length - 1]!.valor / data[data.length - 2]!.valor - 1) * 100
+    : null;
+
+  return { deflatar, ipcVar, ipcMensualUltimo, ipcDisponible: !!data };
 }

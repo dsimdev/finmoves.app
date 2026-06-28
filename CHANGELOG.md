@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.46.0] — 2026-06-28
+
+### Added
+- **"Purchasing power" card** (Reports → Períodos, above the charts): verdict + gap in points between accumulated salary growth (first→last salary level, excluding vacation periods) and accumulated country inflation. Replaces the "Most frequent expense" and "Highest expense" cards.
+
+### Changed
+- **CPI month mapping fix**: periods starting after the 15th now map to the following month (the one they mostly span), since salaries anchor near month-end. Affects `deflatar` and `ipcVar`.
+- **IP chart → two accumulated lines**: your accumulated inflation vs the country's (compounded), from the oldest period. Headline shows "Vos acum / País acum". Replaces the per-period dot chart.
+- **Período cards reorganized**: removed "Typical income"; rows are now Typical spending | Spending projection, and Typical savings | Savings projection. The next-period spending projection moved here from the Gastos tab.
+- **Gastos tab**: shows "Avg per movement" where the projection used to be.
+- **Improved projection**: historical periods are deflated to today's pesos (CPI) and projected to next period by the latest monthly CPI, instead of a plain nominal average.
+- **Días chart → area**, **G/Sueldo chart → dots** (uses real spending without FX), per chart-type variety.
+- `useInflacionIPC` exposes `ipcVar` (country inflation between two periods) and `ipcMensualUltimo`.
+
+---
+
 ## [2.45.2] — 2026-06-28
 
 ### Changed
