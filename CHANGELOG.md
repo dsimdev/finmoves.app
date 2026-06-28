@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.44.1] — 2026-06-28
+
+### Changed
+- **Dashboard "Inflación"**: now shows change vs the immediately previous period (not the historical average). Label shortened to "Inflación"; modal text updated accordingly.
+- Reports → Períodos retains "Inflación personal" (historical average across all periods) — the two metrics are intentionally different.
+
+---
+
 ## [2.44.0] — 2026-06-28
 
 ### Added

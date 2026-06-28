@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.44.1] — 2026-06-28
+
+### Mejoras
+- **Inflación en el inicio**: ahora compara tu gasto contra el período anterior (antes usaba el promedio histórico). El dato en Reportes > Períodos sigue siendo el promedio histórico.
+
+---
+
 ## [2.44.0] — 2026-06-28
 
 ### Novedades

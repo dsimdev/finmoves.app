@@ -261,7 +261,7 @@ export const en: AppLocale = {
   periodAvgNet: "Average net / period",
   inflationTitle: "Personal inflation",
   inflationSub: "your spending, period over period",
-  kpiInflationInfo: "How much your spending changed on average from one period to the next, excluding FX buys. Positive = spending more each time.",
+  kpiInflationInfo: "How much your spending changed vs the previous period, excluding FX purchases. Positive = spending more than before.",
   mostFrequentExpense: "Most frequent expense",
   highestExpense: "Highest expense",
   goToPeriodTitle: "Go to period",

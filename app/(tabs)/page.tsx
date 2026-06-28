@@ -63,12 +63,9 @@ export default function Dashboard() {
       .filter((p) => p.gasto > 0)
       .sort((a, b) => parsePeriodoId(a.id).getTime() - parsePeriodoId(b.id).getTime());
     if (chron.length < 2) return null;
-    let sum = 0, n = 0;
-    for (let i = 1; i < chron.length; i++) {
-      const prev = chron[i - 1].gasto;
-      if (prev > 0) { sum += (chron[i].gasto - prev) / prev; n++; }
-    }
-    return n > 0 ? Math.round((sum / n) * 100) : null;
+    const prev = chron[chron.length - 2].gasto;
+    const curr = chron[chron.length - 1].gasto;
+    return prev > 0 ? Math.round(((curr - prev) / prev) * 100) : null;
   }, [periodos]);
   const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR").slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
@@ -138,8 +135,8 @@ export default function Dashboard() {
               <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
                 onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
               {(() => { const ip = inflacionPersonal; const c = ip == null ? "var(--muted)" : ip > 0 ? "var(--red)" : "var(--green)"; const v = ip == null ? "—" : `${ip >= 0 ? "+" : ""}${ip}%`; return (
-                <MiniStat center basis="1 1 45%" label={t.inflationTitle} value={v} color={c}
-                  onClick={() => setKpiInfo({ title: t.inflationTitle, value: v, explain: t.kpiInflationInfo, color: c })} />
+                <MiniStat center basis="1 1 45%" label="Inflación" value={v} color={c}
+                  onClick={() => setKpiInfo({ title: "Inflación", value: v, explain: t.kpiInflationInfo, color: c })} />
               ); })()}
               {(() => { const c = desvioCV <= 100 ? "var(--green)" : desvioCV <= 200 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
                 <MiniStat center basis="1 1 45%" label={t.spendSpread} value={v} color={c}

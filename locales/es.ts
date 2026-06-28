@@ -259,7 +259,7 @@ export const es = {
   periodAvgNet: "Neto promedio / período",
   inflationTitle: "Inflación personal",
   inflationSub: "tu gasto, período a período",
-  kpiInflationInfo: "Cuánto cambió tu gasto en promedio de un período al siguiente, sin contar compras de dólares. Positivo = gastás cada vez más.",
+  kpiInflationInfo: "Cuánto cambió tu gasto respecto al período anterior, sin contar compras de dólares. Positivo = gastás más que antes.",
   mostFrequentExpense: "Gasto más frecuente",
   highestExpense: "Mayor gasto",
   goToPeriodTitle: "Ir al período",
