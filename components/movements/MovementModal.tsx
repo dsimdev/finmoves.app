@@ -7,6 +7,7 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
 import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
+import { upsertRecurrente } from "@/services/firebase/recurrentes";
 import { listarPlantillas, crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { MediaViewer } from "@/components/ui/MediaViewer";
@@ -98,6 +99,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [modoCarga, setModoCarga] = useState<"USD" | "ARS">("USD");
   const [cotizManual, setCotizManual] = useState("");
   const [abreNuevoPeriodo, setAbreNuevoPeriodo] = useState(false);
+  const [repetir, setRepetir] = useState(false);
   const [moveDir, setMoveDir] = useState<"aDisponible" | "aAhorro">("aDisponible");
   // Comprobante adjunto (alta y edición).
   const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
@@ -132,7 +134,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const resetAdd = () => {
     setDescripcion(""); setMonto(""); setCategoria(""); setOrigenAhorro("");
     setCantidadUSD(""); setCotizManual(""); setObservaciones(""); setAddError("");
-    setMontoARSInput(""); setModoCarga("USD"); setFecha(hoyISO()); setAbreNuevoPeriodo(false); setMoveDir("aDisponible");
+    setMontoARSInput(""); setModoCarga("USD"); setFecha(hoyISO()); setAbreNuevoPeriodo(false); setMoveDir("aDisponible"); setRepetir(false);
     resetComprobante();
   };
 
@@ -360,6 +362,12 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       };
       const mainId = await crearMovimiento(user.uid, mainData);
       created.push({ ...mainData, id: mainId });
+
+      // Recurrente: guardar/actualizar el template para que la cron recuerde cargarlo
+      // en los próximos períodos. Solo Gasto/Ingreso comunes (no Move/FX/ahorros).
+      if (repetir && (tipo === "Gasto" || tipo === "Ingreso") && categoria !== "Ahorros" && descripcion.trim()) {
+        await upsertRecurrente(user.uid, { descripcion: descripcion.trim(), categoria, tipo, monto: montoFinal }).catch(() => {});
+      }
 
       // Cierre del período anterior: el disponible sobrante se traslada como RESTO al nuevo período.
       if (abrePeriodo && !sinPeriodos && periodoActual && periodoActual.disponible > 0) {
@@ -833,6 +841,18 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               </button>
             </div>
           </div>
+
+          {!esMove && !esUSD && !esAhorros && (
+            <button type="button" onClick={() => setRepetir((v) => !v)} style={{
+              marginTop: 16, display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "9px 11px",
+              background: repetir ? "var(--accent-dim)" : "transparent",
+              border: `1px solid ${repetir ? "var(--accent)" : "var(--border)"}`, borderRadius: "var(--radius-sm)",
+              color: repetir ? "var(--accent)" : "var(--muted)", cursor: "pointer", fontSize: 13, textAlign: "left",
+            }}>
+              <span style={{ width: 16, height: 16, flexShrink: 0, borderRadius: 4, border: `1px solid ${repetir ? "var(--accent)" : "var(--border-hi)"}`, background: repetir ? "var(--accent)" : "transparent" }} />
+              {t.repeatEachPeriod}
+            </button>
+          )}
         </form>
       )}
 

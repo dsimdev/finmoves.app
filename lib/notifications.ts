@@ -9,6 +9,7 @@ const DOLAR_THRESHOLD_PCT = 3;
 const HITOS = [50, 75, 100];
 const SUELDO_REMINDER_DAYS = 30; // si pasó ~1 mes sin abrir período nuevo
 const CARGA_OLVIDADA_DIAS = 3;   // días sin registrar ningún movimiento
+const RECURRENTE_DIAS = 28; // días desde la última carga antes de recordar un recurrente
 
 // Fecha de hoy en AR (UTC-3) como YYYY-MM-DD, para comparar contra recordatorios.
 function hoyAR(): string {
@@ -87,6 +88,7 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
     await checkMeta(uid, config, notify, updates);
     await checkSueldo(uid, notify, updates);
     await checkCargaOlvidada(uid, notify, updates);
+    await checkRecurrentes(uid, notify, updates);
   }
 
   // Recordatorios puntuales del usuario (colección propia, independiente de config).
@@ -162,6 +164,50 @@ async function checkRecordatorios(uid: string) {
       await doc.ref.set({ avisadoPre: true }, { merge: true });
     }
   }));
+}
+
+// Recurrentes (por fecha): por cada template activo, busca la última vez que se cargó
+// un movimiento que matchee (tipo+categoría+descripción). Si pasaron ~28 días desde esa
+// fecha, recuerda por push. Dedup por última-fecha → no re-avisa hasta que lo cargues de
+// nuevo (ahí cambia la fecha y, al mes, vuelve a avisar).
+async function checkRecurrentes(uid: string, notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  const recSnap = await adminDb().collection(`users/${uid}/recurrentes`).where("activo", "==", true).get();
+  if (recSnap.empty) return;
+
+  const hoy = hoyAR();
+  const reminded = (notify.recReminded as Record<string, string>) ?? {};
+  const nextReminded = { ...reminded };
+  const nombres: string[] = [];
+
+  for (const d of recSnap.docs) {
+    const r = d.data() as { tipo: string; categoria: string; descripcion: string };
+    // Última carga que matchee (equality por tipo+categoría; descripción se filtra acá
+    // para no exigir índice compuesto con orderBy).
+    const snap = await adminDb()
+      .collection(`users/${uid}/movimientos`)
+      .where("tipo", "==", r.tipo)
+      .where("categoria", "==", r.categoria)
+      .get();
+    const desc = (r.descripcion || "").trim().toLowerCase();
+    let ultima = "";
+    for (const m of snap.docs) {
+      const md = m.data() as { descripcion?: string; fecha?: string };
+      if ((md.descripcion || "").trim().toLowerCase() !== desc || !md.fecha) continue;
+      if (md.fecha > ultima) ultima = md.fecha;
+    }
+    if (!ultima) continue;
+    if (diasEntre(ultima, hoy) < RECURRENTE_DIAS) continue;
+    if (reminded[d.id] === ultima) continue; // ya avisé por esta última carga
+    nombres.push(r.descripcion);
+    nextReminded[d.id] = ultima;
+  }
+
+  if (nombres.length === 0) return;
+  const body = nombres.length === 1
+    ? `¿Cargás "${nombres[0]}"? Hace ~1 mes de la última vez.`
+    : `${nombres.length} recurrentes pendientes: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`;
+  await sendPushToUser(uid, { title: "Recurrentes", body, tag: `rec-${hoy.slice(0, 7)}`, url: "/movements" });
+  updates.recReminded = nextReminded;
 }
 
 // Meta de ahorro: avisa al cruzar 50/75/100% (una vez cada hito).

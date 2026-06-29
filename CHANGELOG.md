@@ -4,7 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.46.1] — 2026-06-28
+## [2.47.0] — 2026-06-28
+
+### Added
+- **Recurring movements (P3, reminder mode)**: a "Repeat each period" toggle when adding a Gasto/Ingreso saves a template (`users/{uid}/recurrentes`). A daily cron (`checkRecurrentes`) finds the last matching load and, ~28 days later, sends a push reminder ("¿Cargás X?") — date-based, never auto-posts. Dedup by last-load date (re-arms after you load it again). Management section in Settings (Generales → Movimientos recurrentes): list with pause toggle + delete.
+
+### Changed
+- Savings-projection KPI modal copy clarified (it's the next-period inflow, not the total balance).
+- "Repeat each period" toggle placed at the bottom of the add form.
+
+### Fixed
+- **Bottom-sheet long-press no longer selects text** (`user-select: none` on the sheet).
 
 ### Added
 - **Back button closes the open modal** instead of leaving the app (`useModalBack`, history-based). Lateral section swipe is disabled while a modal is open.

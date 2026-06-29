@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.47.0] — 2026-06-28
+
+### Novedades
+- **Movimientos recurrentes**: al cargar un gasto o ingreso, podés marcar "Repetir cada período". La app te manda un recordatorio (~1 mes después de la última vez) para que lo cargues, sin crearlo sola. Los administrás en Configuración → Generales → Movimientos recurrentes (pausar o borrar).
+
+### Mejoras
+- Aclaramos el texto de "Proyección ahorro" (es lo que vas a sumar el próximo período, no tu saldo total).
+- Los modales ya no seleccionan texto sin querer al mantenerlos apretados para moverlos.
+
+---
+
 ## [2.46.1] — 2026-06-28
 
 ### Mejoras
