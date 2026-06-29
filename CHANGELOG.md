@@ -6,9 +6,19 @@ All notable changes to FinMoves are documented here.
 
 ## [2.46.1] — 2026-06-28
 
+### Added
+- **Back button closes the open modal** instead of leaving the app (`useModalBack`, history-based). Lateral section swipe is disabled while a modal is open.
+- **Bottom sheets draggable from the whole header** and via **long-press anywhere in the body** (native non-passive touch listeners so it doesn't fight scroll).
+
+### Changed
+- **G/Sueldo chart**: shows the surplus over 100% (+86% = spent 186% of salary; -14% = spent 86%); the baseline (0) marks 100%.
+- **Savings projection**: deflated to today's pesos and projected to next month (CPI), like the spending projection — no longer falls below the current level.
+- **Día pico / daily average** (Movimientos): exclude FX purchases (pure spending only).
+- Purchasing-power modal: dropped the redundant trailing sentence.
+
 ### Fixed
 - **IP chart order**: accumulated inflation chart now renders most-recent-first (left), matching the other period charts.
-- **Chart click targets**: días (area), G/Sueldo and IP (dots/lines) now navigate to the period when tapping anywhere in the column, not only exactly on the point — a transparent full-height hit area per point.
+- **Chart click targets**: días (area), G/Sueldo and IP (dots/lines) now navigate to the period when tapping anywhere in the column, not only exactly on the point.
 
 ---
 

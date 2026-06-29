@@ -7,8 +7,12 @@ Lo nuevo y lo que mejoró, versión por versión.
 ## [2.46.1] — 2026-06-28
 
 ### Mejoras
-- **Gráfico de inflación**: ahora muestra el período más reciente a la izquierda, igual que los demás.
-- **Tocar los gráficos**: en Días, Gasto/Sueldo e Inflación ahora podés tocar en cualquier parte de la columna para ir al período, no solo justo en el punto.
+- **Botón atrás**: si hay un modal abierto, "atrás" lo cierra en vez de salir de la app. Y el deslizar entre secciones se desactiva mientras hay un modal abierto.
+- **Mover los modales**: ahora podés arrastrarlos desde toda la cabecera o manteniendo apretado en el medio, sin tener que ir hasta la barrita de arriba.
+- **Gasto/Sueldo**: muestra cuánto te pasaste del 100% del sueldo (+86% = gastaste 186%; -14% = gastaste 86%).
+- **Proyección de ahorro**: ajustada por inflación, ya no queda por debajo de tu nivel actual.
+- **Día pico** (Movimientos): ya no cuenta las compras de dólares.
+- **Gráfico de inflación**: muestra el período más reciente a la izquierda y podés tocar cualquier parte de la columna para ir al período.
 
 ---
 

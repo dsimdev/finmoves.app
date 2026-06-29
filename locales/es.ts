@@ -1,6 +1,8 @@
 export const es = {
   // Common
   cancel: "Cancelar",
+  exitAppTitle: "¿Salir de la app?",
+  exitAppConfirm: "Salir",
   save: "Guardar",
   delete: "Eliminar",
   edit: "Editar",
@@ -295,7 +297,7 @@ export const es = {
   subMetricSpent: "Gastado por período",
   subMetricIncome: "Ingresos por período (sueldo + retiros)",
   subMetricDays: "Duración de cada período, en días",
-  subMetricRatio: "Qué % del sueldo gastaste, sin divisas · la línea marca el 100%",
+  subMetricRatio: "Cuánto te pasaste del sueldo, sin divisas · la línea (0) es el 100%",
   subMetricInflation: "Tu inflación acumulada vs la del país (IPC), desde el período más viejo",
   inflationAvg: "Tu inflación personal promedio:",
   inflationAvgYou: "Vos:",
@@ -306,7 +308,7 @@ export const es = {
   salaryBeatsInflation: "tu sueldo le gana a la inflación",
   salaryLosesInflation: "tu sueldo le pierde a la inflación",
   salaryTiesInflation: "tu sueldo empata a la inflación",
-  kpiSalaryVsInflationInfo: (suba: number, pais: number) => `Desde que registrás, tu sueldo subió +${suba}% y la inflación acumulada del país fue +${pais}%. La diferencia es el poder de compra que ganaste o perdiste.`,
+  kpiSalaryVsInflationInfo: (suba: number, pais: number) => `Desde que registrás, tu sueldo subió +${suba}% y la inflación acumulada del país fue +${pais}%.`,
   mPeriodMovs: "Movs.",
   mPeriodSpent: "Gasto",
   mPeriodIncome: "Ingreso",

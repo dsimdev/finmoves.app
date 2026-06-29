@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useModalBack } from "@/hooks/useModalBack";
 
 /**
  * Modal flotante centrado para confirmaciones y advertencias (estilo unificado
@@ -21,6 +22,7 @@ export function ConfirmModal({ title, children, confirmLabel, cancelLabel, confi
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   useScrollLock(true);
+  useModalBack(true, onCancel);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
     window.addEventListener("keydown", onKey);

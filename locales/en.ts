@@ -3,6 +3,8 @@ import type { AppLocale } from "./es";
 export const en: AppLocale = {
   // Common
   cancel: "Cancel",
+  exitAppTitle: "Exit the app?",
+  exitAppConfirm: "Exit",
   save: "Save",
   delete: "Delete",
   edit: "Edit",
@@ -297,7 +299,7 @@ export const en: AppLocale = {
   subMetricSpent: "Spent per period",
   subMetricIncome: "Income per period (salary + withdrawals)",
   subMetricDays: "Length of each period, in days",
-  subMetricRatio: "% of salary you spent, excluding FX · the line marks 100%",
+  subMetricRatio: "How much over your salary you spent, excluding FX · the line (0) is 100%",
   subMetricInflation: "Your accumulated inflation vs the country's (CPI), since the oldest period",
   inflationAvg: "Your average personal inflation:",
   inflationAvgYou: "You:",
@@ -308,7 +310,7 @@ export const en: AppLocale = {
   salaryBeatsInflation: "your salary beats inflation",
   salaryLosesInflation: "your salary trails inflation",
   salaryTiesInflation: "your salary ties inflation",
-  kpiSalaryVsInflationInfo: (suba: number, pais: number) => `Since you started tracking, your salary rose +${suba}% and the country's accumulated inflation was +${pais}%. The gap is the purchasing power you gained or lost.`,
+  kpiSalaryVsInflationInfo: (suba: number, pais: number) => `Since you started tracking, your salary rose +${suba}% and the country's accumulated inflation was +${pais}%.`,
   mPeriodMovs: "Moves",
   mPeriodSpent: "Spent",
   mPeriodIncome: "Income",
