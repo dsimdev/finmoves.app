@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../data-context";
+import { listarRecurrentes } from "@/services/firebase/recurrentes";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { useMoney } from "@/hooks/useHideValues";
 import { Movimiento, TipoMovimiento } from "@/types";
@@ -28,7 +30,18 @@ function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; cat
 export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
+  const { user } = useAuth();
   const t = useT();
+
+  // Recurrentes activos → para marcar con un relojito los movimientos que matchean.
+  const [recurrenteKeys, setRecurrenteKeys] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!user?.uid) return;
+    listarRecurrentes(user.uid)
+      .then((rs) => setRecurrenteKeys(new Set(rs.filter((r) => r.activo).map((r) => `${r.tipo}__${r.categoria}__${(r.descripcion || "").trim().toLowerCase()}`))))
+      .catch(() => {});
+  }, [user?.uid]);
+  const esRecurrente = (m: Movimiento) => recurrenteKeys.has(`${m.tipo}__${m.categoria}__${(m.descripcion || "").trim().toLowerCase()}`);
   const [showHint, dismissHint] = useFirstVisit("movements");
 
   const periodos = agruparPorPeriodo(movimientos);
@@ -221,8 +234,11 @@ export default function MovimientosPage() {
                         }}>
                           <TipoDot tipo={m.tipo} categoria={m.categoria} direccionMove={m.direccionMove} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {m.descripcion || m.categoria}
+                            <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || m.categoria}</span>
+                              {esRecurrente(m) && (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }} aria-label={t.recurrentsTitle}><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                              )}
                             </div>
                             <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
                               {m.categoria}{m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}

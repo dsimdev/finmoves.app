@@ -1,5 +1,6 @@
-import { storage } from "@/services/firebase/firebase";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { storage, auth } from "@/services/firebase/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getIdToken } from "firebase/auth";
 
 // Comprime/redimensiona una imagen en el cliente antes de subir (los comprobantes
 // salen del teléfono a varios MB; así quedan en ~cientos de KB y cargan rápido).
@@ -36,18 +37,24 @@ async function compressImage(file: File, maxDim = 1600, quality = 0.8): Promise<
   }
 }
 
-// Sube un comprobante a users/{uid}/comprobantes/... y devuelve URL + path.
-// Imágenes → se comprimen a JPEG. PDFs → tal cual. Cache largo para re-vistas instantáneas.
-export async function uploadComprobante(uid: string, file: File): Promise<{ url: string; path: string }> {
+// Sube un comprobante mediado por servidor (F3): comprime en el cliente (imágenes →
+// JPEG) y POSTea al API route, que valida permiso/tipo/tamaño y sube con Admin SDK.
+// El parámetro uid se mantiene por compatibilidad; el servidor usa el del token.
+export async function uploadComprobante(_uid: string, file: File): Promise<{ url: string; path: string }> {
   const esImagen = file.type.startsWith("image/");
   const data: Blob = esImagen ? await compressImage(file) : file;
-  const ext = esImagen ? "jpg" : ((file.name.split(".").pop() || "pdf").toLowerCase().replace(/[^a-z0-9]/g, "") || "pdf");
   const contentType = esImagen ? "image/jpeg" : (file.type || "application/pdf");
-  const path = `users/${uid}/comprobantes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const r = ref(storage, path);
-  await uploadBytes(r, data, { contentType, cacheControl: "public, max-age=31536000, immutable" });
-  const url = await getDownloadURL(r);
-  return { url, path };
+  const user = auth.currentUser;
+  if (!user) throw new Error("No auth");
+  const token = await getIdToken(user);
+  const form = new FormData();
+  form.append("file", new Blob([data], { type: contentType }), esImagen ? "comprobante.jpg" : (file.name || "comprobante.pdf"));
+  const res = await fetch("/api/comprobantes/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Error al subir el comprobante");
+  }
+  return res.json();
 }
 
 // Copia una foto de perfil (ej. la de Google) a nuestro Storage y devuelve la URL
@@ -65,8 +72,13 @@ export async function uploadAvatarFromUrl(uid: string, srcUrl: string): Promise<
   }
 }
 
-// Borra un comprobante por su path. Best-effort (ignora si ya no existe).
+// Borra un comprobante por su path, vía servidor (Admin SDK). Best-effort.
 export async function deleteComprobante(path: string | undefined): Promise<void> {
   if (!path) return;
-  try { await deleteObject(ref(storage, path)); } catch { /* ya no existe / sin permiso */ }
+  try {
+    const user = auth.currentUser;
+    if (!user) return;
+    const token = await getIdToken(user);
+    await fetch("/api/comprobantes/delete", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ path }) });
+  } catch { /* best-effort */ }
 }
