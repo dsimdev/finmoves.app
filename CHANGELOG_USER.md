@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.49.0] — 2026-06-29
+
+### Novedades
+- **Recurrentes marcados en la lista**: los movimientos que son recurrentes ahora muestran un relojito al lado del nombre, para reconocerlos de un vistazo.
+
+### Mejoras
+- **Comprobantes más seguros**: la subida y el borrado de comprobantes ahora pasan por el servidor (con validación), en vez de ir directo. Para vos no cambia nada al usarlo.
+
+---
+
 ## [2.48.1] — 2026-06-29
 
 ### Mejoras

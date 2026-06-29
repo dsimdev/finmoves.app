@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.49.0] — 2026-06-29
+
+### Added
+- **Recurring flag in the movements list**: movements matching an active recurrente (same type+category+description) show a small clock icon.
+
+### Changed
+- **Server-mediated comprobante uploads (F3)**: uploads and deletes now go through API routes (`/api/comprobantes/upload`, `/api/comprobantes/delete`) that verify the ID token, check the `comprobantes` permission (owner bypass), validate type/size, and write via the Admin SDK with a non-expiring download token. Client still compresses images before upload. Storage rules tightened: clients can no longer write/delete comprobantes directly (server-only). **Requires deploying storage rules** (`firebase deploy --only storage`).
+
+---
+
 ## [2.48.1] — 2026-06-29
 
 ### Changed
