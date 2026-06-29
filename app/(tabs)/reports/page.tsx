@@ -602,9 +602,15 @@ export default function ReportesPage() {
   const medianaGastoPeriodo = useMemo(() => mediana(periodos.map((p) => p.gastadoPuro)), [periodos]);
   // Lo que entró a ahorros por período: depósitos (moveAhorros) + ingresos directos a ahorro.
   const medianaAhorroPeriodo = useMemo(() => mediana(periodos.map((p) => p.moveAhorros + p.ahorros)), [periodos]);
-  // Proyección del próximo período: promedio histórico (excluye el período en curso, incompleto).
-  const proyeccionAhorro = periodos.length >= 2
-    ? Math.round(periodos.slice(1).reduce((s, p) => s + p.moveAhorros + p.ahorros, 0) / (periodos.length - 1)) : null;
+  // Proyección de ahorro: como el gasto, deflacta cada período a pesos de hoy y
+  // proyecta al próximo período con el último IPC mensual (evita que los períodos
+  // viejos, en pesos "más baratos", la dejen por debajo del nivel actual).
+  const proyeccionAhorro = periodos.length >= 2 ? (() => {
+    const hist = periodos.slice(1);
+    const realAvg = hist.reduce((s, p) => s + deflatar(p.moveAhorros + p.ahorros, p.periodoId), 0) / hist.length;
+    const factor = ipcMensualUltimo != null ? 1 + ipcMensualUltimo / 100 : 1;
+    return Math.round(realAvg * factor);
+  })() : null;
   const estadPeriodos = useMemo(() => estadisticasPeriodos(periodos), [periodos]);
   const avgHistorico = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.gastadoPuro, 0) / (periodos.length - 1) : 0;
@@ -1174,13 +1180,12 @@ export default function ReportesPage() {
                   });
                   max = Math.max(...data.map((d) => d.value), 1);
                 } else if (periodMetric === "gastoSueldo") {
-                  // Gasto real (sin FX) sobre sueldo. La referencia es el 100%.
+                  // Gasto real (sin FX) sobre sueldo, como excedente sobre el 100%:
+                  // +86% = gastaste 186% del sueldo; -14% = gastaste el 86%. La línea (0) es el 100%.
                   data = serieDesc.filter((s) => s.sueldo > 0).map((s) => {
-                    const pct = Math.round((s.gastadoPuro / s.sueldo) * 100);
-                    return { label: shortPer(s.periodoId), value: pct, color: pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)", valueLabel: `${pct}%`, hi: activos.includes(s.periodoId), periodoId: s.periodoId };
+                    const full = Math.round((s.gastadoPuro / s.sueldo) * 100);
+                    return { label: shortPer(s.periodoId), value: full - 100, color: full > 90 ? "var(--red)" : full > 50 ? "var(--yellow)" : "var(--green)", hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   });
-                  max = Math.max(...data.map((d) => d.value), 110);
-                  refFrac = 100 / max;
                 }
                 // Inflación ACUMULADA: tu gasto puro vs el período base (el más viejo con
                 // gasto>0) y la del país (IPC compuesto) desde el mismo mes base. Se calcula
@@ -1236,7 +1241,7 @@ export default function ReportesPage() {
                           : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
                       : periodMetric === "gastoSueldo"
                       ? (data.length > 0
-                          ? <DotChart data={data} refValue={100} onPointClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
+                          ? <DotChart data={data} refValue={0} signed onPointClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
                           : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
                       : periodMetric === "dias"
                       ? (data.length > 0

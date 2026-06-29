@@ -102,8 +102,11 @@ export function kpisPeriodo(p: PeriodoResumen): KpisPeriodo {
     porFechaCant.set(m.fecha, (porFechaCant.get(m.fecha) ?? 0) + 1);
     if (esGasto(m)) {
       cantGastos++;
-      porFechaMonto.set(m.fecha, (porFechaMonto.get(m.fecha) ?? 0) + m.monto);
-      if (esGastoPuro(m)) gastoPuro += m.monto;
+      // Día pico y promedio diario: solo gasto puro (sin compras de divisa).
+      if (esGastoPuro(m)) {
+        gastoPuro += m.monto;
+        porFechaMonto.set(m.fecha, (porFechaMonto.get(m.fecha) ?? 0) + m.monto);
+      }
     } else if (m.tipo === "Ingreso") {
       cantIngresos++;
     }

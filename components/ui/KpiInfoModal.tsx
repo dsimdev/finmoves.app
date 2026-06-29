@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useModalBack } from "@/hooks/useModalBack";
 
 /**
  * Card flotante para el detalle de un KPI de Reportes: número exacto (sin abreviar)
@@ -18,6 +19,7 @@ export function KpiInfoModal({ title, value, explain, color, onClose }: {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   useScrollLock(true);
+  useModalBack(true, onClose);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);

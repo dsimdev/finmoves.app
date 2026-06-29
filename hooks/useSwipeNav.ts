@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { isModalOpen } from "@/hooks/useModalBack";
 
 // Orden de navegación: debe coincidir con BottomNav.
 const ORDER = ["/", "/movements", "/investments", "/reports", "/settings"] as const;
@@ -47,6 +48,7 @@ export function useSwipeNav() {
 
     const onStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
+      if (isModalOpen()) return; // con un modal abierto no se cambia de sección
       const t = e.touches[0];
       const target = e.target as HTMLElement | null;
       if (target?.closest("[data-no-swipe]")) return;
