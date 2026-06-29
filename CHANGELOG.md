@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.48.0] — 2026-06-29
+
+### Changed
+- **Settings restructured into an account/profile hub with drill-in sub-pages.** The single-accordion `/settings` is now a landing with a profile header + grouped rows, each navigating to its own route (native back works): `/settings/profile`, `/preferences`, `/notifications`, `/security`, `/movements`, `/budgets`, `/investment`, `/data`, `/admin`, `/help`. Shared components in `settings/_shared.tsx` (SubHeader, NavRow, Toggle, Chip, flags). Behavior of each group preserved; movements UI unchanged (redesign pending). Investment gated by permission, admin/sheets gated to owner.
+
+---
+
 ## [2.47.0] — 2026-06-28
 
 ### Added
