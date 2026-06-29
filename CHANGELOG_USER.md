@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.48.1] — 2026-06-29
+
+### Mejoras
+- **Categorías, medios y orígenes** ahora se manejan como una lista clara: cada uno en su fila con un interruptor para activar/desactivar y un tacho para borrar. Agregar es un botón "+ Agregar" que abre el campo. Mucho más cómodo que los chips de antes.
+
+---
+
 ## [2.48.0] — 2026-06-29
 
 ### Novedades

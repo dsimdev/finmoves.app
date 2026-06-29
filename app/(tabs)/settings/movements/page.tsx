@@ -11,7 +11,21 @@ import { dbErrorMessage } from "@/lib/firebase-error";
 import type { ConfigUsuario } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Toggle, Chip, SubHeader } from "../_shared";
+import { Toggle, SubHeader } from "../_shared";
+
+// Fila editable: nombre + switch activar/desactivar + borrar.
+function ItemRow({ name, dot, activo, onToggle, onDelete }: { name: string; dot: string; activo: boolean; onToggle: () => void; onDelete: () => void }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 4px", borderBottom: "1px solid var(--faint)" }}>
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: dot, flexShrink: 0, opacity: activo ? 1 : 0.4 }} />
+      <span style={{ flex: 1, minWidth: 0, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", opacity: activo ? 1 : 0.5 }}>{name}</span>
+      <Toggle activo={activo} onClick={onToggle} />
+      <button onClick={onDelete} aria-label="Eliminar" style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: 4, display: "flex", flexShrink: 0 }}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+  );
+}
 
 export default function MovementsSettings() {
   const { user } = useAuth();
@@ -21,24 +35,30 @@ export default function MovementsSettings() {
 
   const [guardando, setGuardando] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [nuevoNombre, setNuevoNombre] = useState("");
-  const [nuevoTipo, setNuevoTipo] = useState<"Gasto" | "Ingreso">("Gasto");
   const [movSub, setMovSub] = useState<"categorias" | "medios" | "origenes">("categorias");
   const [pendingDelete, setPendingDelete] = useState<{ kind: "cat" | "med" | "ori"; nombre: string } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [nuevoTipo, setNuevoTipo] = useState<"Gasto" | "Ingreso">("Gasto");
+  const [showAutoAhorroModal, setShowAutoAhorroModal] = useState(false);
+  const [localAutoMonto, setLocalAutoMonto] = useState("");
+  const [localAutoMedios, setLocalAutoMedios] = useState<string[]>([]);
+  const [localAutoOmitir, setLocalAutoOmitir] = useState<string[]>([]);
+  const [localAutoOmitirInput, setLocalAutoOmitirInput] = useState("");
 
   const [localCats, setLocalCats] = useState<ConfigUsuario["categorias"]>([]);
   const [localMedios, setLocalMedios] = useState<ConfigUsuario["mediosPago"]>([]);
   const [localOrigenes, setLocalOrigenes] = useState<ConfigUsuario["origenesAhorro"]>([]);
-  const localCatsRef = useRef<ConfigUsuario["categorias"]>([]);
-  const localMediosRef = useRef<ConfigUsuario["mediosPago"]>([]);
-  const localOrigenesRef = useRef<ConfigUsuario["origenesAhorro"]>([]);
-  const movSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const catsRef = useRef<ConfigUsuario["categorias"]>([]);
+  const mediosRef = useRef<ConfigUsuario["mediosPago"]>([]);
+  const origRef = useRef<ConfigUsuario["origenesAhorro"]>([]);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didInit = useRef(false);
 
   useEffect(() => {
     if (config && !didInit.current) {
       setLocalCats(config.categorias); setLocalMedios(config.mediosPago); setLocalOrigenes(config.origenesAhorro);
-      localCatsRef.current = config.categorias; localMediosRef.current = config.mediosPago; localOrigenesRef.current = config.origenesAhorro;
+      catsRef.current = config.categorias; mediosRef.current = config.mediosPago; origRef.current = config.origenesAhorro;
       didInit.current = true;
     }
   }, [config]);
@@ -50,33 +70,28 @@ export default function MovementsSettings() {
     catch (err) { setSaveMsg({ ok: false, text: dbErrorMessage(err, t) }); setTimeout(() => setSaveMsg(null), 3000); }
     finally { setGuardando(false); }
   };
+  const persist = () => { if (!config) return; saveConfig({ ...config, categorias: catsRef.current, mediosPago: mediosRef.current, origenesAhorro: origRef.current }); };
+  const scheduleSave = () => { if (saveTimer.current) clearTimeout(saveTimer.current); saveTimer.current = setTimeout(persist, 1200); };
 
-  const scheduleMovSave = (cfg: ConfigUsuario) => {
-    if (movSaveTimer.current) clearTimeout(movSaveTimer.current);
-    movSaveTimer.current = setTimeout(() => {
-      saveConfig({ ...cfg, categorias: localCatsRef.current, mediosPago: localMediosRef.current, origenesAhorro: localOrigenesRef.current });
-    }, 1500);
+  const toggleCat = (n: string) => { const next = catsRef.current.map(c => c.nombre === n ? { ...c, activa: !c.activa } : c); catsRef.current = next; setLocalCats(next); scheduleSave(); };
+  const toggleMed = (n: string) => { const next = mediosRef.current.map(m => m.nombre === n ? { ...m, activo: !m.activo } : m); mediosRef.current = next; setLocalMedios(next); scheduleSave(); };
+  const toggleOri = (n: string) => { const next = origRef.current.map(o => o.nombre === n ? { ...o, activo: !o.activo } : o); origRef.current = next; setLocalOrigenes(next); scheduleSave(); };
+
+  const delCat = (n: string) => { const next = catsRef.current.filter(c => c.nombre !== n); catsRef.current = next; setLocalCats(next); setPendingDelete(null); persist(); };
+  const delMed = (n: string) => { const next = mediosRef.current.filter(m => m.nombre !== n); mediosRef.current = next; setLocalMedios(next); setPendingDelete(null); persist(); };
+  const delOri = (n: string) => { const next = origRef.current.filter(o => o.nombre !== n); origRef.current = next; setLocalOrigenes(next); setPendingDelete(null); persist(); };
+  const confirmDelete = () => { if (!pendingDelete) return; if (pendingDelete.kind === "cat") delCat(pendingDelete.nombre); else if (pendingDelete.kind === "med") delMed(pendingDelete.nombre); else delOri(pendingDelete.nombre); };
+
+  const agregar = () => {
+    const nombre = nuevoNombre.trim();
+    if (!nombre || !config) return;
+    if (movSub === "categorias") { const next = [...catsRef.current, { id: nombre, nombre, tipo: nuevoTipo, activa: true }]; catsRef.current = next; setLocalCats(next); }
+    else if (movSub === "medios") { const next = [...mediosRef.current, { id: nombre, nombre, activo: true }]; mediosRef.current = next; setLocalMedios(next); }
+    else { const next = [...origRef.current, { id: nombre, nombre, activo: true }]; origRef.current = next; setLocalOrigenes(next); }
+    setNuevoNombre(""); persist();
   };
 
-  const toggleCategoriaLocal = (nombre: string) => { if (!config) return; const next = localCatsRef.current.map(c => c.nombre === nombre ? { ...c, activa: !c.activa } : c); localCatsRef.current = next; setLocalCats(next); scheduleMovSave(config); };
-  const toggleMedioLocal = (nombre: string) => { if (!config) return; const next = localMediosRef.current.map(m => m.nombre === nombre ? { ...m, activo: !m.activo } : m); localMediosRef.current = next; setLocalMedios(next); scheduleMovSave(config); };
-  const toggleOrigenLocal = (nombre: string) => { if (!config) return; const next = localOrigenesRef.current.map(o => o.nombre === nombre ? { ...o, activo: !o.activo } : o); localOrigenesRef.current = next; setLocalOrigenes(next); scheduleMovSave(config); };
-
-  const agregarCategoriaLocal = () => { if (!nuevoNombre.trim() || !config) return; const next = [...localCatsRef.current, { id: nuevoNombre, nombre: nuevoNombre.trim(), tipo: nuevoTipo, activa: true }]; localCatsRef.current = next; setLocalCats(next); setNuevoNombre(""); saveConfig({ ...config, categorias: next, mediosPago: localMediosRef.current, origenesAhorro: localOrigenesRef.current }); };
-  const agregarMedioLocal = () => { if (!nuevoNombre.trim() || !config) return; const next = [...localMediosRef.current, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }]; localMediosRef.current = next; setLocalMedios(next); setNuevoNombre(""); saveConfig({ ...config, categorias: localCatsRef.current, mediosPago: next, origenesAhorro: localOrigenesRef.current }); };
-  const agregarOrigenLocal = () => { if (!nuevoNombre.trim() || !config) return; const next = [...localOrigenesRef.current, { id: nuevoNombre, nombre: nuevoNombre.trim(), activo: true }]; localOrigenesRef.current = next; setLocalOrigenes(next); setNuevoNombre(""); saveConfig({ ...config, categorias: localCatsRef.current, mediosPago: localMediosRef.current, origenesAhorro: next }); };
-
-  const eliminarCategoriaLocal = (nombre: string) => { if (!config) return; const next = localCatsRef.current.filter(c => c.nombre !== nombre); localCatsRef.current = next; setLocalCats(next); setPendingDelete(null); saveConfig({ ...config, categorias: next, mediosPago: localMediosRef.current, origenesAhorro: localOrigenesRef.current }); };
-  const eliminarMedioLocal = (nombre: string) => { if (!config) return; const next = localMediosRef.current.filter(m => m.nombre !== nombre); localMediosRef.current = next; setLocalMedios(next); setPendingDelete(null); saveConfig({ ...config, categorias: localCatsRef.current, mediosPago: next, origenesAhorro: localOrigenesRef.current }); };
-  const eliminarOrigenLocal = (nombre: string) => { if (!config) return; const next = localOrigenesRef.current.filter(o => o.nombre !== nombre); localOrigenesRef.current = next; setLocalOrigenes(next); setPendingDelete(null); saveConfig({ ...config, categorias: localCatsRef.current, mediosPago: localMediosRef.current, origenesAhorro: next }); };
-  const confirmPendingDelete = () => { if (!pendingDelete) return; if (pendingDelete.kind === "cat") eliminarCategoriaLocal(pendingDelete.nombre); else if (pendingDelete.kind === "med") eliminarMedioLocal(pendingDelete.nombre); else eliminarOrigenLocal(pendingDelete.nombre); };
-
   // Auto-ahorro
-  const [showAutoAhorroModal, setShowAutoAhorroModal] = useState(false);
-  const [localAutoMonto, setLocalAutoMonto] = useState("");
-  const [localAutoMedios, setLocalAutoMedios] = useState<string[]>([]);
-  const [localAutoOmitir, setLocalAutoOmitir] = useState<string[]>([]);
-  const [localAutoOmitirInput, setLocalAutoOmitirInput] = useState("");
   const openAutoAhorroModal = () => {
     if (!config) return;
     setLocalAutoMonto(config.meta.autoAhorro?.monto?.toString() ?? "");
@@ -108,80 +123,62 @@ export default function MovementsSettings() {
 
   if (!config) return null;
   const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: 16, marginBottom: 12 };
-  const addBtn: React.CSSProperties = { background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 };
+  const subs = [{ id: "categorias", label: t.categories }, { id: "medios", label: t.methods }, { id: "origenes", label: t.originsLabel }] as const;
+  const closeAdd = () => { setAdding(false); setNuevoNombre(""); };
 
   return (
     <div className="page">
       <SubHeader title={t.settingsTabMovements} />
 
       <div style={card}>
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-          {([{ id: "categorias", label: t.categories }, { id: "medios", label: t.methods }, { id: "origenes", label: t.originsLabel }] as const).map(s => (
-            <button key={s.id} onClick={() => { setMovSub(s.id); setNuevoNombre(""); }} className="pill" style={{
-              borderColor: movSub === s.id ? "var(--accent)" : "var(--border)", background: movSub === s.id ? "var(--accent-dim)" : "transparent", color: movSub === s.id ? "var(--accent)" : "var(--muted)",
+        {/* Selector de sub-lista */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+          {subs.map(s => (
+            <button key={s.id} onClick={() => { setMovSub(s.id); closeAdd(); }} className="pill" style={{
+              flex: 1, borderColor: movSub === s.id ? "var(--accent)" : "var(--border)", background: movSub === s.id ? "var(--accent-dim)" : "transparent", color: movSub === s.id ? "var(--accent)" : "var(--muted)",
             }}>{s.label}</button>
           ))}
         </div>
 
-        {movSub === "categorias" && (
-          <div>
-            <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* Alta inline (se abre con el botón Agregar) */}
+        {adding ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12, padding: 12, background: "var(--surface-alt)", borderRadius: 12, border: "1px solid var(--border)" }}>
+            {movSub === "categorias" && (
               <div style={{ display: "flex", gap: 6 }}>
                 {(["Gasto", "Ingreso"] as const).map(tipo => (
                   <button key={tipo} onClick={() => setNuevoTipo(tipo)} className="pill" style={{
-                    borderColor: nuevoTipo === tipo ? (tipo === "Gasto" ? "var(--red)" : "var(--green)") : "var(--border)",
+                    flex: 1, borderColor: nuevoTipo === tipo ? (tipo === "Gasto" ? "var(--red)" : "var(--green)") : "var(--border)",
                     background: nuevoTipo === tipo ? (tipo === "Gasto" ? "var(--red-dim)" : "var(--green-dim)") : "transparent",
                     color: nuevoTipo === tipo ? (tipo === "Gasto" ? "var(--red)" : "var(--green)") : "var(--muted)",
                   }}>{tipo === "Gasto" ? t.expenseType : t.incomeType}</button>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} placeholder={t.newCategory} className="input" style={{ flex: 1 }} />
-                <button onClick={agregarCategoriaLocal} style={addBtn}>+</button>
-              </div>
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <input autoFocus value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} onKeyDown={e => { if (e.key === "Enter") agregar(); }}
+                placeholder={movSub === "categorias" ? t.newCategory : movSub === "medios" ? t.newMethod : t.newOrigin} className="input" style={{ flex: 1 }} />
+              <button onClick={agregar} disabled={!nuevoNombre.trim()} aria-label={t.add} style={{ flexShrink: 0, width: 44, borderRadius: "var(--radius-sm)", border: "none", background: nuevoNombre.trim() ? "var(--green)" : "var(--surface)", color: nuevoNombre.trim() ? "var(--bg)" : "var(--muted)", cursor: nuevoNombre.trim() ? "pointer" : "default", fontSize: 22, lineHeight: 1 }}>+</button>
+              <button onClick={closeAdd} aria-label={t.cancel} style={{ flexShrink: 0, width: 44, borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>×</button>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {[...localCats].sort((a, b) => a.tipo === b.tipo ? 0 : a.tipo === "Gasto" ? -1 : 1).map(c => (
-                <Chip key={c.nombre} label={c.nombre} colorVar={c.tipo === "Gasto" ? "var(--red)" : "var(--green)"} dimVar={c.tipo === "Gasto" ? "var(--red-dim)" : "var(--green-dim)"} activo={c.activa} confirming={false}
-                  onToggle={() => toggleCategoriaLocal(c.nombre)} onLongPress={() => setPendingDelete({ kind: "cat", nombre: c.nombre })} onConfirmDelete={() => eliminarCategoriaLocal(c.nombre)} />
-              ))}
-            </div>
-            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 12 }}>{t.chipHint}</div>
           </div>
+        ) : (
+          <button onClick={() => setAdding(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "10px 0", marginBottom: 8, borderRadius: 10, border: "1px dashed var(--border-hi)", background: "transparent", color: "var(--accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            {t.add}
+          </button>
         )}
 
-        {movSub === "medios" && (
-          <div>
-            <div style={{ marginBottom: 14, display: "flex", gap: 8 }}>
-              <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} placeholder={t.newMethod} className="input" style={{ flex: 1 }} />
-              <button onClick={agregarMedioLocal} style={addBtn}>+</button>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {localMedios.map(m => (
-                <Chip key={m.nombre} label={m.nombre} colorVar="var(--blue)" dimVar="var(--blue-dim)" activo={m.activo} confirming={false}
-                  onToggle={() => toggleMedioLocal(m.nombre)} onLongPress={() => setPendingDelete({ kind: "med", nombre: m.nombre })} onConfirmDelete={() => eliminarMedioLocal(m.nombre)} />
-              ))}
-            </div>
-            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 12 }}>{t.chipHint}</div>
-          </div>
-        )}
-
-        {movSub === "origenes" && (
-          <div>
-            <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12 }}>{t.shownWhenAddingIncomeSavings}</div>
-            <div style={{ marginBottom: 14, display: "flex", gap: 8 }}>
-              <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} placeholder={t.newOrigin} className="input" style={{ flex: 1 }} />
-              <button onClick={agregarOrigenLocal} style={addBtn}>+</button>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {localOrigenes.map(o => (
-                <Chip key={o.nombre} label={o.nombre} colorVar="var(--green)" dimVar="var(--green-dim)" activo={o.activo} confirming={false}
-                  onToggle={() => toggleOrigenLocal(o.nombre)} onLongPress={() => setPendingDelete({ kind: "ori", nombre: o.nombre })} onConfirmDelete={() => eliminarOrigenLocal(o.nombre)} />
-              ))}
-            </div>
-            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 12 }}>{t.chipHint}</div>
-          </div>
-        )}
+        {/* Lista */}
+        {movSub === "origenes" && <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6 }}>{t.shownWhenAddingIncomeSavings}</div>}
+        {movSub === "categorias" && [...localCats].sort((a, b) => a.tipo === b.tipo ? 0 : a.tipo === "Gasto" ? -1 : 1).map(c => (
+          <ItemRow key={c.nombre} name={c.nombre} dot={c.tipo === "Gasto" ? "var(--red)" : "var(--green)"} activo={c.activa} onToggle={() => toggleCat(c.nombre)} onDelete={() => setPendingDelete({ kind: "cat", nombre: c.nombre })} />
+        ))}
+        {movSub === "medios" && localMedios.map(m => (
+          <ItemRow key={m.nombre} name={m.nombre} dot="var(--blue)" activo={m.activo} onToggle={() => toggleMed(m.nombre)} onDelete={() => setPendingDelete({ kind: "med", nombre: m.nombre })} />
+        ))}
+        {movSub === "origenes" && localOrigenes.map(o => (
+          <ItemRow key={o.nombre} name={o.nombre} dot="var(--green)" activo={o.activo} onToggle={() => toggleOri(o.nombre)} onDelete={() => setPendingDelete({ kind: "ori", nombre: o.nombre })} />
+        ))}
       </div>
 
       {/* Auto-ahorro */}
@@ -204,15 +201,6 @@ export default function MovementsSettings() {
         <Toggle activo={config.meta.autoAhorro?.activo ?? false} onClick={handleToggleAutoAhorro} />
       </div>
 
-      {pendingDelete && (
-        <ConfirmModal title={t.delete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)" onConfirm={confirmPendingDelete} onCancel={() => setPendingDelete(null)}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{pendingDelete.nombre}</div>
-            <div>{t.actionIrreversible}</div>
-          </div>
-        </ConfirmModal>
-      )}
-
       <BottomSheet open={showAutoAhorroModal} onClose={() => setShowAutoAhorroModal(false)} title={t.autoSavings}>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div>
@@ -224,11 +212,7 @@ export default function MovementsSettings() {
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {config.mediosPago.filter(m => m.activo).map(m => {
                 const sel = localAutoMedios.includes(m.nombre);
-                return (
-                  <button key={m.nombre} type="button" onClick={() => setLocalAutoMedios(sel ? localAutoMedios.filter(x => x !== m.nombre) : [...localAutoMedios, m.nombre])} className="pill" style={{
-                    borderColor: sel ? "var(--blue)" : "var(--border)", background: sel ? "var(--blue-dim)" : "transparent", color: sel ? "var(--blue)" : "var(--muted)",
-                  }}>{m.nombre}</button>
-                );
+                return <button key={m.nombre} type="button" onClick={() => setLocalAutoMedios(sel ? localAutoMedios.filter(x => x !== m.nombre) : [...localAutoMedios, m.nombre])} className="pill" style={{ borderColor: sel ? "var(--blue)" : "var(--border)", background: sel ? "var(--blue-dim)" : "transparent", color: sel ? "var(--blue)" : "var(--muted)" }}>{m.nombre}</button>;
               })}
             </div>
           </div>
@@ -238,7 +222,7 @@ export default function MovementsSettings() {
               <input value={localAutoOmitirInput} onChange={e => setLocalAutoOmitirInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && localAutoOmitirInput.trim()) { const val = localAutoOmitirInput.trim(); if (!localAutoOmitir.includes(val)) setLocalAutoOmitir([...localAutoOmitir, val]); setLocalAutoOmitirInput(""); } }}
                 placeholder={t.egPlaceholder} style={{ flex: 1, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", fontSize: 13, color: "var(--text)" }} />
-              <button type="button" onClick={() => { const val = localAutoOmitirInput.trim(); if (val && !localAutoOmitir.includes(val)) setLocalAutoOmitir([...localAutoOmitir, val]); setLocalAutoOmitirInput(""); }} style={addBtn}>+</button>
+              <button type="button" onClick={() => { const val = localAutoOmitirInput.trim(); if (val && !localAutoOmitir.includes(val)) setLocalAutoOmitir([...localAutoOmitir, val]); setLocalAutoOmitirInput(""); }} style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>+</button>
             </div>
             {localAutoOmitir.length > 0 && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -252,11 +236,7 @@ export default function MovementsSettings() {
             )}
           </div>
           <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
-            <button onClick={confirmAutoAhorro} disabled={!canConfirmAutoAhorro || guardando} style={{
-              width: 56, height: 56, borderRadius: "50%", background: canConfirmAutoAhorro ? "var(--green)" : "transparent",
-              border: `2px solid ${canConfirmAutoAhorro ? "var(--green)" : "var(--border)"}`, color: canConfirmAutoAhorro ? "var(--bg)" : "var(--border)",
-              display: "flex", alignItems: "center", justifyContent: "center", cursor: canConfirmAutoAhorro ? "pointer" : "default", opacity: guardando ? 0.5 : 1,
-            }}>
+            <button onClick={confirmAutoAhorro} disabled={!canConfirmAutoAhorro || guardando} style={{ width: 56, height: 56, borderRadius: "50%", background: canConfirmAutoAhorro ? "var(--green)" : "transparent", border: `2px solid ${canConfirmAutoAhorro ? "var(--green)" : "var(--border)"}`, color: canConfirmAutoAhorro ? "var(--bg)" : "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: canConfirmAutoAhorro ? "pointer" : "default", opacity: guardando ? 0.5 : 1 }}>
               {guardando
                 ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
                 : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -264,6 +244,15 @@ export default function MovementsSettings() {
           </div>
         </div>
       </BottomSheet>
+
+      {pendingDelete && (
+        <ConfirmModal title={t.delete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)" onConfirm={confirmDelete} onCancel={() => setPendingDelete(null)}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{pendingDelete.nombre}</div>
+            <div>{t.actionIrreversible}</div>
+          </div>
+        </ConfirmModal>
+      )}
 
       {saveMsg && (
         <div className="fade-up" style={{ position: "fixed", left: 16, right: 16, bottom: "calc(var(--nav-h) + 16px)", zIndex: 150, padding: "12px 16px", borderRadius: "var(--radius-sm)", fontSize: 13, background: saveMsg.ok ? "var(--green-dim)" : "var(--red-dim)", border: `1px solid ${saveMsg.ok ? "var(--green)" : "var(--red)"}44`, color: saveMsg.ok ? "var(--green)" : "var(--red)", textAlign: "center", backdropFilter: "blur(8px)" }}>{saveMsg.text}</div>
