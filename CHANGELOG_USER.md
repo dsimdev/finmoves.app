@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.48.0] — 2026-06-29
+
+### Novedades
+- **Configuración renovada**: ahora es tipo Cuenta/Perfil, con tu foto y datos arriba y cada grupo (Preferencias, Notificaciones, Seguridad, Movimientos, Presupuestos, Inversión, Datos, Ayuda) abriéndose en su propia pantalla. Más ordenado y el botón atrás funciona como esperás.
+
+---
+
 ## [2.47.0] — 2026-06-28
 
 ### Novedades
