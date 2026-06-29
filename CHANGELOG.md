@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.48.1] — 2026-06-29
+
+### Changed
+- **Movements settings redesigned**: categories/methods/origins are now full-width rows (name + active toggle + delete with confirm) instead of cramped chips with hidden long-press. Adding is behind a "+ Add" button that reveals an inline input (with Gasto/Ingreso selector for categories). Auto-savings unchanged.
+
+---
+
 ## [2.48.0] — 2026-06-29
 
 ### Changed
