@@ -22,6 +22,7 @@ import { useCotizacion } from "@/hooks/useCotizacion";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { listarRecordatorios, crearRecordatorio, eliminarRecordatorio, type Recordatorio } from "@/services/firebase/recordatorios";
+import { listarRecurrentes, setRecurrenteActivo, eliminarRecurrente, type Recurrente } from "@/services/firebase/recurrentes";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useT } from "@/hooks/useTranslation";
 
@@ -373,6 +374,9 @@ export default function ConfigPage() {
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [recTexto, setRecTexto] = useState("");
   const [recFecha, setRecFecha] = useState("");
+  // Movimientos recurrentes
+  const [showRecurrentes, setShowRecurrentes] = useState(false);
+  const [recurrentes, setRecurrentes] = useState<Recurrente[]>([]);
   const CHANGELOG_WEB_URL = "https://github.com/dsimdev/finmoves.app/blob/main/CHANGELOG_USER.md";
   // Mini-render de **negrita** del markdown (el changelog usa ** para resaltar).
   const boldify = (text: string) => text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
@@ -608,9 +612,26 @@ export default function ConfigPage() {
   useEffect(() => {
     if (user?.uid) listarRecordatorios(user.uid).then(setRecordatorios).catch(() => {});
   }, [user?.uid]);
+  const openRecurrentes = async () => {
+    setShowRecurrentes(true);
+    if (user?.uid) listarRecurrentes(user.uid).then(setRecurrentes).catch(() => {});
+  };
+  useEffect(() => {
+    if (user?.uid) listarRecurrentes(user.uid).then(setRecurrentes).catch(() => {});
+  }, [user?.uid]);
+  const toggleRecurrente = async (id: string, activo: boolean) => {
+    if (!user?.uid) return;
+    setRecurrentes((prev) => prev.map((r) => (r.id === id ? { ...r, activo } : r)));
+    await setRecurrenteActivo(user.uid, id, activo).catch(() => {});
+  };
+  const delRecurrente = async (id: string) => {
+    if (!user?.uid) return;
+    await eliminarRecurrente(user.uid, id);
+    setRecurrentes((prev) => prev.filter((r) => r.id !== id));
+  };
   // Bloquear scroll de fondo con cualquier modal inline abierto (los BottomSheet
   // y los modales reutilizables ya lockean solos).
-  useScrollLock(showRecordatorios || showAutoAhorroModal || showChangelog || showInviteModal || showSyncLog);
+  useScrollLock(showRecordatorios || showRecurrentes || showAutoAhorroModal || showChangelog || showInviteModal || showSyncLog);
   const addRecordatorio = async () => {
     if (!user?.uid || !recTexto.trim() || !recFecha) return;
     await crearRecordatorio(user.uid, recTexto.trim(), recFecha);
@@ -1157,6 +1178,21 @@ export default function ConfigPage() {
                 </div>
               </button>
             )}
+
+            {/* Movimientos recurrentes */}
+            <button onClick={openRecurrentes} className="row" style={{ width: "100%", padding: "12px 0", borderTop: "1px solid var(--faint)", background: "none", border: "none", borderTopColor: "var(--faint)", cursor: "pointer", textAlign: "left" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: recurrentes.length > 0 ? "var(--green-dim)" : "var(--surface-alt)", border: `1px solid ${recurrentes.length > 0 ? "var(--green)44" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: recurrentes.length > 0 ? "var(--green)" : "var(--muted)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 2l4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                  </svg>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13 }}>{t.recurrentsTitle}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.recurrentsSub}</div>
+                </div>
+              </div>
+            </button>
 
             {/* Desbloqueo con huella */}
             {bioAvailable && (
@@ -1780,6 +1816,21 @@ export default function ConfigPage() {
               <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{isoToFechaAR(r.fecha)}</div>
             </div>
             <button onClick={() => delRecordatorio(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
+          </div>
+        ))}
+      </BottomSheet>
+
+      <BottomSheet open={showRecurrentes} onClose={() => setShowRecurrentes(false)} title={t.recurrentsTitle}>
+        {recurrentes.length === 0 ? (
+          <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, padding: "16px 0" }}>{t.noRecurrents}</div>
+        ) : recurrentes.map((r) => (
+          <div key={r.id} className="row" style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)", gap: 10 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", opacity: r.activo ? 1 : 0.5 }}>{r.descripcion || r.categoria}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{r.categoria} · {t.tipoDisplay[r.tipo]}</div>
+            </div>
+            <Toggle activo={r.activo} onClick={() => toggleRecurrente(r.id, !r.activo)} />
+            <button onClick={() => delRecurrente(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
           </div>
         ))}
       </BottomSheet>
