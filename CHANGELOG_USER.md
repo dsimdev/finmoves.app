@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.52.0] — 2026-06-29
+
+### Mejoras
+- **Configuración más simple**: agrupamos todo en menos secciones (Cuenta, Preferencias, Notificaciones, Movimientos, Inversión, Datos, Ayuda) y volvió el selector de **moneda principal**.
+- **Gastado del inicio** ahora muestra el gasto real (sin las compras de dólares/euros).
+- **Reportes**: en Gastos, una leyenda aclara cuánto es gasto real y cuánto son compras de divisas.
+
+---
+
 ## [2.51.0] — 2026-06-29
 
 ### Novedades

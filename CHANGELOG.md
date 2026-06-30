@@ -4,6 +4,18 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.52.0] — 2026-06-29
+
+### Changed
+- **Settings consolidated** from 9 groups to 6: Account (profile + security merged), Preferences (now with language + **main currency selector, restored**), Notifications, Movements (now includes **budget template**), Investment, Data (now includes **owner invites**), Help. Removed standalone Profile/Security/Budgets/Admin routes.
+- **Dashboard "Spent"** now shows real spending (excludes FX purchases).
+- **Reports → Gastos hero**: added a breakdown legend ("real spending X + FX Y") when the total includes USD/EUR purchases.
+
+### Fixed
+- Account deletion entry relabeled "request deletion" (it sends a request to the admin, doesn't delete) and shown only to non-owner users.
+
+---
+
 ## [2.51.0] — 2026-06-29
 
 ### Added

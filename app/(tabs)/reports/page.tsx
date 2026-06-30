@@ -853,7 +853,10 @@ export default function ReportesPage() {
                 return (
                   <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--red-dim))" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                      <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.spent}</div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+                        <span style={{ fontSize: 12, color: "var(--muted)" }}>{t.spent}</span>
+                        <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{t.ofTotal(periodo.pct)}</span>
+                      </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         {ritmo?.enCurso && <span className="badge" style={{ background: "var(--green-dim)", color: "var(--green)", border: "1px solid var(--green)44" }}>{t.ongoing}</span>}
                         <button onClick={toggle} aria-label={t.hideValues} style={{ background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}>
@@ -862,8 +865,10 @@ export default function ReportesPage() {
                       </div>
                     </div>
                     <div style={{ fontSize: 30, fontWeight: 700, color: pctColor, fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>{money(periodo.gastado)}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, marginBottom: 10 }}>{t.ofTotal(periodo.pct)}</div>
-                    <div className="bar-track"><div className="bar-fill" style={{ width: `${Math.min(periodo.pct, 100)}%`, background: pctColor }} /></div>
+                    {periodo.gastado > periodo.gastadoPuro && (
+                      <div style={{ fontSize: 10.5, color: "var(--muted)", marginTop: 6 }}>{t.spentBreakdown(money(periodo.gastadoPuro), money(periodo.gastado - periodo.gastadoPuro))}</div>
+                    )}
+                    <div className="bar-track" style={{ marginTop: 10 }}><div className="bar-fill" style={{ width: `${Math.min(periodo.pct, 100)}%`, background: pctColor }} /></div>
                   </div>
                 );
               })()}

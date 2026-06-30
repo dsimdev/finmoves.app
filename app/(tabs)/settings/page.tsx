@@ -35,7 +35,7 @@ export default function SettingsLanding() {
       </div>
 
       {/* Header de perfil → edita perfil */}
-      <Link href="/settings/profile" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 14, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+      <Link href="/settings/account" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 14, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
         {fotoSrc && !fotoError ? (
           <img src={fotoSrc} alt="" width={52} height={52} referrerPolicy="no-referrer" onError={() => setFotoError(true)} style={{ width: 52, height: 52, borderRadius: 14, objectFit: "cover", flexShrink: 0, border: "1px solid var(--green)44" }} />
         ) : (
@@ -56,27 +56,16 @@ export default function SettingsLanding() {
       <NavRow href="/settings/notifications" color="var(--green)" title={t.notifications} sub={t.notificationsSub}
         icon={i(<><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>)} />
 
-      <NavRow href="/settings/security" color="var(--red)" title={t.security} sub={t.biometricUnlock}
-        icon={i(<><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>)} />
-
-      <NavRow href="/settings/movements" color="var(--blue)" title={t.settingsTabMovements} sub={t.categories}
+      <NavRow href="/settings/movements" color="var(--blue)" title={t.settingsTabMovements} sub={`${t.categories} · ${t.settingsTabBudgets}`}
         icon={i(<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>)} />
-
-      <NavRow href="/settings/budgets" color="var(--yellow)" title={t.settingsTabBudgets} sub={t.budgetTemplate}
-        icon={i(<><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></>)} />
 
       {inversionAllowed && (
         <NavRow href="/settings/investment" color="var(--green)" title={t.settingsTabInvestments} sub={t.investmentCurrency}
           icon={i(<><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/></>)} />
       )}
 
-      <NavRow href="/settings/data" color="var(--accent)" title={t.dataSection} sub={isOwner ? "Google Sheets · Backup" : "Backup"}
+      <NavRow href="/settings/data" color="var(--accent)" title={t.dataSection} sub={isOwner ? "Google Sheets · Backup · Invitaciones" : "Backup"}
         icon={i(<><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>)} />
-
-      {isOwner && (
-        <NavRow href="/settings/admin" color="var(--accent)" title="Admin" sub={t.generateInvite}
-          icon={i(<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></>)} />
-      )}
 
       <NavRow href="/settings/help" color="var(--muted)" title={t.guideSection} sub={`v${process.env.NEXT_PUBLIC_APP_VERSION}`}
         icon={i(<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>)} />
