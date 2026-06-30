@@ -13,14 +13,12 @@ import { parsePeriodoId } from "@/utils/reportes";
 
 type Slide = { bg: string; accent: string; kicker: string; hero: string; label: string; sub?: string };
 
-// Años con recap disponible: años cerrados (anteriores al actual) + el año en curso
-// solo a partir de diciembre (reveal estilo Wrapped). Más reciente primero.
+// Feature seasonal: el recap "Tu año" SOLO está disponible en diciembre. Ese mes
+// lista todos los años con datos (cerrados + el año en curso). Fuera de diciembre
+// devuelve [] → el botón no aparece. Más reciente primero.
 export function wrappedYears(movimientos: { fecha: string }[]): string[] {
-  const now = new Date();
-  const cy = now.getFullYear();
-  const isDec = now.getMonth() === 11;
-  const all = Array.from(new Set(movimientos.map((m) => m.fecha.slice(0, 4)))).filter(Boolean);
-  return all.filter((y) => Number(y) < cy || (Number(y) === cy && isDec)).sort((a, b) => b.localeCompare(a));
+  if (new Date().getMonth() !== 11) return [];
+  return Array.from(new Set(movimientos.map((m) => m.fecha.slice(0, 4)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
 }
 
 const mesNombre = (mes: string, year: string) =>
