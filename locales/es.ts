@@ -6,6 +6,7 @@ export const es = {
   security: "Seguridad",
   accept: "Aceptar",
   dataSection: "Datos",
+  yearWrapped: "Tu año",
   generateInvite: "Generar invitación",
   generatingInvite: "Generando…",
   deleteAccountSentTitle: "Solicitud enviada",
