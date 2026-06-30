@@ -17,11 +17,12 @@ import { SectionHint } from "@/components/ui/SectionHint";
 
 function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; categoria: string; direccionMove?: string }) {
   let c = "var(--muted)";
-  if (tipo === "CompraUSD" || tipo === "CompraEUR" || tipo === "VentaUSD" || tipo === "VentaEUR") c = "var(--yellow)";
+  if (categoria === "RESTO") c = "var(--blue)"; // arrastre a ahorros (Ingreso viejo o Move nuevo)
+  else if (tipo === "CompraUSD" || tipo === "CompraEUR" || tipo === "VentaUSD" || tipo === "VentaEUR") c = "var(--yellow)";
   else if (tipo === "Gasto") c = "var(--red)";
   else if (tipo === "Move") c = direccionMove === "aAhorro" ? "var(--purple)" : "#26c6da";
   else if (tipo === "Ingreso") {
-    if (categoria === "Ahorros" || categoria === "RESTO") c = "var(--blue)";
+    if (categoria === "Ahorros") c = "var(--blue)";
     else c = "var(--green)";
   }
   return <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0, marginTop: 5 }} />;
@@ -90,10 +91,19 @@ export default function MovimientosPage() {
 
   const movsFiltrados = useMemo(() =>
     [...(periodoActual?.movimientos ?? [])]
-      .filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR")
+      .filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR")
       .sort((a, b) => {
         const d = b.fecha.localeCompare(a.fecha);
-        return d !== 0 ? d : b.timestampCarga.getTime() - a.timestampCarga.getTime();
+        if (d !== 0) return d;
+        const tt = b.timestampCarga.getTime() - a.timestampCarga.getTime();
+        if (tt !== 0) return tt;
+        // Mismo instante (apertura de período): el Sueldo es el ancla → siempre el más
+        // viejo (abajo de todo), determinístico entre dispositivos.
+        const aSueldo = a.tipo === "Ingreso" && a.categoria === "Sueldo";
+        const bSueldo = b.tipo === "Ingreso" && b.categoria === "Sueldo";
+        if (aSueldo && !bSueldo) return 1;
+        if (bSueldo && !aSueldo) return -1;
+        return 0;
       }),
     [periodoActual]
   );
@@ -222,7 +232,8 @@ export default function MovimientosPage() {
                       const isFX = isCompraFX || isVentaFX; // divisa → color amarillo
                       const isGasto = m.tipo === "Gasto";
                       const isMove = m.tipo === "Move";
-                      const negativo = isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro");
+                      const esResto = m.categoria === "RESTO"; // arrastre a ahorros: azul y "+"
+                      const negativo = !esResto && (isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro"));
                       return (
                         <button key={m.id}
                           {...bindLongPress(() => setModalState({ mode: "edit", mov: m, view: "delete" }), () => openEdit(m))}
@@ -244,7 +255,7 @@ export default function MovimientosPage() {
                               {m.categoria}{m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}
                             </div>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "#26c6da") : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "#26c6da") : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
                             {negativo ? "-" : "+"}{money(m.monto)}
                           </span>
                         </button>

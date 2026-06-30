@@ -40,8 +40,8 @@ export default function InvestmentSettings() {
   };
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
-  const totalUSD = useMemo(() => { let total = config?.meta.saldoUSD ?? 0; for (const m of movimientos) { if (m.tipo === "CompraUSD" && m.cantidadUSD) total += m.cantidadUSD; else if (m.tipo === "GastoUSD" && m.cantidadUSD) total -= m.cantidadUSD; } return total; }, [movimientos, config?.meta.saldoUSD]);
-  const totalEUR = useMemo(() => { let total = config?.meta.saldoEUR ?? 0; for (const m of movimientos) { if (m.tipo === "CompraEUR" && m.cantidadUSD) total += m.cantidadUSD; else if (m.tipo === "GastoEUR" && m.cantidadUSD) total -= m.cantidadUSD; } return total; }, [movimientos, config?.meta.saldoEUR]);
+  const totalUSD = useMemo(() => { let total = config?.meta.saldoUSD ?? 0; for (const m of movimientos) { if ((m.tipo === "CompraUSD" || m.tipo === "IngresoUSD") && m.cantidadUSD) total += m.cantidadUSD; else if ((m.tipo === "GastoUSD" || m.tipo === "VentaUSD") && m.cantidadUSD) total -= m.cantidadUSD; } return total; }, [movimientos, config?.meta.saldoUSD]);
+  const totalEUR = useMemo(() => { let total = config?.meta.saldoEUR ?? 0; for (const m of movimientos) { if ((m.tipo === "CompraEUR" || m.tipo === "IngresoEUR") && m.cantidadUSD) total += m.cantidadUSD; else if ((m.tipo === "GastoEUR" || m.tipo === "VentaEUR") && m.cantidadUSD) total -= m.cantidadUSD; } return total; }, [movimientos, config?.meta.saldoEUR]);
   const totalReserva = monedaInversiones === "EUR" ? totalEUR : totalUSD;
   const tasaAuto = cotizacion ? (monedaInversiones === "EUR" ? cotizacion.oficial_euro ?? null : cotizacion.oficial) : null;
   const tasaEnUso = cotizManualOn && cotizManualVal && parseFloat(cotizManualVal) > 0 ? parseFloat(cotizManualVal) : tasaAuto;

@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.53.0] — 2026-06-29
+
+### Added
+- **FX income movement** (`IngresoUSD`/`IngresoEUR`): receiving money in foreign currency (e.g. a USD payment) adds to the reserve without touching the available balance — the opposite of FX spending. Counted at zero cost (ii): it raises the reserve and the gain. Wired into every reserve calculation (investment, settings, goal notifications, reports), shown in the reserve history, and hidden from the main movements/dashboard lists.
+
+### Changed
+- **Reserve modal redesigned**: the four type pills sit in one row (Buy/Income green, Sell/Spend red). Income works like Spend — amount only, no rate or currency selector — it just adds to the reserve. For Buy/Sell the oficial/blue rate pills were removed (defaults to the official rate, shown with its label) and the date moved into that slot.
+- **"Leftover" reclassified**: the previous period's leftover (`RESTO`) is already-earned money, so it's now stored as a `Move` to savings instead of a fresh income. Existing leftover movements were migrated (`scripts/migrate-resto.js`). Period math is unchanged (still counts as savings carryover, never subtracts from available); it just no longer shows as green income — it's now a blue carryover entry.
+
+### Fixed
+- **Salary always anchors the period**: deterministic ordering so the salary movement sorts first even when it shares a creation timestamp with the leftover entry (was device-dependent).
+- **Personal inflation** no longer includes the in-progress period, which produced absurd values (nominal −1%, cumulative −93%, dashboard −95%) right after opening a new period. Applies to the dashboard KPI, the reports average, and the cumulative CPI chart.
+
+---
+
 ## [2.52.0] — 2026-06-29
 
 ### Changed

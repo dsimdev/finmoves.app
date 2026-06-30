@@ -221,17 +221,18 @@ async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<stri
   const compra = moneda === "USD" ? "CompraUSD" : "CompraEUR";
   const gasto = moneda === "USD" ? "GastoUSD" : "GastoEUR";
   const venta = moneda === "USD" ? "VentaUSD" : "VentaEUR";
+  const ingreso = moneda === "USD" ? "IngresoUSD" : "IngresoEUR";
   let total = moneda === "USD" ? (config.meta?.saldoUSD ?? 0) : (config.meta?.saldoEUR ?? 0);
 
   // Solo leer movimientos de inversión — no toda la colección.
   const snap = await adminDb()
     .collection(`users/${uid}/movimientos`)
-    .where("tipo", "in", [compra, gasto, venta])
+    .where("tipo", "in", [compra, gasto, venta, ingreso])
     .get();
   const movs = snap.docs.map((d) => ({ ...d.data(), id: d.id } as Movimiento));
 
   for (const m of movs) {
-    if (m.tipo === compra && m.cantidadUSD) total += m.cantidadUSD;
+    if ((m.tipo === compra || m.tipo === ingreso) && m.cantidadUSD) total += m.cantidadUSD;
     else if ((m.tipo === gasto || m.tipo === venta) && m.cantidadUSD) total -= m.cantidadUSD;
   }
 

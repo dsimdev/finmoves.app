@@ -18,11 +18,13 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 
 function TipoColor(m: Movimiento) {
+  if (m.categoria === "RESTO") return "var(--blue)"; // arrastre a ahorros del período anterior
   if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
   if (m.tipo === "Move") return m.direccionMove === "aAhorro" ? "var(--purple)" : "#26c6da";
   return "var(--green)";
 }
 function TipoPrefix(m: Movimiento) {
+  if (m.categoria === "RESTO") return "+"; // arrastre que entra como ahorros
   // Move "a ahorros" sale del disponible → signo negativo.
   if (m.tipo === "Move" && m.direccionMove === "aAhorro") return "-";
   return m.tipo === "Gasto" || m.tipo === "CompraUSD" ? "-" : "+";
@@ -62,6 +64,7 @@ export default function Dashboard() {
   }, [gastos, promPorMov]);
   const inflacionPersonal = useMemo(() => {
     const chron = periodos
+      .slice(1) // excluir el período en curso (incompleto): distorsiona la inflación
       .map((p) => ({ id: p.periodoId, gasto: p.movimientos.filter((m) => m.tipo === "Gasto").reduce((s, m) => s + m.monto, 0) }))
       .filter((p) => p.gasto > 0)
       .sort((a, b) => parsePeriodoId(a.id).getTime() - parsePeriodoId(b.id).getTime());
@@ -74,7 +77,7 @@ export default function Dashboard() {
     const curr = esARS ? deflatar(currP.gasto, currP.id) : currP.gasto;
     return prev > 0 ? Math.round(((curr - prev) / prev) * 100) : null;
   }, [periodos, deflatar, esARS]);
-  const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR").slice(0, 5) ?? [];
+  const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR").slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
   const barColorDim = pctDisp < 10 ? "var(--red-dim)" : pctDisp < 50 ? "var(--yellow-dim)" : "var(--green-dim)";

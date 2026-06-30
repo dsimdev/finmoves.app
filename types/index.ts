@@ -1,4 +1,4 @@
-export type TipoMovimiento = "Gasto" | "Ingreso" | "Move" | "CompraUSD" | "GastoUSD" | "CompraEUR" | "GastoEUR" | "VentaUSD" | "VentaEUR";
+export type TipoMovimiento = "Gasto" | "Ingreso" | "Move" | "CompraUSD" | "GastoUSD" | "CompraEUR" | "GastoEUR" | "VentaUSD" | "VentaEUR" | "IngresoUSD" | "IngresoEUR";
 export type TipoCategoria = "Gasto" | "Ingreso" | "Ambos";
 export type EstadoPeriodo = "activo" | "cerrado";
 export type TipoCambioRef = "blue" | "oficial";

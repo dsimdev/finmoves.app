@@ -26,8 +26,8 @@ Full CRUD for movements, grouped by date. Tap a row to edit. Supported types:
 | `Gasto` | Expense in ARS |
 | `Ingreso` | Income — `Sueldo` (anchors a period) or `Ahorros` |
 | `Move` | Internal transfer (savings → available) |
-| `CompraUSD` / `GastoUSD` | USD purchase / expense |
-| `CompraEUR` / `GastoEUR` | EUR purchase / expense |
+| `CompraUSD` / `GastoUSD` / `VentaUSD` / `IngresoUSD` | USD buy / spend / sell / income (income adds to reserve, no available impact) |
+| `CompraEUR` / `GastoEUR` / `VentaEUR` / `IngresoEUR` | EUR buy / spend / sell / income |
 
 **Periods**: a `Sueldo` opens a period. For the owner (and the first-ever salary) it always opens a new one; other users choose **"Add to current / New period"**. Opening a new period carries the previous period's leftover into the new one as a `RESTO` movement (counts as Savings).
 
@@ -86,4 +86,4 @@ Rollback: `git reset --hard vX.Y.Z` + push, or redeploy a previous build from th
 
 ## Current Version
 
-`v2.52.0` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.
+`v2.53.0` — see [CHANGELOG.md](./CHANGELOG.md) for the full history.

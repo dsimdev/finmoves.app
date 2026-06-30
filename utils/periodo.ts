@@ -58,7 +58,14 @@ export function agruparPorPeriodo(movimientos: Movimiento[]): PeriodoResumen[] {
         }
       } else if (m.tipo === "Move") {
         if (m.direccionMove === "aAhorro") {
-          moveAhorros += m.monto;
+          if (m.categoria === "RESTO") {
+            // Arrastre del período anterior (RESTO como Move a ahorros): cuenta como
+            // ahorros, NO resta del disponible del nuevo período (no es un depósito nuevo).
+            ahorrosBruto += m.monto;
+            restoBruto += m.monto;
+          } else {
+            moveAhorros += m.monto;
+          }
         } else {
           moveDisponible += m.monto;
         }
