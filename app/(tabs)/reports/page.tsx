@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
+import { useDolarHistorico } from "@/hooks/useDolarHistorico";
 import { SectionHint } from "@/components/ui/SectionHint";
 import { YearWrapped, wrappedYears } from "@/components/reports/YearWrapped";
 import { useData } from "../data-context";
@@ -164,12 +165,13 @@ type DotDatum = { label: string; value: number; color: string; hi?: boolean; per
 // Gráfico de puntos conectados por una línea de tendencia, con escala automática al
 // rango de datos. Soporta una línea de referencia (refValue: 0 para inflación, 100
 // para gasto/sueldo) y una segunda serie opcional (series2, p.ej. IPC país).
-function DotChart({ data, refValue, series2, series2Color, signed, onPointClick }: {
+function DotChart({ data, refValue, series2, series2Color, signed, format, onPointClick }: {
   data: DotDatum[];
   refValue?: number;
   series2?: (number | null)[];
   series2Color?: string;
   signed?: boolean;
+  format?: (v: number) => string;
   onPointClick?: (periodoId: string) => void;
 }) {
   const topPad = 16, botPad = 16, chartH = 92, PX = 46;
@@ -181,7 +183,7 @@ function DotChart({ data, refValue, series2, series2Color, signed, onPointClick 
   const W = Math.max(data.length * PX, PX);
   const totalH = topPad + chartH + botPad;
   const y = (v: number) => topPad + chartH - ((v - min) / (max - min)) * chartH;
-  const fmt = (v: number) => `${signed && v >= 0 ? "+" : ""}${v}%`;
+  const fmt = format ?? ((v: number) => `${signed && v >= 0 ? "+" : ""}${v}%`);
   const pts = data.map((d, i) => ({ x: i * PX + PX / 2, y: y(d.value), d }));
   const linePts = pts.map((p) => `${p.x},${p.y}`).join(" ");
   const s2pts = series2 ? series2.map((v, i) => v == null ? null : `${i * PX + PX / 2},${y(v)}`).filter(Boolean).join(" ") : "";
@@ -326,8 +328,11 @@ export default function ReportesPage() {
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [catModal, setCatModal] = useState<string | null>(null);
   const [medioModal, setMedioModal] = useState<string | null>(null);
-  const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo" | "inflacion">("gasto");
+  const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo" | "inflacion" | "sueldoReal">("gasto");
+  const [sueldoRealMode, setSueldoRealMode] = useState<"USD" | "IPC">("USD");
+  const [metricPickerOpen, setMetricPickerOpen] = useState(false);
   const { deflatar, ipcVar, ipcMensualUltimo } = useInflacionIPC();
+  const { dolarAt } = useDolarHistorico();
   const [selectedMovTipo, setSelectedMovTipo] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
@@ -1164,11 +1169,12 @@ export default function ReportesPage() {
               {/* Por período — un solo gráfico con selector de métrica */}
               {reportOn("periodos_otros") && serieDesc.length > 0 && (() => {
                 const metrics = [
-                  { id: "gasto", label: t.mPeriodSpent },
-                  { id: "ingreso", label: t.mPeriodIncome },
-                  { id: "dias", label: t.mPeriodDays },
-                  { id: "gastoSueldo", label: t.mPeriodRatio },
-                  ...(monedaPrincipal === "ARS" ? [{ id: "inflacion", label: "IP" }] : []),
+                  { id: "gasto", label: t.mGastosTotales },
+                  { id: "gastoSueldo", label: t.mGastoSobreSueldo },
+                  { id: "dias", label: t.mDuracionDias },
+                  ...(monedaPrincipal === "ARS" ? [{ id: "inflacion", label: t.mInflacionPersonal }] : []),
+                  { id: "ingreso", label: t.mIngresosTotales },
+                  ...(monedaPrincipal === "ARS" ? [{ id: "sueldoReal", label: t.mEvolucionSueldo }] : []),
                 ] as const;
                 type BarDatum = { label: string; value: number; color: string; hi?: boolean; best?: boolean; worst?: boolean; valueLabel?: string; periodoId?: string };
                 let data: BarDatum[] = [];
@@ -1222,14 +1228,22 @@ export default function ReportesPage() {
                   }
                 }
                 const vosColor = vosAcum != null && paisAcum != null ? (vosAcum > paisAcum ? "var(--red)" : "var(--green)") : "var(--text)";
-                const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : periodMetric === "inflacion" ? t.subMetricInflation : t.subMetricRatio;
+                // Sueldo real en el tiempo: en USD (oficial histórico) o ajustado por IPC (pesos de hoy).
+                const sueldoPts: DotDatum[] = periodMetric !== "sueldoReal" ? [] : serieDesc.filter((s) => s.sueldo > 0).map((s) => {
+                  const val = sueldoRealMode === "USD"
+                    ? (() => { const d = dolarAt(s.periodoId); return d ? Math.round(s.sueldo / d) : 0; })()
+                    : Math.round(deflatar(s.sueldo, s.periodoId));
+                  return { label: shortPer(s.periodoId), value: val, color: "var(--accent)", hi: activos.includes(s.periodoId), periodoId: s.periodoId };
+                }).filter((p) => p.value > 0);
+                const sub = periodMetric === "gasto" ? t.subMetricSpent : periodMetric === "ingreso" ? t.subMetricIncome : periodMetric === "dias" ? t.subMetricDays : periodMetric === "inflacion" ? t.subMetricInflation : periodMetric === "sueldoReal" ? (sueldoRealMode === "USD" ? t.subMetricSalaryUSD : t.subMetricSalaryIPC) : t.subMetricRatio;
+                const curMetric = metrics.find((m) => m.id === periodMetric) ?? metrics[0];
                 return (
+                  <>
                   <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-                    <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", marginBottom: 14 }}>
-                      {metrics.map((mt) => (
-                        <button key={mt.id} type="button" onClick={() => setPeriodMetric(mt.id as typeof periodMetric)} className="pill" style={{ flexShrink: 0, fontSize: 11, padding: "4px 10px", borderColor: periodMetric === mt.id ? "var(--accent)" : "var(--border)", background: periodMetric === mt.id ? "var(--accent-dim)" : "transparent", color: periodMetric === mt.id ? "var(--accent)" : "var(--muted)" }}>{mt.label}</button>
-                      ))}
-                    </div>
+                    <button type="button" onClick={() => setMetricPickerOpen(true)}
+                      style={{ width: "100%", marginBottom: 14, textAlign: "center", padding: "11px 14px", borderRadius: 12, border: "1px solid var(--accent)44", background: "linear-gradient(135deg, var(--accent-dim), transparent)", color: "var(--accent)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                      {curMetric.label}
+                    </button>
                     {periodMetric === "inflacion"
                       ? (inflPoints.length > 1
                           ? <>
@@ -1250,6 +1264,17 @@ export default function ReportesPage() {
                               <TwoLineChart points={inflPoints} colorA={vosColor} onPointClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
                             </>
                           : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
+                      : periodMetric === "sueldoReal"
+                      ? (sueldoPts.length > 0
+                          ? <>
+                              <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 12 }}>
+                                {(["USD", "IPC"] as const).map((mo) => (
+                                  <button key={mo} type="button" onClick={() => setSueldoRealMode(mo)} className="pill" style={{ fontSize: 11, padding: "3px 14px", borderColor: sueldoRealMode === mo ? "var(--accent)" : "var(--border)", background: sueldoRealMode === mo ? "var(--accent-dim)" : "transparent", color: sueldoRealMode === mo ? "var(--accent)" : "var(--muted)" }}>{mo === "USD" ? "USD" : "IPC"}</button>
+                                ))}
+                              </div>
+                              <DotChart data={sueldoPts} format={sueldoRealMode === "USD" ? (v) => (oculto ? "U$D ••" : `U$D ${v.toLocaleString("es-AR")}`) : (v) => (oculto ? "••" : abbr(v))} onPointClick={(pid) => setNavPeriodo({ periodoId: pid, target: "ingresos" })} />
+                            </>
+                          : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>)
                       : periodMetric === "gastoSueldo"
                       ? (data.length > 0
                           ? <DotChart data={data} refValue={0} signed onPointClick={(pid) => setNavPeriodo({ periodoId: pid, target: "gastos" })} />
@@ -1264,6 +1289,20 @@ export default function ReportesPage() {
                       : <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noRecords}</div>}
                     <div style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", marginTop: 10 }}>{sub}</div>
                   </div>
+
+                  <BottomSheet open={metricPickerOpen} onClose={() => setMetricPickerOpen(false)} title={t.chartLabel}>
+                    {metrics.map((mt) => {
+                      const active = periodMetric === mt.id;
+                      return (
+                        <button key={mt.id} type="button" onClick={() => { setPeriodMetric(mt.id as typeof periodMetric); setMetricPickerOpen(false); }}
+                          style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "14px 4px", borderBottom: "1px solid var(--faint)", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: active ? "var(--accent)" : "var(--text)", fontSize: 15, fontWeight: active ? 700 : 500 }}>
+                          <span style={{ flex: 1 }}>{mt.label}</span>
+                          {active && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                        </button>
+                      );
+                    })}
+                  </BottomSheet>
+                  </>
                 );
               })()}
 

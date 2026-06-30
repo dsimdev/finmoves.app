@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.51.0] — 2026-06-29
+
+### Added
+- **Salary over time** (Reports → Períodos): chart of your salary per period in USD (official historical rate from bluelytics) or CPI-adjusted (today's pesos), with a USD/IPC toggle. ARS only.
+
+### Changed
+- **Period chart selector** redesigned: the pill row is now a single centered button that opens a bottom-sheet picker (label + check). Options renamed/reordered: Total spending · Spending vs salary · Length in days · Personal inflation · Total income · Salary over time.
+- **"Your year" recap is now seasonal**: the button only shows in December.
+
+---
+
 ## [2.50.0] — 2026-06-29
 
 ### Added

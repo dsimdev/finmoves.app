@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.51.0] — 2026-06-29
+
+### Novedades
+- **Evolución del sueldo**: nuevo gráfico en Reportes que muestra tu sueldo a lo largo del tiempo, en dólares (oficial) o ajustado por inflación. Para ver cómo evolucionó tu poder de compra.
+
+### Mejoras
+- **Selector de gráficos** más prolijo: en vez de la fila de botones, ahora tocás uno y elegís de una lista. Renombramos las opciones para que se entiendan mejor.
+- **"Tu año"** ahora aparece solo en diciembre (es un recap de fin de año).
+
+---
+
 ## [2.50.0] — 2026-06-29
 
 ### Novedades
