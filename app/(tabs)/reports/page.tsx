@@ -437,6 +437,14 @@ export default function ReportesPage() {
         .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
     : [];
 
+  // RESTO (arrastre del período anterior, ahora Move/aAhorro · antes Ingreso/RESTO).
+  // Solo para MOSTRAR en el detalle "directo a ahorros" — NO entra en ningún total/KPI.
+  const movResto = periodo
+    ? periodo.movimientos
+        .filter((m) => m.categoria === "RESTO")
+        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+    : [];
+
   const totalIngresos = periodo ? periodo.sueldo + periodo.moveDisponible : 0;
   const totalAhorradoDirecto = movIngresosAhorros.reduce((s, m) => s + m.monto, 0);
 
@@ -466,8 +474,8 @@ export default function ReportesPage() {
     if (!periodo) return [];
     const descMap = new Map<string, number>();
     for (const m of periodo.movimientos) {
-      // Incluye todos los ingresos reales: Sueldo y RESTO (período anterior)
-      if (m.tipo === "Ingreso") {
+      // Incluye todos los ingresos reales: Sueldo y RESTO (período anterior, ahora Move/aAhorro)
+      if (m.tipo === "Ingreso" || m.categoria === "RESTO") {
         const key = m.categoria === "RESTO" ? t.prevPeriodRemaining : (m.descripcion || m.categoria);
         descMap.set(key, (descMap.get(key) ?? 0) + m.monto);
       }
@@ -532,6 +540,7 @@ export default function ReportesPage() {
   // que dispararían el número) entre períodos consecutivos.
   const inflacionPersonal = useMemo(() => {
     const chron = periodos
+      .slice(1) // excluir el período en curso (incompleto): distorsiona la inflación
       .map((p) => ({ id: p.periodoId, gasto: p.movimientos.filter((m) => m.tipo === "Gasto").reduce((s, m) => s + m.monto, 0) }))
       .filter((p) => p.gasto > 0)
       .sort((a, b) => parsePeriodoId(a.id).getTime() - parsePeriodoId(b.id).getTime());
@@ -579,11 +588,12 @@ export default function ReportesPage() {
   const tipoCompraFX = monedaInversiones === "EUR" ? "CompraEUR" : "CompraUSD";
   const tipoGastoFX  = monedaInversiones === "EUR" ? "GastoEUR"  : "GastoUSD";
   const tipoVentaFX  = monedaInversiones === "EUR" ? "VentaEUR"  : "VentaUSD";
+  const tipoIngresoFX = monedaInversiones === "EUR" ? "IngresoEUR" : "IngresoUSD";
   const SALDO_INICIAL = monedaInversiones === "EUR" ? (config?.meta.saldoEUR ?? 0) : (config?.meta.saldoUSD ?? 0);
   const reservaFX = useMemo(() => {
     let total = SALDO_INICIAL;
     for (const m of movimientos) {
-      if (m.tipo === tipoCompraFX && m.cantidadUSD) total += m.cantidadUSD;
+      if ((m.tipo === tipoCompraFX || m.tipo === tipoIngresoFX) && m.cantidadUSD) total += m.cantidadUSD;
       else if ((m.tipo === tipoGastoFX || m.tipo === tipoVentaFX) && m.cantidadUSD) total -= m.cantidadUSD;
     }
     return Math.max(0, total);
@@ -1066,7 +1076,7 @@ export default function ReportesPage() {
 
 
               {/* Detalle de movimientos */}
-              {reportOn("ingresos_otros") && (movIngresos.length > 0 || movIngresosAhorros.length > 0) && (
+              {reportOn("ingresos_otros") && (movIngresos.length > 0 || movIngresosAhorros.length > 0 || movResto.length > 0) && (
                 <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{t.detail}</div>
                   {movIngresos.map((m) => (
@@ -1080,11 +1090,22 @@ export default function ReportesPage() {
                       </span>
                     </div>
                   ))}
-                  {movIngresosAhorros.length > 0 && (
+                  {(movIngresosAhorros.length > 0 || movResto.length > 0) && (
                     <>
                       <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 2, textTransform: "uppercase", padding: "10px 0 4px", borderTop: movIngresos.length > 0 ? "1px solid var(--faint)" : "none", marginTop: movIngresos.length > 0 ? 4 : 0 }}>
                         {t.directToSavings}
                       </div>
+                      {movResto.map((m) => (
+                        <div key={m.id} className="row" style={{ padding: "9px 0" }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.prevPeriodRemaining}</div>
+                            <div style={{ fontSize: 10, color: "var(--muted)" }}>{sinAño(m.fecha)}</div>
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+                            +{money(m.monto)}
+                          </span>
+                        </div>
+                      ))}
                       {movIngresosAhorros.slice(0, 5).map((m) => (
                         <div key={m.id} className="row" style={{ padding: "9px 0" }}>
                           <div style={{ minWidth: 0 }}>
@@ -1106,7 +1127,7 @@ export default function ReportesPage() {
                 </div>
               )}
 
-              {movIngresos.length === 0 && movIngresosAhorros.length === 0 && (
+              {movIngresos.length === 0 && movIngresosAhorros.length === 0 && movResto.length === 0 && (
                 <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
                   {t.noIncomeThisPeriod}
                 </div>
@@ -1216,11 +1237,13 @@ export default function ReportesPage() {
                 let inflPoints: { label: string; a: number; b: number | null; hi?: boolean; periodoId?: string }[] = [];
                 let vosAcum: number | null = null, paisAcum: number | null = null;
                 if (periodMetric === "inflacion") {
-                  const baseIdx = serie.findIndex((s) => s.gastadoPuro > 0);
+                  // Excluir el período en curso (incompleto): distorsiona la inflación acumulada.
+                  const serieCompleta = serie.slice(0, -1);
+                  const baseIdx = serieCompleta.findIndex((s) => s.gastadoPuro > 0);
                   if (baseIdx >= 0) {
-                    const baseG = serie[baseIdx]!.gastadoPuro;
-                    const baseId = serie[baseIdx]!.periodoId;
-                    const ordered = serie.slice(baseIdx).map((s) => {
+                    const baseG = serieCompleta[baseIdx]!.gastadoPuro;
+                    const baseId = serieCompleta[baseIdx]!.periodoId;
+                    const ordered = serieCompleta.slice(baseIdx).map((s) => {
                       const vos = (s.gastadoPuro / baseG - 1) * 100;
                       const pais = ipcVar(baseId, s.periodoId);
                       return { label: shortPer(s.periodoId), a: Math.round(vos), b: pais != null ? Math.round(pais) : null, hi: activos.includes(s.periodoId), periodoId: s.periodoId };

@@ -4,6 +4,21 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.53.0] — 2026-06-29
+
+### Novedades
+- **Ingreso en dólares/euros**: ahora podés registrar plata que te entra en divisa (un pago en USD, etc.). Suma a tu reserva sin pasar por el disponible. Lo cargás desde Inversión, en el modal de Reserva (nuevo botón "Ingreso").
+
+### Mejoras
+- **Modal de Reserva más prolijo**: los cuatro tipos en una sola fila (Compra/Ingreso en verde, Venta/Gasto en rojo). El Ingreso funciona como el Gasto (solo la cantidad). En Compra/Venta sacamos las opciones de cotización (usa el oficial por defecto) y la fecha quedó más a mano.
+- **"Resto del período anterior"**: ya que es plata que ya tenías, dejó de figurar como un ingreso nuevo y ahora se muestra como un movimiento a ahorros (en azul). Tus números no cambian, solo se ve más claro.
+- El **sueldo** siempre aparece primero en el período, en cualquier dispositivo.
+
+### Correcciones
+- Arreglamos la **inflación personal**, que mostraba valores raros (negativos) apenas arrancaba un período nuevo.
+
+---
+
 ## [2.52.0] — 2026-06-29
 
 ### Mejoras

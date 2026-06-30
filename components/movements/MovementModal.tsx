@@ -67,8 +67,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // En modo normal, las cargas a la reserva ya no se ofrecen acá.
   const TIPOS: { t: TipoMovimiento; label: string; color: string }[] = reserveMode ? [
     { t: (esEURMode ? "CompraEUR" : "CompraUSD") as TipoMovimiento, label: t.buy, color: "var(--green)" },
+    { t: (esEURMode ? "IngresoEUR" : "IngresoUSD") as TipoMovimiento, label: t.fxIncome, color: "var(--green)" },
     { t: (esEURMode ? "VentaEUR" : "VentaUSD") as TipoMovimiento, label: t.sell, color: "var(--red)" },
-    { t: (esEURMode ? "GastoEUR" : "GastoUSD") as TipoMovimiento, label: t.spend, color: "var(--blue)" },
+    { t: (esEURMode ? "GastoEUR" : "GastoUSD") as TipoMovimiento, label: t.spend, color: "var(--red)" },
   ] : [
     { t: "Gasto", label: t.tipoDisplay["Gasto"], color: "var(--red)" },
     { t: "Ingreso", label: t.tipoDisplay["Ingreso"], color: "var(--green)" },
@@ -232,13 +233,18 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const esGastoEUR = tipo === "GastoEUR";
   const esVentaUSD = tipo === "VentaUSD";
   const esVentaEUR = tipo === "VentaEUR";
+  const esIngresoUSD = tipo === "IngresoUSD";
+  const esIngresoEUR = tipo === "IngresoEUR";
   const esCompraFX = esCompraUSD || esCompraEUR;
   const esGastoFX = esGastoUSD || esGastoEUR;
   const esVentaFX = esVentaUSD || esVentaEUR;
-  // Compra y Venta usan el mismo form (cantidad + cotización → ARS); Gasto solo cantidad.
+  const esIngresoFX = esIngresoUSD || esIngresoEUR;
+  // Compra y Venta usan el form con cotización (cantidad + cotización → ARS).
+  // Gasto e Ingreso FX solo necesitan cantidad (suman/restan a la reserva, sin disponible ni cotización).
   const esCompraOVenta = esCompraFX || esVentaFX;
-  const esUSD = esCompraFX || esGastoFX || esVentaFX;
-  const fxLabel = esCompraEUR || esGastoEUR || esVentaEUR ? "EUR" : "USD";
+  const esSoloCantidadFX = esGastoFX || esIngresoFX;
+  const esUSD = esCompraFX || esGastoFX || esVentaFX || esIngresoFX;
+  const fxLabel = esCompraEUR || esGastoEUR || esVentaEUR || esIngresoEUR ? "EUR" : "USD";
   const tipoColor = TIPOS.find((tx) => tx.t === tipo)?.color ?? "var(--accent)";
 
   const categoriasFiltradas = tipo === "Gasto"
@@ -250,8 +256,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           { id: "ahorros", nombre: "Ahorros", tipo: "Ingreso" as const, activa: true }])
     : [];
 
-  const cotizActual = cotizManual ? parseFloat(cotizManual) : cotizacion?.oficial ?? 0;
-  const usdFinal = !esUSD ? 0 : esGastoFX
+  const cotizActual = cotizManual ? parseFloat(cotizManual) : (fxLabel === "EUR" ? cotizacion?.oficial_euro : cotizacion?.oficial) ?? 0;
+  const usdFinal = !esUSD ? 0 : esSoloCantidadFX
     ? parseFloat(cantidadUSD || "0")
     : modoCarga === "USD"
     ? parseFloat(cantidadUSD || "0")
@@ -267,7 +273,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     const base = (eur ? config?.meta.saldoEUR : config?.meta.saldoUSD) ?? 0;
     return movimientos.reduce((tot, m) => {
       if (!m.cantidadUSD) return tot;
-      if (m.tipo === (eur ? "CompraEUR" : "CompraUSD")) return tot + m.cantidadUSD;
+      if (m.tipo === (eur ? "CompraEUR" : "CompraUSD") || m.tipo === (eur ? "IngresoEUR" : "IngresoUSD")) return tot + m.cantidadUSD;
       if (m.tipo === (eur ? "GastoEUR" : "GastoUSD") || m.tipo === (eur ? "VentaEUR" : "VentaUSD")) return tot - m.cantidadUSD;
       return tot;
     }, base);
@@ -294,7 +300,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const abrePeriodo = esSueldo && (forzarNuevoPeriodo || abreNuevoPeriodo);
 
   const canSubmit = (!!periodoActual || abrePeriodo) && (
-    esGastoFX ? usdFinal > 0 :
+    esSoloCantidadFX ? usdFinal > 0 :
     esCompraOVenta ? usdFinal > 0 && arsCompraUSD > 0 :
     esMove ? true :
     !!categoria && parseFloat(monto || "0") > 0
@@ -304,7 +310,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // borrar (se chequea en el efecto de apertura). Un sueldo "sumado" al período sí.
   const isLocked = movimiento ? movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" : false;
   // Movimiento de reserva (FX): muestra cantidad + cotización en el detalle.
-  const esFXMov = !!movimiento && ["CompraUSD", "GastoUSD", "CompraEUR", "GastoEUR", "VentaUSD", "VentaEUR"].includes(movimiento.tipo);
+  const esFXMov = !!movimiento && ["CompraUSD", "GastoUSD", "CompraEUR", "GastoEUR", "VentaUSD", "VentaEUR", "IngresoUSD", "IngresoEUR"].includes(movimiento.tipo);
   const fxMovLabel = movimiento && (movimiento.tipo === "CompraEUR" || movimiento.tipo === "GastoEUR" || movimiento.tipo === "VentaEUR") ? "EUR" : "USD";
   // Quién puede adjuntar comprobantes: el dueño siempre, o quien tenga el permiso
   // habilitado por el dueño (default OFF para no-dueños). Ver panel Admin.
@@ -337,8 +343,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     try {
       if (!user?.uid) throw new Error(t.errNotAuth);
       if (!esMove && !esUSD && !categoria) throw new Error(t.errSelectCat);
-      const montoFinal = esCompraOVenta ? arsCompraUSD : esGastoFX ? 0 : parseFloat(monto);
-      if (!esGastoFX && (!montoFinal || montoFinal <= 0)) throw new Error(t.errInvalidAmount);
+      const montoFinal = esCompraOVenta ? arsCompraUSD : esSoloCantidadFX ? 0 : parseFloat(monto);
+      if (!esSoloCantidadFX && (!montoFinal || montoFinal <= 0)) throw new Error(t.errInvalidAmount);
       if (esUSD && (!usdFinal || usdFinal <= 0)) throw new Error(t.errInvalidFX(fxLabel));
       const periodoIdFinal = abrePeriodo ? fechaAPeriodoId(fecha) : (periodoActual?.periodoId ?? null);
       if (!periodoIdFinal) throw new Error(t.errNoActivePeriod);
@@ -350,15 +356,15 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       const mainData: Omit<Movimiento, "id"> = {
         timestampCarga: now, fecha, tipo,
         categoria: esMove ? "Move" : esUSD ? tipo : categoria,
-        descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esVentaFX ? `Venta ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
+        descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esVentaFX ? `Venta ${fxLabel}` : esIngresoFX ? `Ingreso ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
         monto: montoFinal,
-        medioPago: esMove || esCompraFX || esVentaFX ? "Mercado Pago" : esGastoFX ? "—" : medioPago,
+        medioPago: esMove || esCompraFX || esVentaFX ? "Mercado Pago" : esGastoFX || esIngresoFX ? "—" : medioPago,
         observaciones, periodoId: periodoIdFinal, userId: user.uid,
         ...(esMove ? { direccionMove: moveDir } : {}),
         ...(comprobante ? { comprobanteUrl: comprobante.url, comprobantePath: comprobante.path } : {}),
         ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
         ...(esCompraOVenta ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
-        ...(esGastoFX ? { cantidadUSD: usdFinal } : {}),
+        ...(esSoloCantidadFX ? { cantidadUSD: usdFinal } : {}),
       };
       const mainId = await crearMovimiento(user.uid, mainData);
       created.push({ ...mainData, id: mainId });
@@ -371,8 +377,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
       // Cierre del período anterior: el disponible sobrante se traslada como RESTO al nuevo período.
       if (abrePeriodo && !sinPeriodos && periodoActual && periodoActual.disponible > 0) {
+        // El sobrante ya era plata ingresada → no es un ingreso nuevo: se arrastra como
+        // Move a ahorros (categoría RESTO). agruparPorPeriodo lo cuenta como arrastre a
+        // ahorros (no resta del disponible del nuevo período).
         const restoData: Omit<Movimiento, "id"> = {
-          timestampCarga: now, fecha, tipo: "Ingreso",
+          timestampCarga: now, fecha, tipo: "Move", direccionMove: "aAhorro",
           categoria: "RESTO", descripcion: "Resto período anterior",
           monto: periodoActual.disponible,
           medioPago: "—", observaciones: `de ${periodoActual.periodoId}`,
@@ -490,26 +499,20 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       {mode === "add" && (
         <form onSubmit={handleAdd}>
           {reserveMode ? (
-            /* Reserva: TIPO + FECHA en la misma fila (compacto). */
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16, alignItems: "start" }}>
-              <div>
-                <div className="label">{t.type}</div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {TIPOS.map(({ t: tt, label, color }) => (
-                    <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); }}
-                      className="pill" style={{
-                        flex: 1, height: 44, padding: "0 6px",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        borderColor: tipo === tt ? color : "var(--border)",
-                        background: tipo === tt ? color + "22" : "transparent",
-                        color: tipo === tt ? color : "var(--muted)",
-                      }}>{label}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="label">{t.date}</div>
-                <input className="input" type="date" style={{ height: 44 }} value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            /* Reserva: TIPO a todo el ancho (Compra/Ingreso verdes, Venta/Gasto rojos). */
+            <div style={{ marginBottom: 16 }}>
+              <div className="label">{t.type}</div>
+              <div style={{ display: "flex", gap: 5 }}>
+                {TIPOS.map(({ t: tt, label, color }) => (
+                  <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); }}
+                    className="pill" style={{
+                      flex: 1, minWidth: 0, height: 42, padding: "0 4px", fontSize: 12,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      borderColor: tipo === tt ? color : "var(--border)",
+                      background: tipo === tt ? color + "22" : "transparent",
+                      color: tipo === tt ? color : "var(--muted)",
+                    }}>{label}</button>
+                ))}
               </div>
             </div>
           ) : (<>
@@ -692,23 +695,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                   </div>
                 </div>
                 <div>
-                  <div className="label">{t.exchangeRate}</div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {cotizacion ? (["oficial", "blue"] as const).map((rt) => {
-                      const val = esCompraEUR
-                        ? (rt === "oficial" ? cotizacion.oficial_euro : cotizacion.blue_euro) ?? cotizacion[rt]
-                        : cotizacion[rt];
-                      return (
-                        <button key={rt} type="button" onClick={() => setCotizManual(String(val))}
-                          className="pill" style={{
-                            flex: 1,
-                            borderColor: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow)" : "var(--border)",
-                            background: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow-dim)" : "transparent",
-                            color: (cotizManual === String(val) || (!cotizManual && rt === "oficial")) ? "var(--yellow)" : "var(--muted)",
-                          }}>{rt}</button>
-                      );
-                    }) : <span style={{ fontSize: 12, color: "var(--muted)" }}>{t.noExchangeRate}</span>}
-                  </div>
+                  <div className="label">{t.date}</div>
+                  <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
                 </div>
               </div>
 
@@ -722,8 +710,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                   )}
                 </div>
                 <div>
-                  <div className="label" style={{ visibility: "hidden" }}>{t.exchangeRate}</div>
-                  <input className="input" type="number" value={cotizManual || String(cotizacion?.oficial ?? "")} onChange={(e) => setCotizManual(e.target.value)} placeholder="0" />
+                  <div className="label">{t.exchangeRate}</div>
+                  <input className="input" type="number" value={cotizManual || String((esCompraEUR || esIngresoEUR ? cotizacion?.oficial_euro : cotizacion?.oficial) ?? "")} onChange={(e) => setCotizManual(e.target.value)} placeholder="0" />
                 </div>
               </div>
 
@@ -737,11 +725,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
                   {t.available}: <span style={{ fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
                   {arsCompraUSD > 0 && esVentaFX && (
-                    // La venta SUMA al disponible (entra ARS).
                     <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color: "var(--green)" }}>{money(periodoActual.disponible + arsCompraUSD)}</span></>
                   )}
-                  {arsCompraUSD > 0 && !esVentaFX && (() => {
-                    // Compra: resta del disponible. Color según cuánto representa: <30% verde, 30-70% amarillo, >70% rojo.
+                  {arsCompraUSD > 0 && esCompraFX && (() => {
                     const ratio = periodoActual.disponible > 0 ? arsCompraUSD / periodoActual.disponible : 1;
                     const restoColor = ratio < 0.30 ? "var(--green)" : ratio <= 0.70 ? "var(--yellow)" : "var(--red)";
                     return <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color: restoColor }}>{money(periodoActual.disponible - arsCompraUSD)}</span></>;
@@ -751,18 +737,28 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           )}
 
-          {esGastoFX && (
+          {esSoloCantidadFX && (
             <div style={{ marginBottom: 18 }}>
-              <div className="label">{t.fxAmountSpent(fxLabel)}</div>
-              <input ref={reserveRef} className="input" type="number" value={cantidadUSD} onChange={(e) => setCantidadUSD(e.target.value)} placeholder="0" style={{ fontFamily: "var(--font-mono)" }} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                <div>
+                  <div className="label">{esIngresoFX ? t.fxAmountReceived(fxLabel) : t.fxAmountSpent(fxLabel)}</div>
+                  <input ref={reserveRef} className="input" type="number" value={cantidadUSD} onChange={(e) => setCantidadUSD(e.target.value)} placeholder="0" style={{ fontFamily: "var(--font-mono)" }} />
+                </div>
+                <div>
+                  <div className="label">{t.date}</div>
+                  <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+                </div>
+              </div>
               <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
                 {t.reserve}: <span style={{ fontFamily: "var(--font-mono)" }}>{fxLabel} {reservaActualFX.toFixed(2)}</span>
-                {usdFinal > 0 && (() => {
-                  const queda = reservaActualFX - usdFinal;
-                  const ratio = reservaActualFX > 0 ? usdFinal / reservaActualFX : 1;
-                  const color = ratio < 0.30 ? "var(--green)" : ratio <= 0.70 ? "var(--yellow)" : "var(--red)";
-                  return <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color }}>{fxLabel} {queda.toFixed(2)}</span></>;
-                })()}
+                {usdFinal > 0 && (esIngresoFX
+                  ? <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color: "var(--green)" }}>{fxLabel} {(reservaActualFX + usdFinal).toFixed(2)}</span></>
+                  : (() => {
+                      const queda = reservaActualFX - usdFinal;
+                      const ratio = reservaActualFX > 0 ? usdFinal / reservaActualFX : 1;
+                      const color = ratio < 0.30 ? "var(--green)" : ratio <= 0.70 ? "var(--yellow)" : "var(--red)";
+                      return <> · {t.remaining}: <span style={{ fontFamily: "var(--font-mono)", color }}>{fxLabel} {queda.toFixed(2)}</span></>;
+                    })())}
               </div>
             </div>
           )}

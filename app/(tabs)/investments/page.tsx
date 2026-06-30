@@ -34,9 +34,10 @@ import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { Movimiento } from "@/types";
 
 function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
-  const tipoCompra = moneda === "USD" ? "CompraUSD" : "CompraEUR";
-  const tipoGasto  = moneda === "USD" ? "GastoUSD"  : "GastoEUR";
-  const tipoVenta  = moneda === "USD" ? "VentaUSD"  : "VentaEUR";
+  const tipoCompra  = moneda === "USD" ? "CompraUSD"  : "CompraEUR";
+  const tipoGasto   = moneda === "USD" ? "GastoUSD"   : "GastoEUR";
+  const tipoVenta   = moneda === "USD" ? "VentaUSD"   : "VentaEUR";
+  const tipoIngreso = moneda === "USD" ? "IngresoUSD" : "IngresoEUR";
   // Costo promedio MÓVIL: procesar en orden cronológico (más viejo → más nuevo).
   // Al reducir la reserva (gasto/venta/retiro) baja la cantidad Y el costo acumulado
   // a precio promedio, así el promedio de lo que queda no se distorsiona.
@@ -47,6 +48,9 @@ function calcularReserva(movimientos: Movimiento[], moneda: "USD" | "EUR") {
     if (m.tipo === tipoCompra && m.cantidadUSD) {
       total += m.cantidadUSD;
       costoTotalARS += m.monto;
+    } else if (m.tipo === tipoIngreso && m.cantidadUSD) {
+      // Ingreso en divisa (un pago en USD): suma a la reserva a costo 0 (no se compró con pesos).
+      total += m.cantidadUSD;
     } else if ((m.tipo === tipoGasto || m.tipo === tipoVenta) && m.cantidadUSD) {
       // Gasto y Venta bajan la reserva (la Venta además sumó al disponible, ya contado).
       const avg = total > 0 ? costoTotalARS / total : 0;
@@ -109,7 +113,7 @@ export default function DolaresPage() {
 
   // ── USD ──
   const comprasUSD = movimientos
-    .filter((m) => m.tipo === "CompraUSD" || m.tipo === "GastoUSD" || m.tipo === "VentaUSD")
+    .filter((m) => m.tipo === "CompraUSD" || m.tipo === "GastoUSD" || m.tipo === "VentaUSD" || m.tipo === "IngresoUSD")
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
   const historialUSD = comprasUSD; // compras (+) y retiros (−) de la reserva
   const { total: desdeMovimientosUSD, costoPromedio: costoPromedioUSD } = calcularReserva(comprasUSD, "USD");
@@ -120,7 +124,7 @@ export default function DolaresPage() {
 
   // ── EUR ──
   const comprasEUR = movimientos
-    .filter((m) => m.tipo === "CompraEUR" || m.tipo === "GastoEUR" || m.tipo === "VentaEUR")
+    .filter((m) => m.tipo === "CompraEUR" || m.tipo === "GastoEUR" || m.tipo === "VentaEUR" || m.tipo === "IngresoEUR")
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
   const historialEUR = comprasEUR; // compras (+) y retiros (−) de la reserva
   const { total: desdeMovimientosEUR, costoPromedio: costoPromedioEUR } = calcularReserva(comprasEUR, "EUR");
@@ -164,11 +168,12 @@ export default function DolaresPage() {
   }, [user?.uid, !!config, !!inversionSeedId, periodos.length]);
 
   // FX neto comprado por período (CompraFX - GastoFX - VentaFX por cantidadUSD).
-  const tipoCompraFX = esEUR ? "CompraEUR" : "CompraUSD";
-  const tipoGastoFX  = esEUR ? "GastoEUR"  : "GastoUSD";
-  const tipoVentaFX  = esEUR ? "VentaEUR"  : "VentaUSD";
+  const tipoCompraFX  = esEUR ? "CompraEUR"  : "CompraUSD";
+  const tipoGastoFX   = esEUR ? "GastoEUR"   : "GastoUSD";
+  const tipoVentaFX   = esEUR ? "VentaEUR"   : "VentaUSD";
+  const tipoIngresoFX = esEUR ? "IngresoEUR" : "IngresoUSD";
   const netFXDe = (movs: Movimiento[]) => movs.reduce((s, m) => {
-    if (m.tipo === tipoCompraFX && m.cantidadUSD) return s + m.cantidadUSD;
+    if ((m.tipo === tipoCompraFX || m.tipo === tipoIngresoFX) && m.cantidadUSD) return s + m.cantidadUSD;
     if ((m.tipo === tipoGastoFX || m.tipo === tipoVentaFX) && m.cantidadUSD) return s - m.cantidadUSD;
     return s;
   }, 0);
@@ -374,6 +379,7 @@ export default function DolaresPage() {
               {(expandUSD ? historialUSD : historialUSD.slice(0, 5)).map((m) => {
                 const esRetiro = m.tipo === "GastoUSD";
                 const esVenta = m.tipo === "VentaUSD";
+                const esIngreso = m.tipo === "IngresoUSD";
                 const esSalida = esRetiro || esVenta;
                 return (
                 <div key={m.id} className="row" onClick={() => setModal({ mode: "edit", mov: m })} style={{ cursor: "pointer" }}>
@@ -383,13 +389,15 @@ export default function DolaresPage() {
                       ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.sell}{m.cotizacion ? ` · ${t.rate} $${m.cotizacion.toLocaleString("es-AR")}` : ""}</div>
                       : esRetiro
                       ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.removeReserve}</div>
+                      : esIngreso
+                      ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.fxIncome}</div>
                       : m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: esVenta ? "var(--red)" : esRetiro ? "var(--blue)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: esVenta ? "var(--red)" : esRetiro ? "var(--blue)" : esIngreso ? "var(--green)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
                       {esSalida ? "−" : "+"}{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
                     </div>
-                    {!esRetiro && <div style={{ fontSize: 10, color: esVenta ? "var(--green)" : "var(--muted)" }}>{esVenta ? "+" : ""}{money(m.monto)}</div>}
+                    {!esRetiro && !esIngreso && <div style={{ fontSize: 10, color: esVenta ? "var(--green)" : "var(--muted)" }}>{esVenta ? "+" : ""}{money(m.monto)}</div>}
                   </div>
                 </div>
               );})}
@@ -408,6 +416,7 @@ export default function DolaresPage() {
               {(expandEUR ? historialEUR : historialEUR.slice(0, 5)).map((m) => {
                 const esRetiro = m.tipo === "GastoEUR";
                 const esVenta = m.tipo === "VentaEUR";
+                const esIngreso = m.tipo === "IngresoEUR";
                 const esSalida = esRetiro || esVenta;
                 return (
                 <div key={m.id} className="row" onClick={() => setModal({ mode: "edit", mov: m })} style={{ cursor: "pointer" }}>
@@ -417,13 +426,15 @@ export default function DolaresPage() {
                       ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.sell}{m.cotizacion ? ` · ${t.rate} $${m.cotizacion.toLocaleString("es-AR")}` : ""}</div>
                       : esRetiro
                       ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.removeReserve}</div>
+                      : esIngreso
+                      ? <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.fxIncome}</div>
                       : m.cotizacion && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{t.rate} ${m.cotizacion.toLocaleString("es-AR")}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: esVenta ? "var(--red)" : esRetiro ? "var(--blue)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: esVenta ? "var(--red)" : esRetiro ? "var(--blue)" : esIngreso ? "var(--green)" : "var(--yellow)", fontFamily: "var(--font-mono)" }}>
                       {esSalida ? "−" : "+"}{oculto ? "••" : m.cantidadUSD?.toFixed(2)}
                     </div>
-                    {!esRetiro && <div style={{ fontSize: 10, color: esVenta ? "var(--green)" : "var(--muted)" }}>{esVenta ? "+" : ""}{money(m.monto)}</div>}
+                    {!esRetiro && !esIngreso && <div style={{ fontSize: 10, color: esVenta ? "var(--green)" : "var(--muted)" }}>{esVenta ? "+" : ""}{money(m.monto)}</div>}
                   </div>
                 </div>
               );})}
