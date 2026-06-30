@@ -133,12 +133,12 @@ export default function Dashboard() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
             {dashboardClasico ? (<>
               <MiniStat basis="1 1 45%" label={t.salary} value={money(p.sueldo)} color="var(--green)" />
-              <MiniStat basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)" />
+              <MiniStat basis="1 1 45%" label={t.spent} value={money(p.gastadoPuro)} color="var(--red)" />
               <MiniStat basis="1 1 45%" label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
               <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} color="#26c6da" />
             </>) : (<>
-              <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastado)} color="var(--red)"
-                onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastado), explain: t.kpiSpentPeriodInfo, color: "var(--red)" })} />
+              <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastadoPuro)} color="var(--red)"
+                onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastadoPuro), explain: t.kpiSpentRealInfo, color: "var(--red)" })} />
               <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
                 onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
               {(() => { const ip = inflacionPersonal; const c = ip == null ? "var(--muted)" : ip > 0 ? "var(--red)" : "var(--green)"; const v = ip == null ? "—" : `${ip >= 0 ? "+" : ""}${ip}%`; return (

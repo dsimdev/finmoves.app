@@ -9,20 +9,36 @@ import { useT } from "@/hooks/useTranslation";
 import { db } from "@/services/firebase/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { dbErrorMessage } from "@/lib/firebase-error";
-import { Toggle, SubHeader } from "../_shared";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { Toggle, SubHeader, FlagAR, FlagGB } from "../_shared";
 
 export default function PreferencesSettings() {
   const { user } = useAuth();
   const { config, refreshConfig: refresh } = useData();
   const { dark, toggle: toggleTheme } = useTheme();
-  const { showReportes, dashboardClasico, set: setPref } = useAppPrefs();
+  const { showReportes, dashboardClasico, monedaPrincipal, lang, set: setPref, setMonedaPrincipal, setLang } = useAppPrefs();
   const t = useT();
   const [, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pendingLang, setPendingLang] = useState<"es" | "en" | null>(null);
+  const [pendingMoneda, setPendingMoneda] = useState<"ARS" | "USD" | "EUR" | null>(null);
+  const [monedaBusy, setMonedaBusy] = useState(false);
 
   const saveConfig = async (newConfig: typeof config) => {
     if (!user?.uid || !newConfig) return;
     try { await setDoc(doc(db, `users/${user.uid}/config/meta`), newConfig); refresh(); }
     catch (err) { setSaveMsg({ ok: false, text: dbErrorMessage(err, t) }); }
+  };
+
+  const changeMoneda = async (newMoneda: "ARS" | "USD" | "EUR") => {
+    if (!user?.uid || monedaBusy || !config || newMoneda === config.meta.monedaPrincipal) return;
+    setMonedaBusy(true);
+    try {
+      const newMeta = { ...config.meta, monedaPrincipal: newMoneda };
+      if (newMoneda !== "ARS") { newMeta.showAhorros = false; setPref("showAhorros", false); }
+      await setDoc(doc(db, `users/${user.uid}/config/meta`), { ...config, meta: newMeta });
+      setMonedaPrincipal(newMoneda);
+      setPendingMoneda(null);
+    } catch { /* ignore */ } finally { setMonedaBusy(false); }
   };
 
   const row: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px", marginBottom: 10 };
@@ -32,6 +48,7 @@ export default function PreferencesSettings() {
     <div className="page">
       <SubHeader title={t.preferences} />
 
+      {/* Tema */}
       <div style={row}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ ...ic, background: dark ? "var(--surface-alt)" : "var(--yellow-dim)", border: "1px solid var(--border)" }}>
@@ -47,6 +64,36 @@ export default function PreferencesSettings() {
         <Toggle activo={dark} onClick={toggleTheme} />
       </div>
 
+      {/* Idioma */}
+      <div style={row}>
+        <span style={{ fontSize: 14 }}>{t.language}</span>
+        <div style={{ display: "flex", gap: 8 }}>
+          {(["es", "en"] as const).map((l) => (
+            <button key={l} onClick={() => { if (l !== lang) setPendingLang(l); }} aria-label={l === "es" ? "Español" : "English"}
+              style={{ width: 38, height: 38, borderRadius: 10, border: `1px solid ${lang === l ? "var(--accent)44" : "var(--border)"}`, background: lang === l ? "var(--accent-dim)" : "var(--surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: lang === l ? 1 : 0.55 }}>
+              {l === "es" ? <FlagAR size={22} /> : <FlagGB size={22} />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Moneda principal */}
+      <div style={row}>
+        <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ ...ic, background: "var(--green-dim)", border: "1px solid var(--green)44" }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>$</span>
+          </div>
+          <span style={{ fontSize: 14 }}>{t.mainCurrency}</span>
+        </span>
+        <div style={{ display: "flex", gap: 6 }}>
+          {(["ARS", "USD", "EUR"] as const).map((m) => (
+            <button key={m} onClick={() => monedaPrincipal !== m && setPendingMoneda(m)} disabled={monedaPrincipal === m}
+              style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: monedaPrincipal === m ? "default" : "pointer", border: `2px solid ${monedaPrincipal === m ? "var(--green)" : "var(--border)"}`, background: monedaPrincipal === m ? "var(--green-dim)" : "transparent", color: monedaPrincipal === m ? "var(--green)" : "var(--muted)", opacity: monedaPrincipal === m ? 1 : 0.6 }}>{m}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dashboard clásico */}
       <div style={row}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ ...ic, background: "var(--surface-alt)", border: "1px solid var(--border)" }}>
@@ -60,6 +107,7 @@ export default function PreferencesSettings() {
         <Toggle activo={dashboardClasico} onClick={() => setPref("dashboardClasico", !dashboardClasico)} />
       </div>
 
+      {/* Reportes visibles */}
       <div style={row}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ ...ic, background: showReportes ? "var(--green-dim)" : "var(--red-dim)", border: `1px solid ${showReportes ? "var(--green)44" : "var(--red)44"}` }}>
@@ -76,6 +124,20 @@ export default function PreferencesSettings() {
           if (config) saveConfig({ ...config, meta: { ...config.meta, showReportes: next } });
         }} />
       </div>
+
+      {pendingLang && (
+        <ConfirmModal title={t.changeLanguageTitle} confirmLabel={t.confirm} cancelLabel={t.cancel} confirmColor="var(--blue)"
+          onConfirm={() => { setLang(pendingLang); window.location.href = "/"; }} onCancel={() => setPendingLang(null)}>{t.changeLanguageBody}</ConfirmModal>
+      )}
+      {pendingMoneda && (
+        <ConfirmModal title={t.changeCurrencyTitle} confirmLabel={t.change} cancelLabel={t.cancel} confirmColor="var(--blue)" loading={monedaBusy}
+          onConfirm={() => changeMoneda(pendingMoneda)} onCancel={() => setPendingMoneda(null)}>
+          <div>
+            <strong>{config?.meta.monedaPrincipal || "ARS"} → {pendingMoneda}</strong>
+            {pendingMoneda !== "ARS" && <><br /><br /><span style={{ color: "var(--yellow)", fontWeight: 600 }}>{t.currencyDisablesInvestment}</span></>}
+          </div>
+        </ConfirmModal>
+      )}
     </div>
   );
 }
