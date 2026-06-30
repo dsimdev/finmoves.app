@@ -6,6 +6,7 @@ import { useT } from "@/hooks/useTranslation";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { SectionHint } from "@/components/ui/SectionHint";
+import { YearWrapped, wrappedYears } from "@/components/reports/YearWrapped";
 import { useData } from "../data-context";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
@@ -308,6 +309,8 @@ export default function ReportesPage() {
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const [sub, setSub] = useState<Sub>("gastos");
+  const [wrappedOpen, setWrappedOpen] = useState(false);
+  const hayWrapped = useMemo(() => wrappedYears(movimientos).length > 0, [movimientos]);
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
   const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movcat" | null>(null);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
@@ -699,9 +702,17 @@ export default function ReportesPage() {
         <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>{t.noMovementsReport}</div>
       ) : (
         <div key={sub} className="fade-up">
-          <div style={{ marginBottom: 18 }}>
-            <div className="label" style={{ marginBottom: 2 }}>{t.analysis}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleReports}</div>
+          <div style={{ marginBottom: 18, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <div>
+              <div className="label" style={{ marginBottom: 2 }}>{t.analysis}</div>
+              <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleReports}</div>
+            </div>
+            {hayWrapped && (
+              <button onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(110deg, var(--blue), var(--green))", border: "none", color: "#fff", borderRadius: 999, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px var(--accent)55" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                {t.yearWrapped}
+              </button>
+            )}
           </div>
           {showHint && <SectionHint title={t.hintRepTitle} body={t.hintRepBody} onDismiss={dismissHint} />}
           <div className="subtabs">
@@ -1610,6 +1621,8 @@ export default function ReportesPage() {
           );
         })()}
       </BottomSheet>
+
+      <YearWrapped open={wrappedOpen} onClose={() => setWrappedOpen(false)} />
     </div>
   );
 }

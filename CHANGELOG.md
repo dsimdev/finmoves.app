@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.50.0] — 2026-06-29
+
+### Added
+- **"Your year" recap (annual Wrapped)**: full-screen story (tap to advance) in Reports recapping a closed year — total spent, top category, total saved, best savings month, personal vs country inflation (ARS only), salary raise, movement count. Reveal rule: closed years always available; the current year only from December 1. Button hidden when no year is available. All client-side ($0).
+
+---
+
 ## [2.49.0] — 2026-06-29
 
 ### Added

@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.50.0] — 2026-06-29
+
+### Novedades
+- **"Tu año" (resumen anual)**: un recap a pantalla completa, estilo historia, con lo más importante de tu año — cuánto gastaste, dónde, cuánto ahorraste, tu mejor mes, tu inflación vs la del país y cuánto subió tu sueldo. Aparece para años cerrados (y el año en curso recién en diciembre). Lo abrís desde Reportes.
+
+---
+
 ## [2.49.0] — 2026-06-29
 
 ### Novedades

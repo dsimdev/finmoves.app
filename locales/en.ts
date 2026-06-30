@@ -8,6 +8,7 @@ export const en: AppLocale = {
   security: "Security",
   accept: "OK",
   dataSection: "Data",
+  yearWrapped: "Your year",
   generateInvite: "Generate invite",
   generatingInvite: "Generating…",
   deleteAccountSentTitle: "Request sent",
