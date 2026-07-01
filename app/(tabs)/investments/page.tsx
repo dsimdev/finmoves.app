@@ -202,7 +202,6 @@ export default function DolaresPage() {
       ) : (
         <div className="fade-up">
           <div style={{ marginBottom: 24 }}>
-            <div className="label" style={{ marginBottom: 2 }}>{showUSD && showEUR ? `${t.currencyDollars} · ${t.currencyEuros}` : esEUR ? t.currencyEuros : t.currencyDollars}</div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.portfolio}</div>
           </div>
           {showHint && <SectionHint title={t.hintInvTitle} body={t.hintInvBody} onDismiss={dismissHint} />}
@@ -223,14 +222,14 @@ export default function DolaresPage() {
                   { label: fxLabel, value: fxEnARS },
                 ].map(({ label, value }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 12, color: "var(--muted)" }}>{label}</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)", textTransform: "capitalize" }}>{label}</span>
                     <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", color: "var(--text)" }}>{oculto ? "••••" : money(value)}</span>
                   </div>
                 ))}
               </div>
               <div style={{ height: 1, background: "color-mix(in srgb, var(--green) 25%, var(--border))", margin: "12px 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                <span style={{ fontSize: 11, color: "var(--muted)", paddingBottom: 4 }}>total</span>
+                <span style={{ fontSize: 11, color: "var(--muted)", paddingBottom: 4, textTransform: "capitalize" }}>total</span>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: -1, lineHeight: 1, background: "linear-gradient(110deg, var(--green) 0%, var(--blue) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                     {oculto ? "••••" : money(totalPatrimonio)}
@@ -249,7 +248,7 @@ export default function DolaresPage() {
           {showUSD && (<>
           <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.usdReserve}</div>
+              <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>{t.usdReserve}</div>
               <button onClick={toggle} aria-label={t.hideValues} style={{
                 background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
                 width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
@@ -279,7 +278,7 @@ export default function DolaresPage() {
           {showEUR && (<>
           <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>{t.eurReserve}</div>
+              <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>{t.eurReserve}</div>
               {!showUSD && (
                 <button onClick={toggle} aria-label={t.hideValues} style={{
                   background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
@@ -327,7 +326,6 @@ export default function DolaresPage() {
                 {/* Objetivo + faltan */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{t.goal} {monedaInversiones}</div>
                     <div style={{ fontSize: 24, fontWeight: 700, color: "var(--yellow)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
                       {simbolo} {config.meta.metaMonto.toLocaleString("es-AR")}
                     </div>

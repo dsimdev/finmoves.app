@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.54.0] — 2026-06-30
+
+### Changed
+- **Card labels capitalized**: stat/label text across cards (MiniStat, Stat, Patrimonio rows) now uses `capitalize`.
+- **Section headers cleaned up**: removed the small kicker label above every section title. Dashboard renamed "Resumen" → "Inicio"; Settings title renamed "Cuenta" → "Configuración".
+- **Reserve card**: header shown as "RESERVA" (uppercase) and the redundant "USD"/"EUR" suffix removed (currency is already in the big figure). Removed the redundant "Objetivo USD" label in the savings-goal card.
+- **Reports year/period pills** resized to match the Movements pills (padding 4×12, 10px).
+
+---
+
 ## [2.53.2] — 2026-06-30
 
 ### Changed
