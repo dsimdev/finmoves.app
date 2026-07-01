@@ -1255,8 +1255,8 @@ export default function ReportesPage() {
                   <>
                   <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                     <button type="button" onClick={() => setMetricPickerOpen(true)}
-                      style={{ width: "100%", marginBottom: 14, textAlign: "center", padding: "11px 14px", borderRadius: 12, border: "1px solid var(--accent)44", background: "linear-gradient(135deg, var(--accent-dim), transparent)", color: "var(--accent)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                      {curMetric.label}
+                      style={{ width: "100%", marginBottom: 14, textAlign: "center", padding: "11px 14px", borderRadius: 12, border: "1px solid transparent", background: APP_GRAD_DIM, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                      <span style={gradText}>{curMetric.label}</span>
                     </button>
                     {periodMetric === "inflacion"
                       ? (inflPoints.length > 1
