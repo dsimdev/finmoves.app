@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.53.1] — 2026-06-30
+
+### Changed
+- **Unified selector styling**: the Reports sub-tabs (Spending/Income/Movements/Periods) and every year/period pill — in both Reports and Movements — now share one brand gradient (blue → cyan → teal → green). Active state is a soft opaque tint fill with gradient text and no border, replacing the previous per-section colors and mixed border/fill treatments.
+
+---
+
 ## [2.53.0] — 2026-06-29
 
 ### Added

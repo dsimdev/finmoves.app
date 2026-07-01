@@ -49,6 +49,11 @@ export default function MovimientosPage() {
   const años = useMemo(() => Array.from(new Set(periodos.map((p) => p.periodoId.split("/")[2] ?? ""))).filter(Boolean), [periodos]);
   const [añoSel, setAñoSel] = useState<string>("");
   const añoActivo = añoSel || años[0] || "";
+  const appGrad = "linear-gradient(110deg, var(--blue) 0%, #26c6da 40%, #2bd4b0 70%, var(--green) 100%)";
+  const appGradDim = "linear-gradient(135deg, color-mix(in srgb, var(--blue) 13%, var(--surface-alt)), color-mix(in srgb, var(--green) 13%, var(--surface-alt)))";
+  const pillSel: React.CSSProperties = { border: "1px solid transparent", background: appGradDim };
+  const pillOff: React.CSSProperties = { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)" };
+  const pillGradText: React.CSSProperties = { background: appGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" };
   const periodosDelAño = useMemo(() => periodos.filter((p) => (p.periodoId.split("/")[2] ?? "") === añoActivo), [periodos, añoActivo]);
   const [periodoSel, setPeriodoSel] = useState<string | null>(null);
   const activePeriodoId = periodoSel ?? periodosDelAño[0]?.periodoId;
@@ -159,15 +164,15 @@ export default function MovimientosPage() {
           {showHint && movimientos.length > 0 && <SectionHint title={t.hintMovTitle} body={t.hintMovBody} onDismiss={dismissHint} />}
 
           <div style={{ display: "flex", gap: 4, marginBottom: 8, overflowX: "auto", scrollbarWidth: "none", touchAction: "pan-x" }}>
-            {años.map((año) => (
+            {años.map((año) => {
+              const sel = añoActivo === año;
+              return (
               <button key={año} onClick={() => { setAñoSel(año); setPeriodoSel(null); }} style={{
                 flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
-                border: `1px solid ${añoActivo === año ? "var(--blue)" : "var(--border)"}`,
-                background: añoActivo === año ? "var(--blue-dim)" : "transparent",
-                color: añoActivo === año ? "var(--blue)" : "var(--muted)",
-                transition: "all 0.15s",
-              }}>{año}</button>
-            ))}
+                transition: "all 0.15s", ...(sel ? pillSel : pillOff),
+              }}>{sel ? <span style={pillGradText}>{año}</span> : año}</button>
+              );
+            })}
           </div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2, scrollbarWidth: "none", touchAction: "pan-x" }}>
             {periodosDelAño.map((p) => {
@@ -176,11 +181,8 @@ export default function MovimientosPage() {
               return (
                 <button key={p.periodoId} onClick={() => setPeriodoSel(p.periodoId)} style={{
                   flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
-                  border: `1px solid ${isSelected ? "var(--green)" : "var(--border)"}`,
-                  background: isSelected ? "var(--green-dim)" : "transparent",
-                  color: isSelected ? "var(--green)" : "var(--muted)",
-                  transition: "all 0.15s",
-                }}>{d}/{m}</button>
+                  transition: "all 0.15s", ...(isSelected ? pillSel : pillOff),
+                }}>{isSelected ? <span style={pillGradText}>{d}/{m}</span> : `${d}/${m}`}</button>
               );
             })}
           </div>
