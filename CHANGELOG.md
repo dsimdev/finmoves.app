@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.53.2] — 2026-06-30
+
+### Changed
+- **Chart metric selector** (Reports → Periods) now uses the unified brand gradient (soft tint fill + gradient text, no border), matching the sub-tabs and pills, instead of the previous solid blue accent.
+
+---
+
 ## [2.53.1] — 2026-06-30
 
 ### Changed

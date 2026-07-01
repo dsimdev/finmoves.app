@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.53.2] — 2026-06-30
+
+### Mejoras
+- El **título/selector de gráfico** en Reportes ahora usa el mismo degradé de la app que los demás selectores, en vez del azul sólido.
+
+---
+
 ## [2.53.1] — 2026-06-30
 
 ### Mejoras
