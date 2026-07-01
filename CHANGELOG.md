@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.54.1] — 2026-06-30
+
+### Changed
+- **Compare toggle resized**: the multi-period compare button in Reports now matches the smaller pill size (was left oversized after the pill resize).
+
+---
+
 ## [2.54.0] — 2026-06-30
 
 ### Changed

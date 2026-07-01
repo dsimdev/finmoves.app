@@ -810,11 +810,11 @@ export default function ReportesPage() {
                   {periodos.length > 1 && (
                     <button onClick={() => setCompareMode((v) => { const nv = !v; if (!nv) setPeriodosSelIds((p) => p.slice(0, 1)); return nv; })}
                       style={{
-                        flexShrink: 0, display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 999,
-                        fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                        flexShrink: 0, display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999,
+                        fontSize: 10, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
                         ...(compareMode ? activePill : inactivePill),
                       }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M7 10h14M7 10l-4 4 4 4"/><path d="M17 14H3M17 14l4-4-4-4" transform="translate(0 -4)"/>
                       </svg>
                     </button>
