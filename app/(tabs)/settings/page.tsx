@@ -30,8 +30,7 @@ export default function SettingsLanding() {
   return (
     <div className="page fade-up">
       <div style={{ marginBottom: 20 }}>
-        <div className="label" style={{ marginBottom: 2 }}>{t.pageTitleSettings}</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.account}</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleSettings}</div>
       </div>
 
       {/* Header de perfil → edita perfil */}

@@ -97,9 +97,9 @@ function Stat({ label, value, sub, color, danger, dimVar }: { label: string; val
     : {};
   return (
     <div className="soft" style={{ padding: 15, ...cardStyle }}>
-      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7 }}>{label}</div>
+      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7, textTransform: "capitalize" }}>{label}</div>
       <div style={{ fontSize: 19, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.05 }}>{value}</div>
-      {sub && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4, textTransform: "capitalize" }}>{sub}</div>}
     </div>
   );
 }
@@ -726,7 +726,6 @@ export default function ReportesPage() {
         <div key={sub} className="fade-up">
           <div style={{ marginBottom: 18, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-              <div className="label" style={{ marginBottom: 2 }}>{t.analysis}</div>
               <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleReports}</div>
             </div>
             {hayWrapped && (
@@ -800,7 +799,7 @@ export default function ReportesPage() {
                       return (
                         <button key={año} onClick={() => selectYear(año)}
                           style={{
-                            flexShrink: 0, padding: "5px 13px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                            flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
                             transition: "all 0.15s",
                             ...(isAñoActivo ? activePill : inactivePill),
                           }}
@@ -828,7 +827,7 @@ export default function ReportesPage() {
                     return (
                       <button key={p.periodoId} onClick={() => togglePill(p.periodoId)}
                         style={{
-                          flexShrink: 0, padding: "6px 14px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                          flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
                           transition: "all 0.15s",
                           ...(isSelected ? activePill : inactivePill),
                         }}

@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.54.0] — 2026-06-30
+
+### Mejoras
+- **Títulos más limpios**: sacamos el textito de arriba de cada sección. "Resumen" ahora se llama **Inicio** y "Cuenta" pasa a llamarse **Configuración**.
+- **Cards más prolijas**: los textos de las tarjetas van con mayúscula inicial; la reserva muestra "RESERVA" sin el "USD" repetido, y sacamos el "Objetivo USD" redundante en la meta.
+- Pastillas de Reportes al mismo tamaño que las de Movimientos.
+
+---
+
 ## [2.53.2] — 2026-06-30
 
 ### Mejoras

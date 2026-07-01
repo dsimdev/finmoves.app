@@ -26,7 +26,7 @@ export const es = {
   rateOfficial: "oficial",
   rateBlue: "blue",
   rateManual: "manual",
-  pageTitleDashboard: "Resumen",
+  pageTitleDashboard: "Inicio",
   pageTitleMovements: "Movimientos",
   pageTitleReports: "Reportes",
   pageTitleSettings: "Configuración",
@@ -172,8 +172,8 @@ export const es = {
 
   // Investments
   portfolio: "Inversión",
-  usdReserve: "Reserva USD",
-  eurReserve: "Reserva EUR",
+  usdReserve: "Reserva",
+  eurReserve: "Reserva",
   avgPrice: "Precio prom.",
   profit: "Ganancia",
   rate: "cotiz.",

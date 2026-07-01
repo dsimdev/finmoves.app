@@ -96,7 +96,6 @@ export default function Dashboard() {
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div>
-              <div className="label" style={{ marginBottom: 2 }}>{t.home}</div>
               <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleDashboard}</div>
             </div>
             <div style={{ textAlign: "right" }}>
