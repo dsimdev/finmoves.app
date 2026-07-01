@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.54.1] — 2026-06-30
+
+### Mejoras
+- Ajustamos el botón de comparar períodos en Reportes para que quede del mismo tamaño que las pastillas.
+
+---
+
 ## [2.54.0] — 2026-06-30
 
 ### Mejoras
