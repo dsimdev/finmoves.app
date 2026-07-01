@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.53.1] — 2026-06-30
+
+### Mejoras
+- **Selectores más lindos y consistentes**: los botones de Reportes (Gastos/Ingresos/Movimientos/Períodos) y las pastillas de año y período ahora usan el mismo degradé de la app (azul→verde), con un fondo suave cuando están seleccionados.
+
+---
+
 ## [2.53.0] — 2026-06-29
 
 ### Novedades

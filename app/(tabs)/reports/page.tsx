@@ -33,6 +33,13 @@ type Sub = "gastos" | "ingresos" | "movimientos" | "periodos";
 
 const periodoAnio = (periodoId: string) => periodoId.split("/")[2] ?? "??";
 
+// Gradiente de marca unificado para todos los selectores (blue → cyan → teal → green)
+const APP_GRAD = "linear-gradient(110deg, var(--blue) 0%, #26c6da 40%, #2bd4b0 70%, var(--green) 100%)";
+const APP_GRAD_DIM = "linear-gradient(135deg, color-mix(in srgb, var(--blue) 13%, var(--surface-alt)), color-mix(in srgb, var(--green) 13%, var(--surface-alt)))";
+const gradText: React.CSSProperties = { background: APP_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" };
+const pillOn: React.CSSProperties = { border: "1px solid transparent", background: APP_GRAD_DIM };
+const pillOff: React.CSSProperties = { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)" };
+
 // ── Helpers de formato ───────────────────────────────────────────────────────
 const abbr = (n: number) => {
   if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
@@ -733,24 +740,13 @@ export default function ReportesPage() {
           <div className="subtabs">
             {SUBS.map((s) => {
               const isActive = sub === s.id;
-              const tabColor = s.id === "gastos" ? "var(--red)" : s.id === "ingresos" ? "var(--green)" : "var(--blue)";
-              const tabDim   = s.id === "gastos" ? "var(--red-dim)" : s.id === "ingresos" ? "var(--green-dim)" : "var(--blue-dim)";
-              const tabGrad  = s.id === "movimientos" ? "linear-gradient(90deg, #26c6da, var(--purple))"
-                             : s.id === "periodos"    ? "linear-gradient(90deg, var(--red), var(--green))"
-                             : null;
               return (
                 <button key={s.id} onClick={() => setSub(s.id)} className="subtab"
-                  style={isActive ? (tabGrad ? {
+                  style={isActive ? {
                     border: "1px solid transparent",
-                    backgroundImage: `linear-gradient(var(--surface-alt), var(--surface-alt)), ${tabGrad}`,
-                    backgroundOrigin: "padding-box, border-box",
-                    backgroundClip: "padding-box, border-box",
-                  } : { background: `linear-gradient(135deg, var(--surface-alt) 0%, ${tabDim} 100%)`, color: tabColor, border: `1px solid ${tabColor}44` }) : {}}>
-                  {isActive && tabGrad ? (
-                    <span style={{ background: tabGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                      {s.label}
-                    </span>
-                  ) : s.label}
+                    background: APP_GRAD_DIM,
+                  } : {}}>
+                  {isActive ? <span style={gradText}>{s.label}</span> : s.label}
                 </button>
               );
             })}
@@ -758,18 +754,8 @@ export default function ReportesPage() {
           {/* Selector de período — tap simple selecciona uno; toggle "Comparar" suma/quita.
               No aplica a Períodos (es una vista histórica de todos). */}
           {sub !== "periodos" && (() => {
-            const subColor = sub === "gastos" ? "var(--red)" : sub === "ingresos" ? "var(--green)" : "var(--blue)";
-            const subDim   = sub === "gastos" ? "var(--red-dim)" : sub === "ingresos" ? "var(--green-dim)" : "var(--blue-dim)";
-            const isMovSub = sub === "movimientos";
-            const movGrad  = "linear-gradient(90deg, #26c6da, var(--purple))";
-            const activePill: React.CSSProperties = isMovSub ? {
-              border: "1px solid transparent",
-              backgroundImage: `linear-gradient(var(--bg), var(--bg)), ${movGrad}`,
-              backgroundOrigin: "padding-box, border-box",
-              backgroundClip: "padding-box, border-box",
-              color: "var(--text)",
-            } : { border: `1px solid ${subColor}`, background: subDim, color: subColor };
-            const inactivePill: React.CSSProperties = { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)" };
+            const activePill = pillOn;
+            const inactivePill = pillOff;
             const años = Array.from(new Set(periodos.map((p) => periodoAnio(p.periodoId))));
             const añosActivos = new Set(activos.map((id) => periodoAnio(id)));
             // En comparar multi-año mostramos todos los activos; si no, los del año en vista.
@@ -818,7 +804,7 @@ export default function ReportesPage() {
                             transition: "all 0.15s",
                             ...(isAñoActivo ? activePill : inactivePill),
                           }}
-                        >{isMovSub && isAñoActivo ? <span style={{ background: movGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{año}</span> : año}</button>
+                        >{isAñoActivo ? <span style={gradText}>{año}</span> : año}</button>
                       );
                     })}
                   </div>
@@ -846,7 +832,7 @@ export default function ReportesPage() {
                           transition: "all 0.15s",
                           ...(isSelected ? activePill : inactivePill),
                         }}
-                      >{isMovSub && isSelected ? <span style={{ background: movGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{shortPer(p.periodoId)}</span> : shortPer(p.periodoId)}</button>
+                      >{isSelected ? <span style={gradText}>{shortPer(p.periodoId)}</span> : shortPer(p.periodoId)}</button>
                     );
                   })}
                 </div>
