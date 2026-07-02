@@ -12,6 +12,8 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
 import { SectionHint } from "@/components/ui/SectionHint";
+import { PageTitle } from "@/components/ui/PageTitle";
+import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
 
 function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; categoria: string; direccionMove?: string }) {
   let c = "var(--muted)";
@@ -43,11 +45,9 @@ export default function MovimientosPage() {
   const años = useMemo(() => Array.from(new Set(periodos.map((p) => p.periodoId.split("/")[2] ?? ""))).filter(Boolean), [periodos]);
   const [añoSel, setAñoSel] = useState<string>("");
   const añoActivo = añoSel || años[0] || "";
-  const appGrad = "linear-gradient(110deg, var(--blue) 0%, #26c6da 40%, #2bd4b0 70%, var(--green) 100%)";
-  const appGradDim = "linear-gradient(135deg, color-mix(in srgb, var(--blue) 13%, var(--surface-alt)), color-mix(in srgb, var(--green) 13%, var(--surface-alt)))";
-  const pillSel: React.CSSProperties = { border: "1px solid transparent", background: appGradDim };
+  const pillSel: React.CSSProperties = { border: "1px solid transparent", background: APP_GRAD_DIM };
   const pillOff: React.CSSProperties = { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)" };
-  const pillGradText: React.CSSProperties = { background: appGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" };
+  const pillGradText: React.CSSProperties = appGradText;
   const periodosDelAño = useMemo(() => periodos.filter((p) => (p.periodoId.split("/")[2] ?? "") === añoActivo), [periodos, añoActivo]);
   const [periodoSel, setPeriodoSel] = useState<string | null>(null);
   const activePeriodoId = periodoSel ?? periodosDelAño[0]?.periodoId;
@@ -140,7 +140,7 @@ export default function MovimientosPage() {
       ) : (
         <div className="fade-up">
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleMovements}</div>
+            <PageTitle>{t.pageTitleMovements}</PageTitle>
             {periodoActual && (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
                 {activePeriodoId === periodos[0]?.periodoId ? t.available : t.remaining}: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>

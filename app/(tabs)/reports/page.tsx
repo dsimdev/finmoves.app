@@ -22,6 +22,8 @@ import {
   progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
 } from "@/utils/reportes";
 import { reservaFX as calcularReservaFX } from "@/utils/reserva";
+import { PageTitle } from "@/components/ui/PageTitle";
+import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -35,9 +37,7 @@ type Sub = "gastos" | "ingresos" | "movimientos" | "periodos";
 const periodoAnio = (periodoId: string) => periodoId.split("/")[2] ?? "??";
 
 // Gradiente de marca unificado para todos los selectores (blue → cyan → teal → green)
-const APP_GRAD = "linear-gradient(110deg, var(--blue) 0%, #26c6da 40%, #2bd4b0 70%, var(--green) 100%)";
-const APP_GRAD_DIM = "linear-gradient(135deg, color-mix(in srgb, var(--blue) 13%, var(--surface-alt)), color-mix(in srgb, var(--green) 13%, var(--surface-alt)))";
-const gradText: React.CSSProperties = { background: APP_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" };
+const gradText = appGradText;
 const pillOn: React.CSSProperties = { border: "1px solid transparent", background: APP_GRAD_DIM };
 const pillOff: React.CSSProperties = { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)" };
 
@@ -719,7 +719,7 @@ export default function ReportesPage() {
         <div key={sub} className="fade-up">
           <div style={{ marginBottom: 18, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-              <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleReports}</div>
+              <PageTitle>{t.pageTitleReports}</PageTitle>
             </div>
             {hayWrapped && (
               <button onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(110deg, var(--blue), var(--green))", border: "none", color: "#fff", borderRadius: 999, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px var(--accent)55" }}>

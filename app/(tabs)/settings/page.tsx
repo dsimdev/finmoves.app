@@ -8,6 +8,7 @@ import { useT } from "@/hooks/useTranslation";
 import { auth } from "@/services/firebase/firebase";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { NavRow } from "./_shared";
+import { PageTitle } from "@/components/ui/PageTitle";
 
 export default function SettingsLanding() {
   const { user } = useAuth();
@@ -30,7 +31,7 @@ export default function SettingsLanding() {
   return (
     <div className="page fade-up">
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleSettings}</div>
+        <PageTitle>{t.pageTitleSettings}</PageTitle>
       </div>
 
       {/* Header de perfil → edita perfil */}

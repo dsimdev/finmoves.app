@@ -33,6 +33,7 @@ import { MiniStat } from "@/components/ui/MiniStat";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { Movimiento } from "@/types";
 import { calcularReserva } from "@/utils/reserva";
+import { PageTitle } from "@/components/ui/PageTitle";
 
 export default function DolaresPage() {
   const { movimientos, loading, config, refresh: refreshData, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
@@ -174,7 +175,7 @@ export default function DolaresPage() {
       ) : (
         <div className="fade-up">
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.portfolio}</div>
+            <PageTitle>{t.portfolio}</PageTitle>
           </div>
           {showHint && <SectionHint title={t.hintInvTitle} body={t.hintInvBody} onDismiss={dismissHint} />}
 

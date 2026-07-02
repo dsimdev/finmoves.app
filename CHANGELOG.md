@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.55.2] — 2026-07-01
+
+### Changed
+- **Shared UI primitives**: extracted `<PageTitle>` (the gradient page heading used across Dashboard, Movements, Reports, Investments, Settings) and a `components/ui/gradients.ts` module (`APP_GRAD`, `APP_GRAD_DIM`, `TITLE_GRAD`, `clipText`, `appGradText`, `titleGradText`). Removes the duplicated gradient constants that lived in Movements and Reports and the repeated inline title styles.
+
+---
+
 ## [2.55.1] — 2026-07-01
 
 ### Removed

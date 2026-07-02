@@ -16,6 +16,8 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
+import { PageTitle } from "@/components/ui/PageTitle";
+import { titleGradText } from "@/components/ui/gradients";
 
 function TipoColor(m: Movimiento) {
   if (m.categoria === "RESTO") return "var(--blue)"; // arrastre a ahorros del período anterior
@@ -96,11 +98,11 @@ export default function Dashboard() {
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div>
-              <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.pageTitleDashboard}</div>
+              <PageTitle style={{ display: "block" }}>{t.pageTitleDashboard}</PageTitle>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>{t.period}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 90%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{Math.max(1, Math.floor((new Date().getTime() - parsePeriodoId(p.periodoId).getTime()) / 86400000) + 1)} días</div>
+              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", ...titleGradText }}>{Math.max(1, Math.floor((new Date().getTime() - parsePeriodoId(p.periodoId).getTime()) / 86400000) + 1)} días</div>
             </div>
           </div>
 
