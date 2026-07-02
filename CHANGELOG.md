@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.55.4] — 2026-07-01
+
+### Changed
+- **Reports chart components extracted**: moved the 7 presentational chart components (`Bar`, `Stat`, `DonutChart`, `VBars`, `DotChart`, `AreaChart`, `TwoLineChart`) and the format helpers (`abbr`, `shortPer`, `sinAño`, `periodoAnio`) out of `app/(tabs)/reports/page.tsx` into `components/reports/charts.tsx` and `components/reports/format.ts`. Reports page dropped ~260 lines (1680 → 1420); no behavior change.
+
+---
+
 ## [2.55.3] — 2026-07-01
 
 ### Changed
