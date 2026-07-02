@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.55.1] — 2026-07-01
+
+### Mejoras
+- Arreglos menores y limpieza interna.
+
+---
+
 ## [2.55.0] — 2026-07-01
 
 ### Mejoras

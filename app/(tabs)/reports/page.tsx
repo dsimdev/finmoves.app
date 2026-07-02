@@ -21,6 +21,7 @@ import {
   historialSueldo, proyectarAhorros,
   progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
 } from "@/utils/reportes";
+import { reservaFX as calcularReservaFX } from "@/utils/reserva";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -591,20 +592,12 @@ export default function ReportesPage() {
     : (cotizacion?.oficial ?? null);
   const simBoloInv = monedaInversiones === "EUR" ? "€" : "U$D";
 
-  // Reserva real en FX — suma cantidadUSD de CompraUSD/GastoUSD (igual que página Inversión)
-  const tipoCompraFX = monedaInversiones === "EUR" ? "CompraEUR" : "CompraUSD";
-  const tipoGastoFX  = monedaInversiones === "EUR" ? "GastoEUR"  : "GastoUSD";
-  const tipoVentaFX  = monedaInversiones === "EUR" ? "VentaEUR"  : "VentaUSD";
-  const tipoIngresoFX = monedaInversiones === "EUR" ? "IngresoEUR" : "IngresoUSD";
+  // Reserva real en FX (misma cuenta que página Inversión).
   const SALDO_INICIAL = monedaInversiones === "EUR" ? (config?.meta.saldoEUR ?? 0) : (config?.meta.saldoUSD ?? 0);
-  const reservaFX = useMemo(() => {
-    let total = SALDO_INICIAL;
-    for (const m of movimientos) {
-      if ((m.tipo === tipoCompraFX || m.tipo === tipoIngresoFX) && m.cantidadUSD) total += m.cantidadUSD;
-      else if ((m.tipo === tipoGastoFX || m.tipo === tipoVentaFX) && m.cantidadUSD) total -= m.cantidadUSD;
-    }
-    return Math.max(0, total);
-  }, [movimientos, tipoCompraFX, tipoGastoFX, tipoVentaFX]);
+  const reservaFX = useMemo(
+    () => Math.max(0, calcularReservaFX(movimientos, monedaInversiones === "EUR" ? "EUR" : "USD", SALDO_INICIAL)),
+    [movimientos, monedaInversiones, SALDO_INICIAL]
+  );
 
   const metaMonto = config?.meta.metaMonto;
   const progresoMeta = metaMonto && cotizActual ? progresoMetaUSD(reservaFX * cotizActual, metaMonto, cotizActual) : null;

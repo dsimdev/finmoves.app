@@ -2,6 +2,7 @@ import { adminDb } from "./firebase-admin";
 import { sendPushToUser } from "./web-push";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
+import { reservaFX, tiposReserva } from "@/utils/reserva";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
@@ -228,10 +229,7 @@ async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<stri
   // monedaInversiones vive en prefs del cliente; en el server usamos USD por defecto.
   const principal = config.meta?.monedaPrincipal;
   const moneda: "USD" | "EUR" = principal === "EUR" ? "USD" : principal === "USD" ? "EUR" : "USD";
-  const compra = moneda === "USD" ? "CompraUSD" : "CompraEUR";
-  const gasto = moneda === "USD" ? "GastoUSD" : "GastoEUR";
-  const venta = moneda === "USD" ? "VentaUSD" : "VentaEUR";
-  const ingreso = moneda === "USD" ? "IngresoUSD" : "IngresoEUR";
+  const { compra, gasto, venta, ingreso } = tiposReserva(moneda);
   const base = moneda === "USD" ? (config.meta?.saldoUSD ?? 0) : (config.meta?.saldoEUR ?? 0);
 
   const q = adminDb()
@@ -247,12 +245,7 @@ async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<stri
     movSum = notify.metaMovSum as number;
   } else {
     const snap = await q.get();
-    movSum = 0;
-    for (const d of snap.docs) {
-      const m = d.data() as Movimiento;
-      if ((m.tipo === compra || m.tipo === ingreso) && m.cantidadUSD) movSum += m.cantidadUSD;
-      else if ((m.tipo === gasto || m.tipo === venta) && m.cantidadUSD) movSum -= m.cantidadUSD;
-    }
+    movSum = reservaFX(snap.docs.map((d) => d.data() as Movimiento), moneda);
     updates.metaMovCount = count;
     updates.metaMovSum = movSum;
     updates.metaCacheMoneda = moneda;

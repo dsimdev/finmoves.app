@@ -17,6 +17,7 @@ import { BottomSheet as Sheet } from "@/components/ui/BottomSheet";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
+import { reservaFX } from "@/utils/reserva";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
 
 const hoyISO = () => {
@@ -264,14 +265,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // Reserva FX actual (misma cuenta que Inversión): saldo base + compras − gastos/ventas.
   const reservaActualFX = useMemo(() => {
     if (!reserveMode) return 0;
-    const eur = esEURMode;
-    const base = (eur ? config?.meta.saldoEUR : config?.meta.saldoUSD) ?? 0;
-    return movimientos.reduce((tot, m) => {
-      if (!m.cantidadUSD) return tot;
-      if (m.tipo === (eur ? "CompraEUR" : "CompraUSD") || m.tipo === (eur ? "IngresoEUR" : "IngresoUSD")) return tot + m.cantidadUSD;
-      if (m.tipo === (eur ? "GastoEUR" : "GastoUSD") || m.tipo === (eur ? "VentaEUR" : "VentaUSD")) return tot - m.cantidadUSD;
-      return tot;
-    }, base);
+    const base = (esEURMode ? config?.meta.saldoEUR : config?.meta.saldoUSD) ?? 0;
+    return reservaFX(movimientos, esEURMode ? "EUR" : "USD", base);
   }, [reserveMode, esEURMode, movimientos, config?.meta.saldoUSD, config?.meta.saldoEUR]);
 
   // Frecuencia de uso por categoría de gasto (para ordenar las pills).

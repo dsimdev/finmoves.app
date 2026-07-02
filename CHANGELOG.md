@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.55.1] — 2026-07-01
+
+### Removed
+- **Unused locale keys**: 141 dead keys removed from `locales/es.ts` and `locales/en.ts` (~140 lines each), including the leftover home/management/analysis families. The in-use `budget`/`budgetPeriod`/`budgetTemplate` keys were verified and kept.
+- **Dead code in `utils/reportes.ts`**: removed 9 unused functions (`topGastos`, `medioPagoMasUsadoCount`, `promedioAhorroPeriodo`, `evolucionSueldo`, `gastoPromedioHistorico`, `ritmoAhorroActual`, `consistenciaAhorro`, `ahorrosVsProyectados`, `generarInsights`) plus the `Insight` and `AhorroVsProyectado` types (~140 lines).
+
+### Changed
+- **FX reserve calculation unified** into `utils/reserva.ts` (`reservaFX`, `calcularReserva`, `tiposReserva`). The five previously duplicated copies (Investments page, Reports, MovementModal, investment settings, notifications cron) now share one implementation.
+
+---
+
 ## [2.55.0] — 2026-07-01
 
 ### Performance / cost (Firestore reads)
