@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.55.3] — 2026-07-01
+
+### Changed
+- **`useHideOnScroll` hook**: extracted the floating-button fade-on-scroll logic (duplicated in Movements and Investments) into `hooks/useHideOnScroll.ts`.
+
+---
+
 ## [2.55.2] — 2026-07-01
 
 ### Changed

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
 import { useAuth } from "@/hooks/useAuth";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { useData } from "../data-context";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useCotizacion } from "@/hooks/useCotizacion";
@@ -46,22 +47,7 @@ export default function DolaresPage() {
   const [expandEUR, setExpandEUR] = useState(false);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
   // Botón flotante: se oculta al hacer scroll y reaparece al detenerse (igual que en Movimientos).
-  const [btnVisible, setBtnVisible] = useState(true);
-  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    const hideThenShow = () => {
-      setBtnVisible(false);
-      if (scrollTimer.current) clearTimeout(scrollTimer.current);
-      scrollTimer.current = setTimeout(() => setBtnVisible(true), 700);
-    };
-    document.addEventListener("scroll", hideThenShow, { passive: true });
-    document.addEventListener("touchmove", hideThenShow, { passive: true });
-    return () => {
-      document.removeEventListener("scroll", hideThenShow);
-      document.removeEventListener("touchmove", hideThenShow);
-      if (scrollTimer.current) clearTimeout(scrollTimer.current);
-    };
-  }, []);
+  const btnVisible = useHideOnScroll();
 
   useEffect(() => { refresh(); }, []);
   const t = useT();

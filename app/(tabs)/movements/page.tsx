@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useData } from "../data-context";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { useMoney } from "@/hooks/useHideValues";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { Movimiento, TipoMovimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -71,22 +72,7 @@ export default function MovimientosPage() {
 
   // Fade del botón flotante: se oculta mientras se navega (scroll) y reaparece
   // al detenerse, para no tapar la lista mientras la recorrés.
-  const [btnVisible, setBtnVisible] = useState(true);
-  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    const hideThenShow = () => {
-      setBtnVisible(false);
-      if (scrollTimer.current) clearTimeout(scrollTimer.current);
-      scrollTimer.current = setTimeout(() => setBtnVisible(true), 700);
-    };
-    document.addEventListener("scroll", hideThenShow, { passive: true });
-    document.addEventListener("touchmove", hideThenShow, { passive: true });
-    return () => {
-      document.removeEventListener("scroll", hideThenShow);
-      document.removeEventListener("touchmove", hideThenShow);
-      if (scrollTimer.current) clearTimeout(scrollTimer.current);
-    };
-  }, []);
+  const btnVisible = useHideOnScroll();
 
   const movsFiltrados = useMemo(() =>
     [...(periodoActual?.movimientos ?? [])]
