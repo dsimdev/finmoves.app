@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.55.5] — 2026-07-01
+
+### Changed
+- **`useComprobante` hook**: extracted the receipt-attachment state (file, preview, removed flag, media viewer) and its handlers (`reset`, `onSelect`, `clear`) out of `MovementModal.tsx` into `components/movements/useComprobante.ts`. Centralizes the preview object-URL lifecycle; behavior-preserving (destructured with the same identifiers).
+
+---
+
 ## [2.55.4] — 2026-07-01
 
 ### Changed

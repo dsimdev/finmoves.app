@@ -11,6 +11,7 @@ import { upsertRecurrente } from "@/services/firebase/recurrentes";
 import { crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
 import { useData } from "@/app/(tabs)/data-context";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
+import { useComprobante } from "./useComprobante";
 import { MediaViewer } from "@/components/ui/MediaViewer";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { BottomSheet as Sheet } from "@/components/ui/BottomSheet";
@@ -105,11 +106,17 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [abreNuevoPeriodo, setAbreNuevoPeriodo] = useState(false);
   const [repetir, setRepetir] = useState(false);
   const [moveDir, setMoveDir] = useState<"aDisponible" | "aAhorro">("aDisponible");
-  // Comprobante adjunto (alta y edición).
-  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
-  const [comprobantePreview, setComprobantePreview] = useState<string | null>(null);
-  const [comprobanteRemoved, setComprobanteRemoved] = useState(false);
-  const [viewer, setViewer] = useState<{ src: string; isPdf: boolean } | null>(null);
+  // Comprobante adjunto (alta y edición) + visor de media (hook dedicado).
+  const {
+    file: comprobanteFile,
+    preview: comprobantePreview,
+    removed: comprobanteRemoved,
+    viewer,
+    setViewer,
+    reset: resetComprobante,
+    onSelect: onComprobanteSelect,
+    clear: clearComprobante,
+  } = useComprobante();
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
   // El monto es el primer dato a cargar → foco al abrir el alta y al cambiar de tipo.
@@ -129,30 +136,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [tplDelete, setTplDelete] = useState<Plantilla | null>(null);
   const [tplSavedFlash, setTplSavedFlash] = useState(false);
 
-  const resetComprobante = () => {
-    setComprobantePreview((p) => { if (p) URL.revokeObjectURL(p); return null; });
-    setComprobanteFile(null); setComprobanteRemoved(false);
-  };
-
   const resetAdd = () => {
     setDescripcion(""); setMonto(""); setCategoria(""); setOrigenAhorro("");
     setCantidadUSD(""); setCotizManual(""); setObservaciones(""); setAddError("");
     setMontoARSInput(""); setModoCarga("USD"); setFecha(hoyISO()); setAbreNuevoPeriodo(false); setMoveDir("aDisponible"); setRepetir(false);
     resetComprobante();
-  };
-
-  const onComprobanteSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (comprobantePreview) URL.revokeObjectURL(comprobantePreview);
-    setComprobanteFile(f);
-    setComprobantePreview(URL.createObjectURL(f));
-    setComprobanteRemoved(false);
-  };
-
-  const clearComprobante = () => {
-    if (comprobantePreview) URL.revokeObjectURL(comprobantePreview);
-    setComprobanteFile(null); setComprobantePreview(null); setComprobanteRemoved(true);
   };
 
   // Inicializar al abrir según el modo.
