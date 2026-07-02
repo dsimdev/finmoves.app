@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../data-context";
-import { listarRecurrentes } from "@/services/firebase/recurrentes";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { useMoney } from "@/hooks/useHideValues";
 import { Movimiento, TipoMovimiento } from "@/types";
@@ -30,18 +28,14 @@ function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; cat
 
 export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
-  const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
-  const { user } = useAuth();
+  const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento, recurrentes } = useData();
   const t = useT();
 
   // Recurrentes activos → para marcar con un relojito los movimientos que matchean.
-  const [recurrenteKeys, setRecurrenteKeys] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    if (!user?.uid) return;
-    listarRecurrentes(user.uid)
-      .then((rs) => setRecurrenteKeys(new Set(rs.filter((r) => r.activo).map((r) => `${r.tipo}__${r.categoria}__${(r.descripcion || "").trim().toLowerCase()}`))))
-      .catch(() => {});
-  }, [user?.uid]);
+  const recurrenteKeys = useMemo(
+    () => new Set(recurrentes.filter((r) => r.activo).map((r) => `${r.tipo}__${r.categoria}__${(r.descripcion || "").trim().toLowerCase()}`)),
+    [recurrentes]
+  );
   const esRecurrente = (m: Movimiento) => recurrenteKeys.has(`${m.tipo}__${m.categoria}__${(m.descripcion || "").trim().toLowerCase()}`);
   const [showHint, dismissHint] = useFirstVisit("movements");
 

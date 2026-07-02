@@ -6,7 +6,8 @@ import { useT } from "@/hooks/useTranslation";
 import { isoToFechaAR } from "@/lib/sheet-format";
 import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/push-client";
 import { listarRecordatorios, crearRecordatorio, eliminarRecordatorio, type Recordatorio } from "@/services/firebase/recordatorios";
-import { listarRecurrentes, setRecurrenteActivo, eliminarRecurrente, type Recurrente } from "@/services/firebase/recurrentes";
+import { setRecurrenteActivo, eliminarRecurrente } from "@/services/firebase/recurrentes";
+import { useData } from "../../data-context";
 import { Toggle, SubHeader } from "../_shared";
 
 export default function NotificacionesSettings() {
@@ -56,18 +57,18 @@ export default function NotificacionesSettings() {
     setRecordatorios((prev) => prev.filter((r) => r.id !== id));
   };
 
-  // Recurrentes
-  const [recurrentes, setRecurrentes] = useState<Recurrente[]>([]);
-  useEffect(() => { if (user?.uid) listarRecurrentes(user.uid).then(setRecurrentes).catch(() => {}); }, [user?.uid]);
+  // Recurrentes (del DataProvider: fuente única, así el marcado en Movimientos
+  // se mantiene en sync al togglear/borrar acá).
+  const { recurrentes, mutateRecurrentes } = useData();
   const toggleRecurrente = async (id: string, activo: boolean) => {
     if (!user?.uid) return;
-    setRecurrentes((prev) => prev.map((r) => (r.id === id ? { ...r, activo } : r)));
+    mutateRecurrentes((prev) => prev.map((r) => (r.id === id ? { ...r, activo } : r)));
     await setRecurrenteActivo(user.uid, id, activo).catch(() => {});
   };
   const delRecurrente = async (id: string) => {
     if (!user?.uid) return;
     await eliminarRecurrente(user.uid, id);
-    setRecurrentes((prev) => prev.filter((r) => r.id !== id));
+    mutateRecurrentes((prev) => prev.filter((r) => r.id !== id));
   };
 
   const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: 16, marginBottom: 12 };

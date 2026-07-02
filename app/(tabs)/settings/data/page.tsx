@@ -115,9 +115,11 @@ export default function DataSettings() {
                 : t.neverSynced}
             </div>
           </div>
-          <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); if (!syncing) handleSync(); }} style={{ flexShrink: 0, background: syncError ? "var(--red-dim)" : "var(--accent-dim)", color: syncError ? "var(--red)" : "var(--accent)", border: `1px solid ${syncError ? "var(--red)44" : "var(--accent)44"}`, borderRadius: "var(--radius-sm)", padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer" }}>
-            {syncing ? t.retrying : syncError ? t.retry : t.sync}
-          </span>
+          {syncError && (
+            <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); if (!syncing) handleSync(); }} style={{ flexShrink: 0, background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer" }}>
+              {syncing ? t.retrying : t.retry}
+            </span>
+          )}
         </button>
       )}
 

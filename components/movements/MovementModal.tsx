@@ -8,7 +8,8 @@ import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
 import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
 import { upsertRecurrente } from "@/services/firebase/recurrentes";
-import { listarPlantillas, crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
+import { crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
+import { useData } from "@/app/(tabs)/data-context";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { MediaViewer } from "@/components/ui/MediaViewer";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -52,6 +53,7 @@ interface MovementModalProps {
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
 export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
   const { user } = useAuth();
+  const { plantillas, mutatePlantillas, refreshPlantillas, refreshRecurrentes } = useData();
   const { cotizacion } = useCotizacion();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const { m: money } = useMoney();
@@ -122,8 +124,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
-  // Plantillas de gasto frecuente (solo modo alta).
-  const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
+  // Plantillas de gasto frecuente (del DataProvider, se leen 1×/sesión).
   const [tplDelete, setTplDelete] = useState<Plantilla | null>(null);
   const [tplSavedFlash, setTplSavedFlash] = useState(false);
 
@@ -180,12 +181,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, movimiento?.id, initialView]);
 
-  // Cargar plantillas al abrir un alta normal (no reserva ni sin períodos).
-  useEffect(() => {
-    if (!open || mode !== "add" || reserveMode || !user?.uid) return;
-    listarPlantillas(user.uid).then(setPlantillas).catch(() => {});
-  }, [open, mode, reserveMode, user?.uid]);
-
   const aplicarPlantilla = (p: Plantilla) => {
     setTipo("Gasto");
     setCategoria(p.categoria);
@@ -195,7 +190,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     setObservaciones(p.observaciones ?? "");
     if (user?.uid) {
       usarPlantilla(user.uid, p.id).then(() => {
-        setPlantillas((prev) => {
+        mutatePlantillas((prev) => {
           const updated = prev.map((x) => x.id === p.id ? { ...x, usageCount: (x.usageCount ?? 0) + 1 } : x);
           return [...updated].sort((a, b) => (b.usageCount ?? 0) - (a.usageCount ?? 0));
         });
@@ -214,13 +209,13 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     });
     setTplSavedFlash(true);
     setTimeout(() => setTplSavedFlash(false), 1800);
-    listarPlantillas(user.uid).then(setPlantillas).catch(() => {});
+    refreshPlantillas();
   };
 
   const confirmarBorrarPlantilla = async () => {
     if (!user?.uid || !tplDelete) return;
     await eliminarPlantilla(user.uid, tplDelete.id);
-    setPlantillas((prev) => prev.filter((x) => x.id !== tplDelete.id));
+    mutatePlantillas((prev) => prev.filter((x) => x.id !== tplDelete.id));
     setTplDelete(null);
   };
 
@@ -373,6 +368,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       // en los próximos períodos. Solo Gasto/Ingreso comunes (no Move/FX/ahorros).
       if (repetir && (tipo === "Gasto" || tipo === "Ingreso") && categoria !== "Ahorros" && descripcion.trim()) {
         await upsertRecurrente(user.uid, { descripcion: descripcion.trim(), categoria, tipo, monto: montoFinal }).catch(() => {});
+        refreshRecurrentes();
       }
 
       // Cierre del período anterior: el disponible sobrante se traslada como RESTO al nuevo período.

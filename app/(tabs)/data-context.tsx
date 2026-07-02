@@ -1,11 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useConfig } from "@/hooks/useConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { listarRecurrentes, type Recurrente } from "@/services/firebase/recurrentes";
+import { listarPlantillas, type Plantilla } from "@/services/firebase/plantillas";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
 interface DataCtx {
@@ -18,6 +20,12 @@ interface DataCtx {
   config: ConfigUsuario | null;
   configLoading: boolean;
   refreshConfig: () => void;
+  recurrentes: Recurrente[];
+  plantillas: Plantilla[];
+  refreshRecurrentes: () => void;
+  refreshPlantillas: () => void;
+  mutateRecurrentes: React.Dispatch<React.SetStateAction<Recurrente[]>>;
+  mutatePlantillas: React.Dispatch<React.SetStateAction<Plantilla[]>>;
 }
 
 const Ctx = createContext<DataCtx | null>(null);
@@ -31,6 +39,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const { movimientos, loading, refresh, updateLocal, removeLocal, prependLocal } = useAllMovimientos(user?.uid);
   const { config, loading: configLoading, refresh: refreshConfig } = useConfig(user?.uid);
   const hydratePrefs = useAppPrefs((s) => s.hydrate);
+
+  // Recurrentes y plantillas: se leen una vez por sesión (antes se re-leían en cada
+  // visita a Movimientos y en cada apertura del modal de alta, respectivamente).
+  const [recurrentes, setRecurrentes] = useState<Recurrente[]>([]);
+  const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
+  const uid = user?.uid;
+  useEffect(() => {
+    if (!uid) { setRecurrentes([]); setPlantillas([]); return; }
+    listarRecurrentes(uid).then(setRecurrentes).catch(() => {});
+    listarPlantillas(uid).then(setPlantillas).catch(() => {});
+  }, [uid]);
+  const refreshRecurrentes = useCallback(() => { if (uid) listarRecurrentes(uid).then(setRecurrentes).catch(() => {}); }, [uid]);
+  const refreshPlantillas = useCallback(() => { if (uid) listarPlantillas(uid).then(setPlantillas).catch(() => {}); }, [uid]);
 
   // Prefs por-usuario: la config (Firestore) es la fuente de verdad. Al cargarla,
   // hidratamos el store local para no arrastrar prefs de otro usuario del dispositivo.
@@ -54,7 +75,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [config, router]);
 
   return (
-    <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig }}>
+    <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig, recurrentes, plantillas, refreshRecurrentes, refreshPlantillas, mutateRecurrentes: setRecurrentes, mutatePlantillas: setPlantillas }}>
       {children}
     </Ctx.Provider>
   );

@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.55.0] — 2026-07-01
+
+### Mejoras
+- **App más liviana y económica**: optimizamos cómo lee datos la app y los recordatorios automáticos, para que consuma menos y ande más ágil.
+- **Sincronización con la planilla más prolija**: el botón de sincronizar a mano ahora solo aparece si algo falló. La sincronización se hace sola de forma automática.
+
+---
+
 ## [2.54.1] — 2026-06-30
 
 ### Mejoras

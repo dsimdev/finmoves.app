@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.55.0] — 2026-07-01
+
+### Performance / cost (Firestore reads)
+- **Notifications cron — daily gate**: movement-based checks (meta, salary, forgotten-entry, recurrents) now run at most once per day per user via a `lastDailyRun` marker, instead of on every cron run. Dollar-rate and version checks still run every run (they don't read movements). Cuts those reads ~4×→1×.
+- **Recurrents check**: a single read of the ~150 most recent movements, filtered in memory, replaces one Firestore query per active recurrent.
+- **Shared recent-movements read**: `checkSueldo` and `checkCargaOlvidada` now reuse that same snapshot instead of each issuing its own query.
+- **`checkMeta` guarded**: returns early once the 100% milestone was notified, and uses a `count()` aggregation to reuse a cached investment-sum (stored in `notifyMeta`) when the number of investment movements and currency are unchanged; the base balance is always added separately so base edits still reflect.
+- **Admin users API**: 60s in-module cache on `GET /api/admin/users` (owner-only, low churn), invalidated on permission change.
+- **Client caching**: `recurrentes` and `plantillas` are now loaded once per session via `DataProvider` (movements list marker, add-movement modal, notifications settings) instead of re-fetching on each tab visit / modal open.
+
+### Changed
+- **Manual Sheets-sync button** now only appears when the last sync errored; the routine mirror is automatic (self-limited to ~1×/day), so the always-visible manual trigger was redundant.
+
+---
+
 ## [2.54.1] — 2026-06-30
 
 ### Changed

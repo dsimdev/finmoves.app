@@ -7,6 +7,11 @@ export const dynamic = "force-dynamic";
 
 const PERMISOS_VALIDOS = ["comprobantes", "inversion"] as const;
 
+// Cache de módulo: el panel es solo del owner y la lista cambia poco. 60s evita
+// que refrescos seguidos re-lean 3 docs × usuario. Se invalida al cambiar permisos.
+const USERS_CACHE_TTL = 60_000;
+let usersCache: { data: unknown[]; ts: number } | null = null;
+
 // Verifica que el llamador sea el dueño (OWNER_UID). Devuelve su uid o un error.
 async function requireOwner(req: NextRequest): Promise<string | NextResponse> {
   const authHeader = req.headers.get("authorization") ?? "";
@@ -67,6 +72,7 @@ export async function POST(req: NextRequest) {
   if (pushDoc.exists) {
     await sendPushToUser(targetUid, { title: "FinMoves", body, tag: "permission-change", url: "/settings" }).catch(() => {});
   }
+  usersCache = null; // cambió un permiso → la lista cacheada quedó vieja
   return NextResponse.json({ ok: true });
 }
 
@@ -75,6 +81,10 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const owner = await requireOwner(req);
   if (typeof owner !== "string") return owner;
+
+  if (usersCache && Date.now() - usersCache.ts < USERS_CACHE_TTL) {
+    return NextResponse.json({ users: usersCache.data });
+  }
 
   const list = await adminAuth().listUsers(1000);
   // Mapa uid → código que usó (para mostrarlo en cada usuario).
@@ -107,5 +117,6 @@ export async function GET(req: NextRequest) {
   );
   // Más nuevos primero.
   users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  usersCache = { data: users, ts: Date.now() };
   return NextResponse.json({ users });
 }
