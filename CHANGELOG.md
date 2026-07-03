@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.57.0] — 2026-07-03
+
+### Changed
+- **Incremental Firestore reads (client + Sheets sync)** — kills the recurring ~1.4K-read full-collection scans:
+  - **App load** (`useAllMovimientos`): when the server count exceeds the cached count (adds from another device/session), fetch only movements newer than the newest cached `timestampCarga` and merge, instead of re-reading the whole collection. Falls back to a full fetch when the numbers don't reconcile (cross-device deletes/edits). Count-match still short-circuits to cache.
+  - **Sheets sync** (`syncUserMovimientosToSheet`): now incremental by default. Reads only movements after `syncMeta.lastSyncedTs` and appends them to the sheet (the sheet is written exclusively by the app, so its state equals the last sync). A full mirror (backup + overwrite) runs only when the app edited/deleted a movement (`syncMeta.needsFullSync`, set by `marcarFullSync` in `services/firebase/movimientos.ts` for the owner), when there's no prior sync, or when forced. Manual sync from Settings forces a full mirror.
+  - **Cron back to daily** (was weekly in 2.56.2): daily is cheap now that the sync is incremental. Success push only fires when something was actually synced; the log distinguishes full vs incremental runs.
+
+---
+
 ## [2.56.2] — 2026-07-03
 
 ### Changed

@@ -1,20 +1,31 @@
 import { adminDb } from "@/lib/firebase-admin";
-import { getSheetsClient, getSheetName, backupAndRotate, overwriteData } from "@/lib/google-sheets";
+import { getSheetsClient, getSheetName, backupAndRotate, overwriteData, appendData } from "@/lib/google-sheets";
 import { movimientoToRow } from "@/lib/sheet-format";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento } from "@/types";
 
-// Espejo app → Google Sheets: lee todos los movimientos del usuario (la app es la
-// fuente de verdad), respalda/rota la hoja y la sobrescribe. Actualiza
-// users/{uid}/config/syncMeta (lastSync / lastError). Lanza si algo falla.
-// Usado tanto por el sync manual (/api/sync-sheets) como por el cron diario.
-export async function syncUserMovimientosToSheet(uid: string): Promise<{ synced: number }> {
+// Espejo app → Google Sheets. El sheet solo lo escribe la app (nadie edita directo
+// en la hoja), así que su estado es exactamente lo del último sync. Eso habilita:
+// - incremental (default): lee solo movimientos posteriores al último sincronizado
+//   (syncMeta.lastSyncedTs) y los agrega al final. Costo: ~N docs nuevos.
+// - full: lee toda la colección, respalda/rota la hoja y la sobrescribe. Corre si la
+//   app editó/borró un movimiento (flag syncMeta.needsFullSync), si nunca hubo sync
+//   (sin lastSyncedTs) o si se fuerza (sync manual desde Configuración).
+// Actualiza users/{uid}/config/syncMeta (lastSync / lastError). Lanza si algo falla.
+export async function syncUserMovimientosToSheet(
+  uid: string,
+  opts?: { forceFull?: boolean }
+): Promise<{ synced: number; mode: "full" | "incremental" }> {
   const syncMetaRef = adminDb().doc(`users/${uid}/config/syncMeta`);
   try {
-    const snap = await adminDb()
-      .collection(`users/${uid}/movimientos`)
-      .orderBy("timestampCarga", "asc")
-      .get();
+    const meta = (await syncMetaRef.get()).data() ?? {};
+    const lastSyncedTs = meta.lastSyncedTs as Timestamp | undefined;
+    const full = opts?.forceFull === true || meta.needsFullSync === true || !lastSyncedTs;
+
+    const col = adminDb().collection(`users/${uid}/movimientos`);
+    const snap = full
+      ? await col.orderBy("timestampCarga", "asc").get()
+      : await col.where("timestampCarga", ">", lastSyncedTs!).orderBy("timestampCarga", "asc").get();
 
     const rows = snap.docs.map((doc) => {
       const data = doc.data();
@@ -22,13 +33,29 @@ export async function syncUserMovimientosToSheet(uid: string): Promise<{ synced:
       return movimientoToRow(m);
     });
 
-    const sheets = await getSheetsClient();
-    const sheetName = await getSheetName(sheets);
-    await backupAndRotate(sheets);
-    await overwriteData(sheets, sheetName, rows);
+    // Incremental sin novedades: no hay nada que escribir en la hoja.
+    if (full || rows.length > 0) {
+      const sheets = await getSheetsClient();
+      const sheetName = await getSheetName(sheets);
+      if (full) {
+        await backupAndRotate(sheets);
+        await overwriteData(sheets, sheetName, rows);
+      } else {
+        await appendData(sheets, sheetName, rows);
+      }
+    }
 
-    await syncMetaRef.set({ lastSync: Timestamp.now(), lastError: null }, { merge: true });
-    return { synced: rows.length };
+    // El doc más nuevo sincronizado marca el corte del próximo incremental.
+    const newestTs = snap.docs.length > 0
+      ? (snap.docs[snap.docs.length - 1].get("timestampCarga") as Timestamp)
+      : lastSyncedTs ?? null;
+    await syncMetaRef.set({
+      lastSync: Timestamp.now(),
+      lastError: null,
+      ...(newestTs ? { lastSyncedTs: newestTs } : {}),
+      ...(full ? { needsFullSync: false } : {}),
+    }, { merge: true });
+    return { synced: rows.length, mode: full ? "full" : "incremental" };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     try {

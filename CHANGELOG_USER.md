@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.57.0] — 2026-07-03
+
+### Mejoras
+- La app carga más rápido y consume menos: cuando cargaste movimientos desde otro dispositivo, ahora trae solo lo nuevo en vez de releer todo.
+- La sincronización con Google Sheets volvió a ser diaria, ahora agregando solo los movimientos nuevos. Si editás o borrás algo, la próxima sincronización rehace la hoja completa para que siempre quede fiel. El botón manual sigue dejando la hoja perfecta al instante.
+
+---
+
 ## [2.56.2] — 2026-07-03
 
 ### Mejoras

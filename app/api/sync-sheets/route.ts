@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { synced } = await syncUserMovimientosToSheet(uid);
+    // Manual = full forzado: es el botón para dejar la hoja perfecta ya (espejo completo).
+    const { synced } = await syncUserMovimientosToSheet(uid, { forceFull: true });
     return NextResponse.json({ synced, message: `Sync completa · ${synced} movimientos` });
   } catch (err) {
     // Detalle solo en logs del servidor; al cliente, mensaje genérico (evita filtrar

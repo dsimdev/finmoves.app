@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Movimiento } from "@/types";
-import { collection, query, orderBy, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
+import { collection, query, orderBy, where, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
 
 type SerializedMovimiento = Omit<Movimiento, "timestampCarga"> & { timestampCarga: string };
@@ -31,6 +31,18 @@ function loadCache(uid: string): { movimientos: Movimiento[]; count: number } | 
 async function fullFetch(uid: string): Promise<Movimiento[]> {
   const ref = collection(db, `users/${uid}/movimientos`);
   const snap = await getDocs(query(ref, orderBy("timestampCarga", "desc")));
+  return snap.docs.map((d) => ({
+    ...d.data(),
+    id: d.id,
+    timestampCarga: (d.data().timestampCarga as Timestamp).toDate(),
+  })) as Movimiento[];
+}
+
+// Trae solo los docs más nuevos que el último cacheado (rango sobre un único campo,
+// no necesita índice compuesto). Convierte un re-sync típico de ~1.4K lecturas en 1–5.
+async function incrementalFetch(uid: string, since: Date): Promise<Movimiento[]> {
+  const ref = collection(db, `users/${uid}/movimientos`);
+  const snap = await getDocs(query(ref, where("timestampCarga", ">", Timestamp.fromDate(since)), orderBy("timestampCarga", "desc")));
   return snap.docs.map((d) => ({
     ...d.data(),
     id: d.id,
@@ -97,7 +109,23 @@ export function useAllMovimientos(userId: string | undefined) {
         return;
       }
 
-      // Conteo distinto (otra sesión/dispositivo modificó datos): re-fetch completo
+      // Server tiene MÁS docs (altas desde otra sesión/dispositivo): traer solo lo
+      // nuevo y mergear. Si los números no cierran (también hubo borrados), cae al
+      // full fetch de abajo como red de seguridad.
+      if (cached && serverCount > cached.count && cached.movimientos.length > 0) {
+        const newest = cached.movimientos.reduce((max, m) => m.timestampCarga > max ? m.timestampCarga : max, cached.movimientos[0].timestampCarga);
+        const nuevos = await incrementalFetch(userId, newest);
+        if (cached.count + nuevos.length === serverCount) {
+          const ids = new Set(nuevos.map((m) => m.id));
+          const next = [...nuevos, ...cached.movimientos.filter((m) => !ids.has(m.id))];
+          setMovimientos(next);
+          saveCache(userId, next);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Conteo menor o merge inconsistente (borrados/ediciones cruzadas): re-fetch completo
       const data = await fullFetch(userId);
       setMovimientos(data);
       saveCache(userId, data);

@@ -39,12 +39,11 @@ export async function GET(req: NextRequest) {
     } catch { /* ignore */ }
   };
 
-  // El sync a Sheets se auto-limita a ~1×/semana aunque la cron corra más seguido
+  // El sync a Sheets se auto-limita a ~1×/día aunque la cron corra más seguido
   // (la frecuencia alta es para las notificaciones, no para re-sincronizar Sheets).
-  // Es un espejo completo (~1.4K lecturas por corrida): semanal baja el costo diario;
-  // el sync manual en Configuración sigue disponible para forzar un flush cuando haga falta.
-  // 7 días menos un colchón de 4h para que siempre caiga en el mismo slot del cron.
-  const SYNC_MIN_INTERVAL_MS = (7 * 24 - 4) * 60 * 60 * 1000;
+  // Diario es barato: el sync es incremental (lee solo docs nuevos); el espejo
+  // completo corre únicamente cuando la app editó/borró algo (flag needsFullSync).
+  const SYNC_MIN_INTERVAL_MS = 20 * 60 * 60 * 1000;
   const lastAutoSync = (await syncMetaRef.get()).data()?.lastAutoSync as Timestamp | undefined;
   const shouldSync = !lastAutoSync || Date.now() - lastAutoSync.toMillis() > SYNC_MIN_INTERVAL_MS;
 
@@ -53,12 +52,16 @@ export async function GET(req: NextRequest) {
     result = { ok: true, skipped: true };
   } else {
     try {
-      const { synced } = await syncUserMovimientosToSheet(ownerUid);
+      const { synced, mode } = await syncUserMovimientosToSheet(ownerUid);
       await syncMetaRef.set({ lastAutoSync: Timestamp.now() }, { merge: true });
-      const message = `Sync automática · ${synced} movimientos`;
+      const message = mode === "full"
+        ? `Sync automática · ${synced} movimientos (completa)`
+        : `Sync automática · +${synced} nuevos`;
       await appendLog({ status: "ok", type: "auto", at: Timestamp.now(), message });
-      // Aviso de sync OK con el mismo detalle del log — solo al dueño.
-      await sendPushToUser(ownerUid, { title: "Sheets sincronizado", body: message, tag: "sync-ok", url: "/settings" });
+      // Aviso de sync OK — solo al dueño y solo si hubo algo que sincronizar.
+      if (synced > 0 || mode === "full") {
+        await sendPushToUser(ownerUid, { title: "Sheets sincronizado", body: message, tag: "sync-ok", url: "/settings" });
+      }
       result = { ok: true, synced };
     } catch (err) {
       console.error("[cron/sync-sheets]", err);
