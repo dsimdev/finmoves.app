@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.56.2] — 2026-07-03
+
+### Mejoras
+- La sincronización automática con Google Sheets ahora es semanal (antes diaria) para bajar el costo de lecturas. El botón de sincronización manual sigue disponible cuando necesites la hoja al día.
+
+---
+
 ## [2.56.1] — 2026-07-02
 
 ### Mejoras

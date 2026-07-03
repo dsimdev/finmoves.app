@@ -39,11 +39,12 @@ export async function GET(req: NextRequest) {
     } catch { /* ignore */ }
   };
 
-  // El sync a Sheets se auto-limita a ~1×/día aunque la cron corra más seguido
+  // El sync a Sheets se auto-limita a ~1×/semana aunque la cron corra más seguido
   // (la frecuencia alta es para las notificaciones, no para re-sincronizar Sheets).
-  // Es un espejo completo a propósito: así refleja también ediciones/borrados, no
-  // solo altas (el sync manual no está siempre disponible para forzar un flush).
-  const SYNC_MIN_INTERVAL_MS = 20 * 60 * 60 * 1000;
+  // Es un espejo completo (~1.4K lecturas por corrida): semanal baja el costo diario;
+  // el sync manual en Configuración sigue disponible para forzar un flush cuando haga falta.
+  // 7 días menos un colchón de 4h para que siempre caiga en el mismo slot del cron.
+  const SYNC_MIN_INTERVAL_MS = (7 * 24 - 4) * 60 * 60 * 1000;
   const lastAutoSync = (await syncMetaRef.get()).data()?.lastAutoSync as Timestamp | undefined;
   const shouldSync = !lastAutoSync || Date.now() - lastAutoSync.toMillis() > SYNC_MIN_INTERVAL_MS;
 

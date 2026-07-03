@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.56.2] — 2026-07-03
+
+### Changed
+- **Sheets auto-sync throttled to weekly** (was ~daily): the sync is a full-collection mirror (~1.4K document reads per run), the single biggest recurring Firestore cost. `SYNC_MIN_INTERVAL_MS` is now 7 days minus a 4h buffer so it always lands on the same 06:00 cron slot. The cron itself still runs every 6h (notifications need it); manual sync from Settings is unchanged for on-demand flushes.
+
+---
+
 ## [2.56.1] — 2026-07-02
 
 ### Changed
