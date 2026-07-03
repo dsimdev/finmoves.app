@@ -613,11 +613,11 @@ export default function ReportesPage() {
               {reportOn("gastos_kpis") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                 {esPeriodoVigente && tendenciaGasto !== null && (() => { const c = tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`; return (
-                  <MiniStat center label={t.trend} value={v} color={c}
-                    onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `${t.kpiTrendInfo} Período actual: ${oculto ? "••" : formatARS(periodos[0].gastadoPuro)} · Promedio histórico: ${oculto ? "••" : formatARS(Math.round(avgHistorico))}`, color: c })} />
+                  <MiniStat center basis="1 1 45%" label={t.trend} value={v} color={c}
+                    onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `${t.kpiTrendInfo} Promedio histórico: ${oculto ? "••" : formatARS(Math.round(avgHistorico))}`, color: c })} />
                 ); })()}
-                {periodo.moveAhorros > 0 && <MiniStat center label={t.toSavingsLabel} value={oculto ? "••" : abbr(periodo.moveAhorros)} color="var(--purple)"
-                  onClick={() => setKpiInfo({ title: t.moveToSavingsTitle, value: oculto ? "••" : formatARS(periodo.moveAhorros), explain: t.kpiMoveToSavingsInfo, color: "var(--purple)" })} />}
+                {periodo.gastado > periodo.gastadoPuro && <MiniStat center basis="1 1 45%" label={t.realSpent} value={oculto ? "••" : abbr(periodo.gastadoPuro)} color="var(--red)"
+                  onClick={() => setKpiInfo({ title: t.realSpent, value: oculto ? "••" : formatARS(periodo.gastadoPuro), explain: t.kpiRealSpentInfo, color: "var(--red)" })} />}
               </div>
               )}
 
@@ -765,14 +765,31 @@ export default function ReportesPage() {
                 {evolSueldoActivo ? (
                   <MiniStat center basis="1 1 45%" label={t.salary}
                     value={oculto ? "••" : abbr(evolSueldoActivo.sueldo)}
-                    sub={evolSueldoActivo.esVacaciones ? t.leave : evolSueldoActivo.deltaPct !== null ? `${evolSueldoActivo.deltaPct >= 0 ? "+" : ""}${evolSueldoActivo.deltaPct}%` : undefined}
+                    sub={evolSueldoActivo.esVacaciones ? t.leave : undefined}
                     color={evolSueldoActivo.esVacaciones ? "var(--yellow)" : "var(--green)"}
                     onClick={suelHistorial.length > 0 ? () => setModalSueldo(true) : undefined} />
                 ) : (
                   <MiniStat center basis="1 1 45%" label={t.salary} value={oculto ? "••" : abbr(periodo.sueldo)} color="var(--green)" />
                 )}
-                {periodo.moveDisponible > 0 && <MiniStat center basis="1 1 45%" label={t.withdrawals} value={oculto ? "••" : abbr(periodo.moveDisponible)} color="#26c6da"
-                  onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveDisponible), explain: t.kpiWithdrawalsInfo, color: "#26c6da" })} />}
+                {(periodo.moveDisponible > 0 || periodo.moveAhorros > 0) && (
+                  <div style={{ background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "11px 12px", minWidth: 0, flex: "1 1 45%", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 5, textTransform: "capitalize" }}>{t.moves}</div>
+                    <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+                      {periodo.moveDisponible > 0 && (
+                        <div onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveDisponible), explain: t.kpiWithdrawalsInfo, color: "#26c6da" })}
+                          style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: "#26c6da", cursor: "pointer", whiteSpace: "nowrap" }}>
+                          {oculto ? "••" : abbr(periodo.moveDisponible)}
+                        </div>
+                      )}
+                      {periodo.moveAhorros > 0 && (
+                        <div onClick={() => setKpiInfo({ title: t.moveToSavingsTitle, value: oculto ? "••" : formatARS(periodo.moveAhorros), explain: t.kpiMoveToSavingsInfo, color: "var(--purple)" })}
+                          style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--purple)", cursor: "pointer", whiteSpace: "nowrap" }}>
+                          {oculto ? "••" : abbr(periodo.moveAhorros)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Mini-stats: Total ingresado · Ahorros acum. */}

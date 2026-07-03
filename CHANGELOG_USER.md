@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.55.7] — 2026-07-02
+
+### Mejoras
+- En Reportes → Gastos ahora ves el **gasto real** al lado de la tendencia (lo que gastaste sin contar compras de dólares/euros).
+- En Reportes → Ingresos los dos "moves" (a disponible y a ahorros) quedaron juntos en una sola card **Moves**, diferenciados por color.
+- Menos ruido: sacamos datos repetidos en la tendencia y en el sueldo.
+
+---
+
 ## [2.55.6] — 2026-07-01
 
 ### Arreglos

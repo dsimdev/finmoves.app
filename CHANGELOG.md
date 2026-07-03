@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.55.7] — 2026-07-02
+
+### Changed
+- **Reports KPI reorg (Gastos/Ingresos)**: in Gastos, the "A ahorros" mini-stat next to Trend was replaced with a **Gasto real** stat (pure spend excluding FX purchases, shown only when FX purchases exist). The Trend info modal dropped the now-redundant "Período actual" line, keeping only the historical average. In Ingresos, the two move metrics (move disponible + move a ahorros) were merged into a single **Moves** card holding both amounts, distinguished by color (cyan = disponible, purple = a ahorros); each amount stays tappable for its detail modal. Removed the redundant `+%` sub-label from the Salary mini-stat (kept the "leave" indicator). Added `moves`, `realSpent`, `kpiRealSpentInfo` locale keys (es/en).
+
+---
+
 ## [2.55.6] — 2026-07-01
 
 ### Fixed
