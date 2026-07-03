@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.56.1] — 2026-07-02
+
+### Mejoras
+- **La plantilla de presupuesto ahora se aplica sola**: en el período en curso, si no cargaste un presupuesto propio, se usan los valores de tu plantilla automáticamente. Ya no tenés que cargar todo a mano.
+- **El "disponible" del Inicio usa la misma escala que Reportes**: verde mientras tenés margen, rojo solo si te pasás. Y ya no se pone en rojo solo por mover plata a ahorros.
+- **Gráfico "Gastos totales" más claro**: las barras muestran los pesos (magnitud) en un color neutro; el semáforo de % queda en el gráfico "gasto sobre sueldo", donde tiene sentido.
+- **El período en curso ya no se marca como "el mejor"**: como todavía no terminó, no compite contra los meses completos.
+
+---
+
 ## [2.56.0] — 2026-07-02
 
 ### Mejoras

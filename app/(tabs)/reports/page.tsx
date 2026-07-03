@@ -25,7 +25,7 @@ import { reservaFX as calcularReservaFX } from "@/utils/reserva";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
 import { Bar, Stat, DonutChart, VBars, DotChart, AreaChart, TwoLineChart, type DotDatum } from "@/components/reports/charts";
-import { abbr, shortPer, sinAño, periodoAnio, deltaColor, deltaMag } from "@/components/reports/format";
+import { abbr, shortPer, sinAño, periodoAnio, deltaColor, deltaMag, colorPct } from "@/components/reports/format";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -120,9 +120,6 @@ export default function ReportesPage() {
   // finPeriodo = inicio del período siguiente (si existe), para cerrar el intervalo correctamente
   const finPeriodo = idx1 > 0 ? parsePeriodoId(periodos[idx1 - 1].periodoId) : null;
 
-  // Escala anclada al 100% = cubriste todo tu ingreso. Verde mientras hay margen,
-  // amarillo al acercarte al límite, rojo solo cuando te pasás del ingreso.
-  const colorPct = (pct: number) => pct > 105 ? "var(--red)" : pct > 90 ? "var(--yellow)" : "var(--green)";
   // Umbral relativo: color según cuántos desvíos estándar se aparta el período actual
   // de tu propia variabilidad histórica. Dentro de ±1σ es tu rango normal (amarillo);
   // fuera, rojo (raro-alto) o verde (raro-bajo). Sin cambio real → color de texto.
@@ -298,12 +295,34 @@ export default function ReportesPage() {
     obtenerPresupuesto(user.uid, activoPeriodoId).then(setPresupuesto).catch(() => setPresupuesto(null));
   }, [user?.uid, activoPeriodoId]);
 
+  // Plantilla por defecto: en el período en curso, si no hay presupuesto propio guardado,
+  // se aplica sola como presupuesto efectivo (sin persistir hasta que el usuario edite/guarde).
+  const presupuestoTemplate = config?.meta.presupuestoTemplate ?? null;
+  const templateValido = presupuestoTemplate && Object.keys(presupuestoTemplate).length > 0 ? presupuestoTemplate : null;
+  const presupuestoEfectivo = presupuesto ?? (esPeriodoVigente ? templateValido : null);
+  // Categorías del editor: unión de las que ya tienen gasto + las de la plantilla/presupuesto,
+  // así en un período nuevo (sin gastos) igual aparecen todas para editar.
+  const catsEditables = Array.from(new Set([
+    ...cats.map((c) => c.categoria),
+    ...Object.keys(presupuesto ?? {}),
+    ...Object.keys(templateValido ?? {}),
+  ]));
+  // Con presupuesto visible, sumá las categorías presupuestadas que aún no tienen gasto
+  // (monto 0) para ver el presupuesto completo, no solo lo ya gastado.
+  const catsConPresu = showBudget && presupuestoEfectivo
+    ? [...cats, ...Object.keys(presupuestoEfectivo)
+        .filter((cat) => (presupuestoEfectivo[cat] ?? 0) > 0 && !cats.some((c) => c.categoria === cat))
+        .map((cat) => ({ categoria: cat, monto: 0, pct: 0 }))]
+    : cats;
+
   const serie = useMemo(() => serieTendencia(periodos, seedPeriodoId), [periodos, seedPeriodoId]);
   const serieDesc = useMemo(() => [...serie].reverse(), [serie]);
   const maxTotal = Math.max(...serie.map((s) => s.total), 1);
 
   // ── Resumen general de períodos ──
-  const validPeriodos = useMemo(() => serieDesc.filter((s) => s.total > 0), [serieDesc]);
+  // Excluye el período en curso (incompleto): gastó poco solo porque recién arranca,
+  // no es "el mejor". Mismo criterio que inflación/tendencia.
+  const validPeriodos = useMemo(() => serieDesc.filter((s) => s.total > 0 && s.periodoId !== periodos[0]?.periodoId), [serieDesc, periodos]);
   const mejorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total < b.gastado / b.total ? s : b) : null;
   const peorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
   // Inflación personal: variación promedio del gasto puro (sin compras de divisa,
@@ -652,7 +671,7 @@ export default function ReportesPage() {
                   <span style={{ fontSize: 13, fontWeight: 600 }}>{t.byCategory}</span>
                   {activos.length === 1 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {presupuesto && Object.keys(presupuesto).length > 0 && (
+                      {presupuestoEfectivo && Object.keys(presupuestoEfectivo).length > 0 && (
                         <button onClick={() => setShowBudget(v => !v)} style={{ background: showBudget ? "var(--accent-dim)" : "transparent", border: `1px solid ${showBudget ? "var(--accent)" : "var(--border)"}`, borderRadius: 6, color: showBudget ? "var(--accent)" : "var(--muted)", fontSize: 10, fontWeight: 600, padding: "3px 8px", cursor: "pointer", transition: "all 0.15s" }}>
                           {t.budget}
                         </button>
@@ -660,7 +679,7 @@ export default function ReportesPage() {
                       <button onClick={() => {
                         const template = config?.meta.presupuestoTemplate ?? {};
                         const base = presupuesto ?? template;
-                        setEditingBudget(Object.fromEntries(cats.map((c) => [c.categoria, String(base[c.categoria] ?? "")])));
+                        setEditingBudget(Object.fromEntries(catsEditables.map((cat) => [cat, String(base[cat] ?? "")])));
                         setModalBudget(true);
                       }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4, display: "flex", alignItems: "center" }} aria-label={t.editBudget}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -670,7 +689,7 @@ export default function ReportesPage() {
                     </div>
                   )}
                 </div>
-                {cats.map((c) => <Bar key={c.categoria} nombre={c.categoria} monto={c.monto} pct={c.pct} color={esCatCompra(c.categoria) ? "var(--yellow)" : "var(--red)"} oculto={oculto} presupuesto={showBudget ? presupuesto?.[c.categoria] : undefined} onClick={() => setCatModal(c.categoria)} />)}
+                {catsConPresu.map((c) => <Bar key={c.categoria} nombre={c.categoria} monto={c.monto} pct={c.pct} color={esCatCompra(c.categoria) ? "var(--yellow)" : "var(--red)"} oculto={oculto} presupuesto={showBudget ? presupuestoEfectivo?.[c.categoria] : undefined} onClick={() => setCatModal(c.categoria)} />)}
               </div>
               )}
 
@@ -963,7 +982,10 @@ export default function ReportesPage() {
                 let data: BarDatum[] = [];
                 let max = 1; let refFrac: number | undefined; let mask = false;
                 if (periodMetric === "gasto") {
-                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: colorPct(s.total > 0 ? Math.round((s.gastado / s.total) * 100) : 0), hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId, periodoId: s.periodoId }));
+                  // Barra neutra: la altura son pesos (magnitud). El semáforo % vive en
+                  // "gasto sobre sueldo", donde altura y color hablan de lo mismo. El mejor/
+                  // peor período sigue marcado por el color de la etiqueta (verde/rojo).
+                  data = serieDesc.map((s) => ({ label: shortPer(s.periodoId), value: s.gastado, color: "var(--muted)", hi: activos.includes(s.periodoId), best: s.periodoId === mejorPeriodo?.periodoId, worst: s.periodoId === peorPeriodo?.periodoId, periodoId: s.periodoId }));
                   max = maxTotal; mask = true;
                 } else if (periodMetric === "ingreso") {
                   data = evolucionIngresos.map((p) => ({ label: shortPer(p.periodoId), value: p.sueldo + p.moveDisponible, color: "var(--green)", hi: activos.includes(p.periodoId), periodoId: p.periodoId }));
@@ -1333,7 +1355,7 @@ export default function ReportesPage() {
             .filter((m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD") && m.categoria === catModal)
             .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
           const totalCat = movsCat.reduce((s, m) => s + m.monto, 0);
-          const budgetCat = presupuesto?.[catModal];
+          const budgetCat = presupuestoEfectivo?.[catModal];
           return (
             <>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
@@ -1394,16 +1416,16 @@ export default function ReportesPage() {
           )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-          {cats.map((c) => (
-            <div key={c.categoria} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ flex: 1, fontSize: 13, color: "var(--text)" }}>{c.categoria}</span>
+          {catsEditables.map((cat) => (
+            <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ flex: 1, fontSize: 13, color: "var(--text)" }}>{cat}</span>
               <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                 <span style={{ position: "absolute", left: 10, fontSize: 13, color: "var(--muted)", pointerEvents: "none" }}>$</span>
                 <input
                   type="number"
                   inputMode="numeric"
-                  value={editingBudget[c.categoria] ?? ""}
-                  onChange={(e) => setEditingBudget((prev) => ({ ...prev, [c.categoria]: e.target.value }))}
+                  value={editingBudget[cat] ?? ""}
+                  onChange={(e) => setEditingBudget((prev) => ({ ...prev, [cat]: e.target.value }))}
                   placeholder="0"
                   className="input"
                   style={{ width: 130, paddingLeft: 22, textAlign: "right", fontFamily: "var(--font-mono)" }}
@@ -1414,9 +1436,9 @@ export default function ReportesPage() {
         </div>
         {(() => {
           const saved = presupuesto ?? {};
-          const budgetIsDirty = cats.some(c => {
-            const editVal = Math.round(parseFloat(editingBudget[c.categoria] ?? "") || 0);
-            const savedVal = Math.round(saved[c.categoria] ?? 0);
+          const budgetIsDirty = catsEditables.some(cat => {
+            const editVal = Math.round(parseFloat(editingBudget[cat] ?? "") || 0);
+            const savedVal = Math.round(saved[cat] ?? 0);
             return editVal !== savedVal;
           });
           const disabled = budgetSaving || !budgetIsDirty;

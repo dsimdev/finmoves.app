@@ -4,6 +4,18 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.56.1] — 2026-07-02
+
+### Changed
+- **Dashboard "disponible" bar color follows the income-anchored scale**: was `<10% red, <50% yellow` (so green rarely showed); now uses the shared `colorPct` on spent/income (green ≤90, yellow 90–105, red >105). Side effect: moving money to savings no longer turns the bar red. `colorPct`/`colorPctDim` extracted to `components/reports/format.ts` as the single source of truth (Reports + Dashboard).
+- **"Gastos totales" per-period chart is now neutral**: bar height = pesos (magnitude), single muted color. The green/amber/red semaphore only lives in the "gasto sobre sueldo" chart, where height and color describe the same thing. Best/worst months are still marked by the date-label color.
+
+### Fixed
+- **In-progress period excluded from best/worst**: the current (incomplete) period was flagged "best" just because it had spent little so far. Now `validPeriodos` drops `periodos[0]`, matching the inflation/trend criterion.
+- **Budget template auto-applies to the current period**: the template only pre-filled categories that already had spending, so a fresh period showed nothing and had to be typed by hand. Now, for the in-progress period with no saved budget, the template is used as the effective budget (not persisted until edited/saved); the budget editor lists the full category union (spent + template + saved); and budgeted-but-unspent categories render as empty bars. Historical periods are untouched.
+
+---
+
 ## [2.56.0] — 2026-07-02
 
 ### Changed

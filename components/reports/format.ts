@@ -18,6 +18,13 @@ export const sinAño = (fecha: string) => {
   return fecha.includes("/") ? fecha.split("/").slice(0, 2).join("/") : fecha;
 };
 
+// Escala de color del % gastado, anclada al 100% = todo el ingreso del período.
+// Verde mientras hay margen, amarillo cerca del límite, rojo solo al pasarse.
+export const colorPct = (pct: number) =>
+  pct > 105 ? "var(--red)" : pct > 90 ? "var(--yellow)" : "var(--green)";
+export const colorPctDim = (pct: number) =>
+  pct > 105 ? "var(--red-dim)" : pct > 90 ? "var(--yellow-dim)" : "var(--green-dim)";
+
 // Tratamiento del cero en un delta (% o pts). El valor debe venir SIN redondear.
 // - 0 exacto (sin cambio real) → color de texto neutro.
 // - |v| < 1 (redondearía a "0" pero no es 0) → color según signo (no se lo esconde).

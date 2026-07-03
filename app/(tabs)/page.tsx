@@ -18,7 +18,7 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { titleGradText } from "@/components/ui/gradients";
-import { deltaColor, deltaMag } from "@/components/reports/format";
+import { deltaColor, deltaMag, colorPct, colorPctDim } from "@/components/reports/format";
 
 function TipoColor(m: Movimiento) {
   if (m.categoria === "RESTO") return "var(--blue)"; // arrastre a ahorros del período anterior
@@ -83,8 +83,11 @@ export default function Dashboard() {
   }, [periodos, deflatar, esARS]);
   const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR").slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
-  const barColor = pctDisp < 10 ? "var(--red)" : pctDisp < 50 ? "var(--yellow)" : "var(--green)";
-  const barColorDim = pctDisp < 10 ? "var(--red-dim)" : pctDisp < 50 ? "var(--yellow-dim)" : "var(--green-dim)";
+  // Color anclado al gasto sobre el ingreso (misma escala que Reportes): verde mientras
+  // hay margen, rojo solo al pasarte. Así no se pone en alerta por mover plata a ahorros.
+  const gastadoPct = p && p.total > 0 ? (p.gastado / p.total) * 100 : 0;
+  const barColor = colorPct(gastadoPct);
+  const barColorDim = colorPctDim(gastadoPct);
 
   return (
     <div className="page">
