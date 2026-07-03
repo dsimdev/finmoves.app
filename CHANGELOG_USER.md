@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.55.6] — 2026-07-01
+
+### Arreglos
+- Los recordatorios de gastos recurrentes volvieron a funcionar en meses con muchos movimientos: antes, si cargabas muchos ítems, el aviso de "hace ~1 mes que no cargás esto" podía no llegar.
+
+---
+
 ## [2.55.5] — 2026-07-01
 
 ### Mejoras

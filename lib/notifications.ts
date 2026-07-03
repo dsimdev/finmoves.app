@@ -11,10 +11,18 @@ const HITOS = [50, 75, 100];
 const SUELDO_REMINDER_DAYS = 30; // si pasó ~1 mes sin abrir período nuevo
 const CARGA_OLVIDADA_DIAS = 3;   // días sin registrar ningún movimiento
 const RECURRENTE_DIAS = 28; // días desde la última carga antes de recordar un recurrente
+const RECURRENTE_LOOKBACK_DIAS = 45; // ventana de lectura (por fecha) para hallar la última carga;
+// cubre el umbral de 28d con margen y es robusta al volumen del período (no depende de un límite por cantidad).
 
 // Fecha de hoy en AR (UTC-3) como YYYY-MM-DD, para comparar contra recordatorios.
 function hoyAR(): string {
   const ar = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  return ar.toISOString().slice(0, 10);
+}
+
+// YYYY-MM-DD (AR) de hace N días — para acotar lecturas por fecha del evento.
+function isoHaceDiasAR(dias: number): string {
+  const ar = new Date(Date.now() - 3 * 60 * 60 * 1000 - dias * 86_400_000);
   return ar.toISOString().slice(0, 10);
 }
 
@@ -90,8 +98,9 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
   if (notify.lastDailyRun !== hoy) {
     const config = (await adminDb().doc(`users/${uid}/config/meta`).get()).data() as ConfigUsuario | undefined;
     if (config) {
-      // Una sola lectura de movimientos recientes, compartida por los checks (antes
-      // cada check —y cada recurrente— disparaba su propia query a movimientos).
+      // Lectura de movimientos recientes compartida por sueldo y carga-olvidada (ambos
+      // solo necesitan lo más nuevo). Recurrentes hace su propia lectura por ventana de
+      // fecha, porque necesita ver más atrás que estos 150 en períodos de alto volumen.
       const recentSnap = await adminDb()
         .collection(`users/${uid}/movimientos`)
         .orderBy("timestampCarga", "desc")
@@ -104,7 +113,7 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
       await checkMeta(uid, config, notify, updates);
       await checkSueldo(uid, recientes, notify, updates);
       await checkCargaOlvidada(uid, recientes, notify, updates);
-      await checkRecurrentes(uid, recientes, notify, updates);
+      await checkRecurrentes(uid, notify, updates);
     }
     // Recordatorios puntuales del usuario (colección propia, independiente de config).
     await checkRecordatorios(uid);
@@ -182,9 +191,18 @@ async function checkRecordatorios(uid: string) {
 // un movimiento que matchee (tipo+categoría+descripción). Si pasaron ~28 días desde esa
 // fecha, recuerda por push. Dedup por última-fecha → no re-avisa hasta que lo cargues de
 // nuevo (ahí cambia la fecha y, al mes, vuelve a avisar).
-async function checkRecurrentes(uid: string, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
+async function checkRecurrentes(uid: string, notify: Record<string, unknown>, updates: Record<string, unknown>) {
   const recSnap = await adminDb().collection(`users/${uid}/recurrentes`).where("activo", "==", true).get();
   if (recSnap.empty) return;
+
+  // Ventana por FECHA del evento (no por cantidad): una sola query, index-free (desigualdad
+  // de un solo campo) y robusta al volumen del período. `fecha` se guarda como YYYY-MM-DD.
+  const desde = isoHaceDiasAR(RECURRENTE_LOOKBACK_DIAS);
+  const movsSnap = await adminDb()
+    .collection(`users/${uid}/movimientos`)
+    .where("fecha", ">=", desde)
+    .get();
+  const movs = movsSnap.docs.map((d) => d.data() as Movimiento);
 
   const hoy = hoyAR();
   const reminded = (notify.recReminded as Record<string, string>) ?? {};
@@ -193,8 +211,7 @@ async function checkRecurrentes(uid: string, movs: Movimiento[], notify: Record<
 
   for (const d of recSnap.docs) {
     const r = d.data() as { tipo: string; categoria: string; descripcion: string };
-    // Última carga que matchee (tipo+categoría+descripción) dentro de los movimientos
-    // recientes ya leídos — sin una query por recurrente.
+    // Última carga que matchee (tipo+categoría+descripción) dentro de la ventana leída.
     const desc = (r.descripcion || "").trim().toLowerCase();
     let ultima = "";
     for (const m of movs) {

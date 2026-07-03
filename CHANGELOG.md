@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.55.6] — 2026-07-01
+
+### Fixed
+- **Recurring-expense reminders on high-volume periods**: `checkRecurrentes` was scanning the shared 150-most-recent movements (introduced in 2.55.0). For users loading ~200 movements per period, a recurring expense's reference movement falls out of the top-150 (~day 22) before the 28-day reminder threshold, so the reminder never fired. It now reads its own date-windowed slice (`fecha >= today − 45 days`, index-free single-field range), which is robust to period volume. Salary and forgotten-load checks keep using the shared read (they only need the newest entry).
+
+---
+
 ## [2.55.5] — 2026-07-01
 
 ### Changed
