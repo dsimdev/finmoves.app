@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.56.0] — 2026-07-02
+
+### Mejoras
+- **Colores más consistentes**: la compra de dólares ahora se ve amarilla en todas las pantallas (antes en Inicio salía roja).
+- **El "Gastado" ya no es rojo todo el tiempo**: la escala se ajustó a tu ingreso. Verde mientras tenés margen, amarillo al acercarte al límite y rojo solo cuando te pasás del sueldo.
+- **La Tendencia ahora se adapta a vos**: en vez de un límite fijo, el color mira tu propia variabilidad. Solo se pone en alerta cuando el período se sale de lo que es normal para tu historial.
+- **Números más honestos**: un cambio de 0% real se muestra en color neutro; y si el cambio es chiquito (ej. 0,67%) ya no se redondea a "0%", te muestra el decimal.
+
+---
+
 ## [2.55.7] — 2026-07-02
 
 ### Mejoras

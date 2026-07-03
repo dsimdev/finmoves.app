@@ -174,7 +174,7 @@ export function comparativaCategorias(
     .map((categoria) => {
       const a = act.get(categoria) ?? 0;
       const b = ant.get(categoria) ?? 0;
-      const deltaPct = b > 0 ? Math.round(((a - b) / b) * 100) : null;
+      const deltaPct = b > 0 ? ((a - b) / b) * 100 : null;
       return { categoria, actual: a, anterior: b, deltaPct };
     })
     .sort((x, y) => y.actual - x.actual);

@@ -18,11 +18,13 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { titleGradText } from "@/components/ui/gradients";
+import { deltaColor, deltaMag } from "@/components/reports/format";
 
 function TipoColor(m: Movimiento) {
   if (m.categoria === "RESTO") return "var(--blue)"; // arrastre a ahorros del período anterior
-  if (m.tipo === "Gasto" || m.tipo === "CompraUSD") return "var(--red)";
-  if (m.tipo === "Move") return m.direccionMove === "aAhorro" ? "var(--purple)" : "#26c6da";
+  if (m.tipo === "CompraUSD") return "var(--yellow)";
+  if (m.tipo === "Gasto") return "var(--red)";
+  if (m.tipo === "Move") return m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)";
   return "var(--green)";
 }
 function TipoPrefix(m: Movimiento) {
@@ -77,7 +79,7 @@ export default function Dashboard() {
     // No-ARS: variación nominal (el IPC argentino no aplica a su moneda).
     const prev = esARS ? deflatar(prevP.gasto, prevP.id) : prevP.gasto;
     const curr = esARS ? deflatar(currP.gasto, currP.id) : currP.gasto;
-    return prev > 0 ? Math.round(((curr - prev) / prev) * 100) : null;
+    return prev > 0 ? ((curr - prev) / prev) * 100 : null;
   }, [periodos, deflatar, esARS]);
   const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR").slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
@@ -139,13 +141,13 @@ export default function Dashboard() {
               <MiniStat basis="1 1 45%" label={t.salary} value={money(p.sueldo)} color="var(--green)" />
               <MiniStat basis="1 1 45%" label={t.spent} value={money(p.gastadoPuro)} color="var(--red)" />
               <MiniStat basis="1 1 45%" label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
-              <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} color="#26c6da" />
+              <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} color="var(--teal)" />
             </>) : (<>
               <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastadoPuro)} color="var(--red)"
                 onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastadoPuro), explain: t.kpiSpentRealInfo, color: "var(--red)" })} />
               <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
                 onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
-              {(() => { const ip = inflacionPersonal; const c = ip == null ? "var(--muted)" : ip > 0 ? "var(--red)" : "var(--green)"; const v = ip == null ? "—" : `${ip >= 0 ? "+" : ""}${ip}%`; return (
+              {(() => { const ip = inflacionPersonal; const c = ip == null ? "var(--muted)" : deltaColor(ip, false); const mag = ip == null ? null : deltaMag(ip); const v = mag == null ? "—" : `${mag > 0 ? "+" : ""}${mag}%`; return (
                 <MiniStat center basis="1 1 45%" label="Inflación" value={v} color={c}
                   onClick={() => setKpiInfo({ title: "Inflación", value: v, explain: esARS ? t.kpiInflationInfo : t.kpiInflationInfoNominal, color: c })} />
               ); })()}

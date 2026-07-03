@@ -25,7 +25,7 @@ import { reservaFX as calcularReservaFX } from "@/utils/reserva";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
 import { Bar, Stat, DonutChart, VBars, DotChart, AreaChart, TwoLineChart, type DotDatum } from "@/components/reports/charts";
-import { abbr, shortPer, sinAño, periodoAnio } from "@/components/reports/format";
+import { abbr, shortPer, sinAño, periodoAnio, deltaColor, deltaMag } from "@/components/reports/format";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -57,7 +57,7 @@ export default function ReportesPage() {
   const reportOn = (_id: string) => true;
   const TIPO_COLOR: Record<string, string> = {
     Gasto: "var(--red)", Ingreso: "var(--green)",
-    Move: "var(--purple)", MoveAhorro: "var(--purple)", MoveDisponible: "#26c6da",
+    Move: "var(--purple)", MoveAhorro: "var(--purple)", MoveDisponible: "var(--teal)",
     CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
     GastoUSD: "var(--red)", GastoEUR: "var(--red)",
     VentaUSD: "var(--red)", VentaEUR: "var(--red)",
@@ -120,7 +120,21 @@ export default function ReportesPage() {
   // finPeriodo = inicio del período siguiente (si existe), para cerrar el intervalo correctamente
   const finPeriodo = idx1 > 0 ? parsePeriodoId(periodos[idx1 - 1].periodoId) : null;
 
-  const colorPct = (pct: number) => pct > 90 ? "var(--red)" : pct > 50 ? "var(--yellow)" : "var(--green)";
+  // Escala anclada al 100% = cubriste todo tu ingreso. Verde mientras hay margen,
+  // amarillo al acercarte al límite, rojo solo cuando te pasás del ingreso.
+  const colorPct = (pct: number) => pct > 105 ? "var(--red)" : pct > 90 ? "var(--yellow)" : "var(--green)";
+  // Umbral relativo: color según cuántos desvíos estándar se aparta el período actual
+  // de tu propia variabilidad histórica. Dentro de ±1σ es tu rango normal (amarillo);
+  // fuera, rojo (raro-alto) o verde (raro-bajo). Sin cambio real → color de texto.
+  const colorZ = (actual: number, hist: number[]) => {
+    const mean = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : actual;
+    if (actual === mean) return "var(--text)";
+    if (hist.length < 2) return actual > mean ? "var(--red)" : "var(--green)";
+    const sd = Math.sqrt(hist.reduce((a, b) => a + (b - mean) ** 2, 0) / hist.length);
+    if (sd === 0) return actual > mean ? "var(--red)" : "var(--green)";
+    const z = (actual - mean) / sd;
+    return z > 1 ? "var(--red)" : z < -1 ? "var(--green)" : "var(--yellow)";
+  };
 
   // ── Cálculos del período seleccionado (sub Gastos) ──
   const cats = periodo ? gastosPorCategoria(periodo.movimientos, periodo.gastado) : [];
@@ -223,7 +237,7 @@ export default function ReportesPage() {
 
   const ingresosAnteriores = anterior ? anterior.sueldo + anterior.moveDisponible : 0;
   const deltaIngresos = anterior && ingresosAnteriores > 0
-    ? Math.round(((totalIngresos - ingresosAnteriores) / ingresosAnteriores) * 100)
+    ? ((totalIngresos - ingresosAnteriores) / ingresosAnteriores) * 100
     : null;
 
   const ingXDesc: { cat: string; monto: number; pct: number }[] = (() => {
@@ -306,7 +320,7 @@ export default function ReportesPage() {
       const prev = chron[i - 1].gasto;
       if (prev > 0) { sum += (chron[i].gasto - prev) / prev; n++; }
     }
-    return n > 0 ? Math.round((sum / n) * 100) : null;
+    return n > 0 ? (sum / n) * 100 : null;
   }, [periodos]);
   // Gasto más frecuente: categoría con más movimientos de tipo Gasto + su total acumulado.
   // ¿Tu sueldo le gana a la inflación? Suba salarial acumulada (primer nivel → último,
@@ -319,7 +333,7 @@ export default function ReportesPage() {
     const suba = (lastSalary / firstSalary - 1) * 100;
     const pais = ipcVar(periodos[periodos.length - 1]!.periodoId, periodos[0]!.periodoId);
     if (pais == null) return null;
-    return { gap: Math.round(suba - pais), suba: Math.round(suba), pais: Math.round(pais) };
+    return { gap: suba - pais, suba: Math.round(suba), pais: Math.round(pais) };
   }, [suelHistorial, periodos, ipcVar]);
 
   // Ahorros acumulados al cierre del período seleccionado (para mostrar en Períodos)
@@ -381,7 +395,7 @@ export default function ReportesPage() {
   const avgHistorico = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.gastadoPuro, 0) / (periodos.length - 1) : 0;
   const tendenciaGasto = periodos.length >= 2 && avgHistorico > 0
-    ? Math.round(((periodos[0].gastadoPuro - avgHistorico) / avgHistorico) * 100) : null;
+    ? ((periodos[0].gastadoPuro - avgHistorico) / avgHistorico) * 100 : null;
   // Proyección mejorada: deflacta cada período histórico a pesos de hoy (los viejos
   // valían "menos pesos" y subestimaban) y proyecta al próximo período sumando el
   // último IPC mensual conocido.
@@ -394,7 +408,7 @@ export default function ReportesPage() {
   const avgHistoricoMovs = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.movimientos.length, 0) / (periodos.length - 1) : 0;
   const tendenciaMovs = periodos.length >= 2 && avgHistoricoMovs > 0
-    ? Math.round(((periodos[0].movimientos.length - avgHistoricoMovs) / avgHistoricoMovs) * 100) : null;
+    ? ((periodos[0].movimientos.length - avgHistoricoMovs) / avgHistoricoMovs) * 100 : null;
 
   // ── Movimientos: estadísticas de frecuencia ──
   const movCounts = useMemo(() => {
@@ -612,7 +626,7 @@ export default function ReportesPage() {
               {/* Mini-stats fila 1: 3 columnas */}
               {reportOn("gastos_kpis") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                {esPeriodoVigente && tendenciaGasto !== null && (() => { const c = tendenciaGasto > 10 ? "var(--red)" : tendenciaGasto < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaGasto >= 0 ? "+" : ""}${tendenciaGasto}%`; return (
+                {esPeriodoVigente && tendenciaGasto !== null && (() => { const c = colorZ(periodos[0].gastadoPuro, periodos.slice(1).map((p) => p.gastadoPuro)); const mag = deltaMag(tendenciaGasto); const v = `${mag > 0 ? "+" : ""}${mag}%`; return (
                   <MiniStat center basis="1 1 45%" label={t.trend} value={v} color={c}
                     onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `${t.kpiTrendInfo} Promedio histórico: ${oculto ? "••" : formatARS(Math.round(avgHistorico))}`, color: c })} />
                 ); })()}
@@ -672,11 +686,11 @@ export default function ReportesPage() {
                         {(() => { const diff = c.actual - c.anterior; return (
                           <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--muted)" }}>{diff >= 0 ? "+" : "−"}{money(Math.abs(diff))}</span>
                         ); })()}
-                        {c.deltaPct !== null ? (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: c.deltaPct > 0 ? "var(--red)" : "var(--green)", minWidth: 48, textAlign: "right" }}>
-                            {c.deltaPct > 0 ? "↑" : "↓"}{Math.abs(c.deltaPct)}%
+                        {c.deltaPct !== null ? (() => { const mag = deltaMag(c.deltaPct); return (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: deltaColor(c.deltaPct, false), minWidth: 48, textAlign: "right" }}>
+                            {mag === 0 ? "0" : <>{mag > 0 ? "↑" : "↓"}{Math.abs(mag)}</>}%
                           </span>
-                        ) : <span style={{ fontSize: 10, color: "var(--red)", minWidth: 48, textAlign: "right" }}>{t.new_}</span>}
+                        ); })() : <span style={{ fontSize: 10, color: "var(--red)", minWidth: 48, textAlign: "right" }}>{t.new_}</span>}
                       </div>
                     </div>
                   ))}
@@ -753,11 +767,11 @@ export default function ReportesPage() {
                 <div style={{ fontSize: 34, fontWeight: 700, color: "#00e676cc", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
                   {money(totalIngresos)}
                 </div>
-                {deltaIngresos !== null && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: deltaIngresos >= 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
-                    {deltaIngresos >= 0 ? "↑" : "↓"}{Math.abs(deltaIngresos)}% vs {shortPer(anterior!.periodoId)}
+                {deltaIngresos !== null && (() => { const mag = deltaMag(deltaIngresos); return (
+                  <div style={{ marginTop: 8, fontSize: 12, color: deltaColor(deltaIngresos, true), fontWeight: 600 }}>
+                    {mag === 0 ? "0" : <>{mag > 0 ? "↑" : "↓"}{Math.abs(mag)}</>}% vs {shortPer(anterior!.periodoId)}
                   </div>
-                )}
+                ); })()}
               </div>
 
               {/* Mini-stats: Sueldo · Retiros */}
@@ -776,8 +790,8 @@ export default function ReportesPage() {
                     <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 5, textTransform: "capitalize" }}>{t.moves}</div>
                     <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
                       {periodo.moveDisponible > 0 && (
-                        <div onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveDisponible), explain: t.kpiWithdrawalsInfo, color: "#26c6da" })}
-                          style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: "#26c6da", cursor: "pointer", whiteSpace: "nowrap" }}>
+                        <div onClick={() => setKpiInfo({ title: t.withdrawals, value: oculto ? "••" : formatARS(periodo.moveDisponible), explain: t.kpiWithdrawalsInfo, color: "var(--teal)" })}
+                          style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--teal)", cursor: "pointer", whiteSpace: "nowrap" }}>
                           {oculto ? "••" : abbr(periodo.moveDisponible)}
                         </div>
                       )}
@@ -884,14 +898,14 @@ export default function ReportesPage() {
             <>
               {/* Hero: inflación personal (variación promedio del gasto entre períodos) */}
               {reportOn("periodos_kpis") && (
-              <div className="soft" onClick={inflacionPersonal != null ? () => setKpiInfo({ title: t.inflationTitle, value: `${inflacionPersonal >= 0 ? "+" : ""}${inflacionPersonal}%`, explain: t.kpiInflationAvgInfo, color: inflacionPersonal > 0 ? "var(--red)" : "var(--green)" }) : undefined}
+              <div className="soft" onClick={inflacionPersonal != null ? () => setKpiInfo({ title: t.inflationTitle, value: `${deltaMag(inflacionPersonal) > 0 ? "+" : ""}${deltaMag(inflacionPersonal)}%`, explain: t.kpiInflationAvgInfo, color: deltaColor(inflacionPersonal, false) }) : undefined}
                 style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--red-dim), var(--surface), var(--green-dim))", cursor: inflacionPersonal != null ? "pointer" : "default" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.inflationTitle}</div>
                   <button onClick={(e) => { e.stopPropagation(); toggle(); }} aria-label={t.hideValues} style={{ background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}><EyeIcon off={oculto} /></button>
                 </div>
-                <div style={{ fontSize: 32, fontWeight: 700, color: inflacionPersonal == null ? "var(--muted)" : inflacionPersonal > 0 ? "var(--red)" : inflacionPersonal < 0 ? "var(--green)" : "var(--text)", fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>
-                  {inflacionPersonal == null ? "—" : `${inflacionPersonal >= 0 ? "+" : ""}${inflacionPersonal}%`}
+                <div style={{ fontSize: 32, fontWeight: 700, color: inflacionPersonal == null ? "var(--muted)" : deltaColor(inflacionPersonal, false), fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1 }}>
+                  {inflacionPersonal == null ? "—" : `${deltaMag(inflacionPersonal) > 0 ? "+" : ""}${deltaMag(inflacionPersonal)}%`}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>{t.inflationSub} · {t.periodsCount(periodos.length)}</div>
               </div>
@@ -924,13 +938,13 @@ export default function ReportesPage() {
               {/* ¿Tu sueldo le gana a la inflación? Veredicto + brecha. */}
               {reportOn("periodos_kpis") && sueldoVsInflacion != null && (() => {
                 const { gap, suba, pais } = sueldoVsInflacion;
-                const c = gap > 0 ? "var(--green)" : gap < 0 ? "var(--red)" : "var(--muted)";
+                const c = deltaColor(gap, true);
                 const verdict = gap > 0 ? t.salaryBeatsInflation : gap < 0 ? t.salaryLosesInflation : t.salaryTiesInflation;
                 return (
-                  <div className="soft" onClick={() => setKpiInfo({ title: t.salaryVsInflation, value: `${gap >= 0 ? "+" : ""}${gap} pts`, explain: t.kpiSalaryVsInflationInfo(suba, pais), color: c })}
+                  <div className="soft" onClick={() => setKpiInfo({ title: t.salaryVsInflation, value: `${deltaMag(gap) > 0 ? "+" : ""}${deltaMag(gap)} pts`, explain: t.kpiSalaryVsInflationInfo(suba, pais), color: c })}
                     style={{ marginBottom: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                     <div style={{ fontSize: 12, color: c, minWidth: 0 }}>{verdict}</div>
-                    <div style={{ fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1, color: c, flexShrink: 0 }}>{gap >= 0 ? "+" : ""}{gap} pts</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: -0.5, lineHeight: 1, color: c, flexShrink: 0 }}>{deltaMag(gap) > 0 ? "+" : ""}{deltaMag(gap)} pts</div>
                   </div>
                 );
               })()}
@@ -970,7 +984,7 @@ export default function ReportesPage() {
                   // +86% = gastaste 186% del sueldo; -14% = gastaste el 86%. La línea (0) es el 100%.
                   data = serieDesc.filter((s) => s.sueldo > 0).map((s) => {
                     const full = Math.round((s.gastadoPuro / s.sueldo) * 100);
-                    return { label: shortPer(s.periodoId), value: full - 100, color: full > 90 ? "var(--red)" : full > 50 ? "var(--yellow)" : "var(--green)", hi: activos.includes(s.periodoId), periodoId: s.periodoId };
+                    return { label: shortPer(s.periodoId), value: full - 100, color: colorPct(full), hi: activos.includes(s.periodoId), periodoId: s.periodoId };
                   });
                 }
                 // Inflación ACUMULADA: tu gasto puro vs el período base (el más viejo con
@@ -1136,13 +1150,13 @@ export default function ReportesPage() {
                     const diaCaro = kpis?.diaMayorGasto;
                     return (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                        <MiniStat center basis="1 1 45%" label={t.today} value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} gradient="linear-gradient(90deg, #26c6da, var(--purple))"
-                          onClick={gastoHoy !== null ? () => setKpiInfo({ title: t.todaySpent, value: oculto ? "••" : formatARS(gastoHoy), explain: t.kpiTodaySpentInfo, color: "#26c6da" }) : undefined} />
+                        <MiniStat center basis="1 1 45%" label={t.today} value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} gradient="linear-gradient(90deg, var(--teal), var(--purple))"
+                          onClick={gastoHoy !== null ? () => setKpiInfo({ title: t.todaySpent, value: oculto ? "••" : formatARS(gastoHoy), explain: t.kpiTodaySpentInfo, color: "var(--teal)" }) : undefined} />
                         {diaCaro && <MiniStat center basis="1 1 45%" label={t.highestSpendingDay} value={oculto ? "••" : abbr(diaCaro.monto)} color="var(--red)"
                           onClick={() => setKpiInfo({ title: t.highestSpendingDay, value: oculto ? "••" : formatARS(diaCaro.monto), explain: `${t.kpiHighestDayInfo} (${sinAño(diaCaro.fecha)})`, color: "var(--red)" })} />}
-                        {kpis && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} gradient="linear-gradient(90deg, #26c6da, var(--purple))"
-                          onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis!.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis!.diasConGasto)})`, color: "#26c6da" })} />}
-                        {tendenciaMovs !== null && (() => { const c = tendenciaMovs > 10 ? "var(--red)" : tendenciaMovs < -10 ? "var(--green)" : "var(--yellow)"; const v = `${tendenciaMovs >= 0 ? "+" : ""}${tendenciaMovs}%`; return (
+                        {kpis && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} gradient="linear-gradient(90deg, var(--teal), var(--purple))"
+                          onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis!.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis!.diasConGasto)})`, color: "var(--teal)" })} />}
+                        {tendenciaMovs !== null && (() => { const c = colorZ(periodos[0].movimientos.length, periodos.slice(1).map((p) => p.movimientos.length)); const mag = deltaMag(tendenciaMovs); const v = `${mag > 0 ? "+" : ""}${mag}%`; return (
                           <MiniStat center basis="1 1 45%" label={t.trend} value={v} color={c}
                             onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `Período actual: ${periodos[0]?.movimientos.length ?? 0} movimientos · Promedio histórico: ${Math.round(avgHistoricoMovs)}`, color: c })} />
                         ); })()}

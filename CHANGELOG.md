@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.56.0] — 2026-07-02
+
+### Changed
+- **Color & percentage logic unified across Dashboard/Reports/Movements**:
+  - **CompraUSD color**: was red on the Dashboard (grouped with Gasto) but yellow in Reports/Movements. Now yellow everywhere.
+  - **`var(--teal)` token**: replaced the hardcoded `#26c6da` (and `#26c6da20` → `var(--teal-dim)`) in Dashboard, Movements, Reports and MovementModal for the "move disponible" color. No visual change; palette edits now propagate.
+  - **Trend uses a relative threshold (z-score)**: the Gastos and Movements "Tendencia" stats no longer use a fixed ±10% band. Color is now based on how many standard deviations the current period sits from the user's own historical mean (±1σ = normal/yellow, beyond = red/green), so it adapts to each user's volatility. New `colorZ(actual, hist)` helper.
+  - **Zero handling in deltas**: real zero (no change) now renders in text color instead of green/yellow/gray; a near-zero value that would round to "0%" now shows a decimal and keeps its sign color. Applied to category comparison, income delta, personal inflation (Reports + Dashboard) and the salary-vs-inflation gap. Backing computations (`deltaPct`, `tendenciaGasto`, `tendenciaMovs`, `deltaIngresos`, `inflacionPersonal`, `gap`) now keep the raw unrounded value; rounding happens at display via new `deltaMag`/`deltaColor` helpers in `components/reports/format.ts`.
+
+### Fixed
+- **`colorPct` scale rebased to income limit (100%)**: spent-color was green only ≤50%, red >90% — so normal spending (~100% of income) always read red. Now green ≤90%, yellow 90–105%, red >105%, and the duplicated inline thresholds (period gasto/sueldo chart) call `colorPct` instead of re-hardcoding.
+
+---
+
 ## [2.55.7] — 2026-07-02
 
 ### Changed

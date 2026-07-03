@@ -17,3 +17,15 @@ export const sinAño = (fecha: string) => {
   }
   return fecha.includes("/") ? fecha.split("/").slice(0, 2).join("/") : fecha;
 };
+
+// Tratamiento del cero en un delta (% o pts). El valor debe venir SIN redondear.
+// - 0 exacto (sin cambio real) → color de texto neutro.
+// - |v| < 1 (redondearía a "0" pero no es 0) → color según signo (no se lo esconde).
+// upIsGood: true si subir es "bueno" (verde al positivo); false si subir es "malo" (rojo).
+export const deltaColor = (v: number, upIsGood: boolean): string =>
+  v === 0 ? "var(--text)" : (upIsGood ? v > 0 : v < 0) ? "var(--green)" : "var(--red)";
+
+// Magnitud a mostrar de un delta: entero salvo que |v|<1 y ≠0, donde se muestran
+// hasta 2 decimales para no mentir un "0". El 0 real queda "0".
+export const deltaMag = (v: number): number =>
+  v !== 0 && Math.abs(v) < 1 ? Math.round(v * 100) / 100 : Math.round(v);
