@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.63.0] — 2026-07-12
+
+### Novedades
+- **Nuevo selector al adjuntar comprobante**: tocando 📎 ahora elegís entre Cámara (abre directo la cámara), Galería o Archivo (PDF), con el estilo de la app.
+
+---
+
 ## [2.62.0] — 2026-07-12
 
 ### Novedades

@@ -12,6 +12,7 @@ import { crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from
 import { useData } from "@/app/(tabs)/data-context";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { useComprobante } from "./useComprobante";
+import { ComprobanteChooser } from "./ComprobanteChooser";
 import { MediaViewer } from "@/components/ui/MediaViewer";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { BottomSheet as Sheet } from "@/components/ui/BottomSheet";
@@ -117,6 +118,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     onSelect: onComprobanteSelect,
     clear: clearComprobante,
   } = useComprobante();
+  const [chooserOpen, setChooserOpen] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
   // El monto es el primer dato a cargar → foco al abrir el alta y al cambiar de tipo.
@@ -436,7 +438,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // Versión compacta (ícono) del comprobante — va al lado del medio de pago (alta)
   // o de observaciones (edición). `existingUrl` = comprobante ya guardado (edición).
   const comprobanteIcon = (existingUrl?: string) => {
-    const accept = "image/*,application/pdf";
     const box: React.CSSProperties = { width: 38, height: 38, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, textDecoration: "none", border: "1px solid var(--border)", background: "var(--surface-alt)", color: "var(--muted)" };
     const thumbImg: React.CSSProperties = { width: 38, height: 38, borderRadius: 8, objectFit: "cover", border: "1px solid var(--border)", display: "block" };
     const removeBtn: React.CSSProperties = { position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "var(--red)", color: "#fff", border: "1.5px solid var(--bg)", cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" };
@@ -464,10 +465,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       );
     }
     return (
-      <label aria-label={t.attachReceipt} title={t.attachReceipt} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 46, height: 46, fontSize: 26, color: "var(--muted)", cursor: "pointer", flexShrink: 0 }}>
-        <input type="file" accept={accept} onChange={onComprobanteSelect} style={{ display: "none" }} />
+      <button type="button" aria-label={t.attachReceipt} title={t.attachReceipt} onClick={() => setChooserOpen(true)}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 46, height: 46, fontSize: 26, color: "var(--muted)", cursor: "pointer", flexShrink: 0, background: "none", border: "none", padding: 0 }}>
         📎
-      </label>
+      </button>
     );
   };
 
@@ -990,6 +991,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         </div>
       </ConfirmModal>
     )}
+    <ComprobanteChooser open={chooserOpen} onClose={() => setChooserOpen(false)} onSelect={onComprobanteSelect} />
     {viewer && <MediaViewer src={viewer.src} isPdf={viewer.isPdf} onClose={() => setViewer(null)} />}
     </>
   );

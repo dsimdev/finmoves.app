@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.63.0] — 2026-07-12
+
+### Added
+- **Custom receipt attachment chooser (iOS-style action sheet)**: tapping 📎 in the movement modal now opens an app-styled `BottomSheet` (`components/movements/ComprobanteChooser.tsx`) with three grouped rows — **Cámara** (direct camera via `capture="environment"`), **Galería** (`image/*`) and **Archivo** (`application/pdf`) — replacing the unstylable OS picker. Three dedicated hidden inputs live outside the sheet so they stay mounted while the system dialog returns; input value is reset after selection so the same file can be re-picked. Rows use the settings icon-box pattern (`--blue`/`--green`/`--accent` dims). New locale keys `chooserCamera`/`chooserGallery`/`chooserFile` (es/en). Back button closes the chooser first (it registers with the back dispatcher via `useModalBack` like any sheet).
+
+---
+
 ## [2.62.0] — 2026-07-12
 
 ### Changed
