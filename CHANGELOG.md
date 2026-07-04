@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.61.1] — 2026-07-12
+
+### Fixed
+- **Double-back (flag-gated): handle non-cancelable back traversals — the missing Home toast.** On-device logs showed modal-close, subpage→parent and tab→Home all working under the Navigation API engine, but the back on Home exited silently. Cause: Chrome only makes `traverse` navigate events **cancelable with recent user activation**; a "cold" back (no touch since landing) arrives with `cancelable=false` and the handler's early `if (!e.cancelable) return;` — placed *before* any logging or the toast — swallowed the event. The Home branch never needed to cancel (the traversal is deliberately allowed to fall into the backroom), so the guard was pure loss. `hooks/useBackDispatcher.ts` now logs first (with `canc=` in the HUD line), cancels only when possible, and compensates when it can't: modal → close + re-arm backroom after the traversal lands; non-Home tab → `replace(HOME)` runs anyway after the uncancelable traversal; Home → toast always fires.
+
+---
+
 ## [2.61.0] — 2026-07-12
 
 ### Changed

@@ -74,16 +74,21 @@ export function useBackDispatcher(onExitHint: () => void) {
       const cur = nav.currentEntry;
       if (!cur || typeof e.destination?.index !== "number") return;
       if (e.destination.index >= cur.index) return; // solo hacia atrás
-      if (!e.cancelable) return;
 
+      // OJO: Chrome hace los traverses cancelables solo con activación de usuario
+      // reciente (haber tocado la página). Un back "en frío" llega con
+      // cancelable=false: no se puede frenar, pero SÍ se puede reaccionar
+      // (toast/replace) — el bug del toast fantasma era retornar mudo acá.
       const path = window.location.pathname;
-      dbgLog(`BACK from=${path} idx ${cur.index}->${e.destination.index} modal=${anyModalOpen()}`);
+      const cancel = () => { if (e.cancelable) { e.preventDefault(); return true; } return false; };
+      dbgLog(`BACK from=${path} idx ${cur.index}->${e.destination.index} canc=${e.cancelable} modal=${anyModalOpen()}`);
 
-      // 1) Modal abierto → frenar el back y cerrarlo.
+      // 1) Modal abierto → cerrarlo. Si no se pudo frenar el traverse, cae al
+      //    backroom (misma URL, invisible) y lo re-armamos.
       if (anyModalOpen()) {
-        e.preventDefault();
         dbgLog("  -> cierro modal");
         closeTopModal();
+        if (!cancel()) setTimeout(ensureBackroom, 0);
         return;
       }
 
@@ -93,21 +98,22 @@ export function useBackDispatcher(onExitHint: () => void) {
         return;
       }
 
-      // 3) Tab ≠ Inicio → frenar e ir a Inicio.
+      // 3) Tab ≠ Inicio → ir a Inicio. Si no se pudo frenar, el traverse cae al
+      //    backroom y el replace corre igual después: terminamos en Inicio.
       if (path !== HOME) {
-        e.preventDefault();
-        dbgLog("  -> replace(HOME)");
+        dbgLog(`  -> replace(HOME) canc=${e.cancelable}`);
+        cancel();
         setTimeout(() => router.replace(HOME), 0);
         return;
       }
 
       // 4) Inicio → 1er back: toast y dejar pasar al backroom (quedamos en el borde);
-      //    el próximo back cierra la app.
+      //    el próximo back cierra la app. Acá nunca cancelamos, así que funciona
+      //    igual con cancelable=false.
       dbgLog("  -> Inicio: toast + salgo en el próximo back");
       onHint.current();
       exitArmedUntil = Date.now() + EXIT_WINDOW_MS;
       setTimeout(ensureBackroom, EXIT_WINDOW_MS + 50);
-      // sin preventDefault → el traverse procede al backroom
     };
 
     const onEntryChange = () => ensureBackroom();
