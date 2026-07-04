@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.58.2] — 2026-07-04
+
+### Mejoras
+- Arreglo del "doble atrás para salir": en Inicio el primer atrás ahora **avisa** y el segundo cierra (antes, en algunos casos, salía sin avisar).
+
+---
+
 ## [2.58.1] — 2026-07-04
 
 ### Mejoras

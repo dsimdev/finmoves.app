@@ -32,11 +32,13 @@ export function useBackButton(): boolean {
   const armedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Asegura el trap arriba en cada tab raíz.
+  // Asegura el trap arriba al entrar a una tab raíz. Se empuja SIEMPRE (no se confía en
+  // history.state, que persiste en la entrada al reabrir la PWA con launch navigate-existing
+  // y hacía que el back saliera sin capturar). Trade-off: tras pasear por varias tabs puede
+  // quedar residuo en el historial (salir necesita algún back de más); se afina después.
   useEffect(() => {
     if (typeof window === "undefined" || !ROOT.includes(pathname)) return;
-    const st = window.history.state as { __fmTrap?: boolean } | null;
-    if (!st?.__fmTrap) window.history.pushState({ __fmTrap: true }, "");
+    window.history.pushState({ __fmTrap: true }, "");
   }, [pathname]);
 
   useEffect(() => {

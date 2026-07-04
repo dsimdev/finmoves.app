@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.58.2] — 2026-07-04
+
+### Fixed
+- **Double-back-to-exit on Home**: the history "trap" is now pushed unconditionally on each root tab, so the first back on Home is captured and shows the exit toast. The previous `history.state.__fmTrap` guard was fooled by state persisted on the current entry when the PWA reopens (`launch_handler: navigate-existing`), so no trap was above and a single back exited without warning. Known residual: navigating across several tabs can leave history residue, so exiting may need an extra back — to be refined with trap-aware tab navigation.
+
+### Added
+- **Unit tests (Vitest)**: 34 tests over the pure logic — `components/reports/format` (`abbr`, `colorPct`/`colorPctDim`, `deltaMag`/`deltaColor`, date helpers), `utils/reserva` (`reservaFX`, `calcularReserva`, `tiposReserva`), `utils/periodo` (`agruparPorPeriodo`, `gastosPorCategoria`, `formatARS`), `utils/reportes` (`parsePeriodoId`, `estadisticasPeriodos`, `ritmoGasto`). `npm test` / `npm run test:watch`. Dev-only, no runtime or bundle impact.
+
+---
+
 ## [2.58.1] — 2026-07-04
 
 ### Changed
