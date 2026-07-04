@@ -36,3 +36,27 @@ export const deltaColor = (v: number, upIsGood: boolean): string =>
 // hasta 2 decimales para no mentir un "0". El 0 real queda "0".
 export const deltaMag = (v: number): number =>
   v !== 0 && Math.abs(v) < 1 ? Math.round(v * 100) / 100 : Math.round(v);
+
+// Color por tipo de movimiento (compartido por Reportes). Debe coincidir con el
+// mapeo semántico del resto de la app (Gasto rojo, Ingreso verde, Move a ahorro
+// violeta / a disponible teal, compras FX amarillo, RESTO se pinta aparte).
+export const TIPO_COLOR: Record<string, string> = {
+  Gasto: "var(--red)", Ingreso: "var(--green)",
+  Move: "var(--purple)", MoveAhorro: "var(--purple)", MoveDisponible: "var(--teal)",
+  CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
+  GastoUSD: "var(--red)", GastoEUR: "var(--red)",
+  VentaUSD: "var(--red)", VentaEUR: "var(--red)",
+};
+
+// Umbral relativo por z-score: color según cuántos desvíos estándar se aparta el
+// valor actual de su historial. Dentro de ±1σ = normal (amarillo); fuera, rojo
+// (raro-alto) o verde (raro-bajo). Sin cambio real (actual === media) → texto.
+export const colorZ = (actual: number, hist: number[]): string => {
+  const mean = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : actual;
+  if (actual === mean) return "var(--text)";
+  if (hist.length < 2) return actual > mean ? "var(--red)" : "var(--green)";
+  const sd = Math.sqrt(hist.reduce((a, b) => a + (b - mean) ** 2, 0) / hist.length);
+  if (sd === 0) return actual > mean ? "var(--red)" : "var(--green)";
+  const z = (actual - mean) / sd;
+  return z > 1 ? "var(--red)" : z < -1 ? "var(--green)" : "var(--yellow)";
+};

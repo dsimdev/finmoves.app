@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { abbr, shortPer, sinAño, periodoAnio, colorPct, colorPctDim, deltaColor, deltaMag } from "@/components/reports/format";
+import { abbr, shortPer, sinAño, periodoAnio, colorPct, colorPctDim, deltaColor, deltaMag, colorZ } from "@/components/reports/format";
 
 describe("abbr", () => {
   it("millones con 1 decimal", () => {
@@ -61,6 +61,27 @@ describe("deltaColor", () => {
   it("upIsBad (ej. gasto/inflación): positivo rojo, negativo verde", () => {
     expect(deltaColor(5, false)).toBe("var(--red)");
     expect(deltaColor(-5, false)).toBe("var(--green)");
+  });
+});
+
+describe("colorZ (umbral relativo por z-score)", () => {
+  it("sin cambio real (actual === media) → texto", () => {
+    expect(colorZ(100, [100])).toBe("var(--text)");
+    expect(colorZ(100, [])).toBe("var(--text)");
+  });
+  it("con 1 solo histórico: rojo si arriba, verde si abajo", () => {
+    expect(colorZ(200, [100])).toBe("var(--red)");
+    expect(colorZ(50, [100])).toBe("var(--green)");
+  });
+  it("dentro de ±1σ = normal (amarillo)", () => {
+    expect(colorZ(21, [10, 20, 30])).toBe("var(--yellow)");
+  });
+  it("fuera de ±1σ: rojo arriba, verde abajo", () => {
+    expect(colorZ(40, [10, 20, 30])).toBe("var(--red)");
+    expect(colorZ(5, [10, 20, 30])).toBe("var(--green)");
+  });
+  it("desvío 0 (todos iguales): rojo si difiere hacia arriba", () => {
+    expect(colorZ(100, [50, 50])).toBe("var(--red)");
   });
 });
 

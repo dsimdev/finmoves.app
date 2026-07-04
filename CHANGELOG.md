@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.59.1] — 2026-07-04
+
+### Changed
+- **Reports decomposition — step 1 (Phase 3)**: moved the shared pure helpers `colorZ` (relative z-score color threshold) and `TIPO_COLOR` (movement-type color map) out of `app/(tabs)/reports/page.tsx` into `components/reports/format.ts`. Behavior-preserving; the page drops ~22 lines of inline logic and both are now unit-testable/reusable. Added 5 `colorZ` tests (39 total).
+
+---
+
 ## [2.59.0] — 2026-07-04
 
 ### Added

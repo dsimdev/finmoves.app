@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.59.1] — 2026-07-04
+
+### Mejoras
+- Mejoras internas y más tests (sin cambios visibles).
+
+---
+
 ## [2.59.0] — 2026-07-04
 
 ### Mejoras

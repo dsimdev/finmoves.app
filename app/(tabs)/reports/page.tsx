@@ -25,7 +25,7 @@ import { reservaFX as calcularReservaFX } from "@/utils/reserva";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
 import { Bar, Stat, DonutChart, VBars, DotChart, AreaChart, TwoLineChart, type DotDatum } from "@/components/reports/charts";
-import { abbr, shortPer, sinAño, periodoAnio, deltaColor, deltaMag, colorPct } from "@/components/reports/format";
+import { abbr, shortPer, sinAño, periodoAnio, deltaColor, deltaMag, colorPct, colorZ, TIPO_COLOR } from "@/components/reports/format";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -55,13 +55,6 @@ export default function ReportesPage() {
   const { movimientos, loading, config } = useData();
   const { cotizacion } = useCotizacion();
   const reportOn = (_id: string) => true;
-  const TIPO_COLOR: Record<string, string> = {
-    Gasto: "var(--red)", Ingreso: "var(--green)",
-    Move: "var(--purple)", MoveAhorro: "var(--purple)", MoveDisponible: "var(--teal)",
-    CompraUSD: "var(--yellow)", CompraEUR: "var(--yellow)",
-    GastoUSD: "var(--red)", GastoEUR: "var(--red)",
-    VentaUSD: "var(--red)", VentaEUR: "var(--red)",
-  };
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const [showHint, dismissHint] = useFirstVisit("reports");
 
@@ -119,19 +112,6 @@ export default function ReportesPage() {
   const anterior = idx1 >= 0 ? periodos[idx1 + 1] : undefined;
   // finPeriodo = inicio del período siguiente (si existe), para cerrar el intervalo correctamente
   const finPeriodo = idx1 > 0 ? parsePeriodoId(periodos[idx1 - 1].periodoId) : null;
-
-  // Umbral relativo: color según cuántos desvíos estándar se aparta el período actual
-  // de tu propia variabilidad histórica. Dentro de ±1σ es tu rango normal (amarillo);
-  // fuera, rojo (raro-alto) o verde (raro-bajo). Sin cambio real → color de texto.
-  const colorZ = (actual: number, hist: number[]) => {
-    const mean = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : actual;
-    if (actual === mean) return "var(--text)";
-    if (hist.length < 2) return actual > mean ? "var(--red)" : "var(--green)";
-    const sd = Math.sqrt(hist.reduce((a, b) => a + (b - mean) ** 2, 0) / hist.length);
-    if (sd === 0) return actual > mean ? "var(--red)" : "var(--green)";
-    const z = (actual - mean) / sd;
-    return z > 1 ? "var(--red)" : z < -1 ? "var(--green)" : "var(--yellow)";
-  };
 
   // ── Cálculos del período seleccionado (sub Gastos) ──
   const cats = periodo ? gastosPorCategoria(periodo.movimientos, periodo.gastado) : [];
