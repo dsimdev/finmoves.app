@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../../data-context";
 import { useTheme } from "@/hooks/useTheme";
@@ -22,10 +22,6 @@ export default function PreferencesSettings() {
   const [pendingLang, setPendingLang] = useState<"es" | "en" | null>(null);
   const [pendingMoneda, setPendingMoneda] = useState<"ARS" | "USD" | "EUR" | null>(null);
   const [monedaBusy, setMonedaBusy] = useState(false);
-
-  const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
-  const [doubleBack, setDoubleBack] = useState(false);
-  useEffect(() => { setDoubleBack(localStorage.getItem("fmDoubleBack") === "1"); }, []);
 
   const saveConfig = async (newConfig: typeof config) => {
     if (!user?.uid || !newConfig) return;
@@ -128,26 +124,6 @@ export default function PreferencesSettings() {
           if (config) saveConfig({ ...config, meta: { ...config.meta, showReportes: next } });
         }} />
       </div>
-
-      {/* Doble-back para salir — experimental, solo owner. Recarga para (des)armar. */}
-      {isOwner && (
-        <div style={row}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ ...ic, background: "var(--surface-alt)", border: "1px solid var(--border)" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>Doble-back para salir</div>
-              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>experimental · recarga la app</div>
-            </div>
-          </div>
-          <Toggle activo={doubleBack} onClick={() => {
-            const next = !doubleBack;
-            localStorage.setItem("fmDoubleBack", next ? "1" : "0");
-            window.location.reload();
-          }} />
-        </div>
-      )}
 
       {pendingLang && (
         <ConfirmModal title={t.changeLanguageTitle} confirmLabel={t.confirm} cancelLabel={t.cancel} confirmColor="var(--blue)"

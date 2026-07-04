@@ -273,6 +273,7 @@ export const en: AppLocale = {
   neverSynced: "Never synced",
   retrying: "Retrying...",
   retry: "Retry",
+  pressBackAgainToExit: "Press back again to exit",
   darkMode: "Dark mode",
   switchToLight: "Switch to light theme",
   switchToDark: "Switch to dark theme",

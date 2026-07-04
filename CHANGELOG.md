@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.62.0] — 2026-07-12
+
+### Changed
+- **Double-back-to-exit enabled for everyone; flag, owner toggle and debug HUD removed.** Confirmed working on-device (all 4 cases, including the cold `cancelable=false` back on Home). The gate is now **Navigation API availability** instead of the `fmDoubleBack` localStorage flag: on Chromium/Android the dispatcher owns the back button (modal → close, subpage → parent, non-Home tab → Home, Home → toast + double-back exit) and modals register with it; on iOS Safari/Firefox everything stays as before (classic `useModalBack` history entries + native back). Removed `components/nav/BackDebugHud.tsx`, all `dbgLog` instrumentation and the owner-only Preferences toggle. Toast copy localized (`pressBackAgainToExit` in es/en).
+
+---
+
 ## [2.61.1] — 2026-07-12
 
 ### Fixed

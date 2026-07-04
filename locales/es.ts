@@ -271,6 +271,7 @@ export const es = {
   neverSynced: "Nunca sincronizado",
   retrying: "Reintentando...",
   retry: "Reintentar",
+  pressBackAgainToExit: "Tocá atrás de nuevo para salir",
   darkMode: "Modo oscuro",
   switchToLight: "Cambiá a tema claro",
   switchToDark: "Cambiá a tema oscuro",

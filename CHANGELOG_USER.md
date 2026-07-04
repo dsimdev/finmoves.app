@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.62.0] — 2026-07-12
+
+### Novedades
+- **El botón atrás ahora se comporta como una app nativa** (en Android): cierra el modal abierto, vuelve de una subpantalla a su sección, desde cualquier pestaña te lleva a Inicio, y en Inicio te avisa "tocá atrás de nuevo para salir" antes de cerrar.
+
+---
+
 ## [2.61.1] — 2026-07-12
 
 ### Mejoras

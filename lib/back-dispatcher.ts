@@ -1,49 +1,21 @@
-// Registro central del botón "atrás" para el doble-back-para-salir (Opción A).
-// Todo esto vive detrás del flag localStorage `fmDoubleBack` (default OFF). Con el
-// flag ON, los modales se REGISTRAN acá en vez de empujar history; el único que
-// toca history/popstate es hooks/useBackDispatcher.ts. Ese fue el fix que mató las
-// peleas entre listeners que rompieron prod en v2.59.x.
+// Registro central del botón "atrás" (patrón nativo Android: modal → cerrar,
+// subpágina → padre, tab ≠ Inicio → Inicio, Inicio → doble-back para salir).
+//
+// Activo solo donde existe la Navigation API (Chromium / Android Chrome): ahí los
+// modales se REGISTRAN acá en vez de empujar history, y el único que escucha
+// navegación es hooks/useBackDispatcher.ts (un solo dueño, sin peleas de listeners —
+// lo que rompió prod en v2.59.x). Sin Navigation API (iOS Safari / Firefox) todo esto
+// queda inerte y rige el comportamiento clásico de useModalBack + back nativo.
 
 export const HOME = "/";
 
-export function doubleBackEnabled(): boolean {
+export function dispatcherActive(): boolean {
   if (typeof window === "undefined") return false;
-  try {
-    return localStorage.getItem("fmDoubleBack") === "1";
-  } catch {
-    return false;
-  }
+  return "navigation" in window;
 }
 
-// --- Log de diagnóstico (persistido en localStorage para sobrevivir al cierre de la
-// PWA: al reabrir vemos qué pasó en el último back). Lo consume BackDebugHud. ---
-const LOG_KEY = "fmDBLog";
-let logLines: string[] = [];
-if (typeof window !== "undefined") {
-  try { logLines = JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch { logLines = []; }
-}
-
-export function dbgLog(msg: string) {
-  if (typeof window === "undefined") return;
-  const t = new Date().toISOString().slice(11, 23);
-  logLines = [`${t}  ${msg}`, ...logLines].slice(0, 24);
-  try { localStorage.setItem(LOG_KEY, JSON.stringify(logLines)); } catch { /* ignore */ }
-}
-
-export function getDbgLog(): string[] {
-  if (typeof window !== "undefined") {
-    try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch { /* ignore */ }
-  }
-  return logLines;
-}
-
-export function clearDbgLog() {
-  logLines = [];
-  try { localStorage.removeItem(LOG_KEY); } catch { /* ignore */ }
-}
-
-// Pila LIFO de cierres de modales abiertos. Cada modal (con flag ON) se registra al
-// abrir y se desregistra al desmontar. NO empujan una entrada de history.
+// Pila LIFO de cierres de modales abiertos. Cada modal se registra al abrir y se
+// desregistra al desmontar. NO empujan una entrada de history.
 type Handler = () => void;
 const modalStack: Handler[] = [];
 

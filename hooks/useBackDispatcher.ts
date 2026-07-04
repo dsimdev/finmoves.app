@@ -2,19 +2,19 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { doubleBackEnabled, anyModalOpen, closeTopModal, dbgLog, HOME } from "@/lib/back-dispatcher";
+import { dispatcherActive, anyModalOpen, closeTopModal, HOME } from "@/lib/back-dispatcher";
 
-// Dueño único del botón "atrás" cuando el flag `fmDoubleBack` está ON, montado 1 vez
-// (en BackExitToast, dentro del layout de tabs). Patrón nativo Android: modal →
-// cerrar; subpágina → volver al padre; tab ≠ Inicio → ir a Inicio; en Inicio → 1er
-// back muestra toast, 2do cierra la app.
+// Dueño único del botón "atrás", montado 1 vez (en BackExitToast, dentro del layout
+// de tabs). Patrón nativo Android: modal → cerrar; subpágina → volver al padre;
+// tab ≠ Inicio → ir a Inicio; en Inicio → 1er back muestra toast, 2do cierra la app.
 //
-// A diferencia de los ~7 intentos con `popstate` (que llegaba TARDE, ya consumado, y
-// peleaba con el listener interno de Next), usamos la **Navigation API** (Chromium /
-// Android Chrome): el evento `navigate` de un traverse se dispara ANTES y es
-// cancelable → `preventDefault()` frena el back sin rellenar history a ciegas.
+// Usa la Navigation API (Chromium / Android Chrome): el evento `navigate` de un
+// traverse se dispara ANTES del back y es cancelable → `preventDefault()` lo frena
+// sin rellenar history a ciegas. (Los ~7 intentos previos con `popstate` fallaron
+// porque ese evento llega DESPUÉS, ya consumado, y pelea con el listener interno de
+// Next.) Donde no hay Navigation API (iOS Safari / Firefox) no hace nada: back nativo.
 //
-// El único caso que sí necesita una entrada extra es el cierre en Inicio (ningún API
+// El único caso que necesita una entrada extra es el cierre en Inicio (ningún API
 // evita que la PWA cierre con el history agotado): mantenemos un "backroom" debajo
 // mientras estamos en un tab raíz, así el back es un traverse interceptable. En Inicio
 // el 1er back muestra el toast y deja pasar al backroom (quedamos en el borde); el 2do
@@ -51,9 +51,9 @@ export function useBackDispatcher(onExitHint: () => void) {
   useEffect(() => { onHint.current = onExitHint; });
 
   useEffect(() => {
-    if (!doubleBackEnabled()) return;
+    if (!dispatcherActive()) return;
     const nav = getNav();
-    if (!nav) { dbgLog("Navigation API NO disponible → back nativo"); return; }
+    if (!nav) return;
 
     let exitArmedUntil = 0;
 
@@ -65,7 +65,6 @@ export function useBackDispatcher(onExitHint: () => void) {
       if (nav.canGoBack) return;
       if (Date.now() < exitArmedUntil) return;
       window.history.pushState({ __fmRoom: 1 }, "", window.location.href);
-      dbgLog(`backroom+ idx=${nav.currentEntry?.index} canGoBack=${nav.canGoBack}`);
     };
 
     const onNavigate = (evt: Event) => {
@@ -77,31 +76,24 @@ export function useBackDispatcher(onExitHint: () => void) {
 
       // OJO: Chrome hace los traverses cancelables solo con activación de usuario
       // reciente (haber tocado la página). Un back "en frío" llega con
-      // cancelable=false: no se puede frenar, pero SÍ se puede reaccionar
-      // (toast/replace) — el bug del toast fantasma era retornar mudo acá.
+      // cancelable=false: no se puede frenar, pero SÍ se puede reaccionar.
       const path = window.location.pathname;
       const cancel = () => { if (e.cancelable) { e.preventDefault(); return true; } return false; };
-      dbgLog(`BACK from=${path} idx ${cur.index}->${e.destination.index} canc=${e.cancelable} modal=${anyModalOpen()}`);
 
       // 1) Modal abierto → cerrarlo. Si no se pudo frenar el traverse, cae al
       //    backroom (misma URL, invisible) y lo re-armamos.
       if (anyModalOpen()) {
-        dbgLog("  -> cierro modal");
         closeTopModal();
         if (!cancel()) setTimeout(ensureBackroom, 0);
         return;
       }
 
       // 2) Subpágina → dejar pasar (traverse natural al padre).
-      if (!isRootTab(path)) {
-        dbgLog("  -> subpágina: dejo pasar (→ padre)");
-        return;
-      }
+      if (!isRootTab(path)) return;
 
       // 3) Tab ≠ Inicio → ir a Inicio. Si no se pudo frenar, el traverse cae al
       //    backroom y el replace corre igual después: terminamos en Inicio.
       if (path !== HOME) {
-        dbgLog(`  -> replace(HOME) canc=${e.cancelable}`);
         cancel();
         setTimeout(() => router.replace(HOME), 0);
         return;
@@ -110,7 +102,6 @@ export function useBackDispatcher(onExitHint: () => void) {
       // 4) Inicio → 1er back: toast y dejar pasar al backroom (quedamos en el borde);
       //    el próximo back cierra la app. Acá nunca cancelamos, así que funciona
       //    igual con cancelable=false.
-      dbgLog("  -> Inicio: toast + salgo en el próximo back");
       onHint.current();
       exitArmedUntil = Date.now() + EXIT_WINDOW_MS;
       setTimeout(ensureBackroom, EXIT_WINDOW_MS + 50);
@@ -121,7 +112,6 @@ export function useBackDispatcher(onExitHint: () => void) {
     nav.addEventListener("navigate", onNavigate);
     nav.addEventListener("currententrychange", onEntryChange);
     ensureBackroom();
-    dbgLog(`MOUNT navapi path=${window.location.pathname} canGoBack=${nav.canGoBack}`);
 
     return () => {
       nav.removeEventListener("navigate", onNavigate);

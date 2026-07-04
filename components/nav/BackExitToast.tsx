@@ -2,11 +2,12 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useBackDispatcher } from "@/hooks/useBackDispatcher";
+import { useT } from "@/hooks/useTranslation";
 
-// Monta el dispatcher del doble-back (inerte si el flag `fmDoubleBack` está OFF) y
-// muestra el aviso "tocá atrás de nuevo para salir" cuando estás en Inicio y el
-// primer back se consumió.
+// Monta el dispatcher del doble-back (inerte sin Navigation API) y muestra el aviso
+// "tocá atrás de nuevo para salir" cuando estás en Inicio y el primer back se consumió.
 export function BackExitToast() {
+  const t = useT();
   const [show, setShow] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -31,7 +32,7 @@ export function BackExitToast() {
       opacity: show ? 1 : 0, pointerEvents: "none",
       transition: "opacity .2s ease, transform .2s ease",
     }}>
-      Tocá atrás de nuevo para salir
+      {t.pressBackAgainToExit}
     </div>
   );
 }
