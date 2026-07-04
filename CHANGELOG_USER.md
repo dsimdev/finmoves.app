@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.58.0] — 2026-07-03
+
+### Mejoras
+- **Se siente más nativa**: se desactivó el zoom con los dedos (como las apps nativas), el contenido ya no queda tapado por el notch en iPhone, y el long-press ya no selecciona texto ni abre el menú de copiar sobre los botones.
+- **Doble atrás para salir** (Android): el primer "atrás" en una pantalla principal muestra un aviso; el segundo cierra la app. Así no salís de una sin querer.
+- **Detalles**: tocar de nuevo la pestaña activa te lleva al tope, y hay vibración sutil al navegar.
+
+---
+
 ## [2.57.1] — 2026-07-03
 
 ### Mejoras

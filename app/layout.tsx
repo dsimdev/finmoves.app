@@ -10,6 +10,9 @@ import "./globals.css";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Sin pinch-zoom ni doble-tap-zoom: se comporta como app nativa (estilo MercadoPago).
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
   themeColor: "#07090f",
 };

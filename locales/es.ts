@@ -34,6 +34,7 @@ export const es = {
   savings: "Ahorros",
   withdrawals: "Move disponible",
   moves: "Moves",
+  pressBackAgainToExit: "Tocá atrás otra vez para salir",
   period: "Período",
   category: "Categoría",
   description: "Descripción",

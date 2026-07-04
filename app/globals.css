@@ -58,12 +58,24 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   background: var(--bg);
+  /* Feel nativo: sin doble-tap-zoom ni delay de 300ms, sin selección de texto ni
+     menú de long-press sobre el chrome. Inputs/áreas de texto se re-habilitan abajo. */
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 [data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator { filter: none; }
 
 button { font-family: var(--font); cursor: pointer; }
-input, select, textarea { font-family: var(--font); }
+input, select, textarea {
+  font-family: var(--font);
+  /* Re-habilitar selección/copiar donde el usuario escribe (el body lo bloquea). */
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
 .mono { font-family: var(--font-mono); }
 
 input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
@@ -77,7 +89,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* ── Layout ── */
 .page {
-  padding: 20px 16px calc(var(--nav-h) + 20px);
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(var(--nav-h) + 20px);
   max-width: 600px;
   margin: 0 auto;
   min-height: 100dvh;

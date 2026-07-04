@@ -36,6 +36,7 @@ export const en: AppLocale = {
   savings: "Savings",
   withdrawals: "Move disponible",
   moves: "Moves",
+  pressBackAgainToExit: "Press back again to exit",
   period: "Period",
   category: "Category",
   description: "Description",

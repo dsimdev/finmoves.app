@@ -13,6 +13,7 @@ import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { UpdateBanner } from "@/components/pwa/UpdateBanner";
 import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { LockScreen } from "@/components/pwa/LockScreen";
+import { BackExitToast } from "@/components/pwa/BackExitToast";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { isBiometricEnabledFor } from "@/lib/biometric";
@@ -64,6 +65,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       <OfflineBanner />
       <UpdateBanner />
       <InstallBanner />
+      <BackExitToast />
     </DataProvider>
   );
 }

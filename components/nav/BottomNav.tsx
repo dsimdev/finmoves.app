@@ -105,7 +105,13 @@ export function BottomNav() {
         const active = pathname === tab.href;
         const { color, dim } = navGradColor(i, visible.length);
         return (
-          <Link key={tab.href} href={tab.href} replace style={{
+          <Link key={tab.href} href={tab.href} replace
+            onClick={(e) => {
+              navigator.vibrate?.(8);
+              // Re-tocar la tab activa scrollea al tope (gesto nativo), sin re-navegar.
+              if (active) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+            }}
+            style={{
             flex: 1, display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
             gap: 0, textDecoration: "none", paddingTop: 0,
