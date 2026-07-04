@@ -30,6 +30,14 @@ function trapArmed() {
   return !!(window.history.state as { __fmTrap?: boolean } | null)?.__fmTrap;
 }
 
+// Mutar el history DENTRO del handler de popstate es frágil (el browser está en
+// medio de su propia traversía y Next tiene su propio listener de popstate). Diferir
+// a un tick posterior evita esa pelea — fue lo que hacía que en Inicio el back saliera
+// sin emitir popstate ni mostrar el toast.
+function defer(fn: () => void) {
+  setTimeout(fn, 0);
+}
+
 // Empuja el trap preservando el state de Next (sin el spread, el popstate no dispara
 // por el bailout del router y la app sale sin toast).
 function armTrap() {
@@ -71,7 +79,7 @@ export function useBackDispatcher(onExitHint: () => void) {
       if (modal) {
         dbgLog("  -> cierro modal");
         closeTopModal();
-        armTrap();
+        defer(armTrap);
         return;
       }
 
@@ -85,7 +93,7 @@ export function useBackDispatcher(onExitHint: () => void) {
       if (path !== HOME) {
         // Tab ≠ Inicio → ir a Inicio. El efecto de pathname re-arma el trap allá.
         dbgLog("  -> replace(HOME)");
-        router.replace(HOME);
+        defer(() => router.replace(HOME));
         return;
       }
 
@@ -93,17 +101,26 @@ export function useBackDispatcher(onExitHint: () => void) {
       const now = Date.now();
       if (now - lastBack.current < EXIT_WINDOW_MS) {
         dbgLog("  -> 2do back: SALIR (history.back)");
-        window.history.back();
+        defer(() => window.history.back());
         return;
       }
       dbgLog("  -> 1er back: toast + re-arm");
       lastBack.current = now;
       onHint.current();
-      armTrap();
+      defer(armTrap);
     };
 
+    const onHide = () => dbgLog(`PAGEHIDE len=${window.history.length} armed=${trapArmed()} path=${window.location.pathname}`);
+    const onShow = (e: PageTransitionEvent) => dbgLog(`PAGESHOW persisted=${e.persisted} len=${window.history.length}`);
+
     window.addEventListener("popstate", onPop);
+    window.addEventListener("pagehide", onHide);
+    window.addEventListener("pageshow", onShow);
     if (isRootTab(window.location.pathname)) armTrap();
-    return () => window.removeEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.removeEventListener("pagehide", onHide);
+      window.removeEventListener("pageshow", onShow);
+    };
   }, [router]);
 }

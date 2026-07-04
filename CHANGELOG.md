@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.60.2] — 2026-07-12
+
+### Fixed
+- **Double-back (flag-gated): defer all history mutations out of the `popstate` handler.** On-device HUD logs proved the trap marker survives (`nowArmed=true`), `replace(HOME)` from a non-Home tab works, but the back on **Home exited the app without ever firing `popstate`** (no log between arming the Home trap and the relaunch). Root cause: mutating history **synchronously inside** the `popstate` handler (`router.replace`, `armTrap`, `history.back`) is unreliable — the browser is mid-traversal and Next's own popstate listener (not removable) races ours. All three are now deferred via `setTimeout(0)` so they run after the pop settles. Added `pagehide`/`pageshow` logging to `hooks/useBackDispatcher.ts` to capture the exact `history` state at app-close if it still misbehaves. Still behind `fmDoubleBack` + HUD.
+
+---
+
 ## [2.60.1] — 2026-07-12
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "moves-project",
-  "version": "2.60.1",
+  "version": "2.60.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
