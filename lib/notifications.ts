@@ -11,8 +11,10 @@ const HITOS = [50, 75, 100];
 const SUELDO_REMINDER_DAYS = 30; // si pasó ~1 mes sin abrir período nuevo
 const CARGA_OLVIDADA_DIAS = 3;   // días sin registrar ningún movimiento
 const RECURRENTE_DIAS = 28; // días desde la última carga antes de recordar un recurrente
-const RECURRENTE_LOOKBACK_DIAS = 45; // ventana de lectura (por fecha) para hallar la última carga;
-// cubre el umbral de 28d con margen y es robusta al volumen del período (no depende de un límite por cantidad).
+const RECURRENTE_LOOKBACK_DIAS = 35; // ventana de lectura (por fecha) para hallar la última carga.
+// Cubre el umbral de 28d con ~7d de margen: el cron corre a diario y deduplica, así que
+// el aviso dispara el primer día que se cruza el umbral (día 28, aún dentro de la ventana).
+// No bajar de ~32: por debajo se arriesga perder el aviso si el cron falla varios días seguidos.
 
 // Fecha de hoy en AR (UTC-3) como YYYY-MM-DD, para comparar contra recordatorios.
 function hoyAR(): string {

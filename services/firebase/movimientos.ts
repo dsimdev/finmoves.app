@@ -16,7 +16,16 @@ import { Movimiento } from "@/types";
 async function marcarFullSync(userId: string): Promise<void> {
   if (userId !== process.env.NEXT_PUBLIC_OWNER_UID) return;
   const ref = doc(db, `users/${userId}/config/syncMeta`);
-  await setDoc(ref, { needsFullSync: true }, { merge: true }).catch(() => {});
+  // No debe romper el alta/edición si falla, pero tampoco quedar en silencio: si el
+  // flag no se setea, el sheet no re-espeja y arrastra el dato viejo. Reintenta 1 vez
+  // y loguea si igual falla (queda visible para diagnosticar drift del espejo).
+  try {
+    await setDoc(ref, { needsFullSync: true }, { merge: true });
+  } catch (e) {
+    console.warn("[marcarFullSync] reintentando marcar full sync", e);
+    await setDoc(ref, { needsFullSync: true }, { merge: true })
+      .catch((e2) => console.error("[marcarFullSync] no se pudo marcar full sync (sheet puede quedar desactualizado hasta el próximo sync manual)", e2));
+  }
 }
 
 export async function crearMovimiento(

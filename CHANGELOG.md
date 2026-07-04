@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.57.1] — 2026-07-03
+
+### Changed
+- **Audit quick-wins (Phase 0)**:
+  - `marcarFullSync` (movement edit/delete) now retries once and logs on failure instead of swallowing it silently — a failed `needsFullSync` flag would otherwise leave the Sheets mirror stale until the next manual sync, undetected.
+  - Notifications: `RECURRENTE_LOOKBACK_DIAS` trimmed 45 → 35 days (fewer per-user reads/day; still safe — the daily cron + dedup fire the reminder on day 28, well inside the window).
+  - `getCotizacion` now dedupes in-flight requests: concurrent cold-cache mounts await a single fetch instead of firing parallel calls.
+  - Cold-start decision: `minInstances` stays at 0 (PWA cache masks the cold start; not worth the always-on cost).
+
+---
+
 ## [2.57.0] — 2026-07-03
 
 ### Changed

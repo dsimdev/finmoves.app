@@ -4,6 +4,7 @@ const CACHE_TTL = 1000 * 60 * 30;
 const LS_KEY = "finmoves.cotizacion";
 
 let cache: { data: Cotizacion; ts: number } | null = null;
+let inflight: Promise<Cotizacion | null> | null = null;
 
 function readLS(): Cotizacion | null {
   if (typeof window === "undefined") return null;
@@ -20,11 +21,7 @@ function writeLS(data: Cotizacion) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch { /* ignore */ }
 }
 
-export async function getCotizacion(): Promise<Cotizacion | null> {
-  if (cache && Date.now() - cache.ts < CACHE_TTL) {
-    return { ...cache.data, fuente: "cache" };
-  }
-
+async function fetchCotizacion(): Promise<Cotizacion | null> {
   // Último valor conocido (memoria → localStorage), para fallback y para
   // conservar el euro si el upstream no lo trae en esta consulta.
   const prev = cache?.data ?? readLS();
@@ -48,5 +45,15 @@ export async function getCotizacion(): Promise<Cotizacion | null> {
     if (prev) return { ...prev, fuente: "cache" };
     return null;
   }
+}
+
+export async function getCotizacion(): Promise<Cotizacion | null> {
+  if (cache && Date.now() - cache.ts < CACHE_TTL) {
+    return { ...cache.data, fuente: "cache" };
+  }
+  // Dedup: si ya hay un fetch en curso (p. ej. varios componentes montan a la vez con
+  // caché fría), todos esperan la misma promesa en lugar de disparar fetches paralelos.
+  if (!inflight) inflight = fetchCotizacion().finally(() => { inflight = null; });
+  return inflight;
 }
 
