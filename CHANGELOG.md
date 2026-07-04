@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.59.2] — 2026-07-11
+
+### Changed
+- **Reports decomposition — steps 2-5 (Phase 3)**: extracted the 4 sub-tab views out of `app/(tabs)/reports/page.tsx` into dedicated components in `components/reports/` — `GastosTab`, `IngresosTab`, `MovimientosTab`, `PeriodosTab`. The page dropped from ~1450 to 872 lines and now acts as an orchestrator (period selector + shared modals + state); the sub-tabs own their JSX (823 lines total across the 4 files). Behavior-preserving move (also dropped a few dead locals like `totalDias`/`pctDias`); orphaned imports cleaned up. Build + 39 unit tests green.
+
+---
+
 ## [2.59.1] — 2026-07-04
 
 ### Changed
