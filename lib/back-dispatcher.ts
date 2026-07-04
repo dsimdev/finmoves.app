@@ -15,6 +15,33 @@ export function doubleBackEnabled(): boolean {
   }
 }
 
+// --- Log de diagnóstico (persistido en localStorage para sobrevivir al cierre de la
+// PWA: al reabrir vemos qué pasó en el último back). Lo consume BackDebugHud. ---
+const LOG_KEY = "fmDBLog";
+let logLines: string[] = [];
+if (typeof window !== "undefined") {
+  try { logLines = JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch { logLines = []; }
+}
+
+export function dbgLog(msg: string) {
+  if (typeof window === "undefined") return;
+  const t = new Date().toISOString().slice(11, 23);
+  logLines = [`${t}  ${msg}`, ...logLines].slice(0, 24);
+  try { localStorage.setItem(LOG_KEY, JSON.stringify(logLines)); } catch { /* ignore */ }
+}
+
+export function getDbgLog(): string[] {
+  if (typeof window !== "undefined") {
+    try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch { /* ignore */ }
+  }
+  return logLines;
+}
+
+export function clearDbgLog() {
+  logLines = [];
+  try { localStorage.removeItem(LOG_KEY); } catch { /* ignore */ }
+}
+
 // Pila LIFO de cierres de modales abiertos. Cada modal (con flag ON) se registra al
 // abrir y se desregistra al desmontar. NO empujan una entrada de history.
 type Handler = () => void;

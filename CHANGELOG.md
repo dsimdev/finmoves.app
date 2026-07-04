@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.60.1] — 2026-07-12
+
+### Added
+- **Double-back diagnostics HUD (flag-gated, owner-only)**: on-device debug overlay to find why the double-back exits Home without the toast. `lib/back-dispatcher.ts` gained a `dbgLog`/`getDbgLog`/`clearDbgLog` ring buffer **persisted to localStorage** (`fmDBLog`) so it survives the PWA closing — reopening shows what happened on the last back. `hooks/useBackDispatcher.ts` now logs every arm, every `popstate` (with `history.length`, `armed`, `modal`, `path`) and the branch it took (`arm push … nowArmed=`, `-> toast`, `-> replace(HOME)`, `-> SALIR`, etc.). New `components/nav/BackDebugHud.tsx` renders the log + live `history` state; visible only when `fmDoubleBack === "1"`. Temporary — removed once the flow is confirmed on Android.
+
+---
+
 ## [2.60.0] — 2026-07-12
 
 ### Added

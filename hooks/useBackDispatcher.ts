@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { doubleBackEnabled, anyModalOpen, closeTopModal, HOME } from "@/lib/back-dispatcher";
+import { doubleBackEnabled, anyModalOpen, closeTopModal, dbgLog, HOME } from "@/lib/back-dispatcher";
 
 // Único dueño del botón "atrás" cuando el flag `fmDoubleBack` está ON. Se monta una
 // sola vez (en el layout de tabs, vía BackExitToast). Implementa el patrón nativo de
@@ -33,8 +33,12 @@ function trapArmed() {
 // Empuja el trap preservando el state de Next (sin el spread, el popstate no dispara
 // por el bailout del router y la app sale sin toast).
 function armTrap() {
-  if (trapArmed()) return;
+  if (trapArmed()) {
+    dbgLog(`arm skip (ya armado) len=${window.history.length}`);
+    return;
+  }
   window.history.pushState({ ...window.history.state, __fmTrap: true }, "");
+  dbgLog(`arm push len=${window.history.length} nowArmed=${trapArmed()}`);
 }
 
 export function useBackDispatcher(onExitHint: () => void) {
@@ -48,27 +52,39 @@ export function useBackDispatcher(onExitHint: () => void) {
   // se come el trap; las subpáginas NO llevan trap (su back debe volver al padre).
   useEffect(() => {
     if (!doubleBackEnabled()) return;
+    dbgLog(`path=${pathname} root=${isRootTab(pathname)} state.__fmTrap=${trapArmed()}`);
     if (isRootTab(pathname)) armTrap();
   }, [pathname]);
 
   useEffect(() => {
     if (!doubleBackEnabled()) return;
 
+    dbgLog(`MOUNT path=${window.location.pathname} len=${window.history.length}`);
+
     const onPop = () => {
+      const armed = trapArmed();
+      const modal = anyModalOpen();
+      const path = window.location.pathname;
+      dbgLog(`POP len=${window.history.length} armed=${armed} modal=${modal} path=${path}`);
+
       // 1) Modal abierto → el back lo cierra, y re-armamos el trap.
-      if (anyModalOpen()) {
+      if (modal) {
+        dbgLog("  -> cierro modal");
         closeTopModal();
         armTrap();
         return;
       }
 
       // 2) Aterrizamos sobre un trap → back in-app (subpágina → padre). No tocar.
-      if (trapArmed()) return;
+      if (armed) {
+        dbgLog("  -> in-app back (sobre trap), no-op");
+        return;
+      }
 
       // 3) Consumimos el trap → back de salida.
-      const path = window.location.pathname;
       if (path !== HOME) {
         // Tab ≠ Inicio → ir a Inicio. El efecto de pathname re-arma el trap allá.
+        dbgLog("  -> replace(HOME)");
         router.replace(HOME);
         return;
       }
@@ -76,11 +92,11 @@ export function useBackDispatcher(onExitHint: () => void) {
       // 4) En Inicio → doble-back para salir.
       const now = Date.now();
       if (now - lastBack.current < EXIT_WINDOW_MS) {
-        // Segundo back dentro de la ventana: dejamos salir. No re-armamos → el back
-        // agota el historial y Android cierra la PWA.
+        dbgLog("  -> 2do back: SALIR (history.back)");
         window.history.back();
         return;
       }
+      dbgLog("  -> 1er back: toast + re-arm");
       lastBack.current = now;
       onHint.current();
       armTrap();
