@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.59.0] — 2026-07-04
+
+### Mejoras
+- **Atajos para cargar más rápido**: mantené apretado el ícono de FinMoves → "Nuevo movimiento"; o compartí un texto a FinMoves desde otra app; o tocá **"Cargar"** en los avisos de recurrentes/carga olvidada. Todo abre directo la carga de movimiento.
+- Nuevo intento de arreglo del "doble atrás para salir" en Inicio (a confirmar en tu teléfono).
+
+---
+
 ## [2.58.2] — 2026-07-04
 
 ### Mejoras

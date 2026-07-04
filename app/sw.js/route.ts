@@ -96,7 +96,8 @@ self.addEventListener("push", (event) => {
         tag: data.tag,
         icon: "/icon-192.png",
         badge: "/icon-192.png",
-        data: { url: data.url || "/" },
+        actions: data.actions || [],
+        data: { url: data.url || "/", actionUrls: data.actionUrls || {} },
       }),
       bumpBadge(),
     ])
@@ -105,7 +106,9 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
+  const d = event.notification.data || {};
+  // Si se tocó un botón de acción, abrir su URL; si no, la URL general.
+  const url = (event.action && d.actionUrls && d.actionUrls[event.action]) || d.url || "/";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const c of list) { if ("focus" in c) { c.navigate(url); return c.focus(); } }

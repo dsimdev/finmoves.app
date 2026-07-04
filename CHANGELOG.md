@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.59.0] — 2026-07-04
+
+### Added
+- **Quick entry points to load a movement** — all deep-link to `/movements?nuevo=1`, which opens the add modal and cleans the URL:
+  - **Launcher shortcut**: "Nuevo movimiento" now points to the deep-link (opens the modal directly).
+  - **Share target**: `share_target` in the manifest (GET `title`/`text`/`url`); sharing to FinMoves opens the add flow. (Android; v1 does not prefill the shared text yet.)
+  - **Push action**: recurrentes and forgotten-load notifications carry a **"Cargar"** action button. The SW forwards `actions` to `showNotification` and resolves per-action URLs from `data.actionUrls` in `notificationclick`. `PushPayload` extended with `actions` + `actionUrls`.
+
+### Fixed
+- **Double-back-to-exit (attempt): trap now preserves Next's router state** (`{ ...history.state, __fmTrap: true }`). Without it, the back on Home did not fire `popstate` (Next router bailout) so the app exited without the toast — matching the reverted v1 (which spread state and did show the toast). Pending on-device confirmation.
+
+---
+
 ## [2.58.2] — 2026-07-04
 
 ### Fixed

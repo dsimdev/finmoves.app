@@ -15,7 +15,15 @@ function ensure(): boolean {
   return configured;
 }
 
-export type PushPayload = { title: string; body: string; tag?: string; url?: string };
+export type PushPayload = {
+  title: string;
+  body: string;
+  tag?: string;
+  url?: string;
+  // Botones de acción de la notificación (Android). Cada acción abre su URL de actionUrls.
+  actions?: { action: string; title: string }[];
+  actionUrls?: Record<string, string>;
+};
 
 // Envía una notificación a la suscripción guardada del usuario.
 // Si la suscripción expiró (404/410), la borra de Firestore.

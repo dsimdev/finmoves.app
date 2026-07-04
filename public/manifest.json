@@ -86,11 +86,16 @@
       "label": "Configuración y sincronización"
     }
   ],
+  "share_target": {
+    "action": "/movements",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
   "shortcuts": [
     {
       "name": "Nuevo movimiento",
       "short_name": "Movimiento",
-      "url": "/movements",
+      "url": "/movements?nuevo=1",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {

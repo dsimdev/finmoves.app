@@ -58,6 +58,18 @@ export default function MovimientosPage() {
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
   const openAdd = () => setModalState({ mode: "add" });
   const openEdit = (m: Movimiento) => setModalState({ mode: "edit", mov: m });
+
+  // Deep-link a la carga: atajo del launcher (?nuevo=1), acción "Cargar" del push, o
+  // share target (Android manda title/text/url). Abre el modal de alta y limpia la URL.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const esShare = sp.has("text") || sp.has("title") || sp.has("url");
+    if (sp.get("nuevo") === "1" || esShare) {
+      openAdd();
+      window.history.replaceState(window.history.state, "", "/movements");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const bindLongPress = useLongPress();
 
   // Si llegamos con ?m=<id> (desde el dashboard), abrir ese movimiento para editar.

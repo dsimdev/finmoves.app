@@ -38,7 +38,9 @@ export function useBackButton(): boolean {
   // quedar residuo en el historial (salir necesita algún back de más); se afina después.
   useEffect(() => {
     if (typeof window === "undefined" || !ROOT.includes(pathname)) return;
-    window.history.pushState({ __fmTrap: true }, "");
+    // Preservar el state del router de Next: sin esto, el back no dispara popstate
+    // (Next se confunde) y la app cierra sin capturar. Con esto el trap sí funciona.
+    window.history.pushState({ ...window.history.state, __fmTrap: true }, "");
   }, [pathname]);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export function useBackButton(): boolean {
         return;
       }
       armedRef.current = true;
-      window.history.pushState({ __fmTrap: true }, ""); // re-armar: quedarse
+      window.history.pushState({ ...window.history.state, __fmTrap: true }, ""); // re-armar: quedarse
       setHint(true);
       navigator.vibrate?.(8);
       timerRef.current = setTimeout(() => { armedRef.current = false; setHint(false); }, 2000);

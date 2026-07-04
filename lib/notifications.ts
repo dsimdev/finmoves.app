@@ -39,6 +39,13 @@ const PRE_AVISO_DIAS = 3; // pre-aviso cuando faltan <= 3 días
 
 const money = (n: number) => `$${Math.round(n).toLocaleString("es-AR")}`;
 
+// Acción "Cargar" para los avisos que invitan a registrar un movimiento: abre directo
+// el modal de alta (deep-link ?nuevo=1). El toque del cuerpo va al listado normal.
+const CARGAR_ACCION = {
+  actions: [{ action: "cargar", title: "Cargar" }],
+  actionUrls: { cargar: "/movements?nuevo=1" },
+};
+
 interface GlobalCtx {
   dolarOficial: number | null;
 }
@@ -156,7 +163,7 @@ async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Recor
   if (dias < CARGA_OLVIDADA_DIAS) return;
   const key = ultimo.getTime();
   if (notify.cargaRemindedFor === key) return; // ya avisé por este hueco
-  await sendPushToUser(uid, { title: "FinMoves", body: `Hace ${dias} días que no registrás un movimiento`, tag: "carga", url: "/movements" });
+  await sendPushToUser(uid, { title: "FinMoves", body: `Hace ${dias} días que no registrás un movimiento`, tag: "carga", url: "/movements", ...CARGAR_ACCION });
   updates.cargaRemindedFor = key;
 }
 
@@ -232,7 +239,7 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   const body = nombres.length === 1
     ? `¿Cargás "${nombres[0]}"? Hace ~1 mes de la última vez.`
     : `${nombres.length} recurrentes pendientes: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`;
-  await sendPushToUser(uid, { title: "Recurrentes", body, tag: `rec-${hoy.slice(0, 7)}`, url: "/movements" });
+  await sendPushToUser(uid, { title: "Recurrentes", body, tag: `rec-${hoy.slice(0, 7)}`, url: "/movements", ...CARGAR_ACCION });
   updates.recReminded = nextReminded;
 }
 
