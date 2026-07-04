@@ -1,12 +1,12 @@
 "use client";
 
-import { useBackExit } from "@/hooks/useBackExit";
+import { useBackButton } from "@/hooks/useBackButton";
 import { useT } from "@/hooks/useTranslation";
 
 // Aviso flotante del doble-back para salir. Siempre montado (aparece/desaparece con
-// opacidad, sin layout shift). El hook maneja toda la lógica del historial.
+// opacidad, sin layout shift). El hook maneja toda la lógica del botón "atrás".
 export function BackExitToast() {
-  const show = useBackExit();
+  const show = useBackButton();
   const t = useT();
   return (
     <div

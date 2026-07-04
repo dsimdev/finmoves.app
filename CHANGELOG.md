@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.58.1] — 2026-07-04
+
+### Changed
+- **Double-back-to-exit reworked (native Android pattern)**: the 2.58.0 version misfired under mixed navigation (tabs `replace`, subpages `push`, modals). Rebuilt in `hooks/useBackButton.ts` (replaces `useBackExit`) with a home-routing model: back on a non-home root tab → Home; back on Home → exit toast, and a second back within ~2s exits; subpages and modals keep their natural back; a history "trap" is re-armed on each root tab to capture the back. Never traps the user (back always advances). Needs on-device iteration for the residual mixed-nav edge cases.
+
+---
+
+## [2.58.0] — 2026-07-03
+
+### Added
+- **Native-feel pass** (shipped via hotfix): disabled pinch-zoom and double-tap-zoom (viewport `maximumScale: 1`, `userScalable: false` + `touch-action: manipulation`; this also removes iOS input-focus zoom for free, so no font-size bump needed); `env(safe-area-inset-top)` on `.page` (iOS notch); `user-select: none` + `-webkit-touch-callout: none` on the chrome with inputs/textarea re-enabled; scroll-to-top on active-tab re-tap + subtle `navigator.vibrate` haptics on tab nav.
+- Double-back-to-exit (Android) — **reverted in 2.58.1**, see above.
+
+---
+
 ## [2.57.1] — 2026-07-03
 
 ### Changed
