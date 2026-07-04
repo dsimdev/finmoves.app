@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.59.3] — 2026-07-11
+
+### Arreglos
+- Se corrigió un problema serio: al abrir un KPI (o en otras pantallas) te llevaba a Inicio, y al cargar el presupuesto se cerraba el teclado. Se quitó el "doble atrás para salir", que era lo que lo causaba.
+
+---
+
 ## [2.59.2] — 2026-07-11
 
 ### Mejoras

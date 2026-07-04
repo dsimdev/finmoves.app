@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.59.3] — 2026-07-11
+
+### Fixed
+- **Hotfix — removed the double-back-to-exit feature**: its `popstate` interception was hijacking navigation in production. Opening/closing a KPI modal (and others) sent the user to Home, and typing in the budget input closed the keyboard, because the history "trap" + `useModalBack` interplay fired spurious `router.replace(HOME)`. The feature was unreliable across several attempts. Removed `hooks/useBackButton.ts`, `components/pwa/BackExitToast.tsx`, `components/pwa/BackDebug.tsx`, the layout mount and the `pressBackAgainToExit` locale key. Back now behaves natively again (single back exits).
+
+---
+
 ## [2.59.2] — 2026-07-11
 
 ### Changed
