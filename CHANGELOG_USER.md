@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.59.4] — 2026-07-11
+
+### Arreglos
+- Se corrigió que al escribir un número en el presupuesto (y en otros formularios) se cerraba el teclado en cada tecla.
+
+---
+
 ## [2.59.3] — 2026-07-11
 
 ### Arreglos

@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.59.4] — 2026-07-11
+
+### Fixed
+- **Budget input (and every BottomSheet input) closed the keyboard on each keystroke**: `BottomSheet`'s focus-management effect depended on `onClose`, which is passed inline (new identity every render), so each keystroke re-ran the effect and its `requestAnimationFrame(() => panel.focus())` stole focus from the input. `onClose` is now kept in a ref (`onCloseRef`) and the focus/Escape effect only runs on open/close (`[open]`). Pre-existing bug, unrelated to the removed double-back.
+
+---
+
 ## [2.59.3] — 2026-07-11
 
 ### Fixed

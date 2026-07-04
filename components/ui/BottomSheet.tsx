@@ -27,6 +27,11 @@ export function BottomSheet({ open, onClose, title, children }: {
   useEffect(() => { setMounted(true); }, []);
   useScrollLock(open);
   useModalBack(open, onClose);
+  // onClose suele venir inline (nueva identidad por render). Guardarlo en un ref evita
+  // que los efectos que lo usan se re-ejecuten en cada render: al tipear en un input, el
+  // efecto de foco volvía a enfocar el panel y cerraba el teclado.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
   const startY = useRef(0);
   const baseTy = useRef(0);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -89,7 +94,7 @@ export function BottomSheet({ open, onClose, title, children }: {
     const raf = requestAnimationFrame(() => panel?.focus());
     const focusablesSel = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { onClose(); return; }
+      if (e.key === "Escape") { onCloseRef.current(); return; }
       if (e.key === "Tab" && panel) {
         const f = Array.from(panel.querySelectorAll<HTMLElement>(focusablesSel));
         if (f.length === 0) { e.preventDefault(); panel.focus(); return; }
@@ -104,7 +109,7 @@ export function BottomSheet({ open, onClose, title, children }: {
       document.removeEventListener("keydown", onKey);
       lastFocused.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   // Acompañar el teclado: el visualViewport se achica al abrirse el teclado, pero
   // los elementos position:fixed siguen el layout viewport (no se mueven). Atamos
