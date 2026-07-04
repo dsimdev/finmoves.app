@@ -1,23 +1,24 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { doubleBackEnabled, anyModalOpen, closeTopModal, dbgLog, HOME } from "@/lib/back-dispatcher";
 
-// Único dueño del botón "atrás" cuando el flag `fmDoubleBack` está ON. Se monta una
-// sola vez (en el layout de tabs, vía BackExitToast). Implementa el patrón nativo de
-// Android: modal → cerrar; subpágina → volver al padre; tab ≠ Inicio → ir a Inicio;
-// en Inicio → doble-back para salir.
+// Dueño único del botón "atrás" cuando el flag `fmDoubleBack` está ON, montado 1 vez
+// (en BackExitToast, dentro del layout de tabs). Patrón nativo Android: modal →
+// cerrar; subpágina → volver al padre; tab ≠ Inicio → ir a Inicio; en Inicio → 1er
+// back muestra toast, 2do cierra la app.
 //
-// Mecánica del "trap": mientras estamos en un tab raíz, mantenemos una entrada extra
-// de history marcada con __fmTrap arriba de todo. En cada popstate miramos el estado
-// DESPUÉS del pop:
-//  - aterrizamos SOBRE un trap (state.__fmTrap truthy) → fue un back in-app
-//    (subpágina → padre). Next ya renderizó; no hacemos nada.
-//  - consumimos el trap (aterrizamos en entrada real, falsy) → back "de salida":
-//    modal → cerrar; tab ≠ Inicio → replace(HOME); Inicio → doble-back.
-// Los modales (flag ON) NO empujan history: se registran en el dispatcher. Por eso
-// un solo listener alcanza y no hay peleas (el bug que rompió prod en v2.59.x).
+// A diferencia de los ~7 intentos con `popstate` (que llegaba TARDE, ya consumado, y
+// peleaba con el listener interno de Next), usamos la **Navigation API** (Chromium /
+// Android Chrome): el evento `navigate` de un traverse se dispara ANTES y es
+// cancelable → `preventDefault()` frena el back sin rellenar history a ciegas.
+//
+// El único caso que sí necesita una entrada extra es el cierre en Inicio (ningún API
+// evita que la PWA cierre con el history agotado): mantenemos un "backroom" debajo
+// mientras estamos en un tab raíz, así el back es un traverse interceptable. En Inicio
+// el 1er back muestra el toast y deja pasar al backroom (quedamos en el borde); el 2do
+// back ya no dispara evento (borde) → la PWA cierra.
 
 const ROOT_TABS = ["/", "/movements", "/investments", "/reports", "/settings"];
 const EXIT_WINDOW_MS = 2000;
@@ -26,101 +27,99 @@ function isRootTab(path: string) {
   return ROOT_TABS.includes(path);
 }
 
-function trapArmed() {
-  return !!(window.history.state as { __fmTrap?: boolean } | null)?.__fmTrap;
-}
+type NavEntry = { index: number; url: string | null };
+type NavigateEvt = Event & {
+  navigationType: "push" | "replace" | "reload" | "traverse";
+  destination: { index: number; url: string };
+  cancelable: boolean;
+};
+type NavigationApi = {
+  currentEntry: NavEntry | null;
+  canGoBack: boolean;
+  addEventListener: (t: string, cb: (e: Event) => void) => void;
+  removeEventListener: (t: string, cb: (e: Event) => void) => void;
+};
 
-// Mutar el history DENTRO del handler de popstate es frágil (el browser está en
-// medio de su propia traversía y Next tiene su propio listener de popstate). Diferir
-// a un tick posterior evita esa pelea — fue lo que hacía que en Inicio el back saliera
-// sin emitir popstate ni mostrar el toast.
-function defer(fn: () => void) {
-  setTimeout(fn, 0);
-}
-
-// Empuja el trap preservando el state de Next (sin el spread, el popstate no dispara
-// por el bailout del router y la app sale sin toast).
-function armTrap() {
-  if (trapArmed()) {
-    dbgLog(`arm skip (ya armado) len=${window.history.length}`);
-    return;
-  }
-  window.history.pushState({ ...window.history.state, __fmTrap: true }, "");
-  dbgLog(`arm push len=${window.history.length} nowArmed=${trapArmed()}`);
+function getNav(): NavigationApi | null {
+  if (typeof window === "undefined") return null;
+  return (window as unknown as { navigation?: NavigationApi }).navigation ?? null;
 }
 
 export function useBackDispatcher(onExitHint: () => void) {
   const router = useRouter();
-  const pathname = usePathname();
-  const lastBack = useRef(0);
   const onHint = useRef(onExitHint);
   useEffect(() => { onHint.current = onExitHint; });
 
-  // Re-armar el trap al aterrizar en un tab raíz. Los tabs navegan con `replace`, que
-  // se come el trap; las subpáginas NO llevan trap (su back debe volver al padre).
   useEffect(() => {
     if (!doubleBackEnabled()) return;
-    dbgLog(`path=${pathname} root=${isRootTab(pathname)} state.__fmTrap=${trapArmed()}`);
-    if (isRootTab(pathname)) armTrap();
-  }, [pathname]);
+    const nav = getNav();
+    if (!nav) { dbgLog("Navigation API NO disponible → back nativo"); return; }
 
-  useEffect(() => {
-    if (!doubleBackEnabled()) return;
+    let exitArmedUntil = 0;
 
-    dbgLog(`MOUNT path=${window.location.pathname} len=${window.history.length}`);
-
-    const onPop = () => {
-      const armed = trapArmed();
-      const modal = anyModalOpen();
-      const path = window.location.pathname;
-      dbgLog(`POP len=${window.history.length} armed=${armed} modal=${modal} path=${path}`);
-
-      // 1) Modal abierto → el back lo cierra, y re-armamos el trap.
-      if (modal) {
-        dbgLog("  -> cierro modal");
-        closeTopModal();
-        defer(armTrap);
-        return;
-      }
-
-      // 2) Aterrizamos sobre un trap → back in-app (subpágina → padre). No tocar.
-      if (armed) {
-        dbgLog("  -> in-app back (sobre trap), no-op");
-        return;
-      }
-
-      // 3) Consumimos el trap → back de salida.
-      if (path !== HOME) {
-        // Tab ≠ Inicio → ir a Inicio. El efecto de pathname re-arma el trap allá.
-        dbgLog("  -> replace(HOME)");
-        defer(() => router.replace(HOME));
-        return;
-      }
-
-      // 4) En Inicio → doble-back para salir.
-      const now = Date.now();
-      if (now - lastBack.current < EXIT_WINDOW_MS) {
-        dbgLog("  -> 2do back: SALIR (history.back)");
-        defer(() => window.history.back());
-        return;
-      }
-      dbgLog("  -> 1er back: toast + re-arm");
-      lastBack.current = now;
-      onHint.current();
-      defer(armTrap);
+    // Garantiza un "backroom" debajo cuando estamos en un tab raíz, para que el back
+    // sea un traverse interceptable y no un cierre directo. Se saltea durante la
+    // ventana de salida (así el borde queda alcanzable y la PWA puede cerrar).
+    const ensureBackroom = () => {
+      if (!isRootTab(window.location.pathname)) return;
+      if (nav.canGoBack) return;
+      if (Date.now() < exitArmedUntil) return;
+      window.history.pushState({ __fmRoom: 1 }, "", window.location.href);
+      dbgLog(`backroom+ idx=${nav.currentEntry?.index} canGoBack=${nav.canGoBack}`);
     };
 
-    const onHide = () => dbgLog(`PAGEHIDE len=${window.history.length} armed=${trapArmed()} path=${window.location.pathname}`);
-    const onShow = (e: PageTransitionEvent) => dbgLog(`PAGESHOW persisted=${e.persisted} len=${window.history.length}`);
+    const onNavigate = (evt: Event) => {
+      const e = evt as NavigateEvt;
+      if (e.navigationType !== "traverse") return;
+      const cur = nav.currentEntry;
+      if (!cur || typeof e.destination?.index !== "number") return;
+      if (e.destination.index >= cur.index) return; // solo hacia atrás
+      if (!e.cancelable) return;
 
-    window.addEventListener("popstate", onPop);
-    window.addEventListener("pagehide", onHide);
-    window.addEventListener("pageshow", onShow);
-    if (isRootTab(window.location.pathname)) armTrap();
+      const path = window.location.pathname;
+      dbgLog(`BACK from=${path} idx ${cur.index}->${e.destination.index} modal=${anyModalOpen()}`);
+
+      // 1) Modal abierto → frenar el back y cerrarlo.
+      if (anyModalOpen()) {
+        e.preventDefault();
+        dbgLog("  -> cierro modal");
+        closeTopModal();
+        return;
+      }
+
+      // 2) Subpágina → dejar pasar (traverse natural al padre).
+      if (!isRootTab(path)) {
+        dbgLog("  -> subpágina: dejo pasar (→ padre)");
+        return;
+      }
+
+      // 3) Tab ≠ Inicio → frenar e ir a Inicio.
+      if (path !== HOME) {
+        e.preventDefault();
+        dbgLog("  -> replace(HOME)");
+        setTimeout(() => router.replace(HOME), 0);
+        return;
+      }
+
+      // 4) Inicio → 1er back: toast y dejar pasar al backroom (quedamos en el borde);
+      //    el próximo back cierra la app.
+      dbgLog("  -> Inicio: toast + salgo en el próximo back");
+      onHint.current();
+      exitArmedUntil = Date.now() + EXIT_WINDOW_MS;
+      setTimeout(ensureBackroom, EXIT_WINDOW_MS + 50);
+      // sin preventDefault → el traverse procede al backroom
+    };
+
+    const onEntryChange = () => ensureBackroom();
+
+    nav.addEventListener("navigate", onNavigate);
+    nav.addEventListener("currententrychange", onEntryChange);
+    ensureBackroom();
+    dbgLog(`MOUNT navapi path=${window.location.pathname} canGoBack=${nav.canGoBack}`);
+
     return () => {
-      window.removeEventListener("popstate", onPop);
-      window.removeEventListener("pagehide", onHide);
-      window.removeEventListener("pageshow", onShow);
+      nav.removeEventListener("navigate", onNavigate);
+      nav.removeEventListener("currententrychange", onEntryChange);
     };
   }, [router]);
 }

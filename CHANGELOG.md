@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.61.0] — 2026-07-12
+
+### Changed
+- **Double-back rebuilt on the Navigation API (flag-gated).** Abandoned the `popstate`/history-trap engine after ~7 failed attempts — it fought Next's non-removable internal popstate listener and fired *after* the traversal already committed (on-device HUD proved the trap armed but the Home back exited without ever firing `popstate`). `hooks/useBackDispatcher.ts` now uses `window.navigation` (Chromium/Android Chrome): the `navigate` event for a back `traverse` fires **before** the traversal and is cancelable, so `preventDefault()` reliably stops it — no blind history padding. Decisions by current path: modal → cancel + close; subpage → allow (natural back to parent); non-Home tab → cancel + `replace(HOME)`; Home → toast + let the traversal fall to a maintained "backroom" entry so the next back exits (double-back). A `backroom` entry is kept below root tabs (skipped during the 2s exit window) so the Home back is interceptable rather than closing the PWA outright. Falls back to native back where the Navigation API is absent (iOS Safari/Firefox). Still behind `fmDoubleBack` + the debug HUD.
+
+---
+
 ## [2.60.2] — 2026-07-12
 
 ### Fixed
