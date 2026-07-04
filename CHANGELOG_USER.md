@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.60.0] — 2026-07-12
+
+### Mejoras
+- Arreglos menores internos. (Se está probando una función experimental de "doble atrás para salir", por ahora apagada y sin efecto para vos.)
+
+---
+
 ## [2.59.4] — 2026-07-11
 
 ### Arreglos

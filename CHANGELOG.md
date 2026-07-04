@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.60.0] — 2026-07-12
+
+### Added
+- **Double-back-to-exit (Option A), behind an off-by-default flag (`fmDoubleBack`)**: full rebuild of the native-Android back pattern — modal → close; subpage → back to parent; non-Home tab → go Home; Home → toast then exit on a second back within 2s. Deploy is inert (flag OFF); an owner-only toggle in Settings › Preferences turns it on per-device and reloads.
+  - `lib/back-dispatcher.ts`: singleton with `doubleBackEnabled()` (reads localStorage), a LIFO modal-closer registry (`pushModalHandler`/`anyModalOpen`/`closeTopModal`) and `HOME`. Modals **register** here instead of pushing history — the fix that ends the multi-listener fights that broke prod in v2.59.x.
+  - `hooks/useModalBack.ts`: flag-gated. OFF = classic behavior byte-for-byte; ON = registers a closer in the dispatcher and does **not** touch history. `isModalOpen()` now also reflects `anyModalOpen()`.
+  - `hooks/useBackDispatcher.ts`: the single `popstate` listener + the history "trap". After each pop it reads `history.state.__fmTrap`: landed on a trap → in-app back (subpage→parent), no-op; consumed the trap → exit-intent (close modal / `replace(HOME)` / double-back). A `pathname` effect re-arms the trap on every root tab (tabs navigate with `replace`, which eats the trap). Trap pushed as `{ ...history.state, __fmTrap: true }` so Next's router still fires `popstate`.
+  - `components/nav/BackExitToast.tsx`: mounts the dispatcher (inert if flag OFF) and shows the "tocá atrás de nuevo para salir" toast; mounted once in `app/(tabs)/layout.tsx`.
+  - Owner-only toggle added to `app/(tabs)/settings/preferences/page.tsx`.
+- **Known limitation (iteration 2)**: tab navigation uses `replace`, which eats the trap, so hopping across many tabs accretes one history entry per switch — the final exit from Home may need an extra back. Not a blocker for the flagged v1; fix is trap-aware tab nav in `BottomNav`.
+
+---
+
 ## [2.59.4] — 2026-07-11
 
 ### Fixed

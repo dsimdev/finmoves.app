@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebase/firebase";
 import { BottomNav } from "@/components/nav/BottomNav";
+import { BackExitToast } from "@/components/nav/BackExitToast";
 import { SideNav } from "@/components/nav/SideNav";
 import { SwipeNav } from "@/components/nav/SwipeNav";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -61,6 +62,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       <SideNav />
       <SwipeNav>{children}</SwipeNav>
       <BottomNav />
+      <BackExitToast />
       <OfflineBanner />
       <UpdateBanner />
       <InstallBanner />
