@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.63.1] — 2026-07-12
+
+### Mejoras
+- El selector de comprobante ahora es una tarjeta flotante compacta, solo con íconos.
+- Al abrir la carga de movimiento ya no se levanta el teclado solo.
+
+---
+
 ## [2.63.0] — 2026-07-12
 
 ### Novedades

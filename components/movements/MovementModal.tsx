@@ -118,13 +118,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     onSelect: onComprobanteSelect,
     clear: clearComprobante,
   } = useComprobante();
-  const [chooserOpen, setChooserOpen] = useState(false);
+  const [chooserAnchor, setChooserAnchor] = useState<DOMRect | null>(null);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
-  // El monto es el primer dato a cargar → foco al abrir el alta y al cambiar de tipo.
-  const montoRef = useRef<HTMLInputElement>(null);
-  const reserveRef = useRef<HTMLInputElement>(null);
-  const focusMonto = () => requestAnimationFrame(() => montoRef.current?.focus());
+  // Sin autofocus en el monto: abrir el modal no debe levantar el teclado solo.
 
   // ── Edit state ──
   const [eMonto, setEMonto] = useState("");
@@ -154,9 +151,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       if (reserveMode) setTipo(esEURMode ? "CompraEUR" : "CompraUSD");
       else if (sinPeriodos) { setTipo("Ingreso"); setCategoria("Sueldo"); }
       else setTipo("Gasto");
-      // Foco en el monto una vez terminada la animación de apertura del sheet.
-      const id = setTimeout(() => (reserveMode ? reserveRef.current : montoRef.current)?.focus(), 420);
-      return () => clearTimeout(id);
     } else if (mode === "edit" && movimiento) {
       // El sueldo que abre período (ancla) no se puede borrar → forzar vista form.
       const esAncla = movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" &&
@@ -465,7 +459,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       );
     }
     return (
-      <button type="button" aria-label={t.attachReceipt} title={t.attachReceipt} onClick={() => setChooserOpen(true)}
+      <button type="button" aria-label={t.attachReceipt} title={t.attachReceipt} onClick={(e) => setChooserAnchor(e.currentTarget.getBoundingClientRect())}
         style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 46, height: 46, fontSize: 26, color: "var(--muted)", cursor: "pointer", flexShrink: 0, background: "none", border: "none", padding: 0 }}>
         📎
       </button>
@@ -504,7 +498,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                   const sel = tipo === tt;
                   const isMove = tt === "Move";
                   return (
-                    <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); if (sinPeriodos) setCategoria("Sueldo"); focusMonto(); }}
+                    <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); if (sinPeriodos) setCategoria("Sueldo"); }}
                       className="pill" style={sel && isMove ? {
                         border: "1px solid transparent",
                         backgroundImage: "linear-gradient(#0e1524, #0e1524), linear-gradient(90deg, var(--teal), var(--purple))",
@@ -556,7 +550,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             {!esUSD && (
               <div>
                 <div className="label">{t.amount}</div>
-                <input ref={montoRef} className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" />
+                <input className="input" style={{ fontFamily: "var(--font-mono)" }} type="number" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" />
               </div>
             )}
             <div>
@@ -684,9 +678,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 <div>
                   <div className="label">{modoCarga === "USD" ? fxLabel : "ARS"}</div>
                   {modoCarga === "USD" ? (
-                    <input ref={reserveRef} className="input" type="number" value={cantidadUSD} onChange={(e) => setCantidadUSD(e.target.value)} placeholder="0" />
+                    <input className="input" type="number" value={cantidadUSD} onChange={(e) => setCantidadUSD(e.target.value)} placeholder="0" />
                   ) : (
-                    <input ref={reserveRef} className="input" type="number" value={montoARSInput} onChange={(e) => setMontoARSInput(e.target.value)} placeholder="0" />
+                    <input className="input" type="number" value={montoARSInput} onChange={(e) => setMontoARSInput(e.target.value)} placeholder="0" />
                   )}
                 </div>
                 <div>
@@ -722,7 +716,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <div>
                   <div className="label">{esIngresoFX ? t.fxAmountReceived(fxLabel) : t.fxAmountSpent(fxLabel)}</div>
-                  <input ref={reserveRef} className="input" type="number" value={cantidadUSD} onChange={(e) => setCantidadUSD(e.target.value)} placeholder="0" style={{ fontFamily: "var(--font-mono)" }} />
+                  <input className="input" type="number" value={cantidadUSD} onChange={(e) => setCantidadUSD(e.target.value)} placeholder="0" style={{ fontFamily: "var(--font-mono)" }} />
                 </div>
                 <div>
                   <div className="label">{t.date}</div>
@@ -991,7 +985,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         </div>
       </ConfirmModal>
     )}
-    <ComprobanteChooser open={chooserOpen} onClose={() => setChooserOpen(false)} onSelect={onComprobanteSelect} />
+    <ComprobanteChooser anchor={chooserAnchor} onClose={() => setChooserAnchor(null)} onSelect={onComprobanteSelect} />
     {viewer && <MediaViewer src={viewer.src} isPdf={viewer.isPdf} onClose={() => setViewer(null)} />}
     </>
   );

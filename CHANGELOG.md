@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.63.1] — 2026-07-12
+
+### Changed
+- **Receipt chooser redesigned as an anchored floating card** (user feedback on v2.63.0): instead of a full `BottomSheet`, tapping 📎 now opens a compact popover anchored to the clip's `getBoundingClientRect()` (portal to body, transparent backdrop for outside-tap dismiss, positioned above the button or below when near the top). Icons only — no per-row labels — all in the same color (`--blue`), with the "Adjuntar comprobante" caption in its original capitalization (no more `toLowerCase()`). Back button still closes it first (`useModalBack`).
+- **Removed amount autofocus in the add-movement modal**: opening the modal (and switching movement type) no longer focuses the amount input, so the keyboard doesn't pop up on its own. Dropped `montoRef`/`reserveRef`/`focusMonto` and the 420ms focus timer.
+
+---
+
 ## [2.63.0] — 2026-07-12
 
 ### Added
