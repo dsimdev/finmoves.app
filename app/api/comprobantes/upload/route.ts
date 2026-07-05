@@ -3,7 +3,8 @@ import { randomUUID } from "crypto";
 import { adminAuth, adminDb, adminBucket } from "@/lib/firebase-admin";
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB (las imágenes ya vienen comprimidas del cliente)
-const ALLOWED = (ct: string) => ct.startsWith("image/") || ct === "application/pdf";
+// Whitelist explícita: image/* dejaba pasar SVG (contenido activo) — no hay caso de uso.
+const ALLOWED = (ct: string) => ["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(ct);
 
 // Subida de comprobantes mediada por servidor (F3): valida identidad, permiso, tipo
 // y tamaño, y sube con el Admin SDK (las reglas de Storage deniegan la escritura
@@ -17,11 +18,14 @@ export async function POST(req: NextRequest) {
   try { uid = (await adminAuth().verifyIdToken(token)).uid; }
   catch { return NextResponse.json({ error: "Invalid token" }, { status: 401 }); }
 
-  // Permiso: dueño o quien tenga config.meta.permisos.comprobantes = true.
+  // Permiso: dueño o quien tenga comprobantes=true en config/permisos — el doc
+  // read-only que escribe SOLO el Admin SDK. Antes se leía config/meta, que el
+  // usuario puede escribir (auto-escalación) y que el panel Admin NO escribe
+  // (los habilitados por panel quedaban bloqueados).
   const owner = process.env.OWNER_UID ?? process.env.NEXT_PUBLIC_OWNER_UID;
   if (uid !== owner) {
-    const meta = (await adminDb().doc(`users/${uid}/config/meta`).get()).data() as { meta?: { permisos?: { comprobantes?: boolean } } } | undefined;
-    if (meta?.meta?.permisos?.comprobantes !== true) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const permisos = (await adminDb().doc(`users/${uid}/config/permisos`).get()).data() as { comprobantes?: boolean } | undefined;
+    if (permisos?.comprobantes !== true) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const form = await req.formData();

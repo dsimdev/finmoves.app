@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.63.2] — 2026-07-12
+
+### Arreglos
+- La ganancia de la reserva en dólares/euros ahora se calcula solo sobre lo comprado en la app (el saldo inicial la inflaba).
+- Al vender o gastar euros, la cotización que se muestra es la que se usa (antes podía mostrar la del dólar).
+- Editar un movimiento ya no permite guardar sin monto (rompía los números del período).
+- Al editar, los medios de pago ahora son los tuyos (antes aparecía una lista fija).
+- Arreglos menores de colores en tema claro y mejoras internas.
+
+---
+
 ## [2.63.1] — 2026-07-12
 
 ### Mejoras

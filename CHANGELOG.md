@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.63.2] — 2026-07-12
+
+360-audit round 1: the six Level-1 findings (3 high-severity calculation bugs + security + SW + UX) fixed in one pass.
+
+### Fixed
+- **Editing a movement now validates the amount** (`MovementModal.handleEdit`): clearing the field persisted `parseFloat("") = NaN` to Firestore, breaking every KPI of the period ("Disponible $NaN"); negative amounts were also accepted. Now rejects with `errInvalidAmount`, same as the add flow.
+- **FX gain no longer counts the base balance as pure profit** (`investments/page.tsx`): `saldoUSD`/`saldoEUR` entered the valued amount but not the cost basis, inflating the gain (e.g. base 1,000 USD + one 100 USD purchase showed ~+1000%). Gain is now `boughtAmount × (rate − avgCost)` — only what was purchased through the app, both USD and EUR.
+- **VentaEUR/GastoEUR showed the USD rate while computing with the EUR rate** (`MovementModal.tsx` exchange-rate input): the default now keys off `fxLabel === "EUR"`, matching `cotizActual` exactly — displayed and applied rate can no longer diverge.
+- **Receipt-upload permission read the wrong doc** (`api/comprobantes/upload`): it checked user-writable `config/meta` instead of the Admin-SDK-only `config/permisos` — a self-escalation hole AND a functional bug (users granted via the admin panel couldn't upload). Also replaced the `image/*` filter with an explicit whitelist (jpeg/png/webp/pdf) — SVG (active content) no longer accepted.
+- **Service worker no longer caches error responses**: all three `cache.put` sites now check `res.ok` first — a 500/404 during a deploy could previously be cached and served as the offline fallback forever.
+- **Edit form payment methods were hardcoded** (`["Mercado Pago","Débito","Efectivo"]`): now uses the user's configured `mediosPago` like the add form, keeping the movement's current method visible even if deactivated.
+- **Move submit button enabled without an amount** (`canSubmit`): Move now requires `monto > 0` like every other type, instead of inviting a tap that errored.
+- **Move pill gradient hardcoded `#0e1524`** — broke in light theme; now `var(--surface)`.
+
+---
+
 ## [2.63.1] — 2026-07-12
 
 ### Changed

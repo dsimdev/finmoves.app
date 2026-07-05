@@ -129,8 +129,8 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
       caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req.url, copy));
+        // Solo cachear respuestas sanas: un 404/500 cacheado se serviría para siempre.
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req.url, copy)); }
         return res;
       }))
     );
@@ -156,8 +156,7 @@ self.addEventListener("fetch", (event) => {
           // Usar la respuesta del navigation preload si está disponible.
           const preload = await event.preloadResponse;
           const res = preload || await fetch(req);
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req.url, copy));
+          if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req.url, copy)); }
           return res;
         } catch (e) {
           return (await caches.match(req)) || (await caches.match("/")) || (await caches.match("/offline"));
@@ -170,7 +169,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)
-        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); return res; })
+        .then((res) => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); } return res; })
         .catch(() => cached);
       return cached || network;
     })

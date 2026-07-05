@@ -276,7 +276,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const canSubmit = (!!periodoActual || abrePeriodo) && (
     esSoloCantidadFX ? usdFinal > 0 :
     esCompraOVenta ? usdFinal > 0 && arsCompraUSD > 0 :
-    esMove ? true :
+    esMove ? parseFloat(monto || "0") > 0 :
     !!categoria && parseFloat(monto || "0") > 0
   );
 
@@ -395,7 +395,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     if (!user?.uid || !movimiento) return;
     setEditLoading(true); setEditError("");
     try {
-      const update: Partial<Movimiento> = { monto: parseFloat(eMonto), observaciones: eObs, descripcion: eDesc.trim() };
+      // Igual que el alta: sin esto, borrar el campo persiste NaN y rompe todos los KPIs.
+      const montoEdit = parseFloat(eMonto);
+      if (!montoEdit || montoEdit <= 0) throw new Error(t.errInvalidAmount);
+      const update: Partial<Movimiento> = { monto: montoEdit, observaciones: eObs, descripcion: eDesc.trim() };
       if (!isLocked) update.medioPago = eMedio;
       if (canComprobante) {
         if (comprobanteFile) {
@@ -501,7 +504,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                     <button key={tt} type="button" onClick={() => { setTipo(tt); resetAdd(); if (sinPeriodos) setCategoria("Sueldo"); }}
                       className="pill" style={sel && isMove ? {
                         border: "1px solid transparent",
-                        backgroundImage: "linear-gradient(#0e1524, #0e1524), linear-gradient(90deg, var(--teal), var(--purple))",
+                        backgroundImage: "linear-gradient(var(--surface), var(--surface)), linear-gradient(90deg, var(--teal), var(--purple))",
                         backgroundOrigin: "padding-box, border-box",
                         backgroundClip: "padding-box, border-box",
                         color: "var(--text)",
@@ -685,7 +688,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 </div>
                 <div>
                   <div className="label">{t.exchangeRate}</div>
-                  <input className="input" type="number" value={cotizManual || String((esCompraEUR || esIngresoEUR ? cotizacion?.oficial_euro : cotizacion?.oficial) ?? "")} onChange={(e) => setCotizManual(e.target.value)} placeholder="0" />
+                  <input className="input" type="number" value={cotizManual || String((fxLabel === "EUR" ? cotizacion?.oficial_euro : cotizacion?.oficial) ?? "")} onChange={(e) => setCotizManual(e.target.value)} placeholder="0" />
                 </div>
               </div>
 
@@ -871,7 +874,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             <div style={{ marginBottom: 14 }}>
               <div className="label">{t.paymentMethod}</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {["Mercado Pago", "Débito", "Efectivo"].map((m) => (
+                {/* Misma lista que el alta (medios del usuario); el medio actual del
+                    movimiento se muestra aunque esté desactivado, para no perderlo. */}
+                {[...new Set([...(config?.mediosPago.filter((m) => m.activo).map((m) => m.nombre) ?? []), ...(eMedio ? [eMedio] : [])])].map((m) => (
                   <button key={m} type="button" onClick={() => setEMedio(m)} className="pill" style={{
                     borderColor: eMedio === m ? "var(--accent)" : "var(--border)",
                     background: eMedio === m ? "var(--accent-dim)" : "transparent",

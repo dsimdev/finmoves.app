@@ -78,7 +78,9 @@ export default function DolaresPage() {
   const { total: desdeMovimientosUSD, costoPromedio: costoPromedioUSD } = calcularReserva(comprasUSD, "USD");
   const totalUSD = (config?.meta.saldoUSD ?? 0) + desdeMovimientosUSD;
   const reservaUSDenARS = cotizacionUSD ? totalUSD * cotizacionUSD : null;
-  const gananciaUSD = reservaUSDenARS && costoPromedioUSD > 0 ? reservaUSDenARS - desdeMovimientosUSD * costoPromedioUSD : null;
+  // Ganancia SOLO sobre lo comprado en la app: el saldo base no tiene costo conocido,
+  // meterlo en el valor inflaba la ganancia con plata que nunca se compró acá.
+  const gananciaUSD = cotizacionUSD && costoPromedioUSD > 0 ? desdeMovimientosUSD * (cotizacionUSD - costoPromedioUSD) : null;
   const gananciaPctUSD = gananciaUSD && desdeMovimientosUSD * costoPromedioUSD > 0 ? (gananciaUSD / (desdeMovimientosUSD * costoPromedioUSD)) * 100 : null;
 
   // ── EUR ──
@@ -89,7 +91,7 @@ export default function DolaresPage() {
   const { total: desdeMovimientosEUR, costoPromedio: costoPromedioEUR } = calcularReserva(comprasEUR, "EUR");
   const totalEUR = (config?.meta.saldoEUR ?? 0) + desdeMovimientosEUR;
   const reservaEURenARS = cotizacionEUR ? totalEUR * cotizacionEUR : null;
-  const gananciaEUR = reservaEURenARS && costoPromedioEUR > 0 ? reservaEURenARS - desdeMovimientosEUR * costoPromedioEUR : null;
+  const gananciaEUR = cotizacionEUR && costoPromedioEUR > 0 ? desdeMovimientosEUR * (cotizacionEUR - costoPromedioEUR) : null;
   const gananciaPctEUR = gananciaEUR && desdeMovimientosEUR * costoPromedioEUR > 0 ? (gananciaEUR / (desdeMovimientosEUR * costoPromedioEUR)) * 100 : null;
 
   // ── Visibilidad de secciones ──
