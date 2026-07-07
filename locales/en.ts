@@ -277,6 +277,8 @@ export const en: AppLocale = {
   lastSyncMsg: (at: string) => `Last sync: ${at}`,
   neverSynced: "Never synced",
   retrying: "Retrying...",
+  syncing: "Syncing…",
+  shareBackup: "Share backup",
   retry: "Retry",
   pressBackAgainToExit: "Press back again to exit",
   installTitle: "Install FinMoves",

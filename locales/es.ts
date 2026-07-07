@@ -275,6 +275,8 @@ export const es = {
   lastSyncMsg: (at: string) => `Última sync: ${at}`,
   neverSynced: "Nunca sincronizado",
   retrying: "Reintentando...",
+  syncing: "Sincronizando…",
+  shareBackup: "Compartir backup",
   retry: "Reintentar",
   pressBackAgainToExit: "Tocá atrás de nuevo para salir",
   installTitle: "Instalar FinMoves",

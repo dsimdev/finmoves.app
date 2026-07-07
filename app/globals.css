@@ -222,11 +222,14 @@ input[type="number"] { -moz-appearance: textfield; }
 .fade-up-1 { animation: fadeUp 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) 0.06s both; }
 .fade-up-2 { animation: fadeUp 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) 0.12s both; }
 
-/* Transición suave al cambiar de pestaña (swipe lateral entre menúes) */
+/* Transición suave al cambiar de pestaña (fallback: nav por botón o carga inicial) */
 @keyframes tabFade {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* Entrada direccional de la tab nueva tras un swipe (ViewPager-like). */
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes slideInLeft  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }

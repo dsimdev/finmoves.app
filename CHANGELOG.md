@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.66.0] — 2026-07-13
+
+360-audit Level 3 (projects #2, #3, #6): share-target prefill, ViewPager-style tabs, sync indicator + Web Share.
+
+### Added
+- **Share-target prefill (Mercado Pago & co.)**: sharing text to FinMoves now best-effort parses an amount and a description and pre-fills the add modal (`utils/share.ts` + `parseShareMovimiento`, 7 tests). Handles AR number formats (`$1.234,56`, `50.000`), a payee after "a/para", and ignores URLs. `MovementModal` gained an optional `prefill` prop applied on open. The format from MP isn't documented/stable, so it fills what it can and the user confirms.
+- **ViewPager-style tab swipe**: the current tab now **follows the finger** during a horizontal drag and, past ~28% width, slides out while the destination tab slides in **from the correct side** (`slideInLeft`/`slideInRight`). Rewrote `useSwipeNav` to drive an inline transform on the `SwipeNav` container with a horizontal-lock (non-passive `touchmove` + `preventDefault`) that still lets vertical scroll through; preserved all guards (hidden tabs, `[data-no-swipe]`, horizontal-scroll ancestors, iOS edge gesture, open modals). Note: because each tab is its own route (only the active one is mounted), the destination isn't visible until commit — a true dual-pane pager would need the single-route rewrite we deliberately avoided.
+- **Scroll position restored per tab**: `SwipeNav` saves `window.scrollY` per pathname on leave and restores it on return (covers both swipe and bottom-nav), like a native bottom-nav app.
+- **"Sincronizando…" indicator**: a lightweight, **read-cost-free** chip shown while there are movement writes in flight and the device is online (`lib/sync-status.ts` counts in-flight writes — with local persistence a write's promise doesn't resolve until the server acks; `useSyncStatus` + `SyncIndicator`). The offline case stays covered by `OfflineBanner` (the chip requires online, so they never overlap).
+- **Web Share for the backup**: Settings › Datos now offers "Compartir backup" (`navigator.share` with the JSON `File`) where supported, falling back to download.
+
+### Changed
+- `crearMovimiento` (client) replaced by `crearMovimientoConId`/`nuevoMovimientoId` in the modal path (from v2.65 optimistic add); movement writes are now wrapped in `trackWrite` for the sync indicator.
+
+---
+
 ## [2.65.0] — 2026-07-12
 
 360-audit Level 3 (first two projects): optimistic add + onboarding that opens the first period.

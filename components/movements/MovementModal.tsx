@@ -43,6 +43,8 @@ interface MovementModalProps {
   reserveMode?: boolean;
   /** Solo lectura (detalle desde el historial de Inversión): muestra el detalle sin editar. */
   readOnly?: boolean;
+  /** Pre-llenado del alta (p.ej. desde el share target). Solo aplica en mode "add". */
+  prefill?: { monto?: number; descripcion?: string } | null;
   onClose: () => void;
   /** Fallback para casos sin handler específico. */
   onChanged: () => void;
@@ -54,7 +56,7 @@ interface MovementModalProps {
 }
 
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
-export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
+export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, prefill, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
   const { user } = useAuth();
   const { plantillas, mutatePlantillas, refreshPlantillas, refreshRecurrentes } = useData();
   const { cotizacion } = useCotizacion();
@@ -178,6 +180,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       if (reserveMode) setTipo(esEURMode ? "CompraEUR" : "CompraUSD");
       else if (sinPeriodos) { setTipo("Ingreso"); setCategoria("Sueldo"); }
       else setTipo("Gasto");
+      // Prefill del share target (best-effort): se aplica sobre el form ya reseteado.
+      if (prefill && !reserveMode) {
+        if (prefill.monto) setMonto(String(prefill.monto));
+        if (prefill.descripcion) setDescripcion(prefill.descripcion);
+      }
     } else if (mode === "edit" && movimiento) {
       // El sueldo que abre período (ancla) no se puede borrar → forzar vista form.
       const esAncla = movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" &&
@@ -191,7 +198,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       resetComprobante();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, movimiento?.id, initialView]);
+  }, [open, mode, movimiento?.id, initialView, prefill?.monto, prefill?.descripcion]);
 
   const aplicarPlantilla = (p: Plantilla) => {
     setTipo("Gasto");

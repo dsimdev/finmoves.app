@@ -8,6 +8,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { trackWrite } from "@/lib/sync-status";
 import { Movimiento } from "@/types";
 
 // El sheet espejo se sincroniza incremental (solo agrega altas nuevas). Editar o
@@ -54,10 +55,10 @@ export async function crearMovimientoConId(
   id: string,
   data: Omit<Movimiento, "id">
 ): Promise<void> {
-  await setDoc(doc(db, `users/${userId}/movimientos/${id}`), {
+  await trackWrite(setDoc(doc(db, `users/${userId}/movimientos/${id}`), {
     ...data,
     timestampCarga: Timestamp.fromDate(data.timestampCarga),
-  });
+  }));
 }
 
 export async function actualizarMovimiento(
@@ -66,7 +67,7 @@ export async function actualizarMovimiento(
   data: Partial<Movimiento>
 ): Promise<void> {
   const ref = doc(db, `users/${userId}/movimientos/${movimientoId}`);
-  await updateDoc(ref, data);
+  await trackWrite(updateDoc(ref, data));
   await marcarFullSync(userId);
 }
 
@@ -75,6 +76,6 @@ export async function eliminarMovimiento(
   movimientoId: string
 ): Promise<void> {
   const ref = doc(db, `users/${userId}/movimientos/${movimientoId}`);
-  await deleteDoc(ref);
+  await trackWrite(deleteDoc(ref));
   await marcarFullSync(userId);
 }

@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.66.0] — 2026-07-13
+
+### Novedades
+- **Compartí un pago a FinMoves y se pre-carga solo**: al compartir desde Mercado Pago (u otra app), tomamos el monto y una descripción y abrimos la carga con eso listo. Vos revisás y guardás.
+- **Cambiar de pestaña ahora se siente nativo**: el contenido sigue tu dedo al deslizar y la nueva pestaña entra desde el costado. Además, al volver a una pestaña quedás donde estabas (no vuelve arriba de todo).
+- **Aviso "Sincronizando…"** mientras se guardan tus movimientos, para que sepas que está subiendo.
+- **Compartir backup**: en Configuración › Datos podés mandar tu copia de seguridad por WhatsApp, mail, etc.
+
+---
+
 ## [2.65.0] — 2026-07-12
 
 ### Novedades

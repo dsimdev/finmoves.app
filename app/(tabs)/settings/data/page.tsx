@@ -30,6 +30,8 @@ export default function DataSettings() {
   const [genBusy, setGenBusy] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => { setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function"); }, []);
   const generateInviteCode = async () => {
     const u = auth.currentUser;
     if (!u || genBusy) return;
@@ -83,16 +85,28 @@ export default function DataSettings() {
     } finally { setSyncing(false); setTimeout(() => setSyncMsg(null), 4000); }
   };
 
-  const exportJSON = () => {
+  const backupName = () => `finmoves_${new Date().toISOString().slice(0, 10)}.json`;
+  const buildBackup = () => {
     const data = {
       version: process.env.NEXT_PUBLIC_APP_VERSION, exportedAt: new Date().toISOString(),
       movimientos: [...movimientos].sort((a, b) => a.timestampCarga.getTime() - b.timestampCarga.getTime()).map(m => ({ ...m, timestampCarga: m.timestampCarga.toISOString() })),
       config: { categorias: config?.categorias ?? [], mediosPago: config?.mediosPago ?? [], origenesAhorro: config?.origenesAhorro ?? [] },
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `finmoves_${new Date().toISOString().slice(0, 10)}.json`; a.click();
+    return new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  };
+
+  const exportJSON = () => {
+    const url = URL.createObjectURL(buildBackup());
+    const a = document.createElement("a"); a.href = url; a.download = backupName(); a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const shareBackup = async () => {
+    const file = new File([buildBackup()], backupName(), { type: "application/json" });
+    try {
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: "FinMoves backup" });
+      else exportJSON(); // sin soporte de compartir archivos → descarga
+    } catch { /* usuario canceló o el share falló → sin acción */ }
   };
 
   const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: 16, marginBottom: 12 };
@@ -132,6 +146,15 @@ export default function DataSettings() {
           <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.exportJSON}</div>
         </div>
       </button>
+
+      {canShare && (
+        <button onClick={shareBackup} style={{ ...card, width: "100%", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left" }}>
+          <div style={{ ...ic, background: "var(--green-dim)", border: "1px solid var(--green)44", color: "var(--green)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+          </div>
+          <span style={{ fontSize: 14 }}>{t.shareBackup}</span>
+        </button>
+      )}
 
       {isOwner && (
         <button onClick={generateInviteCode} disabled={genBusy} style={{ ...card, width: "100%", display: "flex", alignItems: "center", gap: 12, cursor: genBusy ? "default" : "pointer", textAlign: "left" }}>

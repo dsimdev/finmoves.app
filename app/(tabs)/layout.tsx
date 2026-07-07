@@ -11,6 +11,7 @@ import { SideNav } from "@/components/nav/SideNav";
 import { SwipeNav } from "@/components/nav/SwipeNav";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { SyncIndicator } from "@/components/pwa/SyncIndicator";
 import { UpdateBanner } from "@/components/pwa/UpdateBanner";
 import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { LockScreen } from "@/components/pwa/LockScreen";
@@ -64,6 +65,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       <BottomNav />
       <BackExitToast />
       <OfflineBanner />
+      <SyncIndicator />
       <UpdateBanner />
       <InstallBanner />
     </DataProvider>
