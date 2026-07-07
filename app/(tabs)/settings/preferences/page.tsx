@@ -16,7 +16,7 @@ export default function PreferencesSettings() {
   const { user } = useAuth();
   const { config, refreshConfig: refresh } = useData();
   const { dark, toggle: toggleTheme } = useTheme();
-  const { showReportes, dashboardClasico, monedaPrincipal, lang, set: setPref, setMonedaPrincipal, setLang } = useAppPrefs();
+  const { showReportes, dashboardClasico, saveFeedback, monedaPrincipal, lang, set: setPref, setMonedaPrincipal, setLang } = useAppPrefs();
   const t = useT();
   const [, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pendingLang, setPendingLang] = useState<"es" | "en" | null>(null);
@@ -105,6 +105,20 @@ export default function PreferencesSettings() {
           </div>
         </div>
         <Toggle activo={dashboardClasico} onClick={() => setPref("dashboardClasico", !dashboardClasico)} />
+      </div>
+
+      {/* Feedback al guardar (vibración + realce del movimiento nuevo) */}
+      <div style={row}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ ...ic, background: "var(--surface-alt)", border: "1px solid var(--border)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500 }}>{t.saveFeedback}</div>
+            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.saveFeedbackSub}</div>
+          </div>
+        </div>
+        <Toggle activo={saveFeedback} onClick={() => setPref("saveFeedback", !saveFeedback)} />
       </div>
 
       {/* Reportes visibles */}

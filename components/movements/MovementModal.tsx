@@ -58,7 +58,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const { user } = useAuth();
   const { plantillas, mutatePlantillas, refreshPlantillas, refreshRecurrentes } = useData();
   const { cotizacion } = useCotizacion();
-  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
+  const { monedaInversiones, monedaPrincipal, saveFeedback } = useAppPrefs();
+  const buzz = (pattern: number | number[]) => { if (saveFeedback) navigator.vibrate?.(pattern); };
   const { m: money } = useMoney();
   const t = useT();
   // El detalle solo-lectura es un overlay aparte del Sheet → lockear su scroll.
@@ -382,11 +383,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         created.push({ ...aaData, id: aaId });
       }
       resetAdd();
-      navigator.vibrate?.(10); // "tick" de confirmación (feel nativo)
+      buzz(10); // "tick" de confirmación (feel nativo), si está activado
       if (onCreated) onCreated(created); else onChanged();
       onClose();
     } catch (err: unknown) {
-      navigator.vibrate?.([40, 60, 40]);
+      buzz([40, 60, 40]);
       setAddError(err instanceof Error ? err.message : t.unexpectedError);
     } finally {
       setAddLoading(false);
@@ -413,7 +414,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         }
       }
       await actualizarMovimiento(user.uid, movimiento.id, update);
-      navigator.vibrate?.(10);
+      buzz(10);
       // Optimista: parchear en memoria en vez de re-leer toda la colección.
       if (onUpdated) onUpdated(movimiento.id, update); else onChanged();
       onClose();
@@ -427,7 +428,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     try {
       await eliminarMovimiento(user.uid, movimiento.id);
       await deleteComprobante(movimiento.comprobantePath); // borrar el comprobante asociado
-      navigator.vibrate?.(10);
+      buzz(10);
       if (onDeleted) onDeleted(movimiento.id); else onChanged();
       onClose();
     } catch (err) { console.error(err); setEditError(err instanceof Error ? err.message : t.unexpectedError); }

@@ -284,6 +284,8 @@ export const es = {
   mainCurrency: "Moneda principal",
   showReportsLabel: "Mostrar sección de reportes",
   showInvestmentsLabel: "Mostrar sección de inversión",
+  saveFeedback: "Feedback al guardar",
+  saveFeedbackSub: "Vibración y realce al cargar un movimiento",
   dashboardClasico: "Dashboard clásico",
   dashboardClasicoSub: "Muestra sueldo, gastado, ahorros y retiros",
   investmentCurrency: "Moneda de inversión",

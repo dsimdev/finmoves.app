@@ -9,7 +9,7 @@ All notable changes to FinMoves are documented here.
 360-audit Level 2: the polish package (feedback, native feel, accessibility, correctness) in one batch.
 
 ### Added
-- **Save feedback ("tick")**: `navigator.vibrate(10)` on successful add/edit/delete of a movement (and an error buzz on failed add), plus a `flash-row` background pulse on the just-created row in the movements list (`handleCreated` tracks the new ids for ~1.4s). Closes the previously silent save loop.
+- **Save feedback ("tick"), toggleable**: `navigator.vibrate(10)` on successful add/edit/delete of a movement (and an error buzz on failed add), plus a `flash-row` background pulse on the just-created row in the movements list (`handleCreated` tracks the new ids for ~1.4s). Closes the previously silent save loop. Gated by a new device-level pref `saveFeedback` (default on) with a toggle in Settings › Preferences — controls both the vibration and the flash.
 - **Tests (39 → 46)**: `serieTendencia` (seed anchoring, no-seed window, withdrawal clamp to 0), `calcularReserva` (sale bigger than reserve → negative total, cost clamped to 0), and `inflacionPersonal` (nominal average, deflation applied, <2 periods → null).
 
 ### Changed

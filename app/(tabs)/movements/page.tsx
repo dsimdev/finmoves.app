@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useData } from "../data-context";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { useMoney } from "@/hooks/useHideValues";
+import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { Movimiento, TipoMovimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -31,6 +32,7 @@ function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; cat
 
 export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
+  const { saveFeedback } = useAppPrefs();
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento, recurrentes } = useData();
   const t = useT();
 
@@ -63,6 +65,7 @@ export default function MovimientosPage() {
   const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
   const handleCreated = (movs: Movimiento[]) => {
     prependMovimiento(movs);
+    if (!saveFeedback) return;
     setFlashIds(new Set(movs.map((m) => m.id)));
     setTimeout(() => setFlashIds(new Set()), 1400);
   };
