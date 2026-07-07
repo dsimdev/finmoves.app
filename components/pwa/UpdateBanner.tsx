@@ -15,7 +15,7 @@ export function UpdateBanner() {
 
   return (
     <div style={{
-      position: "fixed", left: 0, right: 0, bottom: "calc(var(--nav-h) + 12px)",
+      position: "fixed", left: 0, right: 0, bottom: "calc(var(--nav-h) + 12px + env(safe-area-inset-bottom, 0px))",
       zIndex: 9000, display: "flex", justifyContent: "center", padding: "0 12px", pointerEvents: "none",
     }}>
       <div style={{

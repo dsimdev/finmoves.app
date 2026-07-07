@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useData } from "./data-context";
 import { useMoney } from "@/hooks/useHideValues";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
-import { serieTendencia, parsePeriodoId } from "@/utils/reportes";
+import { serieTendencia, parsePeriodoId, inflacionPersonal as calcInflacionPersonal } from "@/utils/reportes";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { Movimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -66,21 +66,12 @@ export default function Dashboard() {
     const sd = Math.sqrt(gastos.reduce((s, m) => s + (m.monto - avg) ** 2, 0) / gastos.length);
     return Math.round((sd / avg) * 100);
   }, [gastos, promPorMov]);
-  const inflacionPersonal = useMemo(() => {
-    const chron = periodos
-      .slice(1) // excluir el período en curso (incompleto): distorsiona la inflación
-      .map((p) => ({ id: p.periodoId, gasto: p.movimientos.filter((m) => m.tipo === "Gasto").reduce((s, m) => s + m.monto, 0) }))
-      .filter((p) => p.gasto > 0)
-      .sort((a, b) => parsePeriodoId(a.id).getTime() - parsePeriodoId(b.id).getTime());
-    if (chron.length < 2) return null;
-    const prevP = chron[chron.length - 2];
-    const currP = chron[chron.length - 1];
-    // Solo ARS: gasto deflactado por IPC argentino (Argly) → variación real.
-    // No-ARS: variación nominal (el IPC argentino no aplica a su moneda).
-    const prev = esARS ? deflatar(prevP.gasto, prevP.id) : prevP.gasto;
-    const curr = esARS ? deflatar(currP.gasto, currP.id) : currP.gasto;
-    return prev > 0 ? ((curr - prev) / prev) * 100 : null;
-  }, [periodos, deflatar, esARS]);
+  // Solo ARS deflacta por IPC (variación real); otras monedas, nominal. Misma
+  // fórmula exacta que Reportes (helper compartido).
+  const inflacionPersonal = useMemo(
+    () => calcInflacionPersonal(periodos, esARS ? deflatar : undefined),
+    [periodos, deflatar, esARS],
+  );
   const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR").slice(0, 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   // Color anclado al gasto sobre el ingreso (misma escala que Reportes): verde mientras

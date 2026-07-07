@@ -69,4 +69,14 @@ describe("calcularReserva (costo promedio móvil)", () => {
     ];
     expect(calcularReserva(movs, "USD").total).toBe(60);
   });
+  it("venta mayor que la reserva: total negativo pero el costo no baja de 0", () => {
+    const movs = [
+      mov({ tipo: "CompraUSD", cantidadUSD: 50, monto: 50_000, timestampCarga: new Date("2026-01-01") }),
+      mov({ tipo: "VentaUSD", cantidadUSD: 80, timestampCarga: new Date("2026-01-02") }),
+    ];
+    const r = calcularReserva(movs, "USD");
+    expect(r.total).toBe(-30);          // 50 − 80
+    expect(r.costoTotalARS).toBe(0);    // el costo se clampa, no se vuelve negativo
+    expect(r.costoPromedio).toBe(0);    // total ≤ 0 → promedio 0
+  });
 });

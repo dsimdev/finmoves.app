@@ -220,6 +220,30 @@ export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: strin
   });
 }
 
+// Inflación personal: variación REAL del gasto puro entre períodos consecutivos,
+// promediada. `deflate` lleva el gasto nominal a términos reales (IPC) en ARS; para
+// otras monedas se pasa la identidad. `periodos` viene en orden descendente (más
+// nuevo primero); se excluye el primero (período en curso, incompleto). Única fuente
+// para Inicio y Reportes — antes cada pantalla usaba su propia fórmula (promedio
+// nominal vs. última variación deflactada) y podían dar signos opuestos.
+export function inflacionPersonal(
+  periodos: PeriodoResumen[],
+  deflate: (gasto: number, periodoId: string) => number = (g) => g,
+): number | null {
+  const chron = periodos
+    .slice(1)
+    .map((p) => ({ id: p.periodoId, gasto: deflate(p.movimientos.filter((m) => m.tipo === "Gasto").reduce((s, m) => s + m.monto, 0), p.periodoId) }))
+    .filter((p) => p.gasto > 0)
+    .sort((a, b) => parsePeriodoId(a.id).getTime() - parsePeriodoId(b.id).getTime());
+  if (chron.length < 2) return null;
+  let sum = 0, n = 0;
+  for (let i = 1; i < chron.length; i++) {
+    const prev = chron[i - 1].gasto;
+    if (prev > 0) { sum += (chron[i].gasto - prev) / prev; n++; }
+  }
+  return n > 0 ? (sum / n) * 100 : null;
+}
+
 // ── Estadísticas avanzadas ────────────────────────────────────────────────────
 
 export function diasSinGastos(

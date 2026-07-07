@@ -2,9 +2,18 @@
 
 import { useEffect, useState } from "react";
 
-// Aviso de actualización. Aparece cuando el server reporta una versión distinta de
-// la que corre el cliente (cualquier actualización). Es persistente: "Actualizar"
-// activa el SW nuevo (SKIP_WAITING) y recarga.
+// Aviso de actualización. Aparece cuando el server reporta una versión MINOR/MAJOR
+// distinta (cambios relevantes) o cuando el server la marca como obligatoria
+// (REQUIRE_UPDATE). Los patches solos NO muestran banner: se actualizan en el próximo
+// arranque en frío. Es persistente: "Actualizar" activa el SW nuevo y recarga.
+function esMinorOMajor(current: string, server: string): boolean {
+  const [cMaj, cMin] = current.split(".").map(Number);
+  const [sMaj, sMin] = server.split(".").map(Number);
+  if (Number.isNaN(sMaj) || Number.isNaN(cMaj)) return true; // ante la duda, avisar
+  if (sMaj !== cMaj) return true;
+  return sMin !== cMin;
+}
+
 export function useUpdateBanner() {
   const [show, setShow] = useState(false);
   const current = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
@@ -19,7 +28,8 @@ export function useUpdateBanner() {
         const data = await res.json();
         const serverV = data?.version as string | undefined;
         if (cancelled || !serverV || serverV === current) return;
-        setShow(true); // cualquier versión nueva → mostrar banner
+        // Patch solo → esperar al próximo arranque; minor/major u obligatoria → avisar.
+        if (data?.required === true || esMinorOMajor(current, serverV)) setShow(true);
       } catch { /* sin red: no mostramos nada */ }
     };
 

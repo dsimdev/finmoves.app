@@ -20,6 +20,7 @@ import {
   serieTendencia, parsePeriodoId, diasSinGastos,
   historialSueldo, proyectarAhorros,
   progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
+  inflacionPersonal as calcInflacionPersonal,
 } from "@/utils/reportes";
 import { reservaFX as calcularReservaFX } from "@/utils/reserva";
 import { PageTitle } from "@/components/ui/PageTitle";
@@ -307,20 +308,12 @@ export default function ReportesPage() {
   const peorPeriodo = validPeriodos.length > 0 ? validPeriodos.reduce((b, s) => s.gastado / s.total > b.gastado / b.total ? s : b) : null;
   // Inflación personal: variación promedio del gasto puro (sin compras de divisa,
   // que dispararían el número) entre períodos consecutivos.
-  const inflacionPersonal = useMemo(() => {
-    const chron = periodos
-      .slice(1) // excluir el período en curso (incompleto): distorsiona la inflación
-      .map((p) => ({ id: p.periodoId, gasto: p.movimientos.filter((m) => m.tipo === "Gasto").reduce((s, m) => s + m.monto, 0) }))
-      .filter((p) => p.gasto > 0)
-      .sort((a, b) => parsePeriodoId(a.id).getTime() - parsePeriodoId(b.id).getTime());
-    if (chron.length < 2) return null;
-    let sum = 0, n = 0;
-    for (let i = 1; i < chron.length; i++) {
-      const prev = chron[i - 1].gasto;
-      if (prev > 0) { sum += (chron[i].gasto - prev) / prev; n++; }
-    }
-    return n > 0 ? (sum / n) * 100 : null;
-  }, [periodos]);
+  // Misma fórmula exacta que Inicio (helper compartido): promedio de variaciones
+  // reales del gasto puro, deflactadas por IPC en ARS.
+  const inflacionPersonal = useMemo(
+    () => calcInflacionPersonal(periodos, monedaPrincipal === "ARS" ? deflatar : undefined),
+    [periodos, deflatar, monedaPrincipal],
+  );
   // Gasto más frecuente: categoría con más movimientos de tipo Gasto + su total acumulado.
   // ¿Tu sueldo le gana a la inflación? Suba salarial acumulada (primer nivel → último,
   // sin contar vacaciones) vs inflación país acumulada en toda tu historia.

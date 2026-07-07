@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap');
 @import 'tailwindcss';
 
 *, *::before, *::after {
@@ -31,10 +30,11 @@
   --teal: #26c6da;
   --teal-dim: #26c6da20;
   --text: #e8eeff;
-  --muted: #5a7090;
+  --muted: #6e84a6;
   --faint: #0d1828;
-  --font: 'Inter', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  /* next/font (self-host, sin FOUT ni request externa). Fallback a system fonts. */
+  --font: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
   --nav-bg: rgba(7,9,15,0.92);
   --nav-h: 68px;
   --radius: 18px;
@@ -153,6 +153,19 @@ input[type="number"] { -moz-appearance: textfield; }
   cursor: pointer;
   transition: all 0.15s;
 }
+.pill:active { transform: scale(0.96); }
+
+/* Feedback táctil en filas tocables (el fondo suele venir inline, así que usamos
+   opacity: no compite con estilos inline y no toca el layout). */
+.row-tap { transition: opacity 0.12s; }
+.row-tap:active { opacity: 0.55; }
+
+/* Realce del movimiento recién cargado (el "tick" visual de que se guardó). */
+@keyframes flashRow {
+  0% { background: var(--accent-dim); }
+  100% { background: transparent; }
+}
+.flash-row { animation: flashRow 1.3s ease-out both; }
 
 /* ── Badge ── */
 .badge {

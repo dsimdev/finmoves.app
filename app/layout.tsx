@@ -1,9 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, IBM_Plex_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
 import { themeInitScript } from "@/lib/theme-init";
 import "./globals.css";
+
+// Self-host de las fuentes (sin request externa ni FOUT). Exponen las CSS vars que
+// consume globals.css (--font / --font-mono).
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-inter", display: "swap" });
+const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-plex-mono", display: "swap" });
 
 // Color de barra del navegador / status bar. El default es el tema oscuro;
 // el script de init lo ajusta al claro cuando corresponde (tema en localStorage).
@@ -74,7 +80,7 @@ export default async function RootLayout({
 }>) {
   const nonce = (await headers()).get("x-nonce") ?? "";
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" className={`${inter.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <head>
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

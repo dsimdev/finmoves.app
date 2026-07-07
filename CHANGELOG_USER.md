@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.64.0] — 2026-07-12
+
+### Mejoras
+- Ahora cuando guardás, editás o borrás un movimiento sentís una vibración y el nuevo aparece resaltado por un instante.
+- La "inflación personal" muestra el mismo número en Inicio y en Reportes (antes podían diferir).
+- Textos más legibles (mejor contraste) y la app carga con su tipografía de una, sin parpadeo.
+- Íconos más prolijos al adjuntar comprobante y botones más fáciles de tocar.
+- Detalles finos en tema claro y en los avisos de instalar/actualizar.
+
+---
+
 ## [2.63.2] — 2026-07-12
 
 ### Arreglos

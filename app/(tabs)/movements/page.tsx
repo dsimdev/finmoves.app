@@ -59,6 +59,14 @@ export default function MovimientosPage() {
   const openAdd = () => setModalState({ mode: "add" });
   const openEdit = (m: Movimiento) => setModalState({ mode: "edit", mov: m });
 
+  // Realce breve del movimiento recién cargado (feedback visual del guardado).
+  const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
+  const handleCreated = (movs: Movimiento[]) => {
+    prependMovimiento(movs);
+    setFlashIds(new Set(movs.map((m) => m.id)));
+    setTimeout(() => setFlashIds(new Set()), 1400);
+  };
+
   // Deep-link a la carga: atajo del launcher (?nuevo=1), acción "Cargar" del push, o
   // share target (Android manda title/text/url). Abre el modal de alta y limpia la URL.
   useEffect(() => {
@@ -144,7 +152,8 @@ export default function MovimientosPage() {
                 {activePeriodoId === periodos[0]?.periodoId ? t.available : t.remaining}: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
                 <button onClick={toggle} aria-label={t.hideValues} style={{
                   background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
-                  width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
+                  borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                  padding: 8, margin: -8, // hit-area ~32px sin correr el layout
                 }}>
                   <EyeIcon off={oculto} />
                 </button>
@@ -229,6 +238,7 @@ export default function MovimientosPage() {
                       const negativo = !esResto && (isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro"));
                       return (
                         <button key={m.id}
+                          className={flashIds.has(m.id) ? "row-tap flash-row" : "row-tap"}
                           {...bindLongPress(() => setModalState({ mode: "edit", mov: m, view: "delete" }), () => openEdit(m))}
                           aria-label={t.edit} style={{
                           width: "100%", textAlign: "left", background: "none", cursor: "pointer",
@@ -304,7 +314,7 @@ export default function MovimientosPage() {
       initialView={modalState?.view}
       onClose={() => setModalState(null)}
       onChanged={refresh}
-      onCreated={prependMovimiento}
+      onCreated={handleCreated}
       onUpdated={updateMovimiento}
       onDeleted={removeMovimiento}
     />

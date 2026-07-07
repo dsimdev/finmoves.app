@@ -4,6 +4,28 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.64.0] — 2026-07-12
+
+360-audit Level 2: the polish package (feedback, native feel, accessibility, correctness) in one batch.
+
+### Added
+- **Save feedback ("tick")**: `navigator.vibrate(10)` on successful add/edit/delete of a movement (and an error buzz on failed add), plus a `flash-row` background pulse on the just-created row in the movements list (`handleCreated` tracks the new ids for ~1.4s). Closes the previously silent save loop.
+- **Tests (39 → 46)**: `serieTendencia` (seed anchoring, no-seed window, withdrawal clamp to 0), `calcularReserva` (sale bigger than reserve → negative total, cost clamped to 0), and `inflacionPersonal` (nominal average, deflation applied, <2 periods → null).
+
+### Changed
+- **Personal inflation unified across Dashboard and Reports**: extracted `inflacionPersonal(periodos, deflate?)` into `utils/reportes.ts` and both screens now call it — same formula (average of period-over-period *real* variations of pure spending, deflated by IPC in ARS). Previously the dashboard showed the last deflated variation while Reports showed the average nominal one, which could even disagree in sign.
+- **Fonts self-hosted via `next/font`** (Inter + IBM Plex Mono) instead of a render-blocking Google Fonts `@import` — no external request, no FOUT on cold start. Exposed as `--font-inter`/`--font-plex-mono` CSS vars.
+- **`--muted` darkened for contrast** (`#5a7090` → `#6e84a6`): the 9–11px metadata everywhere now clears WCAG AA on `--bg`.
+- **Update banner logic implemented as documented**: the previously-dead `esMinorOMajor` gate now works — the banner shows only on MINOR/MAJOR version differences, or when the server marks the release required (`REQUIRE_UPDATE`, which was being ignored). Patch-only diffs update silently on next cold start.
+- **Receipt attach/PDF icons are now SVG** (paperclip + document) instead of 📎/📄 emoji, matching the app's stroke-icon language.
+- Payment-method chips in the edit form already fixed in 2.63.2; this release adds `:active`/`:pill` press feedback (`.pill:active` scale, `.row-tap` opacity) and 32px hit-areas for the receipt × badge and the hide-values eye.
+- **Install banner localized** (`installTitle`/`installBody`/`installAction`, es/en) and its broken `var(--accent)44` border replaced with `color-mix`.
+
+### Fixed
+- **Safe-area bottom on `UpdateBanner` and `InstallBanner`**: `env(safe-area-inset-bottom)` added so they don't sit under the gesture nav bar (matching `BackExitToast`).
+
+---
+
 ## [2.63.2] — 2026-07-12
 
 360-audit round 1: the six Level-1 findings (3 high-severity calculation bugs + security + SW + UX) fixed in one pass.
