@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.65.0] — 2026-07-12
+
+### Novedades
+- **Cargar un movimiento ahora es instantáneo**: se guarda y cierra al toque, sin esperar. El comprobante se sube solo por detrás; si falla, te avisa con un botón "Reintentar" y no perdés la foto.
+- **Al crear tu cuenta podés cargar tu sueldo** en el último paso: así el inicio ya te muestra datos desde el día 1.
+
+### Arreglos
+- Ahora sí vibra al guardar, editar y borrar (antes no llegaba a dispararse).
+
+---
+
 ## [2.64.0] — 2026-07-12
 
 ### Mejoras

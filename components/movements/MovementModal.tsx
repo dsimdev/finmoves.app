@@ -6,7 +6,7 @@ import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
-import { crearMovimiento, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
+import { crearMovimientoConId, nuevoMovimientoId, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
 import { upsertRecurrente } from "@/services/firebase/recurrentes";
 import { crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
 import { useData } from "@/app/(tabs)/data-context";
@@ -17,7 +17,7 @@ import { MediaViewer } from "@/components/ui/MediaViewer";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { BottomSheet as Sheet } from "@/components/ui/BottomSheet";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { agruparPorPeriodo, formatARS, fechaCorta } from "@/utils/periodo";
+import { agruparPorPeriodo, formatARS, fechaCorta, fechaAPeriodoId } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { reservaFX } from "@/utils/reserva";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
@@ -120,7 +120,33 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     clear: clearComprobante,
   } = useComprobante();
   const [chooserAnchor, setChooserAnchor] = useState<DOMRect | null>(null);
-  const [addLoading, setAddLoading] = useState(false);
+  // Errores de la persistencia en background (el alta es optimista: el sheet ya se cerró).
+  // `bgError` = aviso transitorio (auto-cierra). `pendingReceipt` = comprobante que no
+  // se pudo subir; toast FIJO con "Reintentar" que retiene el File (no se pierde la foto).
+  const [bgError, setBgError] = useState<string | null>(null);
+  const [pendingReceipt, setPendingReceipt] = useState<{ movId: string; file: File } | null>(null);
+  useEffect(() => {
+    if (!bgError || pendingReceipt) return;
+    const id = setTimeout(() => setBgError(null), 4500);
+    return () => clearTimeout(id);
+  }, [bgError, pendingReceipt]);
+
+  // Sube el comprobante y parchea la URL en el movimiento ya visible. Reintenta una vez;
+  // si falla, deja el File pendiente para que el usuario reintente sin volver a elegirlo.
+  const subirComprobante = async (movId: string, file: File) => {
+    if (!user?.uid) return;
+    setPendingReceipt(null);
+    for (let intento = 1; intento <= 2; intento++) {
+      try {
+        const up = await uploadComprobante(user.uid, file);
+        await actualizarMovimiento(user.uid, movId, { comprobanteUrl: up.url, comprobantePath: up.path });
+        onUpdated?.(movId, { comprobanteUrl: up.url, comprobantePath: up.path });
+        return;
+      } catch (err) {
+        if (intento === 2) { console.error("[comprobante] no se pudo subir", err); setPendingReceipt({ movId, file }); }
+      }
+    }
+  };
   const [addError, setAddError] = useState("");
   // Sin autofocus en el monto: abrir el modal no debe levantar el teclado solo.
 
@@ -263,11 +289,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     return m;
   }, [movimientos]);
 
-  const fechaAPeriodoId = (f: string) => {
-    const [y, m, d] = f.split("-");
-    return d && m && y ? `${parseInt(d)}/${parseInt(m)}/${y}` : f;
-  };
-
   // El dueño cobra sueldo mensual: su sueldo SIEMPRE abre período (sin elección),
   // igual que el primer sueldo. El resto de los usuarios eligen con el toggle.
   const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
@@ -314,84 +335,89 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError("");
-    setAddLoading(true);
-    try {
-      if (!user?.uid) throw new Error(t.errNotAuth);
-      if (!esMove && !esUSD && !categoria) throw new Error(t.errSelectCat);
-      const montoFinal = esCompraOVenta ? arsCompraUSD : esSoloCantidadFX ? 0 : parseFloat(monto);
-      if (!esSoloCantidadFX && (!montoFinal || montoFinal <= 0)) throw new Error(t.errInvalidAmount);
-      if (esUSD && (!usdFinal || usdFinal <= 0)) throw new Error(t.errInvalidFX(fxLabel));
-      const periodoIdFinal = abrePeriodo ? fechaAPeriodoId(fecha) : (periodoActual?.periodoId ?? null);
-      if (!periodoIdFinal) throw new Error(t.errNoActivePeriod);
-      let comprobante: { url: string; path: string } | null = null;
-      if (canComprobante && comprobanteFile) comprobante = await uploadComprobante(user.uid, comprobanteFile);
-      const now = new Date();
-      const created: Movimiento[] = [];
+    // Validación síncrona: si algo falla, el sheet queda abierto con el error.
+    if (!user?.uid) { setAddError(t.errNotAuth); return; }
+    if (!esMove && !esUSD && !categoria) { setAddError(t.errSelectCat); return; }
+    const montoFinal = esCompraOVenta ? arsCompraUSD : esSoloCantidadFX ? 0 : parseFloat(monto);
+    if (!esSoloCantidadFX && (!montoFinal || montoFinal <= 0)) { setAddError(t.errInvalidAmount); return; }
+    if (esUSD && (!usdFinal || usdFinal <= 0)) { setAddError(t.errInvalidFX(fxLabel)); return; }
+    const periodoIdFinal = abrePeriodo ? fechaAPeriodoId(fecha) : (periodoActual?.periodoId ?? null);
+    if (!periodoIdFinal) { setAddError(t.errNoActivePeriod); return; }
 
-      const mainData: Omit<Movimiento, "id"> = {
-        timestampCarga: now, fecha, tipo,
-        categoria: esMove ? "Move" : esUSD ? tipo : categoria,
-        descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esVentaFX ? `Venta ${fxLabel}` : esIngresoFX ? `Ingreso ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
-        monto: montoFinal,
-        medioPago: esMove || esCompraFX || esVentaFX ? "Mercado Pago" : esGastoFX || esIngresoFX ? "—" : medioPago,
-        observaciones, periodoId: periodoIdFinal, userId: user.uid,
-        ...(esMove ? { direccionMove: moveDir } : {}),
-        ...(comprobante ? { comprobanteUrl: comprobante.url, comprobantePath: comprobante.path } : {}),
-        ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
-        ...(esCompraOVenta ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
-        ...(esSoloCantidadFX ? { cantidadUSD: usdFinal } : {}),
+    const uid = user.uid;
+    const now = new Date();
+    const file = canComprobante ? comprobanteFile : null; // capturar antes del reset
+
+    // Construir los movimientos con id pre-generado (se muestran YA; el comprobante se
+    // parchea después de subirlo). main + eventual RESTO de cierre + eventual auto-ahorro.
+    const created: Movimiento[] = [];
+    const mainId = nuevoMovimientoId(uid);
+    const mainData: Omit<Movimiento, "id"> = {
+      timestampCarga: now, fecha, tipo,
+      categoria: esMove ? "Move" : esUSD ? tipo : categoria,
+      descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esVentaFX ? `Venta ${fxLabel}` : esIngresoFX ? `Ingreso ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
+      monto: montoFinal,
+      medioPago: esMove || esCompraFX || esVentaFX ? "Mercado Pago" : esGastoFX || esIngresoFX ? "—" : medioPago,
+      observaciones, periodoId: periodoIdFinal, userId: uid,
+      ...(esMove ? { direccionMove: moveDir } : {}),
+      ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
+      ...(esCompraOVenta ? { cantidadUSD: usdFinal, cotizacion: cotizActual } : {}),
+      ...(esSoloCantidadFX ? { cantidadUSD: usdFinal } : {}),
+    };
+    created.push({ ...mainData, id: mainId });
+
+    if (abrePeriodo && !sinPeriodos && periodoActual && periodoActual.disponible > 0) {
+      // Cierre del período anterior: el disponible sobrante se arrastra como RESTO
+      // (Move a ahorros; agruparPorPeriodo no lo resta del disponible del nuevo período).
+      const restoData: Omit<Movimiento, "id"> = {
+        timestampCarga: now, fecha, tipo: "Move", direccionMove: "aAhorro",
+        categoria: "RESTO", descripcion: "Resto período anterior",
+        monto: periodoActual.disponible,
+        medioPago: "—", observaciones: `de ${periodoActual.periodoId}`,
+        periodoId: periodoIdFinal, userId: uid,
       };
-      const mainId = await crearMovimiento(user.uid, mainData);
-      created.push({ ...mainData, id: mainId });
-
-      // Recurrente: guardar/actualizar el template para que la cron recuerde cargarlo
-      // en los próximos períodos. Solo Gasto/Ingreso comunes (no Move/FX/ahorros).
-      if (repetir && (tipo === "Gasto" || tipo === "Ingreso") && categoria !== "Ahorros" && descripcion.trim()) {
-        await upsertRecurrente(user.uid, { descripcion: descripcion.trim(), categoria, tipo, monto: montoFinal }).catch(() => {});
-        refreshRecurrentes();
-      }
-
-      // Cierre del período anterior: el disponible sobrante se traslada como RESTO al nuevo período.
-      if (abrePeriodo && !sinPeriodos && periodoActual && periodoActual.disponible > 0) {
-        // El sobrante ya era plata ingresada → no es un ingreso nuevo: se arrastra como
-        // Move a ahorros (categoría RESTO). agruparPorPeriodo lo cuenta como arrastre a
-        // ahorros (no resta del disponible del nuevo período).
-        const restoData: Omit<Movimiento, "id"> = {
-          timestampCarga: now, fecha, tipo: "Move", direccionMove: "aAhorro",
-          categoria: "RESTO", descripcion: "Resto período anterior",
-          monto: periodoActual.disponible,
-          medioPago: "—", observaciones: `de ${periodoActual.periodoId}`,
-          periodoId: periodoIdFinal, userId: user.uid,
-        };
-        const restoId = await crearMovimiento(user.uid, restoData);
-        created.push({ ...restoData, id: restoId });
-      }
-      const autoAhorroMedios = config?.meta.autoAhorro?.mediosPago;
-      const autoAhorroOmitir = config?.meta.autoAhorro?.omitirDescripciones ?? [];
-      if (tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
-          (!autoAhorroMedios?.length || autoAhorroMedios.includes(medioPago)) &&
-          !autoAhorroOmitir.some((d) => d.toLowerCase() === descripcion.trim().toLowerCase())) {
-        const aaData: Omit<Movimiento, "id"> = {
-          timestampCarga: now, fecha, tipo: "Move",
-          categoria: "Move", descripcion: "Auto-ahorro",
-          monto: config.meta.autoAhorro.monto,
-          medioPago: "Mercado Pago", observaciones: `por ${categoria}`,
-          periodoId: periodoIdFinal, userId: user.uid,
-          direccionMove: "aAhorro",
-        };
-        const aaId = await crearMovimiento(user.uid, aaData);
-        created.push({ ...aaData, id: aaId });
-      }
-      resetAdd();
-      buzz(10); // "tick" de confirmación (feel nativo), si está activado
-      if (onCreated) onCreated(created); else onChanged();
-      onClose();
-    } catch (err: unknown) {
-      buzz([40, 60, 40]);
-      setAddError(err instanceof Error ? err.message : t.unexpectedError);
-    } finally {
-      setAddLoading(false);
+      created.push({ ...restoData, id: nuevoMovimientoId(uid) });
     }
+    const autoAhorroMedios = config?.meta.autoAhorro?.mediosPago;
+    const autoAhorroOmitir = config?.meta.autoAhorro?.omitirDescripciones ?? [];
+    if (tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
+        (!autoAhorroMedios?.length || autoAhorroMedios.includes(medioPago)) &&
+        !autoAhorroOmitir.some((d) => d.toLowerCase() === descripcion.trim().toLowerCase())) {
+      const aaData: Omit<Movimiento, "id"> = {
+        timestampCarga: now, fecha, tipo: "Move",
+        categoria: "Move", descripcion: "Auto-ahorro",
+        monto: config.meta.autoAhorro.monto,
+        medioPago: "Mercado Pago", observaciones: `por ${categoria}`,
+        periodoId: periodoIdFinal, userId: uid, direccionMove: "aAhorro",
+      };
+      created.push({ ...aaData, id: nuevoMovimientoId(uid) });
+    }
+
+    // Snapshot del recurrente antes del reset (usa estado del form).
+    const recurrenteData = (repetir && (tipo === "Gasto" || tipo === "Ingreso") && categoria !== "Ahorros" && descripcion.trim())
+      ? { descripcion: descripcion.trim(), categoria, tipo, monto: montoFinal }
+      : null;
+
+    // ── Optimista: mostrar y cerrar YA; persistir en background. ──
+    buzz(10);
+    resetAdd();
+    if (onCreated) onCreated(created); else onChanged();
+    onClose();
+
+    (async () => {
+      try {
+        await Promise.all(created.map(({ id, ...data }) => crearMovimientoConId(uid, id, data)));
+      } catch (err) {
+        console.error("[handleAdd] fallo al persistir, revierto", err);
+        buzz([40, 60, 40]);
+        created.forEach((m) => onDeleted?.(m.id)); // rollback del alta optimista
+        setBgError(t.errSaveFailed);
+        return;
+      }
+      if (recurrenteData) upsertRecurrente(uid, recurrenteData).then(refreshRecurrentes).catch(() => {});
+      // Comprobante: subir en background y parchear la URL (recuperable si falla).
+      if (file) await subirComprobante(mainId, file);
+    })();
   };
 
   const handleEdit = async () => {
@@ -401,6 +427,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       // Igual que el alta: sin esto, borrar el campo persiste NaN y rompe todos los KPIs.
       const montoEdit = parseFloat(eMonto);
       if (!montoEdit || montoEdit <= 0) throw new Error(t.errInvalidAmount);
+      buzz(10); // sincrónico: la Vibration API solo dispara con user-activation viva (no post-await)
       const update: Partial<Movimiento> = { monto: montoEdit, observaciones: eObs, descripcion: eDesc.trim() };
       if (!isLocked) update.medioPago = eMedio;
       if (canComprobante) {
@@ -414,7 +441,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         }
       }
       await actualizarMovimiento(user.uid, movimiento.id, update);
-      buzz(10);
       // Optimista: parchear en memoria en vez de re-leer toda la colección.
       if (onUpdated) onUpdated(movimiento.id, update); else onChanged();
       onClose();
@@ -424,11 +450,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   const handleDelete = async () => {
     if (!user?.uid || !movimiento) return;
+    buzz(10); // sincrónico (antes del await) para que la vibración dispare
     setEditLoading(true); setEditError("");
     try {
       await eliminarMovimiento(user.uid, movimiento.id);
       await deleteComprobante(movimiento.comprobantePath); // borrar el comprobante asociado
-      buzz(10);
       if (onDeleted) onDeleted(movimiento.id); else onChanged();
       onClose();
     } catch (err) { console.error(err); setEditError(err instanceof Error ? err.message : t.unexpectedError); }
@@ -806,7 +832,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               </div>
             )}
             <div style={{ display: "flex", justifyContent: "center" }}>
-              <button type="submit" disabled={!canSubmit || addLoading} aria-label={t.save} style={{
+              <button type="submit" disabled={!canSubmit} aria-label={t.save} style={{
                 width: 52, height: 52, borderRadius: "50%",
                 background: canSubmit ? "var(--green)" : "transparent",
                 border: `2px solid ${canSubmit ? "var(--green)" : "var(--border)"}`,
@@ -816,9 +842,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 transition: "background 0.2s, border-color 0.2s, color 0.2s",
                 boxShadow: canSubmit ? "0 4px 20px var(--green)55" : "none",
               }}>
-                {addLoading
-                  ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
-                  : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
             </div>
           </div>
@@ -1000,6 +1024,24 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     )}
     <ComprobanteChooser anchor={chooserAnchor} onClose={() => setChooserAnchor(null)} onSelect={onComprobanteSelect} />
     {viewer && <MediaViewer src={viewer.src} isPdf={viewer.isPdf} onClose={() => setViewer(null)} />}
+    {(pendingReceipt || bgError) && (
+      <div role="alert" style={{
+        position: "fixed", left: "50%", transform: "translateX(-50%)",
+        bottom: "calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px)", zIndex: 300,
+        display: "flex", alignItems: "center", gap: 12,
+        background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)",
+        borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 600,
+        boxShadow: "0 6px 24px rgba(0,0,0,0.3)", maxWidth: "92%",
+      }}>
+        <span>{pendingReceipt ? t.errReceiptFailed : bgError}</span>
+        {pendingReceipt && (
+          <button onClick={() => subirComprobante(pendingReceipt.movId, pendingReceipt.file)}
+            style={{ background: "var(--red)", color: "#fff", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>{t.retry}</button>
+        )}
+        <button onClick={() => { setPendingReceipt(null); setBgError(null); }} aria-label={t.cancel}
+          style={{ background: "none", border: "none", color: "var(--red)", fontSize: 18, lineHeight: 1, cursor: "pointer", padding: 0, flexShrink: 0 }}>×</button>
+      </div>
+    )}
     </>
   );
 }

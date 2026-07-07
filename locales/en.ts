@@ -143,6 +143,8 @@ export const en: AppLocale = {
   errInvalidAmount: "Invalid amount",
   errInvalidFX: (fx: string) => `Invalid ${fx} amount`,
   errNoActivePeriod: "No active period",
+  errSaveFailed: "Couldn't save the movement",
+  errReceiptFailed: "The movement was saved, but the receipt couldn't be uploaded",
 
   // Investments
   portfolio: "Portfolio",
@@ -371,6 +373,9 @@ export const en: AppLocale = {
   obInvestCurrencyLabel: "Investment currency",
   obInvestYes: "Yes",
   obInvestNo: "No",
+  obSalaryTitle: "What's your salary?",
+  obSalarySub: "This opens your first period so the dashboard shows data right away.",
+  obSalaryOptional: "Optional — you can add it later.",
   obSecurityTitle: "Security & alerts",
   obSecuritySub: "Optional, you can change them later.",
   obEnableBiometric: "Fingerprint unlock",

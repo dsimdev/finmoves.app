@@ -40,6 +40,26 @@ export async function crearMovimiento(
   return docRef.id;
 }
 
+// Id de movimiento generado en el cliente (para alta optimista: mostramos el item con
+// su id definitivo antes de que el server confirme el write).
+export function nuevoMovimientoId(userId: string): string {
+  return doc(collection(db, `users/${userId}/movimientos`)).id;
+}
+
+// Alta con id pre-generado (par de nuevoMovimientoId). No espera el ack del server más
+// allá de lo que hace Firestore; con persistencia local el write queda encolado y
+// sincroniza solo. La promesa rechaza si el write es inválido (rollback en el caller).
+export async function crearMovimientoConId(
+  userId: string,
+  id: string,
+  data: Omit<Movimiento, "id">
+): Promise<void> {
+  await setDoc(doc(db, `users/${userId}/movimientos/${id}`), {
+    ...data,
+    timestampCarga: Timestamp.fromDate(data.timestampCarga),
+  });
+}
+
 export async function actualizarMovimiento(
   userId: string,
   movimientoId: string,

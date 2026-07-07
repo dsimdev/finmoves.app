@@ -22,6 +22,12 @@ export interface GastoPorCategoria {
   pct: number;
 }
 
+// "YYYY-MM-DD" → "D/M/YYYY" (id de período; día/mes sin ceros a la izquierda).
+export function fechaAPeriodoId(f: string): string {
+  const [y, m, d] = f.split("-");
+  return d && m && y ? `${parseInt(d)}/${parseInt(m)}/${y}` : f;
+}
+
 export function agruparPorPeriodo(movimientos: Movimiento[]): PeriodoResumen[] {
   const mapa = new Map<string, Movimiento[]>();
 

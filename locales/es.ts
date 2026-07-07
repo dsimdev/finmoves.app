@@ -141,6 +141,8 @@ export const es = {
   errInvalidAmount: "Monto inválido",
   errInvalidFX: (fx: string) => `Cantidad ${fx} inválida`,
   errNoActivePeriod: "No hay período activo",
+  errSaveFailed: "No se pudo guardar el movimiento",
+  errReceiptFailed: "El movimiento se guardó, pero el comprobante no se pudo subir",
 
   // Investments
   portfolio: "Inversión",
@@ -369,6 +371,9 @@ export const es = {
   obInvestCurrencyLabel: "Moneda de inversión",
   obInvestYes: "Sí",
   obInvestNo: "No",
+  obSalaryTitle: "¿Cuánto cobrás de sueldo?",
+  obSalarySub: "Con esto arrancamos tu primer período y el resumen ya te muestra datos.",
+  obSalaryOptional: "Opcional — podés cargarlo más tarde.",
   obSecurityTitle: "Seguridad y alertas",
   obSecuritySub: "Opcionales, podés cambiarlos después.",
   obEnableBiometric: "Desbloqueo con huella",

@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.65.0] — 2026-07-12
+
+360-audit Level 3 (first two projects): optimistic add + onboarding that opens the first period.
+
+### Added
+- **Optimistic movement creation**: `handleAdd` now pre-generates ids (`nuevoMovimientoId`), prepends the item and closes the sheet **synchronously**, then persists in the background (`crearMovimientoConId` in parallel via `Promise.all`) — no more 1–3s spinner waiting on the server ack. On a write failure the optimistic items are rolled back (`onDeleted`) and a transient error toast is shown. The receipt is **uploaded in the background and patched in** (`onUpdated`) once done; if the upload fails it retries once and then surfaces a **sticky toast with "Reintentar"** that keeps the `File` in memory, so the photo is never silently lost.
+- **Onboarding step 4 — optional salary**: a skippable "what's your salary?" step; if filled, `finish()` creates the `Ingreso/Sueldo` for today via `crearMovimiento`, opening the first period so the dashboard has data on day 1 instead of the empty state. Failure to create it doesn't block finishing onboarding.
+
+### Fixed
+- **Haptics never fired (all three events)**: `navigator.vibrate` requires a live user activation, but the `buzz()` calls sat *after* an `await` (server round-trip), so the activation was already gone. The vibration is now issued **synchronously** within the gesture — before any await — on add (already synchronous after the optimistic rewrite), edit (right after amount validation) and delete (at handler entry).
+
+### Changed
+- **`fechaAPeriodoId` extracted to `utils/periodo.ts`** (was a local helper inside `MovementModal`) so onboarding and the modal share one implementation.
+- Removed the add-button loading spinner state (`addLoading`) — the optimistic flow closes instantly, so there's nothing to wait on.
+
+---
+
 ## [2.64.0] — 2026-07-12
 
 360-audit Level 2: the polish package (feedback, native feel, accessibility, correctness) in one batch.

@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
+import { crearMovimiento } from "@/services/firebase/movimientos";
+import { fechaAPeriodoId } from "@/utils/periodo";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfig, saveConfigCache } from "@/hooks/useConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -15,7 +17,7 @@ import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/pus
 
 type Moneda = "ARS" | "USD" | "EUR";
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 export default function OnboardingPage() {
   const t = useT();
@@ -27,6 +29,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [nombre, setNombre] = useState("");
   const [moneda, setMoneda] = useState<Moneda>("ARS");
+  const [sueldo, setSueldo] = useState("");
   const [invierte, setInvierte] = useState(false);
   const [monedaInversion, setMonedaInversion] = useState<"USD" | "EUR">("USD");
   const [saving, setSaving] = useState(false);
@@ -82,6 +85,20 @@ export default function OnboardingPage() {
       // Refrescar el cache de config: si no, el guard del home lee el cache viejo
       // (onboardingCompleto:false) y rebota de vuelta al onboarding → loop.
       saveConfigCache(user.uid, nuevaConfig);
+      // Sueldo opcional: si lo cargó, abre el primer período para que el día 1 ya tenga
+      // datos (el dashboard, si no, cae en "sin datos"). No bloquea el onboarding si falla.
+      const montoSueldo = parseFloat(sueldo);
+      if (montoSueldo > 0) {
+        const now = new Date();
+        const hoy = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        try {
+          await crearMovimiento(user.uid, {
+            timestampCarga: now, fecha: hoy, tipo: "Ingreso", categoria: "Sueldo",
+            descripcion: "Sueldo", monto: montoSueldo, medioPago: "—", observaciones: "",
+            periodoId: fechaAPeriodoId(hoy), userId: user.uid,
+          });
+        } catch { /* el usuario puede cargarlo después */ }
+      }
       router.replace("/");
     } catch {
       setSaving(false);
@@ -209,6 +226,21 @@ export default function OnboardingPage() {
           )}
 
           {step === 2 && (
+            <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5, marginBottom: 6 }}>{t.obSalaryTitle}</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{t.obSalarySub}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px" }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{moneda === "EUR" ? "€" : moneda === "USD" ? "US$" : "$"}</span>
+                <input type="number" inputMode="decimal" value={sueldo} onChange={(e) => setSueldo(e.target.value)} placeholder="0" enterKeyHint="done"
+                  style={{ flex: 1, background: "none", border: "none", color: "var(--text)", outline: "none", fontSize: 19, fontWeight: 700, fontFamily: "var(--font-mono)", minWidth: 0 }} />
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.obSalaryOptional}</div>
+            </div>
+          )}
+
+          {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5, marginBottom: 6 }}>{t.obSecurityTitle}</div>
