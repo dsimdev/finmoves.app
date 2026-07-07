@@ -406,7 +406,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       : null;
 
     // ── Optimista: mostrar y cerrar YA; persistir en background. ──
-    buzz(10);
+    buzz(30);
     resetAdd();
     if (onCreated) onCreated(created); else onChanged();
     onClose();
@@ -434,7 +434,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       // Igual que el alta: sin esto, borrar el campo persiste NaN y rompe todos los KPIs.
       const montoEdit = parseFloat(eMonto);
       if (!montoEdit || montoEdit <= 0) throw new Error(t.errInvalidAmount);
-      buzz(10); // sincrónico: la Vibration API solo dispara con user-activation viva (no post-await)
+      buzz(30); // sincrónico: la Vibration API solo dispara con user-activation viva (no post-await)
       const update: Partial<Movimiento> = { monto: montoEdit, observaciones: eObs, descripcion: eDesc.trim() };
       if (!isLocked) update.medioPago = eMedio;
       if (canComprobante) {
@@ -457,7 +457,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   const handleDelete = async () => {
     if (!user?.uid || !movimiento) return;
-    buzz(10); // sincrónico (antes del await) para que la vibración dispare
+    buzz(30); // sincrónico (antes del await) para que la vibración dispare
     setEditLoading(true); setEditError("");
     try {
       await eliminarMovimiento(user.uid, movimiento.id);

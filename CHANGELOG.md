@@ -4,6 +4,18 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.66.1] — 2026-07-13
+
+### Fixed
+- **Floating "+" button and modals mis-positioned after the v2.66.0 tab swipe**: the ViewPager finger-follow put a persistent `transform` + `will-change: transform` on the `SwipeNav` container, which turns it into the containing block for its `position: fixed` descendants — so the FAB anchored to the page bottom/top instead of the viewport, and non-portaled fixed overlays shifted. Reverted the finger-follow (and the directional slide-in): tab swipe again commits on `touchend` with no container transform. **Kept** the two safe wins: **scroll position restored per tab** and the neutral `tabFade`.
+- **Battery drain from a permanent Firestore realtime listener**: `useSyncError` used `onSnapshot` on `config/syncMeta`, and since `BottomNav`/`SideNav` are mounted the whole session it kept a live Firestore connection open continuously (the rest of the app uses one-shot `getDoc`). Replaced with a `getDoc` on mount + on `visibilitychange`, and gated to the owner (the only user with Sheets sync) — non-owners no longer read it at all. Removing the only live listener lets Firestore go idle when not actively reading. (`will-change` removal above also drops a permanently-promoted full-page GPU layer.)
+- **Save vibration too short to feel**: bumped the success tick from 10ms to 30ms (10ms is below the perceptible threshold on many phones). Timing was already fixed in v2.65.0 (fires synchronously within the gesture); depends on the device having system haptics enabled.
+
+### Notes
+- **Share target not appearing in Android's share sheet** is an OS-registration issue, not code: `share_target` only registers for an **installed** PWA, and an install that predates it keeps the old manifest. Reinstalling the PWA registers it. The manifest is correct and the in-app parsing (v2.66.0) is ready.
+
+---
+
 ## [2.66.0] — 2026-07-13
 
 360-audit Level 3 (projects #2, #3, #6): share-target prefill, ViewPager-style tabs, sync indicator + Web Share.

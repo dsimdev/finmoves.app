@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.66.1] — 2026-07-13
+
+### Arreglos
+- El botón "+" vuelve a flotar donde debe (se había desubicado con el cambio de pestañas anterior).
+- **Menos consumo de batería**: sacamos una conexión que quedaba abierta todo el tiempo.
+- La vibración al guardar ahora se siente (era muy cortita).
+
+---
+
 ## [2.66.0] — 2026-07-13
 
 ### Novedades

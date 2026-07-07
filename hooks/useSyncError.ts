@@ -1,38 +1,43 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
 import { useAuth } from "./useAuth";
 
 // True cuando el último intento de sync a Sheets falló (error más reciente que el
-// último éxito). Se mantiene en tiempo real vía onSnapshot sobre syncMeta.
+// último éxito). Solo aplica al owner (es el único con sync a Sheets).
+//
+// Antes usaba onSnapshot (listener en tiempo real), y como BottomNav/SideNav están
+// montados toda la sesión, mantenía una conexión Firestore viva permanentemente →
+// batería. El estado de sync sólo cambia unas pocas veces por día (cron), así que
+// alcanza con leerlo al montar y al volver a la app (visibilitychange). Sin listener,
+// Firestore puede quedar idle cuando no se está leyendo.
 export function useSyncError(): boolean {
   const { user } = useAuth();
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    if (!user?.uid) {
-      setHasError(false);
-      return;
-    }
+    const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
+    if (!user?.uid || !isOwner) { setHasError(false); return; }
+
     const ref = doc(db, `users/${user.uid}/config/syncMeta`);
-    const unsub = onSnapshot(
-      ref,
-      (snap) => {
-        const d = snap.data();
-        if (!d?.lastError) {
-          setHasError(false);
-          return;
-        }
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const d = (await getDoc(ref)).data();
+        if (cancelled) return;
+        if (!d?.lastError) { setHasError(false); return; }
         const errAt = d.lastError?.at?.toDate?.()?.getTime?.() ?? 0;
         const syncAt = d.lastSync?.toDate?.()?.getTime?.() ?? 0;
         setHasError(errAt > syncAt);
-      },
-      () => setHasError(false)
-    );
-    return () => unsub();
-  }, [user?.uid]);
+      } catch { if (!cancelled) setHasError(false); }
+    };
+    check();
+    const onVis = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { cancelled = true; document.removeEventListener("visibilitychange", onVis); };
+  }, [user?.uid, user?.email]);
 
   return hasError;
 }
