@@ -10,6 +10,7 @@ import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { dbErrorMessage } from "@/lib/firebase-error";
 import type { ConfigUsuario } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { Loader } from "@/components/ui/Loader";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Toggle, SubHeader } from "../_shared";
 
@@ -263,7 +264,7 @@ export default function MovementsSettings() {
           <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
             <button onClick={confirmAutoAhorro} disabled={!canConfirmAutoAhorro || guardando} style={{ width: 56, height: 56, borderRadius: "50%", background: canConfirmAutoAhorro ? "var(--green)" : "transparent", border: `2px solid ${canConfirmAutoAhorro ? "var(--green)" : "var(--border)"}`, color: canConfirmAutoAhorro ? "var(--bg)" : "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: canConfirmAutoAhorro ? "pointer" : "default", opacity: guardando ? 0.5 : 1 }}>
               {guardando
-                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
+                ? <Loader size={20} />
                 : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </button>
           </div>

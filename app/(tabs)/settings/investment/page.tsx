@@ -9,6 +9,7 @@ import { useT } from "@/hooks/useTranslation";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { reservaFX } from "@/utils/reserva";
+import { Loader } from "@/components/ui/Loader";
 import { db } from "@/services/firebase/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { dbErrorMessage } from "@/lib/firebase-error";
@@ -181,7 +182,7 @@ export default function InvestmentSettings() {
           <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", height: 52 }}>
             <button onClick={guardarMetaAhorro} disabled={!isDirtyAhorros || guardando} style={{ width: 56, height: 56, borderRadius: "50%", background: isDirtyAhorros ? "var(--green)" : "transparent", border: `2px solid ${isDirtyAhorros ? "var(--green)" : "var(--border)"}`, color: isDirtyAhorros ? "var(--bg)" : "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: isDirtyAhorros ? "pointer" : "default", opacity: guardando ? 0.5 : 1 }}>
               {guardando
-                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
+                ? <Loader size={20} />
                 : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </button>
             {(metaFecha || metaMonto) && (

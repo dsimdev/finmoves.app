@@ -14,6 +14,7 @@ import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { useComprobante } from "./useComprobante";
 import { ComprobanteChooser } from "./ComprobanteChooser";
 import { MediaViewer } from "@/components/ui/MediaViewer";
+import { Loader } from "@/components/ui/Loader";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { BottomSheet as Sheet } from "@/components/ui/BottomSheet";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -954,7 +955,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               opacity: editLoading ? 0.5 : 1,
             }}>
               {editLoading
-                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="spin"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="28 56" /></svg>
+                ? <Loader size={20} />
                 : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             </button>
           </div>

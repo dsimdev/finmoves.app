@@ -4,6 +4,15 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.67.0] — 2026-07-13
+
+### Changed
+- **New app loader** (`components/ui/Loader.tsx` + `.fm-ring` in globals): two counter-rotating brand-gradient "blades" (blue / cyan / green via `border-*-color`) used everywhere a spinner appears — `LoadingSpinner` (blades around the FM logo), `SyncIndicator`, and the save buttons (movement / investment / auto-savings). Replaces the previous single spinning ring + the small `stroke-dasharray` SVGs.
+- **Reduce-motion safe**: the loader rides the `.spin` class, which is the one animation explicitly exempted from `prefers-reduced-motion` in globals — so it keeps spinning on devices with reduced-motion / battery-saver enabled (where the earlier custom keyframes and SMIL froze). Added `.fm-ring` to that exemption too.
+- `LoadingSpinner` gained an opaque `var(--bg)` backdrop (no white flash before the theme paints) and renders the logo from the 1024px master (`/logo-fm-1024.png`) for crisp downscaling.
+
+---
+
 ## [2.66.1] — 2026-07-13
 
 ### Fixed

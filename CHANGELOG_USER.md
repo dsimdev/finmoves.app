@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.67.0] — 2026-07-13
+
+### Novedades
+- **Nueva animación de carga**: el logo FM con dos aros girando en los colores de la app.
+
+---
+
 ## [2.66.1] — 2026-07-13
 
 ### Arreglos

@@ -239,6 +239,29 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .spin { animation: spin 0.8s linear infinite; }
 
+/* Loader de la app: dos arcos (bordes) contrarrotando en colores de marca (blades). */
+.fm-ring {
+  box-sizing: border-box;
+  display: inline-block;
+  position: relative;
+  border-radius: 50%;
+  border: var(--fm-ring-w, 4px) solid transparent;
+  border-top-color: var(--blue);
+  border-right-color: var(--teal);
+  animation: spin 1s linear infinite;
+}
+.fm-ring::after {
+  content: '';
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: var(--fm-ring-w, 4px) solid transparent;
+  border-bottom-color: var(--teal);
+  border-left-color: var(--green);
+  animation: spin 0.5s linear infinite reverse;
+}
+
 /* Respeta la preferencia del sistema de movimiento reducido (accesibilidad).
    El spinner conserva su giro para no parecer "colgado". */
 @media (prefers-reduced-motion: reduce) {
@@ -249,6 +272,8 @@ input[type="number"] { -moz-appearance: textfield; }
     scroll-behavior: auto !important;
   }
   .spin { animation: spin 0.8s linear infinite !important; }
+  .fm-ring { animation: spin 1s linear infinite !important; }
+  .fm-ring::after { animation: spin 0.5s linear infinite reverse !important; }
 }
 
 /* ── Reportes: segmented control ── */

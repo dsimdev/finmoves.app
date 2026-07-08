@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePendingWrites } from "@/hooks/useSyncStatus";
 import { useT } from "@/hooks/useTranslation";
+import { Loader } from "@/components/ui/Loader";
 
 // Chip "sincronizando…" cuando hay writes de movimientos en vuelo y hay conexión.
 // El caso sin conexión ya lo cubre OfflineBanner (mismo lugar), así que no se encima:
@@ -34,9 +35,7 @@ export function SyncIndicator() {
         padding: "8px 16px", fontSize: 12, fontWeight: 600,
         boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
       }}>
-        <svg className="spin" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path d="M21 12a9 9 0 1 1-6.2-8.5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-        </svg>
+        <Loader size={15} />
         {t.syncing}
       </div>
     </div>

@@ -1,28 +1,18 @@
-import Image from "next/image";
+import { Loader } from "./Loader";
 
+// Pantalla de carga: el spinner de la app envolviendo el logo FM (apilados en la misma
+// celda de grid, centrados). <img> plano para que renderice al instante. Fondo propio
+// para no ver el blanco del navegador antes de que pinte el tema.
 export function LoadingSpinner() {
   return (
-    <div style={{
-      position: "fixed", inset: 0,
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }}>
-      <div style={{ position: "relative", width: 180, height: 180 }}>
-        <div style={{
-          position: "absolute", inset: 0, display: "flex",
-          alignItems: "center", justifyContent: "center",
-        }}>
-          <Image src="/favicon.png" alt="" width={110} height={110} priority style={{ opacity: 0.9 }} />
-        </div>
-        <div className="spin" style={{
-          position: "absolute", inset: 0,
-          borderRadius: "50%",
-          border: "4px solid transparent",
-          borderTopColor: "#536dfe",
-          borderRightColor: "#3d8ef8",
-          borderBottomColor: "#00c896",
-          borderLeftColor: "#00e676",
-        }} />
-      </div>
+    <div style={{ position: "fixed", inset: 0, background: "var(--bg)", display: "grid", placeItems: "center" }}>
+      <span style={{ display: "grid" }}>
+        <span style={{ gridArea: "1 / 1", placeSelf: "center" }}>
+          <Loader size={140} />
+        </span>
+        <img src="/logo-fm-1024.png" alt="" width={66} height={66}
+          style={{ gridArea: "1 / 1", placeSelf: "center", opacity: 0.95 }} />
+      </span>
     </div>
   );
 }
