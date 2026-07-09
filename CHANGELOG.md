@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.68.0] — 2026-07-13
+
+### Removed
+- **All haptics (`navigator.vibrate`)**: never fired reliably on the target device, so removed from save/edit/delete (`buzz` + the `saveFeedback` pref and its Preferences toggle), tab tap (`BottomNav`), long-press (`useLongPress`) and the double-back toast (`BackExitToast`). The **new-item highlight** (`flash-row`) stays and is now always on (no longer gated by the removed pref).
+- **Share-target ("share to FinMoves")**: it never registered in Android's share sheet and won't be used. Removed the `share_target` from the manifest, the best-effort parser (`utils/share.ts` + tests) and the `prefill` prop/plumbing in `MovementModal` / movements page. The `?nuevo=1` launcher shortcut and push "Cargar" deep-link are unchanged. (The "Compartir backup" Web Share in Settings › Datos — a separate, working feature — stays.)
+
+---
+
 ## [2.67.1] — 2026-07-13
 
 ### Fixed

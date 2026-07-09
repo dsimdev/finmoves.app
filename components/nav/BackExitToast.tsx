@@ -12,7 +12,6 @@ export function BackExitToast() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hint = useCallback(() => {
-    navigator.vibrate?.(12);
     setShow(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setShow(false), 2000);

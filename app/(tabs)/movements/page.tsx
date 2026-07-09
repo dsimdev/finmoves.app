@@ -3,9 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useData } from "../data-context";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
-import { parseShareMovimiento, type SharePrefill } from "@/utils/share";
 import { useMoney } from "@/hooks/useHideValues";
-import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { Movimiento, TipoMovimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -33,7 +31,6 @@ function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; cat
 
 export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
-  const { saveFeedback } = useAppPrefs();
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento, recurrentes } = useData();
   const t = useT();
 
@@ -58,28 +55,24 @@ export default function MovimientosPage() {
   const periodoActual = periodos.find((p) => p.periodoId === activePeriodoId);
 
   // Modal de alta/edición (componente compartido). `view` permite abrir directo en borrado.
-  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete"; prefill?: SharePrefill } | null>(null);
-  const openAdd = (prefill?: SharePrefill) => setModalState({ mode: "add", prefill });
+  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
+  const openAdd = () => setModalState({ mode: "add" });
   const openEdit = (m: Movimiento) => setModalState({ mode: "edit", mov: m });
 
   // Realce breve del movimiento recién cargado (feedback visual del guardado).
   const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
   const handleCreated = (movs: Movimiento[]) => {
     prependMovimiento(movs);
-    if (!saveFeedback) return;
     setFlashIds(new Set(movs.map((m) => m.id)));
     setTimeout(() => setFlashIds(new Set()), 1400);
   };
 
-  // Deep-link a la carga: atajo del launcher (?nuevo=1), acción "Cargar" del push, o
-  // share target (Android manda title/text/url). Abre el modal de alta y limpia la URL.
+  // Deep-link a la carga: atajo del launcher (?nuevo=1) o acción "Cargar" del push.
+  // Abre el modal de alta y limpia la URL.
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
-    const esShare = sp.has("text") || sp.has("title") || sp.has("url");
-    if (sp.get("nuevo") === "1" || esShare) {
-      // Share target: pre-llenar monto/descripción desde lo compartido (best-effort).
-      const prefill = esShare ? parseShareMovimiento(sp.get("title") ?? "", `${sp.get("text") ?? ""} ${sp.get("url") ?? ""}`) : undefined;
-      openAdd(prefill && (prefill.monto || prefill.descripcion) ? prefill : undefined);
+    if (sp.get("nuevo") === "1") {
+      openAdd();
       window.history.replaceState(window.history.state, "", "/movements");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -318,7 +311,6 @@ export default function MovimientosPage() {
       config={config}
       activePeriodoId={activePeriodoId}
       initialView={modalState?.view}
-      prefill={modalState?.prefill}
       onClose={() => setModalState(null)}
       onChanged={refresh}
       onCreated={handleCreated}

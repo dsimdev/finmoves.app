@@ -107,7 +107,6 @@ export function BottomNav() {
         return (
           <Link key={tab.href} href={tab.href} replace
             onClick={(e) => {
-              navigator.vibrate?.(8);
               // Re-tocar la tab activa scrollea al tope (gesto nativo), sin re-navegar.
               if (active) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }
             }}

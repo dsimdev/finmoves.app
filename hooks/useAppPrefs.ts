@@ -7,11 +7,10 @@ interface AppPrefs {
   showReportes: boolean;
   showAhorros: boolean;
   dashboardClasico: boolean;
-  saveFeedback: boolean;
   monedaInversiones: "USD" | "EUR";
   monedaPrincipal: "ARS" | "USD" | "EUR";
   lang: "es" | "en";
-  set: (key: "showReportes" | "showAhorros" | "dashboardClasico" | "saveFeedback", value: boolean) => void;
+  set: (key: "showReportes" | "showAhorros" | "dashboardClasico", value: boolean) => void;
   setMoneda: (m: "USD" | "EUR") => void;
   setMonedaPrincipal: (m: "ARS" | "USD" | "EUR") => void;
   setLang: (l: "es" | "en") => void;
@@ -25,7 +24,6 @@ const DEFAULTS = {
   showReportes: false,
   showAhorros: false,
   dashboardClasico: false,
-  saveFeedback: true,
   monedaInversiones: "USD" as const,
   monedaPrincipal: "ARS" as const,
 };

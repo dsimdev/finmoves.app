@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.68.0] — 2026-07-13
+
+### Cambios
+- Sacamos la vibración (no funcionaba bien). Se mantiene el resaltado del movimiento recién cargado.
+- Sacamos "compartir a FinMoves" desde otras apps (nunca llegó a funcionar).
+
+---
+
 ## [2.67.1] — 2026-07-13
 
 ### Arreglos

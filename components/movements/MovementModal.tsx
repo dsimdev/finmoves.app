@@ -44,8 +44,6 @@ interface MovementModalProps {
   reserveMode?: boolean;
   /** Solo lectura (detalle desde el historial de Inversión): muestra el detalle sin editar. */
   readOnly?: boolean;
-  /** Pre-llenado del alta (p.ej. desde el share target). Solo aplica en mode "add". */
-  prefill?: { monto?: number; descripcion?: string } | null;
   onClose: () => void;
   /** Fallback para casos sin handler específico. */
   onChanged: () => void;
@@ -57,12 +55,11 @@ interface MovementModalProps {
 }
 
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
-export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, prefill, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
+export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
   const { user } = useAuth();
   const { plantillas, mutatePlantillas, refreshPlantillas, refreshRecurrentes } = useData();
   const { cotizacion } = useCotizacion();
-  const { monedaInversiones, monedaPrincipal, saveFeedback } = useAppPrefs();
-  const buzz = (pattern: number | number[]) => { if (saveFeedback) navigator.vibrate?.(pattern); };
+  const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const { m: money } = useMoney();
   const t = useT();
   // El detalle solo-lectura es un overlay aparte del Sheet → lockear su scroll.
@@ -186,11 +183,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       if (reserveMode) setTipo(esEURMode ? "CompraEUR" : "CompraUSD");
       else if (sinPeriodos) { setTipo("Ingreso"); setCategoria("Sueldo"); }
       else setTipo("Gasto");
-      // Prefill del share target (best-effort): se aplica sobre el form ya reseteado.
-      if (prefill && !reserveMode) {
-        if (prefill.monto) setMonto(String(prefill.monto));
-        if (prefill.descripcion) setDescripcion(prefill.descripcion);
-      }
     } else if (mode === "edit" && movimiento) {
       // El sueldo que abre período (ancla) no se puede borrar → forzar vista form.
       const esAncla = movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" &&
@@ -204,7 +196,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       resetComprobante();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, movimiento?.id, initialView, prefill?.monto, prefill?.descripcion]);
+  }, [open, mode, movimiento?.id, initialView]);
 
   const aplicarPlantilla = (p: Plantilla) => {
     setTipo("Gasto");
@@ -412,7 +404,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       : null;
 
     // ── Optimista: mostrar y cerrar YA; persistir en background. ──
-    buzz(30);
     resetAdd();
     if (onCreated) onCreated(created); else onChanged();
     onClose();
@@ -422,7 +413,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         await Promise.all(created.map(({ id, ...data }) => crearMovimientoConId(uid, id, data)));
       } catch (err) {
         console.error("[handleAdd] fallo al persistir, revierto", err);
-        buzz([40, 60, 40]);
         created.forEach((m) => onDeleted?.(m.id)); // rollback del alta optimista
         setBgError(t.errSaveFailed);
         return;
@@ -440,7 +430,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       // Igual que el alta: sin esto, borrar el campo persiste NaN y rompe todos los KPIs.
       const montoEdit = parseFloat(eMonto);
       if (!montoEdit || montoEdit <= 0) throw new Error(t.errInvalidAmount);
-      buzz(30); // sincrónico: la Vibration API solo dispara con user-activation viva (no post-await)
       const update: Partial<Movimiento> = { monto: montoEdit, observaciones: eObs, descripcion: eDesc.trim() };
       if (!isLocked) update.medioPago = eMedio;
       if (canComprobante) {
@@ -463,7 +452,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   const handleDelete = async () => {
     if (!user?.uid || !movimiento) return;
-    buzz(30); // sincrónico (antes del await) para que la vibración dispare
     setEditLoading(true); setEditError("");
     try {
       await eliminarMovimiento(user.uid, movimiento.id);

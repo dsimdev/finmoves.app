@@ -290,8 +290,6 @@ export const en: AppLocale = {
   mainCurrency: "Main currency",
   showReportsLabel: "Show reports section",
   showInvestmentsLabel: "Show investments section",
-  saveFeedback: "Save feedback",
-  saveFeedbackSub: "Vibration and highlight when you add a movement",
   dashboardClasico: "Classic dashboard",
   dashboardClasicoSub: "Shows salary, spent, savings and withdrawals",
   investmentCurrency: "Investment currency",
