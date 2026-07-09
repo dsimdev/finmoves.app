@@ -4,6 +4,18 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.69.0] — 2026-07-13
+
+### Added
+- **Advanced filter & compare (`/analisis`)**: a new on-demand screen (search icon in the Movements header, not a bottom-nav tab) to slice movements and see their evolution across periods. 100% client-side over the in-memory movements.
+  - **Text search** over observación + descripción + categoría, matched **by words** (all words must be present, any order) so "aubasa dock sud" finds a note with those words apart.
+  - **Category filter as a search combobox** (type to filter; picked ones show as removable tags) instead of a long always-visible list.
+  - Results **grouped by description** (e.g. "Peajes" as one row: total + count); tapping a group opens the **per-day detail**, where same-date entries are **summed** ("×N") to avoid an endless list, inside a capped-height scroll.
+  - **Total + count + evolution area chart** by period.
+  - Dates shown **with year** (d/m/yy) since this view has no period selector and history is nearing a full year (dates would otherwise repeat/ambiguate).
+
+---
+
 ## [2.68.0] — 2026-07-13
 
 ### Removed

@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.69.0] — 2026-07-13
+
+### Novedades
+- **Filtrar y comparar** (nueva 🔍 en Movimientos): buscá por observación/descripción o categoría y mirá cómo evoluciona ese gasto período a período. Los resultados se agrupan por descripción (ej. "Peajes") y, al abrir, ves el detalle por día (mismo día sumado). Total, cantidad y gráfico de evolución incluidos.
+
+---
+
 ## [2.68.0] — 2026-07-13
 
 ### Cambios
