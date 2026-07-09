@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.69.2] — 2026-07-13
+
+### Mejoras
+- La pantalla de desbloqueo muestra el indicador de carga mientras valida la huella, y el logo se ve más nítido.
+
+---
+
 ## [2.69.1] — 2026-07-13
 
 ### Arreglos

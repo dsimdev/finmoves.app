@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.69.2] — 2026-07-13
+
+### Changed
+- **LockScreen polish**: shows the app `Loader` while the biometric check runs (previously the button only dimmed) and renders the logo from the 1024px master for a crisp 84px downscale. The OS fingerprint prompt itself is drawn by Android/Chrome via WebAuthn and cannot be styled or intercepted from the web — that's a deliberate security boundary, unlike the receipt chooser, where we bypass the OS "pick a source" dialog rather than capture it.
+- `Loader` gained an optional `color` prop (overrides the brand blades via `--fm-ring-c1/2/3`), needed where the brand gradient has no contrast — e.g. the unlock button, which *is* that gradient.
+
+---
+
 ## [2.69.1] — 2026-07-13
 
 ### Fixed

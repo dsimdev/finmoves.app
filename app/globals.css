@@ -246,8 +246,10 @@ input[type="number"] { -moz-appearance: textfield; }
   position: relative;
   border-radius: 50%;
   border: var(--fm-ring-w, 4px) solid transparent;
-  border-top-color: var(--blue);
-  border-right-color: var(--teal);
+  /* Colores overridables (prop `color` del Loader) para fondos donde el gradiente
+     de marca no contrasta, p.ej. un botón que YA es el gradiente. */
+  border-top-color: var(--fm-ring-c1, var(--blue));
+  border-right-color: var(--fm-ring-c2, var(--teal));
   animation: spin 1s linear infinite;
 }
 .fm-ring::after {
@@ -257,8 +259,8 @@ input[type="number"] { -moz-appearance: textfield; }
   inset: 0;
   border-radius: 50%;
   border: var(--fm-ring-w, 4px) solid transparent;
-  border-bottom-color: var(--teal);
-  border-left-color: var(--green);
+  border-bottom-color: var(--fm-ring-c2, var(--teal));
+  border-left-color: var(--fm-ring-c3, var(--green));
   animation: spin 0.5s linear infinite reverse;
 }
 

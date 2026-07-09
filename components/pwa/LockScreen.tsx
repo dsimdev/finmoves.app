@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useT } from "@/hooks/useTranslation";
 import { verifyBiometric } from "@/lib/biometric";
+import { Loader } from "@/components/ui/Loader";
 
 export function LockScreen({ onUnlock, onUsePassword }: { onUnlock: () => void; onUsePassword: () => void }) {
   const t = useT();
@@ -39,7 +40,7 @@ export function LockScreen({ onUnlock, onUsePassword }: { onUnlock: () => void; 
         opacity: 0.15, filter: "blur(40px)", pointerEvents: "none",
       }} />
 
-      <Image src="/favicon.png" alt="FinMoves" width={84} height={84} style={{ opacity: 0.95, position: "relative" }} priority />
+      <Image src="/logo-fm-1024.png" alt="FinMoves" width={84} height={84} style={{ opacity: 0.95, position: "relative" }} priority />
 
       <div style={{ position: "relative" }}>
         <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, letterSpacing: -0.3 }}>{t.lockTitle}</div>
@@ -59,12 +60,16 @@ export function LockScreen({ onUnlock, onUsePassword }: { onUnlock: () => void; 
           opacity: verifying ? 0.7 : 1,
         }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 11c0 3 0 6-1 8.5" />
-          <path d="M8 11a4 4 0 0 1 8 0c0 3.5-.5 6-1.5 8" />
-          <path d="M5 11a7 7 0 0 1 14 0c0 1.5 0 3-.3 4.5" />
-          <path d="M3 9a9 9 0 0 1 4-3.5M21 9a9 9 0 0 0-4-3.5" />
-        </svg>
+        {verifying ? (
+          <Loader size={20} thickness={2.5} color="#fff" />
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 11c0 3 0 6-1 8.5" />
+            <path d="M8 11a4 4 0 0 1 8 0c0 3.5-.5 6-1.5 8" />
+            <path d="M5 11a7 7 0 0 1 14 0c0 1.5 0 3-.3 4.5" />
+            <path d="M3 9a9 9 0 0 1 4-3.5M21 9a9 9 0 0 0-4-3.5" />
+          </svg>
+        )}
         {t.unlockWithFingerprint}
       </button>
 
