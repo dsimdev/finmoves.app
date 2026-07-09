@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.67.1] — 2026-07-13
+
+### Fixed
+- **Receipt upload failing with "Failed to fetch" on the first try (cold start)**: the API's Cloud Run scales to zero (`minInstances: 0`), so the first `POST /api/comprobantes/upload` after an idle period hits a cold instance and the connection is dropped mid-cold-start. `subirComprobante`'s retry was a single immediate attempt, which usually hit the still-cold instance too. Now it retries with backoff (0 / 1.5s / 4s), giving the instance time to wake — the upload recovers on its own without surfacing an error. The "Reintentar" sticky toast remains as the last-resort fallback.
+
+---
+
 ## [2.67.0] — 2026-07-13
 
 ### Changed

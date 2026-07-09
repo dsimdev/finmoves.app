@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.67.1] — 2026-07-13
+
+### Arreglos
+- **Subir comprobante** ya no falla en el primer intento cuando la app estuvo un rato inactiva (reintenta solo hasta que sube).
+
+---
+
 ## [2.67.0] — 2026-07-13
 
 ### Novedades

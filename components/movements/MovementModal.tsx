@@ -139,14 +139,19 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const subirComprobante = async (movId: string, file: File) => {
     if (!user?.uid) return;
     setPendingReceipt(null);
-    for (let intento = 1; intento <= 2; intento++) {
+    // Backoff: el Cloud Run del API escala a 0 (minInstances 0). La 1ª subida tras un
+    // rato pega en frío y suele fallar con "Failed to fetch"; reintentar con espera le
+    // da tiempo a despertar y se recupera solo, sin mostrar error.
+    const delays = [0, 1500, 4000];
+    for (let i = 0; i < delays.length; i++) {
+      if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]));
       try {
         const up = await uploadComprobante(user.uid, file);
         await actualizarMovimiento(user.uid, movId, { comprobanteUrl: up.url, comprobantePath: up.path });
         onUpdated?.(movId, { comprobanteUrl: up.url, comprobantePath: up.path });
         return;
       } catch (err) {
-        if (intento === 2) { console.error("[comprobante] no se pudo subir", err); setPendingReceipt({ movId, file }); }
+        if (i === delays.length - 1) { console.error("[comprobante] no se pudo subir", err); setPendingReceipt({ movId, file }); }
       }
     }
   };
