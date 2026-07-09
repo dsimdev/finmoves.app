@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.69.1] — 2026-07-13
+
+### Fixed
+- **`/analisis` evolution chart had the most recent period on the right**: the app convention is most-recent-on-the-**left** (Reports uses `serieDesc`). The evolution series was chronological (reversed); dropped the reverse so it renders newest→oldest, left to right, matching the rest of the app.
+
+---
+
 ## [2.69.0] — 2026-07-13
 
 ### Added

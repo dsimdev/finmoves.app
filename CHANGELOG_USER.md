@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.69.1] — 2026-07-13
+
+### Arreglos
+- En "Filtrar y comparar", el gráfico ahora muestra el período más reciente a la izquierda (como el resto de la app).
+
+---
+
 ## [2.69.0] — 2026-07-13
 
 ### Novedades

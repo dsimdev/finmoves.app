@@ -70,7 +70,9 @@ export default function AnalisisPage() {
   const serie = useMemo(() => {
     const sum = new Map<string, number>();
     for (const m of matches) sum.set(m.periodoId, (sum.get(m.periodoId) ?? 0) + m.monto);
-    const orden = agruparPorPeriodo(movimientos).map((p) => p.periodoId).reverse();
+    // Convención de la app: el período MÁS RECIENTE va a la IZQUIERDA (reciente primero).
+    // agruparPorPeriodo ya devuelve más nuevo → más viejo, así que NO se invierte.
+    const orden = agruparPorPeriodo(movimientos).map((p) => p.periodoId);
     return orden.filter((pid) => sum.has(pid)).map((pid) => ({
       label: perLabel(pid), value: sum.get(pid)!, color: "var(--accent)", valueLabel: abbr(sum.get(pid)!), periodoId: pid,
     }));
