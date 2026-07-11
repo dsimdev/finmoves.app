@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.72.0] — 2026-07-13
+
+### Added
+- **In-app notifications panel**: a bell in the Home header (with an unread badge) opens a BottomSheet listing the notifications the app has sent. Every confirmed push is now also persisted to `users/{uid}/notificaciones` with its deep-link (`lib/notif-store.ts` wraps `sendPushToUser`, so the dedup-only-on-success behaviour from 2.71.0 is preserved). The tray is capped at 30 (oldest pruned on write). Badge count is read once on mount (getDocs, battery-friendly) and refreshed when the panel opens.
+  - **Per-type deep-links**: dollar → investments, version → in-app changelog (`/settings/help?changelog=1`), recurrent → prefilled add modal, salary/forgotten-load → add modal, savings goal → investments, reminder → movements, permission → settings, sheet sync → data, account-deletion → admin.
+  - **Interactions**: tap a notification to navigate to its destination and mark it read; **slide** it horizontally to mark read without navigating; "mark all" clears the unread badge.
+- **Recurrent → prefilled add**: the recurrent notification deep-links to `/movements?recurrente=<id>`, which opens the add modal pre-filled with the recurrent's type/category/description/observation (**amount left blank**, since recurring prices change). New optional `prefill` prop on `MovementModal`.
+
+### Fixed
+- **Recurrent clock badge ignored the observation**: the movements list marked any movement matching a recurrent by type+category+description, so a different movement sharing a description (e.g. "Steam·eso pass" vs the recurrent "Steam·eso+") showed the recurrent clock even though it was never saved as recurrent. The badge key now includes the observation, matching the recurrent identity introduced in 2.71.0.
+
+---
+
 ## [2.71.0] — 2026-07-13
 
 ### Fixed

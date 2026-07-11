@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { syncUserMovimientosToSheet } from "@/lib/sync-sheets";
-import { sendPushToUser } from "@/lib/web-push";
+import { pushYGuardar } from "@/lib/notif-store";
 import { notifyAllUsers } from "@/lib/notifications";
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       await appendLog({ status: "ok", type: "auto", at: Timestamp.now(), message });
       // Aviso de sync OK — solo al dueño y solo si hubo algo que sincronizar.
       if (synced > 0 || mode === "full") {
-        await sendPushToUser(ownerUid, { title: "Sheets sincronizado", body: message, tag: "sync-ok", url: "/settings" });
+        await pushYGuardar(ownerUid, "sync", { title: "Sheets sincronizado", body: message, tag: "sync-ok", url: "/settings/data" }, "/settings/data");
       }
       result = { ok: true, synced };
     } catch (err) {
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       const message = err instanceof Error ? err.message : String(err);
       await appendLog({ status: "error", type: "auto", at: Timestamp.now(), message });
       // Push genérico (el detalle queda en el log que el dueño ve en Configuración).
-      await sendPushToUser(ownerUid, { title: "Falló sync Sheets", body: "Revisá el detalle en Configuración.", tag: "sync-error", url: "/settings" });
+      await pushYGuardar(ownerUid, "sync", { title: "Falló sync Sheets", body: "Revisá el detalle en Configuración.", tag: "sync-error", url: "/settings/data" }, "/settings/data");
       result = { ok: false, error: message };
     }
   }

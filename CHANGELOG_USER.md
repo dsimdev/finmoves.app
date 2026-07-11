@@ -4,6 +4,18 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.72.0] — 2026-07-13
+
+### Novedades
+- **Panel de notificaciones**: una campanita en Inicio (con un globito rojo si tenés avisos sin leer) abre la lista de todas tus notificaciones. Antes se perdían apenas las descartabas; ahora quedan guardadas.
+  - **Tocá una** para ir directo a donde corresponde: el dólar te lleva a Inversión, la de versión nueva al changelog, la de un recurrente te abre la carga ya completada (solo ponés el monto), etc.
+  - **Deslizá** una notificación para marcarla como leída sin abrirla, o usá "Marcar todas".
+
+### Arreglos
+- **El relojito de recurrente ya no aparece de más**: un gasto con la misma descripción que un recurrente pero distinta observación (ej. Steam "eso pass" vs el recurrente "eso+") ya no se muestra como recurrente.
+
+---
+
 ## [2.71.0] — 2026-07-13
 
 ### Arreglos

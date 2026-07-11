@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import { sendPushToUser } from "@/lib/web-push";
+import { pushYGuardar } from "@/lib/notif-store";
 import { FieldValue } from "firebase-admin/firestore";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     : `Se desactivó ${label} por: ${motivo ?? "Sin motivo"} (${timeStr})`;
   const pushDoc = await adminDb().doc(`users/${targetUid}/config/push`).get();
   if (pushDoc.exists) {
-    await sendPushToUser(targetUid, { title: "FinMoves", body, tag: "permission-change", url: "/settings" }).catch(() => {});
+    await pushYGuardar(targetUid, "permiso", { title: "FinMoves", body, tag: "permission-change", url: "/settings" }, "/settings").catch(() => {});
   }
   usersCache = null; // cambió un permiso → la lista cacheada quedó vieja
   return NextResponse.json({ ok: true });

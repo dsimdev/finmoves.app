@@ -1,5 +1,5 @@
 import { adminDb } from "./firebase-admin";
-import { sendPushToUser } from "./web-push";
+import { pushYGuardar } from "./notif-store";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { reservaFX, tiposReserva } from "@/utils/reserva";
@@ -90,7 +90,7 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
       const deltaPct = ((ctx.dolarOficial - last) / last) * 100;
       if (Math.abs(deltaPct) >= DOLAR_THRESHOLD_PCT) {
         const dir = deltaPct > 0 ? "subió" : "bajó";
-        await sendPushToUser(uid, { title: "Dólar oficial", body: `El oficial ${dir} ${Math.abs(deltaPct).toFixed(1)}% · $${ctx.dolarOficial.toLocaleString("es-AR")}`, tag: "dolar", url: "/investments" });
+        await pushYGuardar(uid, "dolar", { title: "Dólar oficial", body: `El oficial ${dir} ${Math.abs(deltaPct).toFixed(1)}% · $${ctx.dolarOficial.toLocaleString("es-AR")}`, tag: "dolar", url: "/investments" }, "/investments");
         updates.lastDolarOficial = ctx.dolarOficial; // re-anclar al avisar
       }
     }
@@ -149,7 +149,7 @@ async function checkVersion(uid: string, notify: Record<string, unknown>, update
   if (!last) { updates.lastVersionNotified = current; return; } // primer registro
   if (current === last) return;
   if (esMinorOMajor(last, current)) {
-    await sendPushToUser(uid, { title: "FinMoves actualizado", body: `Nueva versión v${current} disponible`, tag: `version-${current}`, url: "/" });
+    await pushYGuardar(uid, "version", { title: "FinMoves actualizado", body: `Nueva versión v${current} disponible`, tag: `version-${current}`, url: "/settings/help?changelog=1" }, "/settings/help?changelog=1");
   }
   updates.lastVersionNotified = current;
 }
@@ -163,7 +163,7 @@ async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Recor
   if (dias < CARGA_OLVIDADA_DIAS) return;
   const key = ultimo.getTime();
   if (notify.cargaRemindedFor === key) return; // ya avisé por este hueco
-  const ok = await sendPushToUser(uid, { title: "FinMoves", body: `Hace ${dias} días que no registrás un movimiento`, tag: "carga", url: "/movements", ...CARGAR_ACCION });
+  const ok = await pushYGuardar(uid, "carga", { title: "FinMoves", body: `Hace ${dias} días que no registrás un movimiento`, tag: "carga", url: "/movements", ...CARGAR_ACCION }, "/movements?nuevo=1");
   if (ok) updates.cargaRemindedFor = key;
 }
 
@@ -183,7 +183,7 @@ async function checkRecordatorios(uid: string) {
     if (r.fecha <= hoy) {
       // Llegó la fecha → aviso final. Borrar SOLO si el push se confirmó; si falla,
       // se conserva y reintenta mañana (si no, el recordatorio se perdería sin avisar).
-      const ok = await sendPushToUser(uid, { title: "Recordatorio", body: texto, tag: `rec-${doc.id}`, url: "/movements" });
+      const ok = await pushYGuardar(uid, "recordatorio", { title: "Recordatorio", body: texto, tag: `rec-${doc.id}`, url: "/movements" }, "/movements");
       if (ok) await doc.ref.delete().catch(() => {});
       return;
     }
@@ -191,7 +191,7 @@ async function checkRecordatorios(uid: string) {
     const faltan = diasEntre(hoy, r.fecha);
     if (faltan >= 1 && faltan <= PRE_AVISO_DIAS && !r.avisadoPre) {
       const cuando = faltan === 1 ? "mañana" : `en ${faltan} días`;
-      const ok = await sendPushToUser(uid, { title: "Recordatorio", body: `${cuando}: ${texto}`, tag: `rec-pre-${doc.id}`, url: "/movements" });
+      const ok = await pushYGuardar(uid, "recordatorio", { title: "Recordatorio", body: `${cuando}: ${texto}`, tag: `rec-pre-${doc.id}`, url: "/movements" }, "/movements");
       if (ok) await doc.ref.set({ avisadoPre: true }, { merge: true });
     }
   }));
@@ -218,6 +218,7 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   const reminded = (notify.recReminded as Record<string, string>) ?? {};
   const nextReminded = { ...reminded };
   const nombres: string[] = [];
+  const ids: string[] = [];
 
   for (const d of recSnap.docs) {
     const r = d.data() as { tipo: string; categoria: string; descripcion: string; observaciones?: string };
@@ -237,6 +238,7 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
     if (diasEntre(ultima, hoy) < RECURRENTE_DIAS) continue;
     if (reminded[d.id] === ultima) continue; // ya avisé por esta última carga
     nombres.push(r.descripcion);
+    ids.push(d.id);
     nextReminded[d.id] = ultima;
   }
 
@@ -244,8 +246,10 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   const body = nombres.length === 1
     ? `¿Cargás "${nombres[0]}"? Hace ~1 mes de la última vez.`
     : `${nombres.length} recurrentes pendientes: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`;
+  // Un solo recurrente → deep-link al modal pre-cargado; varios → listado general.
+  const dest = ids.length === 1 ? `/movements?recurrente=${encodeURIComponent(ids[0])}` : "/movements";
   // Persistir el dedup SOLO si el push se confirmó: si falla, reintenta mañana.
-  const ok = await sendPushToUser(uid, { title: "Recurrentes", body, tag: `rec-${hoy.slice(0, 7)}`, url: "/movements", ...CARGAR_ACCION });
+  const ok = await pushYGuardar(uid, "recurrente", { title: "Recurrentes", body, tag: `rec-${hoy.slice(0, 7)}`, url: dest, ...CARGAR_ACCION }, dest);
   if (ok) updates.recReminded = nextReminded;
 }
 
@@ -291,7 +295,7 @@ async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<stri
   const body = top >= 100
     ? `¡Alcanzaste tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}! 🎉`
     : `Vas ${top}% de tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}`;
-  const ok = await sendPushToUser(uid, { title: "Meta de ahorro", body, tag: "meta", url: "/investments" });
+  const ok = await pushYGuardar(uid, "meta", { title: "Meta de ahorro", body, tag: "meta", url: "/investments" }, "/investments");
   if (ok) updates.metaHitos = Array.from(new Set([...yaNotificados, ...nuevos]));
 }
 
@@ -306,6 +310,6 @@ async function checkSueldo(uid: string, movs: Movimiento[], notify: Record<strin
   if (notify.sueldoRemindedFor === ultimo) return; // ya avisé por este gap
 
   // Marcar el dedup SOLO si el push se confirmó: un fallo transitorio se reintenta mañana.
-  const ok = await sendPushToUser(uid, { title: "FinMoves", body: "Pasó más de un mes: ¿cargás el sueldo del nuevo período?", tag: "sueldo", url: "/movements" });
+  const ok = await pushYGuardar(uid, "sueldo", { title: "FinMoves", body: "Pasó más de un mes: ¿cargás el sueldo del nuevo período?", tag: "sueldo", url: "/movements?nuevo=1" }, "/movements?nuevo=1");
   if (ok) updates.sueldoRemindedFor = ultimo;
 }

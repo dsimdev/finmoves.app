@@ -36,11 +36,15 @@ export default function MovimientosPage() {
   const t = useT();
 
   // Recurrentes activos → para marcar con un relojito los movimientos que matchean.
+  // La clave incluye la observación: "Steam·eso+" y "Steam·eso pass" son recurrentes
+  // distintos, así que un movimiento solo se marca si coincide TAMBIÉN la observación.
+  const recKey = (tipo: string, categoria: string, descripcion?: string, observaciones?: string) =>
+    `${tipo}__${categoria}__${(descripcion || "").trim().toLowerCase()}__${(observaciones || "").trim().toLowerCase()}`;
   const recurrenteKeys = useMemo(
-    () => new Set(recurrentes.filter((r) => r.activo).map((r) => `${r.tipo}__${r.categoria}__${(r.descripcion || "").trim().toLowerCase()}`)),
+    () => new Set(recurrentes.filter((r) => r.activo).map((r) => recKey(r.tipo, r.categoria, r.descripcion, r.observaciones))),
     [recurrentes]
   );
-  const esRecurrente = (m: Movimiento) => recurrenteKeys.has(`${m.tipo}__${m.categoria}__${(m.descripcion || "").trim().toLowerCase()}`);
+  const esRecurrente = (m: Movimiento) => recurrenteKeys.has(recKey(m.tipo, m.categoria, m.descripcion, m.observaciones));
   const [showHint, dismissHint] = useFirstVisit("movements");
 
   const periodos = agruparPorPeriodo(movimientos);
@@ -56,7 +60,7 @@ export default function MovimientosPage() {
   const periodoActual = periodos.find((p) => p.periodoId === activePeriodoId);
 
   // Modal de alta/edición (componente compartido). `view` permite abrir directo en borrado.
-  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
+  const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete"; prefill?: { tipo?: "Gasto" | "Ingreso"; categoria?: string; descripcion?: string; observaciones?: string } } | null>(null);
   const openAdd = () => setModalState({ mode: "add" });
   const openEdit = (m: Movimiento) => setModalState({ mode: "edit", mov: m });
 
@@ -68,16 +72,26 @@ export default function MovimientosPage() {
     setTimeout(() => setFlashIds(new Set()), 1400);
   };
 
-  // Deep-link a la carga: atajo del launcher (?nuevo=1) o acción "Cargar" del push.
-  // Abre el modal de alta y limpia la URL.
+  // Deep-link a la carga: atajo del launcher (?nuevo=1), acción "Cargar" del push, o
+  // ?recurrente=<id> (desde el panel de notificaciones) → alta pre-cargada con ese
+  // recurrente (monto vacío). Espera a que `recurrentes` esté cargado para poder resolverlo.
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
+    const recId = sp.get("recurrente");
+    if (recId) {
+      const r = recurrentes.find((x) => x.id === recId);
+      if (r) {
+        setModalState({ mode: "add", prefill: { tipo: r.tipo, categoria: r.categoria, descripcion: r.descripcion, observaciones: r.observaciones } });
+        window.history.replaceState(window.history.state, "", "/movements");
+      }
+      return;
+    }
     if (sp.get("nuevo") === "1") {
       openAdd();
       window.history.replaceState(window.history.state, "", "/movements");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [recurrentes]);
   const bindLongPress = useLongPress();
 
   // Si llegamos con ?m=<id> (desde el dashboard), abrir ese movimiento para editar.
@@ -317,6 +331,7 @@ export default function MovimientosPage() {
       config={config}
       activePeriodoId={activePeriodoId}
       initialView={modalState?.view}
+      prefill={modalState?.prefill ?? null}
       onClose={() => setModalState(null)}
       onChanged={refresh}
       onCreated={handleCreated}

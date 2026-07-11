@@ -40,6 +40,8 @@ interface MovementModalProps {
   activePeriodoId?: string;
   /** Vista inicial en edición: "delete" abre directo la confirmación de borrado (long-press). */
   initialView?: "form" | "delete";
+  /** Alta pre-cargada (desde un recurrente): completa tipo/categoría/descripción/observación; el monto queda vacío. */
+  prefill?: { tipo?: "Gasto" | "Ingreso"; categoria?: string; descripcion?: string; observaciones?: string } | null;
   /** Modo reserva (abierto desde Inversión): solo carga +Reserva / -Reserva (FX). */
   reserveMode?: boolean;
   /** Solo lectura (detalle desde el historial de Inversión): muestra el detalle sin editar. */
@@ -55,7 +57,7 @@ interface MovementModalProps {
 }
 
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
-export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, reserveMode, readOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
+export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, prefill, reserveMode, readOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
   const { user } = useAuth();
   const { plantillas, mutatePlantillas, refreshPlantillas, refreshRecurrentes } = useData();
   const { cotizacion } = useCotizacion();
@@ -183,6 +185,13 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       if (reserveMode) setTipo(esEURMode ? "CompraEUR" : "CompraUSD");
       else if (sinPeriodos) { setTipo("Ingreso"); setCategoria("Sueldo"); }
       else setTipo("Gasto");
+      // Alta desde un recurrente: pre-cargar todo menos el monto (queda en blanco).
+      if (prefill) {
+        if (prefill.tipo) setTipo(prefill.tipo);
+        if (prefill.categoria) setCategoria(prefill.categoria);
+        if (prefill.descripcion) setDescripcion(prefill.descripcion);
+        if (prefill.observaciones) setObservaciones(prefill.observaciones);
+      }
     } else if (mode === "edit" && movimiento) {
       // El sueldo que abre período (ancla) no se puede borrar → forzar vista form.
       const esAncla = movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" &&
@@ -196,7 +205,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       resetComprobante();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, movimiento?.id, initialView]);
+  }, [open, mode, movimiento?.id, initialView, prefill]);
 
   const aplicarPlantilla = (p: Plantilla) => {
     setTipo("Gasto");

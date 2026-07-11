@@ -465,6 +465,9 @@ export const en: AppLocale = {
 
   // Biometrics
   notifications: "Notifications",
+  notificationsEmpty: "No notifications",
+  notificationsSlideHint: "Slide a notification to mark it as read",
+  markAllRead: "Mark all",
   inviteCodeModalTitle: "Code generated",
   notificationsSub: "Sync, new version and dollar alerts",
   notificationsDenied: "Notification permission is blocked",

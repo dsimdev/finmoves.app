@@ -17,6 +17,7 @@ import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { PageTitle } from "@/components/ui/PageTitle";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { titleGradText } from "@/components/ui/gradients";
 import { deltaColor, deltaMag, colorPct, colorPctDim } from "@/components/reports/format";
 
@@ -93,8 +94,9 @@ export default function Dashboard() {
         <div className="fade-up">
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <PageTitle style={{ display: "block" }}>{t.pageTitleDashboard}</PageTitle>
+              <NotificationsBell />
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>{t.period}</div>
