@@ -163,8 +163,8 @@ async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Recor
   if (dias < CARGA_OLVIDADA_DIAS) return;
   const key = ultimo.getTime();
   if (notify.cargaRemindedFor === key) return; // ya avisé por este hueco
-  await sendPushToUser(uid, { title: "FinMoves", body: `Hace ${dias} días que no registrás un movimiento`, tag: "carga", url: "/movements", ...CARGAR_ACCION });
-  updates.cargaRemindedFor = key;
+  const ok = await sendPushToUser(uid, { title: "FinMoves", body: `Hace ${dias} días que no registrás un movimiento`, tag: "carga", url: "/movements", ...CARGAR_ACCION });
+  if (ok) updates.cargaRemindedFor = key;
 }
 
 // Recordatorios puntuales, en dos tiempos:
@@ -181,17 +181,18 @@ async function checkRecordatorios(uid: string) {
     if (!r.fecha) return;
     const texto = r.texto ?? "";
     if (r.fecha <= hoy) {
-      // Llegó la fecha → aviso final + borrar.
-      await sendPushToUser(uid, { title: "Recordatorio", body: texto, tag: `rec-${doc.id}`, url: "/movements" });
-      await doc.ref.delete().catch(() => {});
+      // Llegó la fecha → aviso final. Borrar SOLO si el push se confirmó; si falla,
+      // se conserva y reintenta mañana (si no, el recordatorio se perdería sin avisar).
+      const ok = await sendPushToUser(uid, { title: "Recordatorio", body: texto, tag: `rec-${doc.id}`, url: "/movements" });
+      if (ok) await doc.ref.delete().catch(() => {});
       return;
     }
     // Pre-aviso: faltan entre 1 y 3 días y todavía no se avisó.
     const faltan = diasEntre(hoy, r.fecha);
     if (faltan >= 1 && faltan <= PRE_AVISO_DIAS && !r.avisadoPre) {
       const cuando = faltan === 1 ? "mañana" : `en ${faltan} días`;
-      await sendPushToUser(uid, { title: "Recordatorio", body: `${cuando}: ${texto}`, tag: `rec-pre-${doc.id}`, url: "/movements" });
-      await doc.ref.set({ avisadoPre: true }, { merge: true });
+      const ok = await sendPushToUser(uid, { title: "Recordatorio", body: `${cuando}: ${texto}`, tag: `rec-pre-${doc.id}`, url: "/movements" });
+      if (ok) await doc.ref.set({ avisadoPre: true }, { merge: true });
     }
   }));
 }
@@ -219,13 +220,17 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   const nombres: string[] = [];
 
   for (const d of recSnap.docs) {
-    const r = d.data() as { tipo: string; categoria: string; descripcion: string };
-    // Última carga que matchee (tipo+categoría+descripción) dentro de la ventana leída.
+    const r = d.data() as { tipo: string; categoria: string; descripcion: string; observaciones?: string };
+    // Última carga que matchee (tipo+categoría+descripción+observación) dentro de la ventana.
+    // La observación distingue recurrentes homónimos (ej. "Steam·eso+" vs "Steam·eso pass");
+    // los recurrentes viejos sin observación guardada matchean cargas sin observación.
     const desc = (r.descripcion || "").trim().toLowerCase();
+    const obs = (r.observaciones || "").trim().toLowerCase();
     let ultima = "";
     for (const m of movs) {
       if (m.tipo !== r.tipo || m.categoria !== r.categoria) continue;
       if ((m.descripcion || "").trim().toLowerCase() !== desc || !m.fecha) continue;
+      if ((m.observaciones || "").trim().toLowerCase() !== obs) continue;
       if (m.fecha > ultima) ultima = m.fecha;
     }
     if (!ultima) continue;
@@ -239,8 +244,9 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   const body = nombres.length === 1
     ? `¿Cargás "${nombres[0]}"? Hace ~1 mes de la última vez.`
     : `${nombres.length} recurrentes pendientes: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`;
-  await sendPushToUser(uid, { title: "Recurrentes", body, tag: `rec-${hoy.slice(0, 7)}`, url: "/movements", ...CARGAR_ACCION });
-  updates.recReminded = nextReminded;
+  // Persistir el dedup SOLO si el push se confirmó: si falla, reintenta mañana.
+  const ok = await sendPushToUser(uid, { title: "Recurrentes", body, tag: `rec-${hoy.slice(0, 7)}`, url: "/movements", ...CARGAR_ACCION });
+  if (ok) updates.recReminded = nextReminded;
 }
 
 // Meta de ahorro: avisa al cruzar 50/75/100% (una vez cada hito).
@@ -285,8 +291,8 @@ async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<stri
   const body = top >= 100
     ? `¡Alcanzaste tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}! 🎉`
     : `Vas ${top}% de tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}`;
-  await sendPushToUser(uid, { title: "Meta de ahorro", body, tag: "meta", url: "/investments" });
-  updates.metaHitos = Array.from(new Set([...yaNotificados, ...nuevos]));
+  const ok = await sendPushToUser(uid, { title: "Meta de ahorro", body, tag: "meta", url: "/investments" });
+  if (ok) updates.metaHitos = Array.from(new Set([...yaNotificados, ...nuevos]));
 }
 
 // Recordatorio de sueldo: si pasó más de ~1 mes desde el último período abierto.
@@ -299,6 +305,7 @@ async function checkSueldo(uid: string, movs: Movimiento[], notify: Record<strin
   if (dias < SUELDO_REMINDER_DAYS) return;
   if (notify.sueldoRemindedFor === ultimo) return; // ya avisé por este gap
 
-  await sendPushToUser(uid, { title: "FinMoves", body: "Pasó más de un mes: ¿cargás el sueldo del nuevo período?", tag: "sueldo", url: "/movements" });
-  updates.sueldoRemindedFor = ultimo;
+  // Marcar el dedup SOLO si el push se confirmó: un fallo transitorio se reintenta mañana.
+  const ok = await sendPushToUser(uid, { title: "FinMoves", body: "Pasó más de un mes: ¿cargás el sueldo del nuevo período?", tag: "sueldo", url: "/movements" });
+  if (ok) updates.sueldoRemindedFor = ultimo;
 }

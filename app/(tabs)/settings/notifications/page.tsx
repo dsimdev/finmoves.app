@@ -117,7 +117,7 @@ export default function NotificacionesSettings() {
         ) : recurrentes.map((r) => (
           <div key={r.id} className="row" style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)", gap: 10 }}>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", opacity: r.activo ? 1 : 0.5 }}>{r.descripcion || r.categoria}</div>
+              <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", opacity: r.activo ? 1 : 0.5 }}>{r.descripcion || r.categoria}{r.observaciones ? ` · ${r.observaciones}` : ""}</div>
               <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{r.categoria} · {t.tipoDisplay[r.tipo]}</div>
             </div>
             <Toggle activo={r.activo} onClick={() => toggleRecurrente(r.id, !r.activo)} />

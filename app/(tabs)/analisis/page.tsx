@@ -7,6 +7,7 @@ import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { MultiLineChart, Stat } from "@/components/reports/charts";
 import { abbr } from "@/components/reports/format";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
 import type { Movimiento } from "@/types";
@@ -47,6 +48,8 @@ export default function AnalisisPage() {
   const [periodosSel, setPeriodosSel] = useState<Set<string>>(new Set());
   const [seleccionados, setSeleccionados] = useState<string[]>([]); // orden de selección → color estable
   const [openGrupo, setOpenGrupo] = useState<string | null>(null);
+  // Card flotante: observaciones agrupadas del día tocado (evita ensuciar el detalle).
+  const [diaSel, setDiaSel] = useState<{ label: string; fecha: string; total: number; obs: { texto: string; total: number; count: number }[] } | null>(null);
 
   const addPill = () => {
     const v = input.trim();
@@ -103,14 +106,18 @@ export default function AnalisisPage() {
     const grupos = [...gmap.entries()].map(([label, movs]) => {
       const per = new Map<string, number>();
       for (const m of movs) per.set(m.periodoId, (per.get(m.periodoId) ?? 0) + m.monto);
-      const dmap = new Map<string, { total: number; count: number; obs: Set<string> }>();
+      const dmap = new Map<string, { total: number; count: number; obs: Map<string, { total: number; count: number }> }>();
       for (const m of movs) {
-        const d = dmap.get(m.fecha) ?? { total: 0, count: 0, obs: new Set<string>() };
-        d.total += m.monto; d.count++; const o = m.observaciones?.trim(); if (o) d.obs.add(o);
+        const d = dmap.get(m.fecha) ?? { total: 0, count: 0, obs: new Map() };
+        d.total += m.monto; d.count++;
+        const o = m.observaciones?.trim();
+        if (o) { const e = d.obs.get(o) ?? { total: 0, count: 0 }; e.total += m.monto; e.count++; d.obs.set(o, e); }
         dmap.set(m.fecha, d);
       }
-      const dias = [...dmap.entries()].map(([fecha, d]) => ({ fecha, total: d.total, count: d.count, obs: [...d.obs].join(", ") }))
-        .sort((a, b) => b.fecha.localeCompare(a.fecha));
+      const dias = [...dmap.entries()].map(([fecha, d]) => ({
+        fecha, total: d.total, count: d.count,
+        obs: [...d.obs.entries()].map(([texto, e]) => ({ texto, total: e.total, count: e.count })).sort((a, b) => b.total - a.total),
+      })).sort((a, b) => b.fecha.localeCompare(a.fecha));
       return { key: label.toLowerCase(), label, total: movs.reduce((s, m) => s + m.monto, 0), count: movs.length, per, dias };
     }).sort((a, b) => b.total - a.total);
 
@@ -245,15 +252,26 @@ export default function AnalisisPage() {
                   </div>
                   {abierto && (
                     <div style={{ borderTop: "1px solid var(--faint)", maxHeight: 300, overflowY: "auto" }}>
-                      {g.dias.map((d, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "9px 14px 9px 32px", borderTop: i > 0 ? "1px solid var(--faint)" : "none" }}>
-                          <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "var(--font-mono)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {diaLabel(d.fecha)}{d.count > 1 && <span style={{ marginLeft: 5, opacity: 0.7 }}>×{d.count}</span>}
-                            {d.obs && <span style={{ marginLeft: 6, fontStyle: "italic", opacity: 0.85 }}>· {d.obs}</span>}
-                          </span>
-                          <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(d.total)}</span>
-                        </div>
-                      ))}
+                      {g.dias.map((d, i) => {
+                        const tieneObs = d.obs.length > 0;
+                        const row = (
+                          <>
+                            <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                              {diaLabel(d.fecha)}{d.count > 1 && <span style={{ opacity: 0.7 }}>×{d.count}</span>}
+                              {tieneObs && (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                              )}
+                            </span>
+                            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(d.total)}</span>
+                          </>
+                        );
+                        const st: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "9px 14px 9px 32px", borderTop: i > 0 ? "1px solid var(--faint)" : "none", width: "100%" };
+                        return tieneObs ? (
+                          <button key={i} onClick={() => setDiaSel({ label: g.label, fecha: d.fecha, total: d.total, obs: d.obs })} style={{ ...st, background: "none", border: "none", borderTop: i > 0 ? "1px solid var(--faint)" : "none", cursor: "pointer", textAlign: "left" }}>{row}</button>
+                        ) : (
+                          <div key={i} style={st}>{row}</div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -262,6 +280,25 @@ export default function AnalisisPage() {
           </div>
         </>
       )}
+
+      <BottomSheet open={!!diaSel} onClose={() => setDiaSel(null)} title={diaSel ? `${diaSel.label} · ${diaLabel(diaSel.fecha)}` : ""}>
+        {diaSel && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {diaSel.obs.map((o, i) => (
+              <div key={i} className="row" style={{ padding: "10px 0", borderBottom: i < diaSel.obs.length - 1 ? "1px solid var(--faint)" : "none", gap: 10 }}>
+                <span style={{ fontSize: 13, minWidth: 0, flex: 1 }}>
+                  {o.texto}{o.count > 1 && <span style={{ color: "var(--muted)", marginLeft: 6 }}>×{o.count}</span>}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(o.total)}</span>
+              </div>
+            ))}
+            <div className="row" style={{ padding: "10px 0 2px", marginTop: 4, borderTop: "1px solid var(--border)", gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>{t.analyzeTotal}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--accent)" }}>{money(diaSel.total)}</span>
+            </div>
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 }

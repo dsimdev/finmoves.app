@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.71.0] — 2026-07-13
+
+### Fixed
+- **Push reminders could silence themselves forever after a single transient send failure** (root cause of a missed salary reminder while dollar/version pushes kept working). `sendPushToUser` swallowed every error, so a failed send still fell through to the dedup write (`sueldoRemindedFor`, `recReminded`, `cargaRemindedFor`, `metaHitos`) — marking the user as "already notified" for a notification they never received. Now `sendPushToUser` **returns whether the send was confirmed**, and every check persists its dedup **only on success**, so a transient failure retries the next day instead of being lost. It also **retries twice with backoff** (0/1.5s/4s) on non-404/410 errors, reusing the already-read subscription so there's **no extra Firestore cost**.
+- **One-off reminders were deleted even when their push failed**, losing them silently; now the reminder doc is deleted only after a confirmed send (pre-reminder `avisadoPre` likewise flagged only on success).
+- **Ingresos detail (Reports) wasn't sorted by date** — `movIngresos` sorted by amount, so dates appeared out of order (30/6, 9/7, 30/6). All three income lists now sort by date descending (newest first) via string compare on `YYYY-MM-DD`.
+
+### Changed
+- **Recurring movements now key on observation too** (`tipo+categoría+descripción+observaciones`). Two movements with the same description but different observation (e.g. `Steam·eso+` vs `Steam·eso pass`) are now independent recurrents — one no longer resets the other's reminder clock. Backend match, doc slug, the movement modal, and the Notifications list are all aligned; recurrents saved without an observation still match observation-less entries.
+- **Datos moved out of the main Settings menu into Account** as a sub-item (Google Sheets · Backup · Invitations), reachable from within Cuenta.
+- **`/analisis` day detail no longer inlines observations** (they were unreadable, truncated). Tapping a day (chat icon) opens a floating sheet with observations grouped by text (each with `×N` and its subtotal, plus the day total).
+
+---
+
 ## [2.70.0] — 2026-07-13
 
 ### Added

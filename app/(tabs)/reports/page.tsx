@@ -170,19 +170,21 @@ export default function ReportesPage() {
 
   // ── Ingresos ──
   // Ingresos a disponible (Sueldo + Extras). Moves son transferencias internas.
+  // `fecha` es YYYY-MM-DD → comparable como string (más nuevo primero).
+  const porFechaDesc = (a: { fecha: string }, b: { fecha: string }) => (b.fecha || "").localeCompare(a.fecha || "");
   const movIngresos = periodo
     ? periodo.movimientos
         .filter((m) =>
           m.tipo === "Ingreso" && m.categoria !== "Ahorros" && m.categoria !== "RESTO"
         )
-        .sort((a, b) => b.monto - a.monto)
+        .sort(porFechaDesc)
     : [];
 
   // Ingresos que fueron directo a ahorros (dinero real que entró pero no pasó por disponible)
   const movIngresosAhorros = periodo
     ? periodo.movimientos
         .filter((m) => m.tipo === "Ingreso" && m.categoria === "Ahorros")
-        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+        .sort(porFechaDesc)
     : [];
 
   // RESTO (arrastre del período anterior, ahora Move/aAhorro · antes Ingreso/RESTO).
@@ -190,7 +192,7 @@ export default function ReportesPage() {
   const movResto = periodo
     ? periodo.movimientos
         .filter((m) => m.categoria === "RESTO")
-        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+        .sort(porFechaDesc)
     : [];
 
   const totalIngresos = periodo ? periodo.sueldo + periodo.moveDisponible : 0;

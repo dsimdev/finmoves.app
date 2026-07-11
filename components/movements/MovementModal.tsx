@@ -400,7 +400,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
     // Snapshot del recurrente antes del reset (usa estado del form).
     const recurrenteData = (repetir && (tipo === "Gasto" || tipo === "Ingreso") && categoria !== "Ahorros" && descripcion.trim())
-      ? { descripcion: descripcion.trim(), categoria, tipo, monto: montoFinal }
+      ? { descripcion: descripcion.trim(), categoria, tipo, observaciones: observaciones.trim(), monto: montoFinal }
       : null;
 
     // ── Optimista: mostrar y cerrar YA; persistir en background. ──

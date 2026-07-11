@@ -4,6 +4,20 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.71.0] — 2026-07-13
+
+### Arreglos
+- **Los recordatorios ya no se pierden**: si un aviso push fallaba una vez (por un error momentáneo), el sistema te daba por avisado y no volvía a intentarlo — por eso el recordatorio del sueldo no salió el mes pasado. Ahora se marca como avisado **solo si el aviso llegó de verdad**, y reintenta si falla. Esto vale para sueldo, recurrentes, carga olvidada y recordatorios.
+- Los **recordatorios puntuales** ya no se borran si el aviso no llegó.
+
+### Mejoras
+- **Gastos recurrentes por observación**: si tenés dos gastos con la misma descripción pero distinta observación (ej. Steam "eso+" y Steam "eso pass"), ahora son recurrentes distintos y no se pisan entre sí.
+- En **Reportes**, el detalle de ingresos queda ordenado por fecha (más nuevo arriba).
+- **Datos** (Google Sheets, Backup, Invitaciones) pasó a estar dentro de **Cuenta**.
+- En **Filtrar y comparar**, el detalle del día quedó más limpio: tocás el día y se abre una tarjeta con las observaciones agrupadas.
+
+---
+
 ## [2.70.0] — 2026-07-13
 
 ### Novedades

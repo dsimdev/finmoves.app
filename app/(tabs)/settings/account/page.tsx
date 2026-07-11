@@ -159,6 +159,18 @@ export default function AccountSettings() {
         </div>
       )}
 
+      {/* Datos: Google Sheets · Backup · Invitaciones (movido acá desde el menú principal) */}
+      <button onClick={() => router.push("/settings/data")} style={{ ...card, width: "100%", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left" }}>
+        <div style={{ ...ic, background: "var(--accent-dim)", border: "1px solid var(--accent)44", color: "var(--accent)" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14 }}>{t.dataSection}</div>
+          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{isOwner ? "Google Sheets · Backup · Invitaciones" : "Backup"}</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+      </button>
+
       {/* Cerrar sesión */}
       <button onClick={() => setConfirmLogout(true)} style={{ ...card, width: "100%", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left" }}>
         <div style={{ ...ic, background: "var(--surface-alt)", border: "1px solid var(--border)", color: "var(--muted)" }}>

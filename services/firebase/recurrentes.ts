@@ -9,15 +9,18 @@ export interface Recurrente {
   descripcion: string;
   categoria: string;
   tipo: "Gasto" | "Ingreso";
+  observaciones?: string;
   monto: number;
   activo: boolean;
   createdAt: number;
 }
 
-// Id determinístico por tipo+categoría+descripción → marcar/desmarcar es idempotente
-// (no duplica). Se sanea para que sea un doc id válido de Firestore.
-function slug(tipo: string, categoria: string, descripcion: string): string {
-  return `${tipo}__${categoria}__${descripcion || "_"}`.replace(/[/.#$[\]]/g, "-").slice(0, 250);
+// Id determinístico por tipo+categoría+descripción+observación → marcar/desmarcar es
+// idempotente (no duplica) y dos cargas con misma descripción pero distinta observación
+// (ej. "Steam·eso+" vs "Steam·eso pass") son recurrentes independientes. Se sanea para
+// que sea un doc id válido de Firestore.
+function slug(tipo: string, categoria: string, descripcion: string, observaciones: string): string {
+  return `${tipo}__${categoria}__${descripcion || "_"}__${observaciones || "_"}`.replace(/[/.#$[\]]/g, "-").slice(0, 250);
 }
 
 export async function listarRecurrentes(uid: string): Promise<Recurrente[]> {
@@ -29,10 +32,11 @@ export async function listarRecurrentes(uid: string): Promise<Recurrente[]> {
 
 export async function upsertRecurrente(
   uid: string,
-  r: { descripcion: string; categoria: string; tipo: "Gasto" | "Ingreso"; monto: number }
+  r: { descripcion: string; categoria: string; tipo: "Gasto" | "Ingreso"; observaciones?: string; monto: number }
 ): Promise<void> {
-  const id = slug(r.tipo, r.categoria, r.descripcion);
-  await setDoc(doc(db, `users/${uid}/recurrentes/${id}`), { ...r, activo: true, createdAt: Date.now() }, { merge: true });
+  const obs = (r.observaciones || "").trim();
+  const id = slug(r.tipo, r.categoria, r.descripcion, obs);
+  await setDoc(doc(db, `users/${uid}/recurrentes/${id}`), { ...r, observaciones: obs, activo: true, createdAt: Date.now() }, { merge: true });
 }
 
 export async function setRecurrenteActivo(uid: string, id: string, activo: boolean): Promise<void> {
