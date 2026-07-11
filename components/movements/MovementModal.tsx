@@ -59,7 +59,7 @@ interface MovementModalProps {
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
 export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, prefill, reserveMode, readOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
   const { user } = useAuth();
-  const { plantillas, mutatePlantillas, refreshPlantillas, refreshRecurrentes } = useData();
+  const { plantillas, mutatePlantillas, refreshPlantillas, refreshRecurrentes, recurrentes } = useData();
   const { cotizacion } = useCotizacion();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const { m: money } = useMoney();
@@ -110,6 +110,24 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [abreNuevoPeriodo, setAbreNuevoPeriodo] = useState(false);
   const [repetir, setRepetir] = useState(false);
   const [moveDir, setMoveDir] = useState<"aDisponible" | "aAhorro">("aDisponible");
+
+  // ¿La combinación tipo+categoría+descripción+observación ya es un recurrente activo?
+  // Clave idéntica a la del backend (incluye observación → "eso+" ≠ "eso pass").
+  const recKey = (t: string, c: string, d?: string, o?: string) =>
+    `${t}__${c}__${(d || "").trim().toLowerCase()}__${(o || "").trim().toLowerCase()}`;
+  const recurrenteKeys = useMemo(
+    () => new Set(recurrentes.filter((r) => r.activo).map((r) => recKey(r.tipo, r.categoria, r.descripcion, r.observaciones))),
+    [recurrentes]
+  );
+  // Alta: si lo que se está cargando ya es un recurrente activo, marcar "repetir" solo
+  // (el usuario no lo tiene que re-tildar cada mes). Solo enciende; no lo apaga si el
+  // usuario lo desmarcó a propósito para un caso puntual.
+  const yaEsRecurrente = (mode === "add" && (tipo === "Gasto" || tipo === "Ingreso") && descripcion.trim())
+    ? recurrenteKeys.has(recKey(tipo, categoria, descripcion, observaciones))
+    : false;
+  useEffect(() => {
+    if (yaEsRecurrente) setRepetir(true);
+  }, [yaEsRecurrente]);
   // Comprobante adjunto (alta y edición) + visor de media (hook dedicado).
   const {
     file: comprobanteFile,
@@ -865,7 +883,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               color: repetir ? "var(--accent)" : "var(--muted)", cursor: "pointer", fontSize: 13, textAlign: "left",
             }}>
               <span style={{ width: 16, height: 16, flexShrink: 0, borderRadius: 4, border: `1px solid ${repetir ? "var(--accent)" : "var(--border-hi)"}`, background: repetir ? "var(--accent)" : "transparent" }} />
-              {t.repeatEachPeriod}
+              <span style={{ flex: 1 }}>{t.repeatEachPeriod}</span>
+              {yaEsRecurrente && (
+                <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: 999, padding: "2px 8px", textTransform: "uppercase", letterSpacing: 0.5 }}>{t.alreadyRecurrent}</span>
+              )}
             </button>
           )}
         </form>
@@ -876,6 +897,12 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       {/* EDIT */}
       {mode === "edit" && movimiento && !readOnly && view === "form" && (
         <>
+          {recurrenteKeys.has(recKey(movimiento.tipo, movimiento.categoria, movimiento.descripcion, movimiento.observaciones)) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, padding: "9px 12px", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 12, fontWeight: 600 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></svg>
+              {t.recurrentMovement}
+            </div>
+          )}
           {/* Grid de 3: Tipo · Categoría · Fecha (solo lectura). */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
             {[{ l: t.type, v: movimiento.tipo }, { l: t.category, v: movimiento.categoria }, { l: t.date, v: fechaCorta(movimiento.fecha) }].map((f) => (
@@ -972,6 +999,12 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>{movimiento.tipo} · {movimiento.categoria}</div>
           <div style={{ fontSize: 30, fontWeight: 700, fontFamily: "var(--font-mono)", lineHeight: 1.05 }}>{money(movimiento.monto)}</div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>{fechaCorta(movimiento.fecha)}</div>
+          {recurrenteKeys.has(recKey(movimiento.tipo, movimiento.categoria, movimiento.descripcion, movimiento.observaciones)) && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, padding: "5px 11px", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: 999, color: "var(--accent)", fontSize: 11, fontWeight: 700 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></svg>
+              {t.recurrentMovement}
+            </div>
+          )}
         </div>
         {esFXMov && (
           <div style={{ display: "grid", gridTemplateColumns: movimiento.cotizacion != null ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 10 }}>

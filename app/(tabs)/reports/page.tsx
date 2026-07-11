@@ -23,7 +23,7 @@ import {
   inflacionPersonal as calcInflacionPersonal,
 } from "@/utils/reportes";
 import { reservaFX as calcularReservaFX } from "@/utils/reserva";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
 import { abbr, shortPer, sinAño, periodoAnio, TIPO_COLOR } from "@/components/reports/format";
 import { useCotizacion } from "@/hooks/useCotizacion";
@@ -473,17 +473,16 @@ export default function ReportesPage() {
         <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>{t.noMovementsReport}</div>
       ) : (
         <div key={sub} className="fade-up">
-          <div style={{ marginBottom: 18, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <div>
-              <PageTitle>{t.pageTitleReports}</PageTitle>
-            </div>
-            {hayWrapped && (
+          <PageHeader
+            title={t.pageTitleReports}
+            style={{ marginBottom: 18 }}
+            right={hayWrapped ? (
               <button onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(110deg, var(--blue), var(--green))", border: "none", color: "#fff", borderRadius: 999, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px var(--accent)55" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 {t.yearWrapped}
               </button>
-            )}
-          </div>
+            ) : undefined}
+          />
           {showHint && <SectionHint title={t.hintRepTitle} body={t.hintRepBody} onDismiss={dismissHint} />}
           <div className="subtabs">
             {SUBS.map((s) => {

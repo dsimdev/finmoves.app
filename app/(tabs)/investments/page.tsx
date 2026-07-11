@@ -34,7 +34,7 @@ import { MiniStat } from "@/components/ui/MiniStat";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { Movimiento } from "@/types";
 import { calcularReserva } from "@/utils/reserva";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function DolaresPage() {
   const { movimientos, loading, config, refresh: refreshData, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
@@ -162,9 +162,7 @@ export default function DolaresPage() {
         <LoadingSpinner />
       ) : (
         <div className="fade-up">
-          <div style={{ marginBottom: 24 }}>
-            <PageTitle>{t.portfolio}</PageTitle>
-          </div>
+          <PageHeader title={t.portfolio} style={{ marginBottom: 24 }} />
           {showHint && <SectionHint title={t.hintInvTitle} body={t.hintInvBody} onDismiss={dismissHint} />}
 
           {/* ── NET WORTH ── */}
@@ -210,12 +208,6 @@ export default function DolaresPage() {
           <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>{t.usdReserve}</div>
-              <button onClick={toggle} aria-label={t.hideValues} style={{
-                background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
-                width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
-              }}>
-                <EyeIcon off={oculto} />
-              </button>
             </div>
             <div style={{ fontSize: 36, fontWeight: 700, color: "var(--yellow)", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
               U$D {oculto ? "••••" : totalUSD.toFixed(2)}
@@ -240,14 +232,6 @@ export default function DolaresPage() {
           <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>{t.eurReserve}</div>
-              {!showUSD && (
-                <button onClick={toggle} aria-label={t.hideValues} style={{
-                  background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",
-                  width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
-                }}>
-                  <EyeIcon off={oculto} />
-                </button>
-              )}
             </div>
             <div style={{ fontSize: 36, fontWeight: 700, color: "var(--yellow)", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
               € {oculto ? "••••" : totalEUR.toFixed(2)}

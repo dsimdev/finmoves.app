@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.73.0] — 2026-07-13
+
+### Novedades
+- **Títulos renovados**: ahora van centrados, en mayúsculas y con una letra redondeada que acompaña al logo. Las acciones de cada pantalla quedan a los costados; en Inicio, los días del período van justo debajo del título.
+- **"Repetir" se marca solo**: si cargás un gasto que ya tenés como recurrente, la opción de repetir viene marcada (con el aviso "ya lo tenés"). No hace falta tildarla cada mes.
+- **Se ve que es recurrente**: al abrir o editar un movimiento recurrente aparece la etiqueta "Movimiento recurrente".
+
+### Mejoras
+- En Inversión queda un solo ojito para ocultar valores (el de Patrimonio).
+- Se quitó "Compartir backup" (no funcionaba de forma confiable); el backup se descarga como siempre.
+
+---
+
 ## [2.72.0] — 2026-07-13
 
 ### Novedades

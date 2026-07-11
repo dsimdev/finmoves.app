@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useData } from "./data-context";
 import { useMoney } from "@/hooks/useHideValues";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
-import { serieTendencia, parsePeriodoId, inflacionPersonal as calcInflacionPersonal } from "@/utils/reportes";
+import { serieTendencia, inflacionPersonal as calcInflacionPersonal } from "@/utils/reportes";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { Movimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -16,9 +16,9 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
-import { titleGradText } from "@/components/ui/gradients";
+import { DiasPeriodo } from "@/components/ui/DiasPeriodo";
 import { deltaColor, deltaMag, colorPct, colorPctDim } from "@/components/reports/format";
 
 function TipoColor(m: Movimiento) {
@@ -92,17 +92,12 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="fade-up">
-          {/* Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <PageTitle style={{ display: "block" }}>{t.pageTitleDashboard}</PageTitle>
-              <NotificationsBell />
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>{t.period}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", display: "inline-block", ...titleGradText }}>{Math.max(1, Math.floor((new Date().getTime() - parsePeriodoId(p.periodoId).getTime()) / 86400000) + 1)} días</div>
-            </div>
-          </div>
+          {/* Header: período (izq) · INICIO (centro) · campana (der) */}
+          <PageHeader
+            title={t.pageTitleDashboard}
+            subtitle={<div style={{ marginTop: 2 }}><DiasPeriodo periodoId={p.periodoId} /></div>}
+            right={<NotificationsBell />}
+          />
 
           {/* Hero */}
           <div className="soft" style={{ borderColor: `${barColor}44`, marginBottom: 12, background: `linear-gradient(135deg, var(--surface) 0%, ${barColorDim} 100%)` }}>

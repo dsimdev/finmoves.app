@@ -30,8 +30,6 @@ export default function DataSettings() {
   const [genBusy, setGenBusy] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [canShare, setCanShare] = useState(false);
-  useEffect(() => { setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function"); }, []);
   const generateInviteCode = async () => {
     const u = auth.currentUser;
     if (!u || genBusy) return;
@@ -101,14 +99,6 @@ export default function DataSettings() {
     URL.revokeObjectURL(url);
   };
 
-  const shareBackup = async () => {
-    const file = new File([buildBackup()], backupName(), { type: "application/json" });
-    try {
-      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: "FinMoves backup" });
-      else exportJSON(); // sin soporte de compartir archivos → descarga
-    } catch { /* usuario canceló o el share falló → sin acción */ }
-  };
-
   const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: 16, marginBottom: 12 };
   const ic: React.CSSProperties = { width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
 
@@ -146,15 +136,6 @@ export default function DataSettings() {
           <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.exportJSON}</div>
         </div>
       </button>
-
-      {canShare && (
-        <button onClick={shareBackup} style={{ ...card, width: "100%", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left" }}>
-          <div style={{ ...ic, background: "var(--green-dim)", border: "1px solid var(--green)44", color: "var(--green)" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
-          </div>
-          <span style={{ fontSize: 14 }}>{t.shareBackup}</span>
-        </button>
-      )}
 
       {isOwner && (
         <button onClick={generateInviteCode} disabled={genBusy} style={{ ...card, width: "100%", display: "flex", alignItems: "center", gap: 12, cursor: genBusy ? "default" : "pointer", textAlign: "left" }}>

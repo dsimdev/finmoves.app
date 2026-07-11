@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.73.0] — 2026-07-13
+
+### Added
+- **Unified page headers**: new `PageHeader` (3-column grid) with the title centered in **Fredoka** (rounded Google Font, self-hosted via next/font, in line with the logo's Arial Rounded), uppercase with wide tracking and the brand gradient. Side slots hold per-screen actions: Home (bell right, period days as a centered subtitle under the title), Movements (analysis lens right), Reports (Year Wrapped right), Investments/Settings (title only). Replaces `PageTitle` (deleted). New `DiasPeriodo` component (days elapsed in the current period, no label).
+- **Auto-repeat on add**: if the type+category+description+observation being entered matches an **active recurrent**, the "repeat each period" toggle turns on by itself (it only turns on — never off, so a deliberate unmark for a one-off isn't fought) and shows an "already set" chip. No more re-ticking the toggle every month.
+- **Recurrent indicator in edit/detail**: editing or viewing a movement that matches an active recurrent shows a "Recurring movement" banner/chip, beyond the clock badge in the list.
+
+### Changed
+- **Investments**: single eye toggle (Patrimonio card); the redundant ones on the USD/EUR reserve cards were removed (the toggle is global anyway).
+
+### Removed
+- **Share backup** button and its `navigator.share` logic (it never worked reliably across devices). Backup remains as the JSON download.
+
+---
+
 ## [2.72.0] — 2026-07-13
 
 ### Added

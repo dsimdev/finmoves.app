@@ -14,7 +14,7 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
 import { SectionHint } from "@/components/ui/SectionHint";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
 
 function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; categoria: string; direccionMove?: string }) {
@@ -160,14 +160,17 @@ export default function MovimientosPage() {
       ) : (
         <div className="fade-up">
           <div style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <PageTitle>{t.pageTitleMovements}</PageTitle>
-              <Link href="/analisis" aria-label={t.analyzeTitle} style={{ color: "var(--muted)", display: "flex", padding: 6, margin: -6 }}>
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-              </Link>
-            </div>
+            <PageHeader
+              title={t.pageTitleMovements}
+              style={{ marginBottom: 0 }}
+              right={
+                <Link href="/analisis" aria-label={t.analyzeTitle} style={{ color: "var(--muted)", display: "flex", padding: 6, margin: -6 }}>
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                </Link>
+              }
+            />
             {periodoActual && (
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 {activePeriodoId === periodos[0]?.periodoId ? t.available : t.remaining}: <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{money(periodoActual.disponible)}</span>
                 <button onClick={toggle} aria-label={t.hideValues} style={{
                   background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)",

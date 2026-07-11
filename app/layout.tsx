@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, IBM_Plex_Mono } from "next/font/google";
+import { Inter, IBM_Plex_Mono, Fredoka } from "next/font/google";
 import { headers } from "next/headers";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
@@ -10,6 +10,8 @@ import "./globals.css";
 // consume globals.css (--font / --font-mono).
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-inter", display: "swap" });
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-plex-mono", display: "swap" });
+// Fuente de marca para los títulos de página (redondeada, en línea con el logo).
+const fredoka = Fredoka({ subsets: ["latin"], weight: ["500", "600"], variable: "--font-fredoka", display: "swap" });
 
 // Color de barra del navegador / status bar. El default es el tema oscuro;
 // el script de init lo ajusta al claro cuando corresponde (tema en localStorage).
@@ -80,7 +82,7 @@ export default async function RootLayout({
 }>) {
   const nonce = (await headers()).get("x-nonce") ?? "";
   return (
-    <html lang="es" className={`${inter.variable} ${plexMono.variable}`} suppressHydrationWarning>
+    <html lang="es" className={`${inter.variable} ${plexMono.variable} ${fredoka.variable}`} suppressHydrationWarning>
       <head>
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
