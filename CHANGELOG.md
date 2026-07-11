@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.70.0] — 2026-07-13
+
+### Added
+- **`/analisis` v2 — Filter & compare**: the magnifying-glass in the Movements header opens a client-side screen to filter movements by loose keywords and compare their evolution across periods.
+  - **Keyword pills**: type a word and confirm with the `+` button (or Enter) to pin it as a pill; multiple pills match with **OR**, so unrelated things (e.g. tolls + fuel) can be compared side by side. Matching is **exact-word** over category + description + observations, so `car` matches the category *Car* but not `recarga`/`carga`.
+  - **Grouping**: results are grouped by description; each row shows count and distinct days, with a per-day detail (same date summed as `×N`) that includes the year and any observación.
+  - **Multi-line chart**: shows the **total** by default; tapping a group breaks it out as its own colored line to see which one grows more. Unselected rows are neutral grey; selected rows light up with a distinct color assigned by selection order — the first six are brand colors, then generated via the **golden-angle** so colors never repeat, however many groups you select.
+  - **Manual period selector**: tap period chips to narrow the window. Selecting exactly **2 periods** turns each group row into a direct comparison (`older → newer` with the Δ%, red when spending rose, green when it fell) — no separate table, no extra scroll.
+
+### Changed
+- Charts gained a reusable `MultiLineChart` (recent-left, y-scale from 0) in `components/reports/charts.tsx`.
+
+---
+
 ## [2.69.2] — 2026-07-13
 
 ### Changed

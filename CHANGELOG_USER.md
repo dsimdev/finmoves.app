@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.70.0] — 2026-07-13
+
+### Novedades
+- **Filtrar y comparar** (la lupa arriba en Movimientos): buscá por palabras sueltas y fijalas como etiquetas para juntar varias cosas a la vez (podés comparar, por ejemplo, peajes con nafta).
+- Los resultados se agrupan por descripción, con el detalle día por día (con año y observación).
+- **Gráfico**: arranca mostrando el total; tocás un grupo y se desglosa en su propia línea de color para ver cuál crece más. Cada grupo elegido tiene un color distinto.
+- **Períodos a elección**: tocás los períodos que querés mirar. Si elegís **2**, cada fila te muestra la comparación directa (viejo → nuevo y cuánto varió: verde si gastaste menos, rojo si más).
+
+---
+
 ## [2.69.2] — 2026-07-13
 
 ### Mejoras

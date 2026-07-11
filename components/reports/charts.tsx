@@ -197,6 +197,39 @@ export function AreaChart({ data, onPointClick }: { data: { label: string; value
   );
 }
 
+// N líneas sobre el mismo eje de períodos (para comparar la evolución de varios grupos
+// a la vez). `labels` = etiquetas del eje X (reciente a la izquierda); cada serie trae
+// sus valores alineados a esos labels (0 donde no hay dato). Escala en Y desde 0.
+export function MultiLineChart({ labels, series }: {
+  labels: string[];
+  series: { key: string; color: string; values: number[]; width?: number }[];
+}) {
+  const topPad = 14, botPad = 16, chartH = 110, PX = 48;
+  const all = series.flatMap((s) => s.values);
+  const min = 0;
+  let max = Math.max(1, ...all);
+  max += (max - min) * 0.12;
+  const W = Math.max(labels.length * PX, PX);
+  const totalH = topPad + chartH + botPad;
+  const x = (i: number) => i * PX + PX / 2;
+  const y = (v: number) => topPad + chartH - ((v - min) / (max - min)) * chartH;
+  return (
+    <div style={{ overflowX: "auto", scrollbarWidth: "none" }}>
+      <svg width={W} height={totalH} style={{ display: "block" }}>
+        {series.map((s) => (
+          <g key={s.key}>
+            {s.values.length > 1 && <polyline points={s.values.map((v, i) => `${x(i)},${y(v)}`).join(" ")} fill="none" style={{ stroke: s.color }} strokeWidth={s.width ?? 2} strokeLinecap="round" strokeLinejoin="round" />}
+            {s.values.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={2.5} style={{ fill: s.color }} />)}
+          </g>
+        ))}
+        {labels.map((lb, i) => (
+          <text key={i} x={x(i)} y={totalH - 4} textAnchor="middle" fontSize={8} style={{ fill: "var(--muted)" }}>{lb}</text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 // Dos líneas acumuladas (serie A = vos, serie B = país) para comparar la inflación
 // acumulada propia vs la del país a lo largo de los períodos.
 export function TwoLineChart({ points, colorA, onPointClick }: {
