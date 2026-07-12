@@ -10,7 +10,6 @@ import { Movimiento, TipoMovimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { MovementModal } from "@/components/movements/MovementModal";
-import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
 import { SectionHint } from "@/components/ui/SectionHint";
@@ -97,7 +96,6 @@ export default function MovimientosPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recurrentes, recurrentesLoaded]);
-  const bindLongPress = useLongPress();
 
   // Si llegamos con ?m=<id> (desde el dashboard), abrir ese movimiento para editar.
   useEffect(() => {
@@ -267,7 +265,7 @@ export default function MovimientosPage() {
                         <SwipeToDelete key={m.id} deleteLabel={t.delete} bg="var(--surface)" onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
                         <button
                           className={flashIds.has(m.id) ? "row-tap flash-row" : "row-tap"}
-                          {...bindLongPress(() => setModalState({ mode: "edit", mov: m, view: "delete" }), () => openEdit(m))}
+                          onClick={() => openEdit(m)}
                           aria-label={t.edit} style={{
                           width: "100%", textAlign: "left", background: "none", cursor: "pointer",
                           display: "flex", alignItems: "flex-start", gap: 10, padding: "13px 14px",

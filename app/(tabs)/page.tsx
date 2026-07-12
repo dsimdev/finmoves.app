@@ -12,7 +12,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { MovementModal } from "@/components/movements/MovementModal";
-import { useLongPress } from "@/hooks/useLongPress";
+import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
@@ -46,7 +46,6 @@ export default function Dashboard() {
   // Modal de alta/edición abierto desde el propio inicio (sin navegar).
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
-  const bindLongPress = useLongPress();
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const ultimoCargado = useMemo(() => {
@@ -192,8 +191,9 @@ export default function Dashboard() {
             {ultimos.length === 0 ? (
               <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noMovements}</div>
             ) : ultimos.map((m) => (
-              <button key={m.id}
-                {...bindLongPress(() => setModalState({ mode: "edit", mov: m, view: "delete" }), () => setModalState({ mode: "edit", mov: m }))}
+              <SwipeToDelete key={m.id} deleteLabel={t.delete} bg="var(--surface)" onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
+              <button
+                onClick={() => setModalState({ mode: "edit", mov: m })}
                 className="row" style={{ width: "100%", padding: "11px 0", background: "none", border: "none", textAlign: "left", color: "inherit", cursor: "pointer", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -205,6 +205,7 @@ export default function Dashboard() {
                   {TipoPrefix(m)}{money(m.monto)}
                 </span>
               </button>
+              </SwipeToDelete>
             ))}
             {p.movimientos.length > 5 && (
               <Link href="/movements" style={{
