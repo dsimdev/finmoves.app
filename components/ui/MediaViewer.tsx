@@ -73,7 +73,7 @@ export function MediaViewer({ src, isPdf, onClose }: { src: string; isPdf: boole
   };
 
   return createPortal(
-    <div data-no-swipe style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.35)", backdropFilter: "blur(1px)", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.35)", backdropFilter: "blur(1px)", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none" }}>
       <button onClick={onClose} aria-label="×" style={{ position: "absolute", top: 12, right: 14, zIndex: 2, background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 24, width: 40, height: 40, borderRadius: "50%", cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
       {isPdf ? (
         <iframe src={src} title="PDF" style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />

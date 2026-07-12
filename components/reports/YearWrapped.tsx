@@ -88,7 +88,7 @@ export function YearWrapped({ open, onClose }: { open: boolean; onClose: () => v
   const prev = () => setI((v) => Math.max(0, v - 1));
 
   return createPortal(
-    <div data-no-swipe style={{ position: "fixed", inset: 0, zIndex: 10000, background: cur.bg, transition: "background .4s ease", display: "flex", flexDirection: "column", color: "#fff", WebkitUserSelect: "none", userSelect: "none" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: cur.bg, transition: "background .4s ease", display: "flex", flexDirection: "column", color: "#fff", WebkitUserSelect: "none", userSelect: "none" }}>
       {/* Progreso */}
       <div style={{ display: "flex", gap: 4, padding: "10px 12px 0" }}>
         {slides.map((_, idx) => (

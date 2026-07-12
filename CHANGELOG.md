@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.74.0] — 2026-07-12
+
+### Added
+- **Swipe-to-delete rows** (`SwipeToDelete`, shared component): sliding a row left reveals a fixed red trash button; tapping it triggers the action, tapping the open row (or sliding back) closes it. Gesture intent (horizontal vs vertical) is decided once per touch so it doesn't fight vertical scroll; `touchcancel` snaps closed; the ghost click after a drag is swallowed via `onClickCapture`.
+  - **Notifications panel**: swipe no longer marks as read (that stays on tap and "mark all") — it now **deletes** the notification (`eliminarNotificacion`, which existed unused). Hint copy updated.
+  - **Movements list and Home's latest movements**: swipe opens the existing delete confirmation (no direct delete — balances are involved). Tap keeps opening edit. Row background is applied only while displaced, preserving the card gradient at rest.
+
+### Removed
+- **Horizontal swipe between tabs** (`useSwipeNav` deleted, dead `data-no-swipe` attributes cleaned from modals): it conflicted with per-row gestures and was blocking native-feel improvements (user decision). `SwipeNav` keeps per-tab scroll restoration and the fade transition.
+- **Delete via long-press** on movement rows (Movements and Home), replaced by swipe-to-delete; `useLongPress` deleted (no remaining users). The anchor-salary guard is unaffected (it lives in the modal, which forces the edit view).
+
+---
+
 ## [2.73.1] — 2026-07-12
 
 ### Fixed
