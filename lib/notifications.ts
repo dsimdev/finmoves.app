@@ -79,57 +79,67 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
   const notify = (await notifyRef.get()).data() ?? {};
   const updates: Record<string, unknown> = {};
 
-  // Cambio del dólar oficial. El baseline (lastDolarOficial) se re-ancla SOLO
-  //    al avisar, así medimos el cambio ACUMULADO desde el último aviso y el
-  //    resultado no depende de cada cuánto corra la cron (clave si corre por hora).
-  if (ctx.dolarOficial) {
-    const last = notify.lastDolarOficial as number | undefined;
-    if (!last) {
-      updates.lastDolarOficial = ctx.dolarOficial; // primer registro
-    } else {
-      const deltaPct = ((ctx.dolarOficial - last) / last) * 100;
-      if (Math.abs(deltaPct) >= DOLAR_THRESHOLD_PCT) {
-        const dir = deltaPct > 0 ? "subió" : "bajó";
-        await pushYGuardar(uid, "dolar", { title: "Dólar oficial", body: `El oficial ${dir} ${Math.abs(deltaPct).toFixed(1)}% · $${ctx.dolarOficial.toLocaleString("es-AR")}`, tag: "dolar", url: "/investments" }, "/investments");
-        updates.lastDolarOficial = ctx.dolarOficial; // re-anclar al avisar
+  // Cada check corre con su propio catch y los flags se persisten en un finally: un
+  // check que falle no puede hacer perder el dedup de un push que otro check YA envió
+  // (perderlo re-avisaría duplicado en la próxima corrida — el reverso del bug v2.71.0).
+  let falloDiario = false;
+  const guardDiario = (p: Promise<void>) => p.catch((e) => { falloDiario = true; console.error("[notify]", uid, e); });
+
+  try {
+    await checkDolar(uid, ctx, notify, updates).catch((e) => console.error("[notify]", uid, e));
+
+    // Versión nueva: push una vez por release MINOR/MAJOR (los patches se actualizan
+    // solos). Convive con el banner in-app, que es quien hace el hard-refresh.
+    await checkVersion(uid, notify, updates).catch((e) => console.error("[notify]", uid, e));
+
+    // Los checks basados en movimientos corren UNA vez por día (no en cada corrida del
+    // cron): son recordatorios diarios por naturaleza. El dólar/versión sí corren en
+    // cada corrida (arriba) porque no leen movimientos. Esto baja las lecturas 4×→1×.
+    const hoy = hoyAR();
+    if (notify.lastDailyRun !== hoy) {
+      const config = (await adminDb().doc(`users/${uid}/config/meta`).get()).data() as ConfigUsuario | undefined;
+      if (config) {
+        // Lectura de movimientos recientes compartida por sueldo y carga-olvidada (ambos
+        // solo necesitan lo más nuevo). Recurrentes hace su propia lectura por ventana de
+        // fecha, porque necesita ver más atrás que estos 150 en períodos de alto volumen.
+        const recentSnap = await adminDb()
+          .collection(`users/${uid}/movimientos`)
+          .orderBy("timestampCarga", "desc")
+          .limit(150)
+          .get();
+        const recientes = recentSnap.docs.map((d) => {
+          const data = d.data();
+          return { ...data, id: d.id, timestampCarga: (data.timestampCarga as Timestamp).toDate() } as Movimiento;
+        });
+        await guardDiario(checkMeta(uid, config, notify, updates));
+        await guardDiario(checkSueldo(uid, recientes, notify, updates));
+        await guardDiario(checkCargaOlvidada(uid, recientes, notify, updates));
+        await guardDiario(checkRecurrentes(uid, notify, updates));
       }
+      // Recordatorios puntuales del usuario (colección propia, independiente de config).
+      await guardDiario(checkRecordatorios(uid));
+      // Cerrar el día SOLO si ningún check diario falló: si uno falló, la próxima corrida
+      // del cron lo reintenta hoy mismo (los que sí avisaron no repiten: su dedup quedó).
+      if (!falloDiario) updates.lastDailyRun = hoy;
     }
+  } finally {
+    if (Object.keys(updates).length > 0) await notifyRef.set(updates, { merge: true });
   }
+}
 
-  // Versión nueva: push una vez por release MINOR/MAJOR (los patches se actualizan
-  // solos). Convive con el banner in-app, que es quien hace el hard-refresh.
-  await checkVersion(uid, notify, updates);
-
-  // Los checks basados en movimientos corren UNA vez por día (no en cada corrida del
-  // cron): son recordatorios diarios por naturaleza. El dólar/versión sí corren en
-  // cada corrida (arriba) porque no leen movimientos. Esto baja las lecturas 4×→1×.
-  const hoy = hoyAR();
-  if (notify.lastDailyRun !== hoy) {
-    const config = (await adminDb().doc(`users/${uid}/config/meta`).get()).data() as ConfigUsuario | undefined;
-    if (config) {
-      // Lectura de movimientos recientes compartida por sueldo y carga-olvidada (ambos
-      // solo necesitan lo más nuevo). Recurrentes hace su propia lectura por ventana de
-      // fecha, porque necesita ver más atrás que estos 150 en períodos de alto volumen.
-      const recentSnap = await adminDb()
-        .collection(`users/${uid}/movimientos`)
-        .orderBy("timestampCarga", "desc")
-        .limit(150)
-        .get();
-      const recientes = recentSnap.docs.map((d) => {
-        const data = d.data();
-        return { ...data, id: d.id, timestampCarga: (data.timestampCarga as Timestamp).toDate() } as Movimiento;
-      });
-      await checkMeta(uid, config, notify, updates);
-      await checkSueldo(uid, recientes, notify, updates);
-      await checkCargaOlvidada(uid, recientes, notify, updates);
-      await checkRecurrentes(uid, notify, updates);
-    }
-    // Recordatorios puntuales del usuario (colección propia, independiente de config).
-    await checkRecordatorios(uid);
-    updates.lastDailyRun = hoy;
-  }
-
-  await notifyRef.set(updates, { merge: true });
+// Cambio del dólar oficial. El baseline (lastDolarOficial) se re-ancla SOLO al avisar
+// con push CONFIRMADO: así medimos el cambio ACUMULADO desde el último aviso (no depende
+// de cada cuánto corra la cron) y un envío fallido se reintenta en la próxima corrida
+// en vez de silenciar el movimiento para siempre (regla v2.71.0).
+async function checkDolar(uid: string, ctx: GlobalCtx, notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  if (!ctx.dolarOficial) return;
+  const last = notify.lastDolarOficial as number | undefined;
+  if (!last) { updates.lastDolarOficial = ctx.dolarOficial; return; } // primer registro
+  const deltaPct = ((ctx.dolarOficial - last) / last) * 100;
+  if (Math.abs(deltaPct) < DOLAR_THRESHOLD_PCT) return;
+  const dir = deltaPct > 0 ? "subió" : "bajó";
+  const ok = await pushYGuardar(uid, "dolar", { title: "Dólar oficial", body: `El oficial ${dir} ${Math.abs(deltaPct).toFixed(1)}% · $${ctx.dolarOficial.toLocaleString("es-AR")}`, tag: "dolar", url: "/investments" }, "/investments");
+  if (ok) updates.lastDolarOficial = ctx.dolarOficial;
 }
 
 // ¿`to` es un salto MINOR o MAJOR respecto de `from`? (los PATCH no avisan).
@@ -149,7 +159,8 @@ async function checkVersion(uid: string, notify: Record<string, unknown>, update
   if (!last) { updates.lastVersionNotified = current; return; } // primer registro
   if (current === last) return;
   if (esMinorOMajor(last, current)) {
-    await pushYGuardar(uid, "version", { title: "FinMoves actualizado", body: `Nueva versión v${current} disponible`, tag: `version-${current}`, url: "/settings/help?changelog=1" }, "/settings/help?changelog=1");
+    const ok = await pushYGuardar(uid, "version", { title: "FinMoves actualizado", body: `Nueva versión v${current} disponible`, tag: `version-${current}`, url: "/settings/help?changelog=1" }, "/settings/help?changelog=1");
+    if (!ok) return; // push fallido → no avanzar el baseline, se reintenta la próxima corrida
   }
   updates.lastVersionNotified = current;
 }
@@ -172,9 +183,12 @@ async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Recor
 //  2) El día (o pasado), aviso final y BORRA el recordatorio.
 async function checkRecordatorios(uid: string) {
   const hoy = hoyAR();
+  // Sin filtro por fecha: los VENCIDOS también tienen que entrar (si el push falló o el
+  // cron no corrió ese día, el doc se conservó y hay que reintentarlo; con `fecha >= hoy`
+  // quedaban excluidos para siempre). La colección solo guarda pendientes (el aviso
+  // final borra el doc), así que leerla entera es barato.
   const snap = await adminDb()
     .collection(`users/${uid}/recordatorios`)
-    .where("fecha", ">=", hoy)
     .get();
   await Promise.all(snap.docs.map(async (doc) => {
     const r = doc.data() as { texto?: string; fecha?: string; avisadoPre?: boolean };
@@ -248,8 +262,10 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
     : `${nombres.length} recurrentes pendientes: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`;
   // Un solo recurrente → deep-link al modal pre-cargado; varios → listado general.
   const dest = ids.length === 1 ? `/movements?recurrente=${encodeURIComponent(ids[0])}` : "/movements";
-  // Persistir el dedup SOLO si el push se confirmó: si falla, reintenta mañana.
-  const ok = await pushYGuardar(uid, "recurrente", { title: "Recurrentes", body, tag: `rec-${hoy.slice(0, 7)}`, url: dest, ...CARGAR_ACCION }, dest);
+  // El botón "Cargar" va al MISMO dest que el cuerpo (con prefill si es uno solo).
+  // Tag por día, no por mes: dos recurrentes que avisan en días distintos del mes no
+  // se pisan en el tray del SO. Dedup SOLO si el push se confirmó: si falla, reintenta mañana.
+  const ok = await pushYGuardar(uid, "recurrente", { title: "Recurrentes", body, tag: `rec-${hoy}`, url: dest, actions: [{ action: "cargar", title: "Cargar" }], actionUrls: { cargar: dest } }, dest);
   if (ok) updates.recReminded = nextReminded;
 }
 

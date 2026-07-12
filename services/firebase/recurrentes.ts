@@ -18,9 +18,12 @@ export interface Recurrente {
 // Id determinístico por tipo+categoría+descripción+observación → marcar/desmarcar es
 // idempotente (no duplica) y dos cargas con misma descripción pero distinta observación
 // (ej. "Steam·eso+" vs "Steam·eso pass") son recurrentes independientes. Se sanea para
-// que sea un doc id válido de Firestore.
+// que sea un doc id válido de Firestore. Descripción y observación van en minúsculas y
+// sin espacios de borde, igual que el matching (cron y cliente): "Steam" y "steam" son
+// el MISMO template — con case-sensitive se creaban dos que avisaban duplicado.
 function slug(tipo: string, categoria: string, descripcion: string, observaciones: string): string {
-  return `${tipo}__${categoria}__${descripcion || "_"}__${observaciones || "_"}`.replace(/[/.#$[\]]/g, "-").slice(0, 250);
+  const norm = (s: string) => (s || "").trim().toLowerCase() || "_";
+  return `${tipo}__${categoria}__${norm(descripcion)}__${norm(observaciones)}`.replace(/[/.#$[\]]/g, "-").slice(0, 250);
 }
 
 export async function listarRecurrentes(uid: string): Promise<Recurrente[]> {

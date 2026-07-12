@@ -21,6 +21,7 @@ interface DataCtx {
   configLoading: boolean;
   refreshConfig: () => void;
   recurrentes: Recurrente[];
+  recurrentesLoaded: boolean;
   plantillas: Plantilla[];
   refreshRecurrentes: () => void;
   refreshPlantillas: () => void;
@@ -43,11 +44,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // Recurrentes y plantillas: se leen una vez por sesión (antes se re-leían en cada
   // visita a Movimientos y en cada apertura del modal de alta, respectivamente).
   const [recurrentes, setRecurrentes] = useState<Recurrente[]>([]);
+  // `loaded` distingue "todavía no llegó" de "no hay ninguno": el deep-link ?recurrente=
+  // lo necesita para saber si el template no existe (borrado) o si solo falta esperar.
+  const [recurrentesLoaded, setRecurrentesLoaded] = useState(false);
   const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
   const uid = user?.uid;
   useEffect(() => {
-    if (!uid) { setRecurrentes([]); setPlantillas([]); return; }
-    listarRecurrentes(uid).then(setRecurrentes).catch(() => {});
+    if (!uid) { setRecurrentes([]); setRecurrentesLoaded(false); setPlantillas([]); return; }
+    listarRecurrentes(uid).then((r) => { setRecurrentes(r); setRecurrentesLoaded(true); }).catch(() => {});
     listarPlantillas(uid).then(setPlantillas).catch(() => {});
   }, [uid]);
   const refreshRecurrentes = useCallback(() => { if (uid) listarRecurrentes(uid).then(setRecurrentes).catch(() => {}); }, [uid]);
@@ -75,7 +79,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [config, router]);
 
   return (
-    <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig, recurrentes, plantillas, refreshRecurrentes, refreshPlantillas, mutateRecurrentes: setRecurrentes, mutatePlantillas: setPlantillas }}>
+    <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig, recurrentes, recurrentesLoaded, plantillas, refreshRecurrentes, refreshPlantillas, mutateRecurrentes: setRecurrentes, mutatePlantillas: setPlantillas }}>
       {children}
     </Ctx.Provider>
   );

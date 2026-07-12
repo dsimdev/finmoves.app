@@ -4,7 +4,18 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.73.0] — 2026-07-13
+## [2.73.1] — 2026-07-12
+
+### Arreglos
+- **Los recordatorios vencidos ya no se pierden**: si el aviso de un recordatorio fallaba justo ese día, no volvía a intentarse nunca. Ahora reintenta hasta que te llegue.
+- **El botón "Cargar" del aviso de recurrente ahora abre la carga ya completada** (antes abría el formulario vacío; solo funcionaba tocando el cuerpo del aviso).
+- **Aviso "ya lo cargaste"**: si abrís la carga de un recurrente desde una notificación vieja y ya lo habías cargado este mes, aparece un cartel amarillo para que no lo dupliques sin querer.
+- **Recurrentes sin duplicados por mayúsculas**: "Steam" y "steam" ahora son el mismo recurrente (antes se creaban dos y avisaban doble).
+- El aviso del dólar y otros avisos ya no se silencian si el envío falla una vez; reintentan solos.
+
+---
+
+## [2.73.0] — 2026-07-11
 
 ### Novedades
 - **Títulos renovados**: ahora van centrados, en mayúsculas y con una letra redondeada que acompaña al logo. Las acciones de cada pantalla quedan a los costados; en Inicio, los días del período van justo debajo del título.
@@ -17,7 +28,7 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.72.0] — 2026-07-13
+## [2.72.0] — 2026-07-11
 
 ### Novedades
 - **Panel de notificaciones**: una campanita en Inicio (con un globito rojo si tenés avisos sin leer) abre la lista de todas tus notificaciones. Antes se perdían apenas las descartabas; ahora quedan guardadas.
@@ -29,7 +40,7 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.71.0] — 2026-07-13
+## [2.71.0] — 2026-07-11
 
 ### Arreglos
 - **Los recordatorios ya no se pierden**: si un aviso push fallaba una vez (por un error momentáneo), el sistema te daba por avisado y no volvía a intentarlo — por eso el recordatorio del sueldo no salió el mes pasado. Ahora se marca como avisado **solo si el aviso llegó de verdad**, y reintenta si falla. Esto vale para sueldo, recurrentes, carga olvidada y recordatorios.
@@ -43,7 +54,7 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.70.0] — 2026-07-13
+## [2.70.0] — 2026-07-11
 
 ### Novedades
 - **Filtrar y comparar** (la lupa arriba en Movimientos): buscá por palabras sueltas y fijalas como etiquetas para juntar varias cosas a la vez (podés comparar, por ejemplo, peajes con nafta).
@@ -53,28 +64,28 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.69.2] — 2026-07-13
+## [2.69.2] — 2026-07-09
 
 ### Mejoras
 - La pantalla de desbloqueo muestra el indicador de carga mientras valida la huella, y el logo se ve más nítido.
 
 ---
 
-## [2.69.1] — 2026-07-13
+## [2.69.1] — 2026-07-09
 
 ### Arreglos
 - En "Filtrar y comparar", el gráfico ahora muestra el período más reciente a la izquierda (como el resto de la app).
 
 ---
 
-## [2.69.0] — 2026-07-13
+## [2.69.0] — 2026-07-09
 
 ### Novedades
 - **Filtrar y comparar** (nueva 🔍 en Movimientos): buscá por observación/descripción o categoría y mirá cómo evoluciona ese gasto período a período. Los resultados se agrupan por descripción (ej. "Peajes") y, al abrir, ves el detalle por día (mismo día sumado). Total, cantidad y gráfico de evolución incluidos.
 
 ---
 
-## [2.68.0] — 2026-07-13
+## [2.68.0] — 2026-07-08
 
 ### Cambios
 - Sacamos la vibración (no funcionaba bien). Se mantiene el resaltado del movimiento recién cargado.
@@ -82,21 +93,21 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.67.1] — 2026-07-13
+## [2.67.1] — 2026-07-08
 
 ### Arreglos
 - **Subir comprobante** ya no falla en el primer intento cuando la app estuvo un rato inactiva (reintenta solo hasta que sube).
 
 ---
 
-## [2.67.0] — 2026-07-13
+## [2.67.0] — 2026-07-07
 
 ### Novedades
 - **Nueva animación de carga**: el logo FM con dos aros girando en los colores de la app.
 
 ---
 
-## [2.66.1] — 2026-07-13
+## [2.66.1] — 2026-07-07
 
 ### Arreglos
 - El botón "+" vuelve a flotar donde debe (se había desubicado con el cambio de pestañas anterior).
@@ -105,7 +116,7 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
-## [2.66.0] — 2026-07-13
+## [2.66.0] — 2026-07-07
 
 ### Novedades
 - **Compartí un pago a FinMoves y se pre-carga solo**: al compartir desde Mercado Pago (u otra app), tomamos el monto y una descripción y abrimos la carga con eso listo. Vos revisás y guardás.

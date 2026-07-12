@@ -32,7 +32,7 @@ function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; cat
 
 export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
-  const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento, recurrentes } = useData();
+  const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento, recurrentes, recurrentesLoaded } = useData();
   const t = useT();
 
   // Recurrentes activos → para marcar con un relojito los movimientos que matchean.
@@ -83,6 +83,10 @@ export default function MovimientosPage() {
       if (r) {
         setModalState({ mode: "add", prefill: { tipo: r.tipo, categoria: r.categoria, descripcion: r.descripcion, observaciones: r.observaciones } });
         window.history.replaceState(window.history.state, "", "/movements");
+      } else if (recurrentesLoaded) {
+        // Template borrado (notificación vieja) → alta en blanco y URL limpia igual.
+        openAdd();
+        window.history.replaceState(window.history.state, "", "/movements");
       }
       return;
     }
@@ -91,7 +95,7 @@ export default function MovimientosPage() {
       window.history.replaceState(window.history.state, "", "/movements");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recurrentes]);
+  }, [recurrentes, recurrentesLoaded]);
   const bindLongPress = useLongPress();
 
   // Si llegamos con ?m=<id> (desde el dashboard), abrir ese movimiento para editar.
@@ -101,7 +105,7 @@ export default function MovimientosPage() {
     if (!id) return;
     const mov = movimientos.find((x) => x.id === id);
     if (mov) openEdit(mov);
-    window.history.replaceState(null, "", "/movements");
+    window.history.replaceState(window.history.state, "", "/movements");
   }, [loading, movimientos]);
 
   // Fade del botón flotante: se oculta mientras se navega (scroll) y reaparece
