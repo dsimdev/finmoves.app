@@ -57,6 +57,7 @@ export const es = {
   description: "Descripción",
   repeatEachPeriod: "Repetir cada período (recordatorio)",
   alreadyRecurrent: "Ya lo tenés",
+  prefillAlreadyLoaded: (d: number) => d === 0 ? "Ya lo cargaste hoy" : d === 1 ? "Ya lo cargaste ayer" : `Ya lo cargaste hace ${d} días`,
   recurrentMovement: "Movimiento recurrente",
   amount: "Monto",
   date: "Fecha",

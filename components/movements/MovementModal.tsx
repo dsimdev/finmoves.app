@@ -128,6 +128,23 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   useEffect(() => {
     if (yaEsRecurrente) setRepetir(true);
   }, [yaEsRecurrente]);
+  // Alta pre-cargada desde una notificación de recurrente: si ya hay una carga que
+  // matchea en los últimos ~28 días, la notificación es vieja (este ciclo ya se cargó)
+  // → banner de aviso para no meter un duplicado sin querer.
+  const prefillYaCargadoDias = useMemo(() => {
+    if (mode !== "add" || !prefill?.descripcion) return null;
+    const key = recKey(prefill.tipo ?? "", prefill.categoria ?? "", prefill.descripcion, prefill.observaciones);
+    let ultima = "";
+    for (const m of movimientos) {
+      if (!m.fecha || recKey(m.tipo, m.categoria, m.descripcion, m.observaciones) !== key) continue;
+      if (m.fecha > ultima) ultima = m.fecha;
+    }
+    if (!ultima) return null;
+    const [y, mo, d] = ultima.split("-").map(Number);
+    const dias = Math.floor((Date.now() - Date.UTC(y, mo - 1, d)) / 86_400_000);
+    return dias >= 0 && dias < 28 ? dias : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, prefill, movimientos]);
   // Comprobante adjunto (alta y edición) + visor de media (hook dedicado).
   const {
     file: comprobanteFile,
@@ -537,6 +554,12 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       {/* ADD */}
       {mode === "add" && (
         <form onSubmit={handleAdd}>
+          {prefillYaCargadoDias !== null && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, padding: "9px 12px", background: "var(--yellow-dim)", border: "1px solid var(--yellow)", borderRadius: "var(--radius-sm)", color: "var(--yellow)", fontSize: 12, fontWeight: 600 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+              {t.prefillAlreadyLoaded(prefillYaCargadoDias)}
+            </div>
+          )}
           {reserveMode ? (
             /* Reserva: TIPO a todo el ancho (Compra/Ingreso verdes, Venta/Gasto rojos). */
             <div style={{ marginBottom: 16 }}>
