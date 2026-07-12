@@ -4,7 +4,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.73.1] — 2026-07-11
+## [2.73.1] — 2026-07-12
 
 ### Fixed
 - **Overdue one-off reminders were unrecoverable**: `checkRecordatorios` queried `fecha >= today` but the final-notice branch requires `fecha <= today`, so only `fecha == today` ever matched — if the push failed that day (or the cron didn't run), the doc was kept for retry but the next day's query excluded it forever. The query now reads the whole collection (it only holds pending reminders; the final notice deletes the doc), so overdue reminders retry until confirmed.
@@ -22,7 +22,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.73.0] — 2026-07-13
+## [2.73.0] — 2026-07-11
 
 ### Added
 - **Unified page headers**: new `PageHeader` (3-column grid) with the title centered in **Fredoka** (rounded Google Font, self-hosted via next/font, in line with the logo's Arial Rounded), uppercase with wide tracking and the brand gradient. Side slots hold per-screen actions: Home (bell right, period days as a centered subtitle under the title), Movements (analysis lens right), Reports (Year Wrapped right), Investments/Settings (title only). Replaces `PageTitle` (deleted). New `DiasPeriodo` component (days elapsed in the current period, no label).
@@ -37,7 +37,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.72.0] — 2026-07-13
+## [2.72.0] — 2026-07-11
 
 ### Added
 - **In-app notifications panel**: a bell in the Home header (with an unread badge) opens a BottomSheet listing the notifications the app has sent. Every confirmed push is now also persisted to `users/{uid}/notificaciones` with its deep-link (`lib/notif-store.ts` wraps `sendPushToUser`, so the dedup-only-on-success behaviour from 2.71.0 is preserved). The tray is capped at 30 (oldest pruned on write). Badge count is read once on mount (getDocs, battery-friendly) and refreshed when the panel opens.
@@ -50,7 +50,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.71.0] — 2026-07-13
+## [2.71.0] — 2026-07-11
 
 ### Fixed
 - **Push reminders could silence themselves forever after a single transient send failure** (root cause of a missed salary reminder while dollar/version pushes kept working). `sendPushToUser` swallowed every error, so a failed send still fell through to the dedup write (`sueldoRemindedFor`, `recReminded`, `cargaRemindedFor`, `metaHitos`) — marking the user as "already notified" for a notification they never received. Now `sendPushToUser` **returns whether the send was confirmed**, and every check persists its dedup **only on success**, so a transient failure retries the next day instead of being lost. It also **retries twice with backoff** (0/1.5s/4s) on non-404/410 errors, reusing the already-read subscription so there's **no extra Firestore cost**.
@@ -64,7 +64,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.70.0] — 2026-07-13
+## [2.70.0] — 2026-07-11
 
 ### Added
 - **`/analisis` v2 — Filter & compare**: the magnifying-glass in the Movements header opens a client-side screen to filter movements by loose keywords and compare their evolution across periods.
@@ -78,7 +78,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.69.2] — 2026-07-13
+## [2.69.2] — 2026-07-09
 
 ### Changed
 - **LockScreen polish**: shows the app `Loader` while the biometric check runs (previously the button only dimmed) and renders the logo from the 1024px master for a crisp 84px downscale. The OS fingerprint prompt itself is drawn by Android/Chrome via WebAuthn and cannot be styled or intercepted from the web — that's a deliberate security boundary, unlike the receipt chooser, where we bypass the OS "pick a source" dialog rather than capture it.
@@ -86,14 +86,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.69.1] — 2026-07-13
+## [2.69.1] — 2026-07-09
 
 ### Fixed
 - **`/analisis` evolution chart had the most recent period on the right**: the app convention is most-recent-on-the-**left** (Reports uses `serieDesc`). The evolution series was chronological (reversed); dropped the reverse so it renders newest→oldest, left to right, matching the rest of the app.
 
 ---
 
-## [2.69.0] — 2026-07-13
+## [2.69.0] — 2026-07-09
 
 ### Added
 - **Advanced filter & compare (`/analisis`)**: a new on-demand screen (search icon in the Movements header, not a bottom-nav tab) to slice movements and see their evolution across periods. 100% client-side over the in-memory movements.
@@ -105,7 +105,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.68.0] — 2026-07-13
+## [2.68.0] — 2026-07-08
 
 ### Removed
 - **All haptics (`navigator.vibrate`)**: never fired reliably on the target device, so removed from save/edit/delete (`buzz` + the `saveFeedback` pref and its Preferences toggle), tab tap (`BottomNav`), long-press (`useLongPress`) and the double-back toast (`BackExitToast`). The **new-item highlight** (`flash-row`) stays and is now always on (no longer gated by the removed pref).
@@ -113,14 +113,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.67.1] — 2026-07-13
+## [2.67.1] — 2026-07-08
 
 ### Fixed
 - **Receipt upload failing with "Failed to fetch" on the first try (cold start)**: the API's Cloud Run scales to zero (`minInstances: 0`), so the first `POST /api/comprobantes/upload` after an idle period hits a cold instance and the connection is dropped mid-cold-start. `subirComprobante`'s retry was a single immediate attempt, which usually hit the still-cold instance too. Now it retries with backoff (0 / 1.5s / 4s), giving the instance time to wake — the upload recovers on its own without surfacing an error. The "Reintentar" sticky toast remains as the last-resort fallback.
 
 ---
 
-## [2.67.0] — 2026-07-13
+## [2.67.0] — 2026-07-07
 
 ### Changed
 - **New app loader** (`components/ui/Loader.tsx` + `.fm-ring` in globals): two counter-rotating brand-gradient "blades" (blue / cyan / green via `border-*-color`) used everywhere a spinner appears — `LoadingSpinner` (blades around the FM logo), `SyncIndicator`, and the save buttons (movement / investment / auto-savings). Replaces the previous single spinning ring + the small `stroke-dasharray` SVGs.
@@ -129,7 +129,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.66.1] — 2026-07-13
+## [2.66.1] — 2026-07-07
 
 ### Fixed
 - **Floating "+" button and modals mis-positioned after the v2.66.0 tab swipe**: the ViewPager finger-follow put a persistent `transform` + `will-change: transform` on the `SwipeNav` container, which turns it into the containing block for its `position: fixed` descendants — so the FAB anchored to the page bottom/top instead of the viewport, and non-portaled fixed overlays shifted. Reverted the finger-follow (and the directional slide-in): tab swipe again commits on `touchend` with no container transform. **Kept** the two safe wins: **scroll position restored per tab** and the neutral `tabFade`.
@@ -141,7 +141,7 @@ All notable changes to FinMoves are documented here.
 
 ---
 
-## [2.66.0] — 2026-07-13
+## [2.66.0] — 2026-07-07
 
 360-audit Level 3 (projects #2, #3, #6): share-target prefill, ViewPager-style tabs, sync indicator + Web Share.
 
