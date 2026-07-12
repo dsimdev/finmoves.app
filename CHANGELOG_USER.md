@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.74.0] — 2026-07-12
+
+### Novedades
+- **Deslizá para eliminar**: en el panel de notificaciones y en la lista de movimientos, deslizá una fila hacia la izquierda y aparece un tachito rojo. En notificaciones lo tocás y se borra; en movimientos te abre la confirmación de siempre. (Deslizar ya no marca como leída: para eso tocá la notificación o usá "marcar todas".)
+- **Se quitó el cambio de pestaña deslizando**: chocaba con los gestos nuevos. Las pestañas se cambian desde la barra de abajo, como siempre.
+
+---
+
 ## [2.73.1] — 2026-07-12
 
 ### Arreglos
