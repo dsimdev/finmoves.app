@@ -63,7 +63,7 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, bg, children }: {
         style={{
           position: "absolute", top: 0, right: 0, bottom: 0, width: TRASH_W + 20,
           display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 20,
-          background: "var(--red)", color: "#fff", border: "none", cursor: "pointer",
+          background: "none", color: "var(--red)", border: "none", cursor: "pointer",
           opacity: dx === 0 ? 0 : 1, transition: "opacity .15s",
           pointerEvents: dx === 0 ? "none" : "auto",
         }}
