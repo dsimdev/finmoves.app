@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
 import { listarNotificaciones, marcarLeida, eliminarNotificacion, marcarTodasLeidas, type Notificacion, type NotifTipo } from "@/services/firebase/notificaciones";
 
 // Ícono + color por tipo de notificación.
@@ -30,25 +31,18 @@ const hace = (ms: number): string => {
   return new Date(ms).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
 };
 
-// Fila con slide-to-dismiss (marca leída al deslizar horizontalmente lo suficiente).
-function Row({ n, onOpen, onDismiss }: { n: Notificacion; onOpen: () => void; onDismiss: () => void }) {
-  const [dx, setDx] = useState(0);
-  const start = useRef<number | null>(null);
-  const moved = useRef(false);
+// Fila con swipe a la izquierda → tacho para eliminar (SwipeToDelete). Tap → abre.
+function Row({ n, onOpen, onDelete, deleteLabel }: { n: Notificacion; onOpen: () => void; onDelete: () => void; deleteLabel: string }) {
   const meta = META[n.tipo] ?? META.recordatorio;
 
   return (
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: 12 }}>
+    <SwipeToDelete onDelete={onDelete} deleteLabel={deleteLabel} radius={12}>
       <button
-        onClick={() => { if (!moved.current) onOpen(); }}
-        onTouchStart={(e) => { start.current = e.touches[0].clientX; moved.current = false; }}
-        onTouchMove={(e) => { if (start.current == null) return; const d = e.touches[0].clientX - start.current; if (Math.abs(d) > 6) moved.current = true; setDx(d); }}
-        onTouchEnd={() => { if (Math.abs(dx) > 90) onDismiss(); else setDx(0); start.current = null; }}
+        onClick={onOpen}
         style={{
           width: "100%", display: "flex", alignItems: "flex-start", gap: 11, textAlign: "left", cursor: "pointer",
           padding: "12px 13px", borderRadius: 12, border: "1px solid var(--border)",
           background: n.leida ? "var(--surface)" : "var(--surface-alt)",
-          transform: `translateX(${dx}px)`, transition: start.current == null ? "transform .18s" : "none",
         }}
       >
         <span style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: `color-mix(in srgb, ${meta.color} 15%, transparent)`, border: `1px solid color-mix(in srgb, ${meta.color} 40%, transparent)` }}>
@@ -63,7 +57,7 @@ function Row({ n, onOpen, onDismiss }: { n: Notificacion; onOpen: () => void; on
           <span style={{ display: "block", fontSize: 10, color: "var(--muted)", marginTop: 4, opacity: 0.75 }}>{hace(n.createdAt)}</span>
         </span>
       </button>
-    </div>
+    </SwipeToDelete>
   );
 }
 
@@ -89,9 +83,9 @@ export function NotificationsBell() {
     setOpen(false);
     router.push(n.dest);
   };
-  const dismiss = async (n: Notificacion) => {
-    if (user?.uid) marcarLeida(user.uid, n.id).catch(() => {});
-    setItems((prev) => prev.map((x) => x.id === n.id ? { ...x, leida: true } : x));
+  const eliminar = async (n: Notificacion) => {
+    if (user?.uid) eliminarNotificacion(user.uid, n.id).catch(() => {});
+    setItems((prev) => prev.filter((x) => x.id !== n.id));
   };
   const limpiarTodas = async () => {
     if (!user?.uid) return;
@@ -118,7 +112,7 @@ export function NotificationsBell() {
               <button onClick={limpiarTodas} style={{ alignSelf: "flex-end", background: "none", border: "none", color: "var(--accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: "0 2px 2px" }}>{t.markAllRead}</button>
             )}
             {items.map((n) => (
-              <Row key={n.id} n={n} onOpen={() => abrirNotif(n)} onDismiss={() => dismiss(n)} />
+              <Row key={n.id} n={n} onOpen={() => abrirNotif(n)} onDelete={() => eliminar(n)} deleteLabel={t.delete} />
             ))}
             <div style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", marginTop: 4, opacity: 0.7 }}>{t.notificationsSlideHint}</div>
           </div>

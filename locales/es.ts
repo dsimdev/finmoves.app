@@ -466,7 +466,7 @@ export const es = {
   // Biometría
   notifications: "Notificaciones",
   notificationsEmpty: "No tenés notificaciones",
-  notificationsSlideHint: "Deslizá una notificación para marcarla como leída",
+  notificationsSlideHint: "Deslizá una notificación a la izquierda para eliminarla",
   markAllRead: "Marcar todas",
   inviteCodeModalTitle: "Código generado",
   notificationsSub: "Avisos de sync, nueva versión y dólar",

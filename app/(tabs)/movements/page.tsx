@@ -14,6 +14,7 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useT } from "@/hooks/useTranslation";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
 import { SectionHint } from "@/components/ui/SectionHint";
+import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
 
@@ -263,7 +264,8 @@ export default function MovimientosPage() {
                       const esResto = m.categoria === "RESTO"; // arrastre a ahorros: azul y "+"
                       const negativo = !esResto && (isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro"));
                       return (
-                        <button key={m.id}
+                        <SwipeToDelete key={m.id} deleteLabel={t.delete} bg="var(--surface)" onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
+                        <button
                           className={flashIds.has(m.id) ? "row-tap flash-row" : "row-tap"}
                           {...bindLongPress(() => setModalState({ mode: "edit", mov: m, view: "delete" }), () => openEdit(m))}
                           aria-label={t.edit} style={{
@@ -288,6 +290,7 @@ export default function MovimientosPage() {
                             {negativo ? "-" : "+"}{money(m.monto)}
                           </span>
                         </button>
+                        </SwipeToDelete>
                       );
                     })}
                   </>

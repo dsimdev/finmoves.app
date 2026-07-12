@@ -149,7 +149,7 @@ export function BottomSheet({ open, onClose, title, children }: {
   if (!mounted) return null;
 
   return createPortal(
-    <div data-no-swipe style={{ position: "fixed", left: 0, top: vv ? vv.top : 0, width: "100%", height: vv ? vv.h : "100%", zIndex: 200, pointerEvents: open ? "all" : "none" }}>
+    <div style={{ position: "fixed", left: 0, top: vv ? vv.top : 0, width: "100%", height: vv ? vv.h : "100%", zIndex: 200, pointerEvents: open ? "all" : "none" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: open ? "blur(4px)" : "blur(0px)", WebkitBackdropFilter: open ? "blur(4px)" : "blur(0px)", opacity: open ? 1 : 0, transition: "opacity 0.35s ease, backdrop-filter 0.35s ease" }} />
       <div ref={panelRef} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "var(--surface)", borderRadius: "26px 26px 0 0", maxHeight: "92%", overflowY: "auto", border: "1px solid var(--border)", borderBottom: "none", boxShadow: "0 -16px 50px rgba(0,0,0,0.5)", transform: open ? `translateY(${ty}px)` : "translateY(101%)", opacity: open ? 1 : 0.4, transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease", willChange: "transform", outline: "none", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}>
         <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
