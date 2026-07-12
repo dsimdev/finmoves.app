@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.73.1] — 2026-07-11
+
+### Arreglos
+- **Los recordatorios vencidos ya no se pierden**: si el aviso de un recordatorio fallaba justo ese día, no volvía a intentarse nunca. Ahora reintenta hasta que te llegue.
+- **El botón "Cargar" del aviso de recurrente ahora abre la carga ya completada** (antes abría el formulario vacío; solo funcionaba tocando el cuerpo del aviso).
+- **Aviso "ya lo cargaste"**: si abrís la carga de un recurrente desde una notificación vieja y ya lo habías cargado este mes, aparece un cartel amarillo para que no lo dupliques sin querer.
+- **Recurrentes sin duplicados por mayúsculas**: "Steam" y "steam" ahora son el mismo recurrente (antes se creaban dos y avisaban doble).
+- El aviso del dólar y otros avisos ya no se silencian si el envío falla una vez; reintentan solos.
+
+---
+
 ## [2.73.0] — 2026-07-13
 
 ### Novedades

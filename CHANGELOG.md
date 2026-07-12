@@ -4,6 +4,24 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.73.1] — 2026-07-11
+
+### Fixed
+- **Overdue one-off reminders were unrecoverable**: `checkRecordatorios` queried `fecha >= today` but the final-notice branch requires `fecha <= today`, so only `fecha == today` ever matched — if the push failed that day (or the cron didn't run), the doc was kept for retry but the next day's query excluded it forever. The query now reads the whole collection (it only holds pending reminders; the final notice deletes the doc), so overdue reminders retry until confirmed.
+- **Dollar check violated the 2.71.0 dedup rule**: the baseline (`lastDolarOficial`) re-anchored even when the push send failed, silencing that price move forever. It now re-anchors only on a confirmed send (extracted to `checkDolar`). Same for the version push: `lastVersionNotified` advances on failed minor/major sends only after a confirmed send (patches still advance silently by design).
+- **A throwing check could drop the dedup flags of pushes already sent** (the inverse of the 2.71.0 bug: duplicates instead of silence): `notifyUser` accumulated all flags in memory and wrote them once at the end, so an exception in a later check lost earlier flags and the next cron run re-sent. Each check now runs under its own catch, flags persist in a `finally`, and `lastDailyRun` closes the day only when no daily check failed (a failed check retries on the next run; confirmed ones don't repeat).
+- **The "Cargar" action button on the recurrent push opened a blank add modal**: the shared `CARGAR_ACCION` pointed to `/movements?nuevo=1`, overriding the prefill deep-link that the notification body used. The action now targets the same destination as the body (prefilled when a single recurrent is pending).
+- **Case-sensitive recurrent template ids**: matching was lowercase everywhere but the doc slug wasn't, so loading "Steam" one month and "steam" the next created two templates that both matched the same movements (duplicate list entries, "2 pending" pushes, lost prefill deep-link). The slug now trims + lowercases description and observation, aligning with the matching key.
+- **Stale recurrent notification could cause a duplicate load**: tapping an old notification from the in-app tray (kept up to 30, no expiry) opened the prefilled add modal with no signal that the cycle was already loaded. The modal now shows a warning banner ("Ya lo cargaste hace N días") when a matching movement exists within the last 28 days.
+- **Deep-link to a deleted recurrent did nothing** and left `?recurrente=` in the URL; it now falls back to a blank add modal and cleans the URL.
+- **Recurrent push tag was per-month** (`rec-YYYY-MM`), so a second recurrent alerting later the same month replaced the first in the OS tray; the tag is now per-day.
+- **`?m=` deep-link cleanup wiped the App Router history state** (`replaceState(null, …)`); it now preserves `window.history.state` like the sibling effects.
+
+### Added
+- `recurrentesLoaded` flag in the data context, distinguishing "not fetched yet" from "user has none" (needed by the deleted-recurrent fallback).
+
+---
+
 ## [2.73.0] — 2026-07-13
 
 ### Added
