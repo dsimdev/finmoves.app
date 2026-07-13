@@ -1,45 +1,63 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, useEffect, type ReactNode } from "react";
 
-const TRASH_W = 56;   // cuánto se corre la fila al abrir (= ancho del hueco del tacho)
-const OPEN_AT = 32;   // umbral para quedar abierta al soltar
+const TRASH_W = 56;   // ancho del tacho que asoma a la derecha
+const OPEN_AT = 28;   // umbral (px arrastrados) para quedar abierta al soltar
+
+// Solo UNA fila abierta a la vez en toda la app: al abrir una, la anterior se cierra.
+let cerrarAbierta: (() => void) | null = null;
 
 /**
- * Fila deslizable en CUALQUIER dirección: al arrastrar, la fila se corre y detrás
- * queda un tacho rojo compacto FIJO del lado hacia donde deslizás (izquierda → tacho
- * a la derecha; derecha → tacho a la izquierda). Tocarlo dispara onDelete. Si ya está
- * abierta y volvés a deslizar (o tocás la fila), se cierra. Solo táctil. La intención
- * del gesto (horizontal vs vertical) se decide una vez para no pelear con el scroll.
+ * Fila deslizable: al arrastrar hacia la IZQUIERDA, el CONTENIDO se encoge (se le reserva
+ * padding a la derecha) y ahí asoma un tacho rojo. El contenido NO se empuja fuera de la
+ * card — se reflowea con su ellipsis, así el texto nunca se corta contra el borde. Tocar
+ * el tacho borra; deslizar de vuelta, tocar la fila, o abrir otra, la cierra. Solo táctil.
  */
-export function SwipeToDelete({ onDelete, deleteLabel, radius, bg, children }: {
+export function SwipeToDelete({ onDelete, deleteLabel, radius, railBg, children }: {
   onDelete: () => void;
   deleteLabel: string;
   /** Radio del contenedor (ej. 12 en notificaciones; sin radio en listas flush). */
   radius?: number;
-  /** Fondo para filas transparentes (ej. sobre una card con gradiente): se aplica solo
-   *  mientras la fila está corrida, para que el tacho no se transparente debajo. */
-  bg?: string;
-  children: ReactNode;
+  /** Fondo del "carril" del tacho. En listas planas (Movimientos) se pasa "var(--red-dim)"
+   *  para separarlo del monto y evitar el choque rojo-con-rojo. En notificaciones (cada
+   *  fila ya es una card separada) se omite → tacho sobre fondo transparente. */
+  railBg?: string;
+  /** ReactNode fijo, o función que recibe `abierta` (para recortar detalle mientras el
+   *  tacho asoma, ej. ocultar la observación). */
+  children: ReactNode | ((abierta: boolean) => ReactNode);
 }) {
-  const [dx, setDx] = useState(0); // <0 abierta a la izquierda, >0 a la derecha, 0 cerrada
+  const [pad, setPad] = useState(0); // px de contenido reservados a la derecha (0..TRASH_W)
   const [touching, setTouching] = useState(false);
   const base = useRef(0);
   const start = useRef<{ x: number; y: number } | null>(null);
   const horizontal = useRef<boolean | null>(null);
   const dragged = useRef(false);
+  const cerrar = useRef(() => setPad(0));
+
+  useEffect(() => () => { if (cerrarAbierta === cerrar.current) cerrarAbierta = null; }, []);
+
+  const abrir = () => {
+    if (cerrarAbierta && cerrarAbierta !== cerrar.current) cerrarAbierta();
+    cerrarAbierta = cerrar.current;
+    setPad(TRASH_W);
+  };
+  const cerrarSelf = () => {
+    if (cerrarAbierta === cerrar.current) cerrarAbierta = null;
+    setPad(0);
+  };
 
   const onTouchStart = (e: React.TouchEvent) => {
     start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     horizontal.current = null;
     dragged.current = false;
-    base.current = dx;
+    base.current = pad;
     setTouching(true);
   };
   const onTouchMove = (e: React.TouchEvent) => {
     if (!start.current) return;
     const t = e.touches[0];
-    const mx = t.clientX - start.current.x;
+    const mx = t.clientX - start.current.x; // arrastrar a la izquierda → mx negativo
     const my = t.clientY - start.current.y;
     if (horizontal.current == null) {
       if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
@@ -47,59 +65,54 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, bg, children }: {
     }
     if (!horizontal.current) return;
     dragged.current = true;
-    // Tope elástico: no se corre más que el ancho del tacho (+ un pelín de resistencia).
-    const raw = base.current + mx;
-    setDx(Math.max(-TRASH_W, Math.min(TRASH_W, raw)));
+    // El padding crece a medida que arrastrás a la izquierda; tope al ancho del tacho.
+    setPad(Math.max(0, Math.min(TRASH_W, base.current - mx)));
   };
   const onTouchEnd = () => {
     start.current = null;
     setTouching(false);
-    // Queda abierta hacia el lado deslizado solo si superó el umbral; si no, cierra.
-    setDx((d) => (d <= -OPEN_AT ? -TRASH_W : d >= OPEN_AT ? TRASH_W : 0));
+    if (pad >= OPEN_AT) abrir(); else cerrarSelf();
   };
 
-  const abierta = dx !== 0;
-  // El tacho vive del lado OPUESTO al movimiento: fila a la izquierda (dx<0) → tacho derecha.
-  const ladoIzq = dx > 0;
+  const abierta = pad > 0;
 
   return (
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: radius }}>
+    <div style={{ position: "relative", borderRadius: radius, overflow: "hidden" }}>
+      {/* Tacho: aparece a la derecha en el hueco que deja el contenido al encogerse. */}
       <button
         type="button"
-        onClick={() => { setDx(0); onDelete(); }}
+        onClick={() => { cerrarSelf(); onDelete(); }}
         aria-label={deleteLabel}
         tabIndex={abierta ? 0 : -1}
         style={{
-          position: "absolute", top: 0, bottom: 0, width: TRASH_W,
-          left: ladoIzq ? 0 : undefined, right: ladoIzq ? undefined : 0,
+          position: "absolute", top: 0, bottom: 0, right: 0, width: TRASH_W,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: "none", color: "var(--red)", border: "none", cursor: "pointer",
-          opacity: abierta ? 1 : 0, transition: "opacity .12s",
+          // Carril opcional (railBg): en listas planas separa el tacho del monto; en
+          // notificaciones se omite (la fila-card ya lo separa).
+          background: railBg ?? "none", color: "var(--red)", border: "none", cursor: "pointer",
+          opacity: abierta ? Math.min(1, pad / TRASH_W) : 0, transition: touching ? "none" : "opacity .15s",
           pointerEvents: abierta ? "auto" : "none",
         }}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
       </button>
+      {/* Contenido: se le reserva `pad` px a la derecha → se encoge, no se desplaza fuera. */}
       <div
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
         onClickCapture={(e) => {
-          // Tras un drag, el touchend genera un click fantasma → tragarlo.
           if (dragged.current) { e.preventDefault(); e.stopPropagation(); dragged.current = false; return; }
-          // Fila abierta: el tap la cierra en lugar de disparar su acción.
-          if (abierta) { e.preventDefault(); e.stopPropagation(); setDx(0); }
+          if (abierta) { e.preventDefault(); e.stopPropagation(); cerrarSelf(); }
         }}
         style={{
-          transform: `translateX(${dx}px)`,
-          transition: touching ? "none" : "transform .18s",
+          paddingRight: pad,
+          transition: touching ? "none" : "padding-right .18s",
           touchAction: "pan-y",
-          background: abierta ? bg : undefined,
-          position: "relative",
         }}
       >
-        {children}
+        {typeof children === "function" ? children(abierta) : children}
       </div>
     </div>
   );
