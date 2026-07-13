@@ -2,13 +2,15 @@
 
 import { useRef, useState, type ReactNode } from "react";
 
-const TRASH_W = 64; // ancho del área que descubre el tacho
+const TRASH_W = 56;   // cuánto se corre la fila al abrir (= ancho del hueco del tacho)
+const OPEN_AT = 32;   // umbral para quedar abierta al soltar
 
 /**
- * Fila deslizable: arrastrar hacia la IZQUIERDA descubre un tacho rojo a la derecha;
- * tocarlo dispara onDelete. Tocar la fila abierta (o deslizar de vuelta) la cierra.
- * Solo táctil, como el resto de los gestos de lista de la app. La intención del gesto
- * se decide una sola vez (horizontal vs vertical) para no pelear con el scroll.
+ * Fila deslizable en CUALQUIER dirección: al arrastrar, la fila se corre y detrás
+ * queda un tacho rojo compacto FIJO del lado hacia donde deslizás (izquierda → tacho
+ * a la derecha; derecha → tacho a la izquierda). Tocarlo dispara onDelete. Si ya está
+ * abierta y volvés a deslizar (o tocás la fila), se cierra. Solo táctil. La intención
+ * del gesto (horizontal vs vertical) se decide una vez para no pelear con el scroll.
  */
 export function SwipeToDelete({ onDelete, deleteLabel, radius, bg, children }: {
   onDelete: () => void;
@@ -20,9 +22,9 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, bg, children }: {
   bg?: string;
   children: ReactNode;
 }) {
-  const [dx, setDx] = useState(0);
-  const [touching, setTouching] = useState(false); // dedo abajo → sin transición (sigue al dedo)
-  const base = useRef(0); // offset al empezar el gesto (0 o -TRASH_W si ya estaba abierta)
+  const [dx, setDx] = useState(0); // <0 abierta a la izquierda, >0 a la derecha, 0 cerrada
+  const [touching, setTouching] = useState(false);
+  const base = useRef(0);
   const start = useRef<{ x: number; y: number } | null>(null);
   const horizontal = useRef<boolean | null>(null);
   const dragged = useRef(false);
@@ -45,13 +47,20 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, bg, children }: {
     }
     if (!horizontal.current) return;
     dragged.current = true;
-    setDx(Math.max(-TRASH_W - 20, Math.min(0, base.current + mx)));
+    // Tope elástico: no se corre más que el ancho del tacho (+ un pelín de resistencia).
+    const raw = base.current + mx;
+    setDx(Math.max(-TRASH_W, Math.min(TRASH_W, raw)));
   };
   const onTouchEnd = () => {
     start.current = null;
     setTouching(false);
-    setDx((d) => (d < -TRASH_W / 2 ? -TRASH_W : 0));
+    // Queda abierta hacia el lado deslizado solo si superó el umbral; si no, cierra.
+    setDx((d) => (d <= -OPEN_AT ? -TRASH_W : d >= OPEN_AT ? TRASH_W : 0));
   };
+
+  const abierta = dx !== 0;
+  // El tacho vive del lado OPUESTO al movimiento: fila a la izquierda (dx<0) → tacho derecha.
+  const ladoIzq = dx > 0;
 
   return (
     <div style={{ position: "relative", overflow: "hidden", borderRadius: radius }}>
@@ -59,16 +68,17 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, bg, children }: {
         type="button"
         onClick={() => { setDx(0); onDelete(); }}
         aria-label={deleteLabel}
-        tabIndex={dx === 0 ? -1 : 0}
+        tabIndex={abierta ? 0 : -1}
         style={{
-          position: "absolute", top: 0, right: 0, bottom: 0, width: TRASH_W + 20,
-          display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 20,
+          position: "absolute", top: 0, bottom: 0, width: TRASH_W,
+          left: ladoIzq ? 0 : undefined, right: ladoIzq ? undefined : 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
           background: "none", color: "var(--red)", border: "none", cursor: "pointer",
-          opacity: dx === 0 ? 0 : 1, transition: "opacity .15s",
-          pointerEvents: dx === 0 ? "none" : "auto",
+          opacity: abierta ? 1 : 0, transition: "opacity .12s",
+          pointerEvents: abierta ? "auto" : "none",
         }}
       >
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
       </button>
       <div
         onTouchStart={onTouchStart}
@@ -79,13 +89,14 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, bg, children }: {
           // Tras un drag, el touchend genera un click fantasma → tragarlo.
           if (dragged.current) { e.preventDefault(); e.stopPropagation(); dragged.current = false; return; }
           // Fila abierta: el tap la cierra en lugar de disparar su acción.
-          if (dx !== 0) { e.preventDefault(); e.stopPropagation(); setDx(0); }
+          if (abierta) { e.preventDefault(); e.stopPropagation(); setDx(0); }
         }}
         style={{
           transform: `translateX(${dx}px)`,
           transition: touching ? "none" : "transform .18s",
           touchAction: "pan-y",
-          background: dx !== 0 ? bg : undefined,
+          background: abierta ? bg : undefined,
+          position: "relative",
         }}
       >
         {children}

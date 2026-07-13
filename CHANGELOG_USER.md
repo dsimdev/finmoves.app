@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.74.1] — 2026-07-12
+
+### Mejoras
+- **Deslizar para eliminar mejorado**: ahora podés deslizar la fila hacia cualquier lado y el tachito aparece prolijo del lado hacia donde deslizás, sin ocupar de más. Un segundo deslizamiento (o tocar la fila) la acomoda de vuelta.
+
+---
+
 ## [2.74.0] — 2026-07-12
 
 ### Novedades
