@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.74.1] — 2026-07-12
+
+### Changed
+- **Swipe-to-delete now works in both directions** and no longer stretches: the row follows the finger either way (clamped to the trash width, ~56px), and a compact trash icon sits fixed on the side you swipe toward (swipe left → trash on the right; swipe right → trash on the left). A second swipe or a tap on the open row snaps it closed. Replaces the previous left-only gesture whose reveal area grew with the drag. Applies to Notifications, Movements and Home's latest-movements list.
+
+---
+
 ## [2.74.0] — 2026-07-12
 
 ### Added
