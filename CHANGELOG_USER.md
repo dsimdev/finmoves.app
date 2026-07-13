@@ -4,6 +4,18 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.75.0] — 2026-07-13
+
+### Novedades
+- **Detalle del movimiento renovado**: al tocar un movimiento se abre una tarjeta linda en el centro, con el ícono del tipo, el monto grande en su color, la fecha, el medio de pago y el comprobante a la vista. Abajo, un lapicito para editar y un tachito para borrar.
+- **Deslizar para eliminar, mejor**: ahora la fila se achica y el tachito aparece a la derecha sin cortar el texto. El tachito queda en su propia zona para no confundirse con el monto.
+- **Notificaciones desde la campanita**: el panel se despliega desde la campana (arriba a la derecha), en vez de subir desde abajo.
+
+### Mejoras
+- **En Inicio, los movimientos son solo para mirar**: tocás uno y ves el detalle, pero para editar o borrar entrás a Movimientos.
+
+---
+
 ## [2.74.1] — 2026-07-12
 
 ### Mejoras
