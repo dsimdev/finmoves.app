@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -16,6 +16,7 @@ import { ComprobanteChooser } from "./ComprobanteChooser";
 import { MediaViewer } from "@/components/ui/MediaViewer";
 import { Loader } from "@/components/ui/Loader";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { CenterCard } from "@/components/ui/CenterCard";
 import { BottomSheet as Sheet } from "@/components/ui/BottomSheet";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { agruparPorPeriodo, formatARS, fechaCorta, fechaAPeriodoId } from "@/utils/periodo";
@@ -27,6 +28,37 @@ const hoyISO = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
+
+// Ícono SVG por familia de tipo (path[s] dibujados con stroke currentColor).
+const ICON_GASTO = <><line x1="12" y1="5" x2="12" y2="19" /><polyline points="6 13 12 19 18 13" /></>;
+const ICON_INGRESO = <><line x1="12" y1="19" x2="12" y2="5" /><polyline points="6 11 12 5 18 11" /></>;
+const ICON_MOVE = <><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></>;
+const ICON_FX = <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>;
+
+// Color, ícono, signo y etiqueta del detalle según el tipo del movimiento. Reusa la
+// misma paleta que la lista (Gasto rojo, Move púrpura/teal, FX amarillo, RESTO azul).
+function detalleTipo(m: Movimiento): { color: string; icon: React.ReactNode; prefix: string; label: string } {
+  if (m.categoria === "RESTO") return { color: "var(--blue)", icon: ICON_INGRESO, prefix: "+", label: m.tipo };
+  const esFX = ["CompraUSD", "GastoUSD", "CompraEUR", "GastoEUR", "VentaUSD", "VentaEUR", "IngresoUSD", "IngresoEUR"].includes(m.tipo);
+  if (esFX) {
+    const neg = m.tipo.startsWith("Compra") || m.tipo.startsWith("Gasto");
+    return { color: "var(--yellow)", icon: ICON_FX, prefix: neg ? "-" : "+", label: m.tipo };
+  }
+  if (m.tipo === "Gasto") return { color: "var(--red)", icon: ICON_GASTO, prefix: "-", label: m.tipo };
+  if (m.tipo === "Move") {
+    const aAhorro = m.direccionMove === "aAhorro";
+    return { color: aAhorro ? "var(--purple)" : "var(--teal)", icon: ICON_MOVE, prefix: aAhorro ? "-" : "+", label: m.tipo };
+  }
+  return { color: "var(--green)", icon: ICON_INGRESO, prefix: "+", label: m.tipo };
+}
+
+const detalleChip: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 999,
+  background: "var(--surface-alt)", border: "1px solid var(--border)", color: "var(--muted)",
+  fontSize: 11, fontWeight: 600,
+};
+const detalleField: React.CSSProperties = { background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "10px 13px", minWidth: 0 };
+const detalleFieldLabel: React.CSSProperties = { fontSize: 9, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 3 };
 
 interface MovementModalProps {
   open: boolean;
@@ -46,6 +78,8 @@ interface MovementModalProps {
   reserveMode?: boolean;
   /** Solo lectura (detalle desde el historial de Inversión): muestra el detalle sin editar. */
   readOnly?: boolean;
+  /** Detalle sin acciones (desde Inicio): muestra la card de detalle pero sin Editar ni Eliminar. */
+  detailReadOnly?: boolean;
   onClose: () => void;
   /** Fallback para casos sin handler específico. */
   onChanged: () => void;
@@ -57,7 +91,7 @@ interface MovementModalProps {
 }
 
 // Modal de alta/edición/borrado de movimientos, reutilizable (Movimientos, Inicio).
-export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, prefill, reserveMode, readOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
+export function MovementModal({ open, mode, movimiento, movimientos, config, activePeriodoId, initialView, prefill, reserveMode, readOnly, detailReadOnly, onClose, onChanged, onCreated, onUpdated, onDeleted }: MovementModalProps) {
   const { user } = useAuth();
   const { plantillas, mutatePlantillas, refreshPlantillas, refreshRecurrentes, recurrentes } = useData();
   const { cotizacion } = useCotizacion();
@@ -91,8 +125,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const ahorrosAcumActivo = serie.find((s) => s.periodoId === activeId)?.ahorrosAcum ?? 0;
   const sinPeriodos = periodos.length === 0;
 
-  // "form" = alta o edición; "delete" = confirmación de borrado (sub-vista de edición).
-  const [view, setView] = useState<"form" | "delete">("form");
+  // "detail" = detalle solo-lectura (paso previo a editar); "form" = alta o edición;
+  // "delete" = confirmación de borrado. El tap en una fila abre "detail"; Editar → "form".
+  const [view, setView] = useState<"detail" | "form" | "delete">("form");
 
   // ── Add state ──
   const [tipo, setTipo] = useState<TipoMovimiento>("Gasto");
@@ -228,10 +263,12 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         if (prefill.observaciones) setObservaciones(prefill.observaciones);
       }
     } else if (mode === "edit" && movimiento) {
-      // El sueldo que abre período (ancla) no se puede borrar → forzar vista form.
+      // El sueldo que abre período (ancla) no se puede borrar → nunca abrir en "delete".
       const esAncla = movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" &&
         fechaAPeriodoId(movimiento.fecha) === movimiento.periodoId;
-      setView(initialView === "delete" && !esAncla ? "delete" : "form");
+      // Tap en la fila → detalle. Swipe/long-press (initialView="delete") → confirmación
+      // directa. Detalle solo-lectura como paso previo a editar (evita ediciones accidentales).
+      setView(initialView === "delete" && !esAncla ? "delete" : initialView === "form" ? "form" : "detail");
       setEMonto(String(movimiento.monto));
       setEDesc(movimiento.descripcion || (movimiento as Movimiento & { origenAhorro?: string }).origenAhorro || "");
       setEMedio(movimiento.medioPago ?? "");
@@ -506,7 +543,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     finally { setEditLoading(false); }
   };
 
-  const title = mode === "add" ? (reserveMode ? t.reserve : t.newMovement) : readOnly ? t.detail : view === "delete" ? t.delete : t.editMovement;
+  const title = mode === "add" ? (reserveMode ? t.reserve : t.newMovement) : (readOnly || view === "detail") ? t.detail : view === "delete" ? t.delete : t.editMovement;
 
   // Versión compacta (ícono) del comprobante — va al lado del medio de pago (alta)
   // o de observaciones (edición). `existingUrl` = comprobante ya guardado (edición).
@@ -550,7 +587,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   return (
     <>
-    <Sheet open={open && view !== "delete" && !readOnly} onClose={onClose} title={title}>
+    <Sheet open={open && view !== "delete" && view !== "detail" && !readOnly} onClose={onClose} title={title}>
       {/* ADD */}
       {mode === "add" && (
         <form onSubmit={handleAdd}>
@@ -915,11 +952,16 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         </form>
       )}
 
-      {/* DETALLE (solo lectura): se renderiza como modal flotante fuera del Sheet (más abajo). */}
-
       {/* EDIT */}
       {mode === "edit" && movimiento && !readOnly && view === "form" && (
         <>
+          <button type="button" onClick={() => setView("detail")} style={{
+            display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 12, padding: "4px 4px 4px 0",
+            background: "none", border: "none", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "pointer",
+          }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            {t.detail}
+          </button>
           {recurrenteKeys.has(recKey(movimiento.tipo, movimiento.categoria, movimiento.descripcion, movimiento.observaciones)) && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, padding: "9px 12px", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 12, fontWeight: 600 }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></svg>
@@ -1015,6 +1057,116 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       )}
 
     </Sheet>
+
+    {/* DETALLE como CARD centrada (tap en una fila). Héroe con ícono de tipo + monto,
+        chips meta, comprobante embebido; acciones centradas: lapicito editar + tacho. */}
+    {mode === "edit" && movimiento && !readOnly && (() => {
+      const dc = detalleTipo(movimiento);
+      const esAncla = isLocked && fechaAPeriodoId(movimiento.fecha) === movimiento.periodoId;
+      const esRec = recurrenteKeys.has(recKey(movimiento.tipo, movimiento.categoria, movimiento.descripcion, movimiento.observaciones));
+      const isPdf = !!movimiento.comprobantePath?.toLowerCase().endsWith(".pdf");
+      return (
+      <CenterCard open={open && view === "detail"} onClose={onClose} title={t.detail}>
+        {/* Héroe */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 18 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, background: `color-mix(in srgb, ${dc.color} 16%, transparent)`, border: `1px solid color-mix(in srgb, ${dc.color} 45%, transparent)`, color: dc.color }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{dc.icon}</svg>
+          </div>
+          <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>{dc.label} · {movimiento.categoria}</div>
+          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-mono)", lineHeight: 1, color: dc.color }}>{dc.prefix}{money(movimiento.monto)}</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+            <span style={detalleChip}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              {fechaCorta(movimiento.fecha)}
+            </span>
+            {movimiento.medioPago && !isLocked && (
+              <span style={detalleChip}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>
+                {movimiento.medioPago}
+              </span>
+            )}
+            {esRec && (
+              <span style={{ ...detalleChip, color: "var(--accent)", background: "var(--accent-dim)", borderColor: "var(--accent)" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></svg>
+                {t.recurrentMovement}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Cantidad + cotización (reserva FX) */}
+        {esFXMov && (
+          <div style={{ display: "grid", gridTemplateColumns: movimiento.cotizacion != null ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 12 }}>
+            <div style={detalleField}>
+              <div style={detalleFieldLabel}>{t.quantity}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{fxMovLabel} {movimiento.cantidadUSD?.toFixed(2) ?? "—"}</div>
+            </div>
+            {movimiento.cotizacion != null && (
+              <div style={detalleField}>
+                <div style={detalleFieldLabel}>{t.exchangeRate}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)" }}>${movimiento.cotizacion.toLocaleString("es-AR")}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Descripción / observaciones */}
+        {(movimiento.descripcion || movimiento.observaciones) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            {movimiento.descripcion && (
+              <div style={detalleField}>
+                <div style={detalleFieldLabel}>{t.description}</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{movimiento.descripcion}</div>
+              </div>
+            )}
+            {movimiento.observaciones && (
+              <div style={detalleField}>
+                <div style={detalleFieldLabel}>{t.notes}</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{movimiento.observaciones}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Comprobante embebido */}
+        {movimiento.comprobanteUrl && (
+          <button type="button" onClick={() => setViewer({ src: movimiento.comprobanteUrl!, isPdf })}
+            style={{ display: "block", width: "100%", padding: 0, marginBottom: 16, border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--surface-alt)", cursor: "pointer", overflow: "hidden" }}>
+            {isPdf ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 14px", color: "var(--accent)" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{t.receipt}</span>
+              </div>
+            ) : (
+              <img src={movimiento.comprobanteUrl} alt={t.receipt} style={{ display: "block", width: "100%", maxHeight: 200, objectFit: "cover" }} />
+            )}
+          </button>
+        )}
+
+        {/* Acciones centradas: lapicito editar + tacho (sin borde). Sueldo ancla: solo editar.
+            Desde Inicio (detailReadOnly) el detalle es solo-lectura: sin acciones. */}
+        {!detailReadOnly && (
+          <div style={{ display: "flex", gap: 14, justifyContent: "center", marginTop: 4 }}>
+            <button type="button" onClick={() => setView("form")} aria-label={t.edit} style={{
+              width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "50%", border: "none", background: "var(--accent)", color: "var(--bg)", cursor: "pointer",
+            }}>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+            </button>
+            {!esAncla && (
+              <button type="button" onClick={() => setView("delete")} aria-label={t.delete} style={{
+                width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: "50%", border: "none", background: "none", color: "var(--red)", cursor: "pointer",
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+              </button>
+            )}
+          </div>
+        )}
+      </CenterCard>
+      );
+    })()}
+
     {readOnly && movimiento && (
       <Sheet open={open} onClose={onClose} title={t.detail}>
         {/* Monto protagonista */}

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
-import { BottomSheet } from "@/components/ui/BottomSheet";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useModalBack } from "@/hooks/useModalBack";
 import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
 import { listarNotificaciones, marcarLeida, eliminarNotificacion, marcarTodasLeidas, type Notificacion, type NotifTipo } from "@/services/firebase/notificaciones";
 
@@ -96,14 +98,14 @@ export function NotificationsBell() {
 
   return (
     <>
-      <button onClick={() => { setOpen(true); cargar(); }} aria-label={t.notifications} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4, display: "flex" }}>
+      <button onClick={() => { setOpen(true); cargar(); }} aria-label={t.notifications} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", color: open ? "var(--accent)" : "var(--muted)", padding: 4, display: "flex" }}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>
         {noLeidas > 0 && (
           <span style={{ position: "absolute", top: 0, right: 0, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 8, background: "var(--red)", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>{noLeidas > 9 ? "9+" : noLeidas}</span>
         )}
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title={t.notifications}>
+      <NotifPopover open={open} onClose={() => setOpen(false)} title={t.notifications}>
         {items.length === 0 ? (
           <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, padding: "28px 0" }}>{t.notificationsEmpty}</div>
         ) : (
@@ -117,7 +119,51 @@ export function NotificationsBell() {
             <div style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", marginTop: 4, opacity: 0.7 }}>{t.notificationsSlideHint}</div>
           </div>
         )}
-      </BottomSheet>
+      </NotifPopover>
     </>
+  );
+}
+
+// Popover anclado bajo la campana (esquina superior derecha): se despliega desde ahí,
+// no ocupa toda la pantalla. Overlay transparente para cerrar al tocar afuera; portal
+// para escapar el stacking del header. Bloquea el scroll de fondo mientras está abierto.
+function NotifPopover({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  useScrollLock(open);
+  useModalBack(open, onClose);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!mounted || !open) return null;
+
+  return createPortal(
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9998 }}>
+      <div
+        data-notif-pop
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: "fixed", top: "calc(env(safe-area-inset-top, 0px) + 54px)", right: 12,
+          width: "min(360px, calc(100vw - 24px))", maxHeight: "70vh", overflowY: "auto",
+          background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16,
+          boxShadow: "0 14px 44px rgba(0,0,0,0.5)", transformOrigin: "top right",
+          animation: "notifPop .17s cubic-bezier(.2,.9,.3,1.15)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px 8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: 0.3 }}>{title}</span>
+          <button onClick={onClose} aria-label="×" style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 20, lineHeight: 1, cursor: "pointer", padding: 4, margin: -4 }}>×</button>
+        </div>
+        <div style={{ padding: "0 14px 14px" }}>{children}</div>
+      </div>
+      <style>{`
+        @keyframes notifPop { from { opacity: 0; transform: scale(.9) translateY(-6px) } to { opacity: 1; transform: scale(1) translateY(0) } }
+        @media (prefers-reduced-motion: reduce) { [data-notif-pop] { animation: none !important } }
+      `}</style>
+    </div>,
+    document.body
   );
 }

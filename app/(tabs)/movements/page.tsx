@@ -262,7 +262,8 @@ export default function MovimientosPage() {
                       const esResto = m.categoria === "RESTO"; // arrastre a ahorros: azul y "+"
                       const negativo = !esResto && (isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro"));
                       return (
-                        <SwipeToDelete key={m.id} deleteLabel={t.delete} bg="var(--surface)" onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
+                        <SwipeToDelete key={m.id} deleteLabel={t.delete} railBg="var(--red-dim)" onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
+                        {(abierta) => (
                         <button
                           className={flashIds.has(m.id) ? "row-tap flash-row" : "row-tap"}
                           onClick={() => openEdit(m)}
@@ -280,14 +281,17 @@ export default function MovimientosPage() {
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }} aria-label={t.recurrentsTitle}><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
                               )}
                             </div>
-                            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                              {m.categoria}{m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}
+                            {/* Al swipear (abierta), se oculta la observación para que el texto no
+                                se corte contra el tacho; queda solo la categoría. */}
+                            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {m.categoria}{!abierta && m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}
                             </div>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)") : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)") : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1, paddingRight: 4 }}>
                             {negativo ? "-" : "+"}{money(m.monto)}
                           </span>
                         </button>
+                        )}
                         </SwipeToDelete>
                       );
                     })}

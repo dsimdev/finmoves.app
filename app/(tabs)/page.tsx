@@ -12,7 +12,6 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { MovementModal } from "@/components/movements/MovementModal";
-import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
@@ -191,10 +190,11 @@ export default function Dashboard() {
             {ultimos.length === 0 ? (
               <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{t.noMovements}</div>
             ) : ultimos.map((m) => (
-              <SwipeToDelete key={m.id} deleteLabel={t.delete} bg="var(--surface)" onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
-              <button
+              // Inicio = solo lectura: tap abre el detalle SIN acciones (ni swipe ni editar/borrar).
+              // Para operar se va a Movimientos.
+              <button key={m.id}
                 onClick={() => setModalState({ mode: "edit", mov: m })}
-                className="row" style={{ width: "100%", padding: "11px 0", background: "none", border: "none", textAlign: "left", color: "inherit", cursor: "pointer", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}>
+                className="row" style={{ width: "100%", padding: "11px 0", background: "none", border: "none", textAlign: "left", color: "inherit", cursor: "pointer" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {m.descripcion || m.categoria}
@@ -205,7 +205,6 @@ export default function Dashboard() {
                   {TipoPrefix(m)}{money(m.monto)}
                 </span>
               </button>
-              </SwipeToDelete>
             ))}
             {p.movimientos.length > 5 && (
               <Link href="/movements" style={{
@@ -229,6 +228,7 @@ export default function Dashboard() {
         config={config}
         activePeriodoId={p?.periodoId}
         initialView={modalState?.view}
+        detailReadOnly
         onClose={() => setModalState(null)}
         onChanged={refresh}
         onCreated={prependMovimiento}

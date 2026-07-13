@@ -4,6 +4,18 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.75.0] — 2026-07-13
+
+### Added
+- **Movement detail as a centered card** (`CenterCard`, portal + dim overlay): tapping a row now opens a floating card (not a bottom sheet) with a hero — type icon on a color halo + the amount as the protagonist in the type's color — meta chips (date / payment method / recurrent), and the receipt embedded (image thumbnail or PDF tile). Actions are centered: **edit (pencil only)** + a **borderless trash**. Edit switches to the form (with a "‹ Detalle" back button); the period-anchor salary shows no trash.
+- **`SwipeToDelete` rewritten to shrink instead of push**: opening the row now reserves right-padding so the **content shrinks** and the trash appears in the gap — the text no longer slides off the card's edge, it reflows with its ellipsis. Trash is always on the right, only one row open at a time (opening one closes the other), and in Movements the observation is hidden while open so it doesn't collide with the trash. New optional `railBg` gives the trash its own tinted lane (`var(--red-dim)` in Movements) so a red trash doesn't clash with a red expense amount; Notifications omits it (each row is already a separate card).
+
+### Changed
+- **Home is now read-only**: tapping a movement in the latest-movements list opens the detail **without edit/delete actions** (new `detailReadOnly` prop) and the list has no swipe. To operate on a movement you go to Movements. Home rows keep their original two-line layout.
+- **Notifications panel is now a popover anchored to the bell** (top-right), unfolding from it instead of rising from the bottom; width-capped, doesn't cover the whole screen. Closes on overlay tap / Escape / back.
+
+---
+
 ## [2.74.1] — 2026-07-12
 
 ### Changed
