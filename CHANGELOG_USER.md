@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.78.0] — 2026-07-13
+
+### Novedades
+- **Editar y eliminar, ahora con deslizar**: deslizá un movimiento hacia la izquierda y aparecen dos botones: el lapicito para editar y el tachito para eliminar. Editar te lleva directo al formulario.
+- **El detalle es solo para mirar**: tocás un movimiento y ves su tarjeta con toda la info, linda y clara. Para editarlo o borrarlo, deslizás.
+- **Editar renovado**: al editar se abre una tarjeta con el mismo estilo del detalle (antes subía desde abajo), con un "‹ Detalle" para volver.
+- **Detalle de reserva igual de lindo**: la reserva (desde Inversión) ahora se ve con la misma tarjeta que los movimientos.
+
+### Mejoras
+- **Cancelar el borrado ya no te saca al listado**: volvés a la tarjeta del movimiento por si lo querés editar.
+
+---
+
 ## [2.77.0] — 2026-07-13
 
 ### Novedades

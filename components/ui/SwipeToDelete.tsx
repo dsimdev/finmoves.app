@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, type ReactNode } from "react";
 
-const TRASH_W = 56;   // ancho del tacho que asoma a la derecha
+const BTN_W = 46;     // ancho de cada botón que asoma a la derecha
 const OPEN_AT = 28;   // umbral (px arrastrados) para quedar abierta al soltar
 
 // Solo UNA fila abierta a la vez en toda la app: al abrir una, la anterior se cierra.
@@ -10,23 +10,32 @@ let cerrarAbierta: (() => void) | null = null;
 
 /**
  * Fila deslizable: al arrastrar hacia la IZQUIERDA, el CONTENIDO se encoge (se le reserva
- * padding a la derecha) y ahí asoma un tacho rojo. El contenido NO se empuja fuera de la
- * card — se reflowea con su ellipsis, así el texto nunca se corta contra el borde. Tocar
- * el tacho borra; deslizar de vuelta, tocar la fila, o abrir otra, la cierra. Solo táctil.
+ * padding a la derecha) y ahí asoman los botones de acción. El contenido NO se empuja fuera
+ * de la card — se reflowea con su ellipsis, así el texto nunca se corta contra el borde.
+ * Deslizar de vuelta, tocar la fila, o abrir otra, la cierra. Solo táctil.
+ *
+ * Con `onEdit` se revelan DOS botones (lapicito editar + tacho eliminar); sin él, solo el
+ * tacho (comportamiento original, usado en Notificaciones y Home).
  */
-export function SwipeToDelete({ onDelete, deleteLabel, radius, railBg, children }: {
+export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius, railBg, children }: {
   onDelete: () => void;
   deleteLabel: string;
+  /** Si se pasa, se agrega un lapicito (editar) a la izquierda del tacho → atajo directo
+   *  a la edición sin abrir el detalle. */
+  onEdit?: () => void;
+  editLabel?: string;
   /** Radio del contenedor (ej. 12 en notificaciones; sin radio en listas flush). */
   radius?: number;
-  /** Fondo del "carril" del tacho. En listas planas (Movimientos) se pasa "var(--red-dim)"
-   *  para separarlo del monto y evitar el choque rojo-con-rojo. En notificaciones (cada
-   *  fila ya es una card separada) se omite → tacho sobre fondo transparente. */
+  /** Fondo del "carril" de los botones. En listas planas (Movimientos) se pasa
+   *  "var(--red-dim)" para separarlo del monto y evitar el choque rojo-con-rojo. En
+   *  notificaciones (cada fila ya es una card separada) se omite → sobre fondo transparente. */
   railBg?: string;
-  /** ReactNode fijo, o función que recibe `abierta` (para recortar detalle mientras el
-   *  tacho asoma, ej. ocultar la observación). */
+  /** ReactNode fijo, o función que recibe `abierta` (para recortar detalle mientras los
+   *  botones asoman, ej. ocultar la observación). */
   children: ReactNode | ((abierta: boolean) => ReactNode);
 }) {
+  // Ancho revelado: 2 botones si hay editar, 1 si solo eliminar.
+  const PANEL_W = onEdit ? BTN_W * 2 : BTN_W;
   const [pad, setPad] = useState(0); // px de contenido reservados a la derecha (0..TRASH_W)
   const [touching, setTouching] = useState(false);
   const base = useRef(0);
@@ -40,7 +49,7 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, railBg, children 
   const abrir = () => {
     if (cerrarAbierta && cerrarAbierta !== cerrar.current) cerrarAbierta();
     cerrarAbierta = cerrar.current;
-    setPad(TRASH_W);
+    setPad(PANEL_W);
   };
   const cerrarSelf = () => {
     if (cerrarAbierta === cerrar.current) cerrarAbierta = null;
@@ -65,8 +74,8 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, railBg, children 
     }
     if (!horizontal.current) return;
     dragged.current = true;
-    // El padding crece a medida que arrastrás a la izquierda; tope al ancho del tacho.
-    setPad(Math.max(0, Math.min(TRASH_W, base.current - mx)));
+    // El padding crece a medida que arrastrás a la izquierda; tope al ancho del panel.
+    setPad(Math.max(0, Math.min(PANEL_W, base.current - mx)));
   };
   const onTouchEnd = () => {
     start.current = null;
@@ -78,24 +87,46 @@ export function SwipeToDelete({ onDelete, deleteLabel, radius, railBg, children 
 
   return (
     <div style={{ position: "relative", borderRadius: radius, overflow: "hidden" }}>
-      {/* Tacho: aparece a la derecha en el hueco que deja el contenido al encogerse. */}
-      <button
-        type="button"
-        onClick={() => { cerrarSelf(); onDelete(); }}
-        aria-label={deleteLabel}
-        tabIndex={abierta ? 0 : -1}
+      {/* Panel de acciones: asoma a la derecha en el hueco que deja el contenido al encogerse.
+          Lapicito (editar) + tacho (eliminar), o solo el tacho si no hay onEdit. */}
+      <div
         style={{
-          position: "absolute", top: 0, bottom: 0, right: 0, width: TRASH_W,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          // Carril opcional (railBg): en listas planas separa el tacho del monto; en
+          position: "absolute", top: 0, bottom: 0, right: 0, width: PANEL_W,
+          display: "flex", alignItems: "stretch",
+          // Carril opcional (railBg): en listas planas separa los botones del monto; en
           // notificaciones se omite (la fila-card ya lo separa).
-          background: railBg ?? "none", color: "var(--red)", border: "none", cursor: "pointer",
-          opacity: abierta ? Math.min(1, pad / TRASH_W) : 0, transition: touching ? "none" : "opacity .15s",
+          background: railBg ?? "none",
+          opacity: abierta ? Math.min(1, pad / PANEL_W) : 0, transition: touching ? "none" : "opacity .15s",
           pointerEvents: abierta ? "auto" : "none",
         }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-      </button>
+        {onEdit && (
+          <button
+            type="button"
+            onClick={() => { cerrarSelf(); onEdit(); }}
+            aria-label={editLabel ?? "Editar"}
+            tabIndex={abierta ? 0 : -1}
+            style={{
+              width: BTN_W, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "none", color: "var(--muted)", border: "none", cursor: "pointer",
+            }}
+          >
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => { cerrarSelf(); onDelete(); }}
+          aria-label={deleteLabel}
+          tabIndex={abierta ? 0 : -1}
+          style={{
+            width: BTN_W, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "none", color: "var(--muted)", border: "none", cursor: "pointer",
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+        </button>
+      </div>
       {/* Contenido: se le reserva `pad` px a la derecha → se encoge, no se desplaza fuera. */}
       <div
         onTouchStart={onTouchStart}

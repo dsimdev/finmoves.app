@@ -98,8 +98,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
   const { m: money } = useMoney();
   const t = useT();
-  // El detalle solo-lectura es un overlay aparte del Sheet → lockear su scroll.
-  useScrollLock(open && !!readOnly);
+  // Detalle, edición y reserva usan CenterCard, que ya hace su propio useScrollLock.
+  // Aquí solo resta el bloqueo del Sheet de alta (CenterCard lo cubre en los demás modos).
 
   const monedaInversionesEfectiva: "USD" | "EUR" =
     monedaPrincipal === "USD" ? "EUR" : monedaPrincipal === "EUR" ? "USD" : monedaInversiones;
@@ -125,9 +125,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const ahorrosAcumActivo = serie.find((s) => s.periodoId === activeId)?.ahorrosAcum ?? 0;
   const sinPeriodos = periodos.length === 0;
 
-  // "detail" = detalle solo-lectura (paso previo a editar); "form" = alta o edición;
+  // "detail" = detalle solo-lectura (paso previo a editar); "form" = edición (misma card);
   // "delete" = confirmación de borrado. El tap en una fila abre "detail"; Editar → "form".
-  const [view, setView] = useState<"detail" | "form" | "delete">("form");
+  // Default "detail" (no "form"): en edición siempre se entra por el detalle, y evita que
+  // el primer render (antes de que corra el efecto de apertura) muestre el form por error.
+  const [view, setView] = useState<"detail" | "form" | "delete">("detail");
 
   // ── Add state ──
   const [tipo, setTipo] = useState<TipoMovimiento>("Gasto");
@@ -543,7 +545,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     finally { setEditLoading(false); }
   };
 
-  const title = mode === "add" ? (reserveMode ? t.reserve : t.newMovement) : (readOnly || view === "detail") ? t.detail : view === "delete" ? t.delete : t.editMovement;
+  // Solo el Sheet de alta usa este title; el detalle/edición/reserva (CenterCard) pasan el suyo.
+  const title = reserveMode ? t.reserve : t.newMovement;
 
   // Versión compacta (ícono) del comprobante — va al lado del medio de pago (alta)
   // o de observaciones (edición). `existingUrl` = comprobante ya guardado (edición).
@@ -587,7 +590,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   return (
     <>
-    <Sheet open={open && view !== "delete" && view !== "detail" && !readOnly} onClose={onClose} title={title}>
+    {/* ALTA: sigue como BottomSheet (mucho contenido: tipo, plantillas, categorías, FX…).
+        La edición ya no vive acá — pasó a la CenterCard (detalle ↔ form en la misma card). */}
+    <Sheet open={open && mode === "add" && !readOnly} onClose={onClose} title={title}>
       {/* ADD */}
       {mode === "add" && (
         <form onSubmit={handleAdd}>
@@ -952,10 +957,13 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         </form>
       )}
 
-      {/* EDIT */}
-      {mode === "edit" && movimiento && !readOnly && view === "form" && (
-        <>
-          <button type="button" onClick={() => setView("detail")} style={{
+    </Sheet>
+
+    {/* EDICIÓN como CARD (mismo look que el detalle): se abre desde el detalle con el
+        lapicito. "‹ Detalle" vuelve al detalle en la misma card. Antes era un BottomSheet. */}
+    {mode === "edit" && movimiento && !readOnly && (
+      <CenterCard open={open && view === "form"} onClose={onClose} title={t.editMovement}>
+          <button type="button" onClick={() => { setEditError(""); setView("detail"); }} style={{
             display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 12, padding: "4px 4px 4px 0",
             background: "none", border: "none", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "pointer",
           }}>
@@ -1053,16 +1061,13 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             </button>
           </div>
-        </>
-      )}
-
-    </Sheet>
+      </CenterCard>
+    )}
 
     {/* DETALLE como CARD centrada (tap en una fila). Héroe con ícono de tipo + monto,
-        chips meta, comprobante embebido; acciones centradas: lapicito editar + tacho. */}
+        chips meta, comprobante embebido. Solo lectura: editar/eliminar son swipe en la lista. */}
     {mode === "edit" && movimiento && !readOnly && (() => {
       const dc = detalleTipo(movimiento);
-      const esAncla = isLocked && fechaAPeriodoId(movimiento.fecha) === movimiento.periodoId;
       const esRec = recurrenteKeys.has(recKey(movimiento.tipo, movimiento.categoria, movimiento.descripcion, movimiento.observaciones));
       const isPdf = !!movimiento.comprobantePath?.toLowerCase().endsWith(".pdf");
       return (
@@ -1128,58 +1133,42 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           </div>
         )}
 
-        {/* Comprobante embebido */}
+        {/* Comprobante como BOTÓN compacto (igual que en reserva): abre el visor a pantalla
+            completa al tocar, en vez de embeber la imagen y estirar la card. */}
         {movimiento.comprobanteUrl && (
           <button type="button" onClick={() => setViewer({ src: movimiento.comprobanteUrl!, isPdf })}
-            style={{ display: "block", width: "100%", padding: 0, marginBottom: 16, border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--surface-alt)", cursor: "pointer", overflow: "hidden" }}>
-            {isPdf ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 14px", color: "var(--accent)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{t.receipt}</span>
-              </div>
-            ) : (
-              <img src={movimiento.comprobanteUrl} alt={t.receipt} style={{ display: "block", width: "100%", maxHeight: 200, objectFit: "cover" }} />
-            )}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "11px 14px", marginBottom: 4, border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}>
+            📎 {t.receipt}
           </button>
         )}
 
-        {/* Acciones centradas: lapicito editar + tacho (sin borde). Sueldo ancla: solo editar.
-            Desde Inicio (detailReadOnly) el detalle es solo-lectura: sin acciones. */}
-        {!detailReadOnly && (
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", marginTop: 4 }}>
-            <button type="button" onClick={() => setView("form")} aria-label={t.edit} style={{
-              width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
-              borderRadius: "50%", border: "none", background: "var(--accent)", color: "var(--bg)", cursor: "pointer",
-            }}>
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
-            </button>
-            {!esAncla && (
-              <button type="button" onClick={() => setView("delete")} aria-label={t.delete} style={{
-                width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
-                borderRadius: "50%", border: "none", background: "none", color: "var(--red)", cursor: "pointer",
-              }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-              </button>
-            )}
-          </div>
-        )}
+        {/* El detalle es SOLO LECTURA: editar y eliminar son gestos de swipe en la lista
+            (lapicito + tacho). Así la card no repite acciones y desaparece el flujo de
+            borrado-desde-detalle (que traía el bug del cancelar). */}
       </CenterCard>
       );
     })()}
 
-    {readOnly && movimiento && (
-      <Sheet open={open} onClose={onClose} title={t.detail}>
-        {/* Monto protagonista */}
-        <div style={{ textAlign: "center", marginBottom: 18 }}>
-          <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>{movimiento.tipo} · {movimiento.categoria}</div>
-          <div style={{ fontSize: 30, fontWeight: 700, fontFamily: "var(--font-mono)", lineHeight: 1.05 }}>{money(movimiento.monto)}</div>
-          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>{fechaCorta(movimiento.fecha)}</div>
-          {recurrenteKeys.has(recKey(movimiento.tipo, movimiento.categoria, movimiento.descripcion, movimiento.observaciones)) && (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, padding: "5px 11px", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: 999, color: "var(--accent)", fontSize: 11, fontWeight: 700 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></svg>
-              {t.recurrentMovement}
-            </div>
-          )}
+    {/* RESERVA (readOnly, desde Inversión): mismo look de card que el detalle, pero solo
+        lectura — sin lapicito ni tacho (editar es exclusivo de Movimientos). */}
+    {readOnly && movimiento && (() => {
+      const dc = detalleTipo(movimiento);
+      return (
+      <CenterCard open={open} onClose={onClose} title={t.detail}>
+        {/* Héroe: mismo look que el detalle de Movimientos (ícono en halo + monto grande
+            en el color del tipo + chips), pero sin acciones (reserva es solo lectura). */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 18 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, background: `color-mix(in srgb, ${dc.color} 16%, transparent)`, border: `1px solid color-mix(in srgb, ${dc.color} 45%, transparent)`, color: dc.color }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{dc.icon}</svg>
+          </div>
+          <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>{dc.label} · {movimiento.categoria}</div>
+          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-mono)", lineHeight: 1, color: dc.color }}>{dc.prefix}{money(movimiento.monto)}</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+            <span style={detalleChip}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              {fechaCorta(movimiento.fecha)}
+            </span>
+          </div>
         </div>
         {esFXMov && (
           <div style={{ display: "grid", gridTemplateColumns: movimiento.cotizacion != null ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 10 }}>
@@ -1217,11 +1206,15 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             📎 {t.receipt}
           </button>
         )}
-      </Sheet>
-    )}
+      </CenterCard>
+      );
+    })()}
     {open && view === "delete" && movimiento && (
+      // Cancelar: si se entró directo a borrar por swipe/long-press (initialView="delete"),
+      // no hay card de detalle detrás → cerrar. Si se llegó desde el detalle (tap en el
+      // tachito de la card), volver al detalle para poder editar en vez de salir al listado.
       <ConfirmModal title={t.delete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)" loading={editLoading}
-        onConfirm={handleDelete} onCancel={onClose}>
+        onConfirm={handleDelete} onCancel={initialView === "delete" ? onClose : () => { setEditError(""); setView("detail"); }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ marginBottom: 6 }}>{t.deleteMovementTitle}</div>
           <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{movimiento.descripcion || movimiento.categoria}</div>

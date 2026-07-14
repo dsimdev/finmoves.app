@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.78.0] — 2026-07-13
+
+### Changed
+- **Movement edit is now a card (not a bottom sheet)**: editing opens a `CenterCard` matching the detail card's look, with a "‹ Detalle" back button to return to the read-only detail in the same visual style. The add flow stays a bottom sheet (too much content for a card).
+- **Detail card is read-only**: tapping a row shows the movement with no edit/delete actions. Edit and delete moved entirely to swipe gestures.
+- **Swipe reveals two actions**: swiping a movement row left now reveals a pencil (edit → straight to the form, no detail step) and a trash (delete), on a neutral rail with neutral icons and slightly narrower buttons (46px). `SwipeToDelete` gained an optional `onEdit`; Notifications/Home keep the single-action (delete-only) behavior.
+- **Reserve detail (from Investments) matches the movement detail card**: same hero (type icon on a color halo, big amount in the type color, date chip, FX quantity/rate fields), read-only.
+- **Receipt in the detail card is a compact button** (like reserve) instead of an embedded image/PDF that stretched the card; tapping opens the full-screen viewer.
+
+### Fixed
+- **Cancelling a delete no longer kicks you to the list**: it returns to the detail card. Also fixed a flash where the edit form could momentarily show on open (default view is now `detail`, not `form`).
+
+---
+
 ## [2.77.0] — 2026-07-13
 
 ### Added

@@ -262,7 +262,9 @@ export default function MovimientosPage() {
                       const esResto = m.categoria === "RESTO"; // arrastre a ahorros: azul y "+"
                       const negativo = !esResto && (isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro"));
                       return (
-                        <SwipeToDelete key={m.id} deleteLabel={t.delete} railBg="var(--red-dim)" onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
+                        <SwipeToDelete key={m.id} deleteLabel={t.delete} editLabel={t.edit} railBg="var(--surface-alt)"
+                          onEdit={() => setModalState({ mode: "edit", mov: m, view: "form" })}
+                          onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
                         {(abierta) => (
                         <button
                           className={flashIds.has(m.id) ? "row-tap flash-row" : "row-tap"}
