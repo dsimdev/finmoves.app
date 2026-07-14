@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.77.0] — 2026-07-13
+
+### Added
+- **Multi-device push**: `config/push` now stores a `subscriptions[]` array keyed by endpoint instead of a single `subscription`. `enablePush` merges the current device in (replacing only its own endpoint), `disablePush` removes only the current device (others stay active), and `sendPushToUser` fans out to all of them, returning `true` if at least one delivered. Dead subscriptions (404/410) are pruned in place; the legacy `subscription` field is read for backward-compat and cleared on the first write. New `readSubs` helper (unit-tested) unifies both shapes; `notifyAllUsers`' active-user filter accepts either.
+- **Push subscription self-repair**: on app open (`DataProvider`), `syncPushSubscription` re-registers this device if it has permission + a local subscription whose endpoint isn't in Firestore (cleared doc, browser-recreated sub, device that lost its record). Replaces reliance on `pushsubscriptionchange`, which browsers fire unreliably. Costs 1 read; writes only when missing.
+
+### Fixed
+- **Silent recurring reminders that never fired**: a recurring template with no matching charge inside the ~35d lookback window had no "last charge" to dedupe against, so it stayed mute forever. It now notifies **once per calendar month** (`recRemindedMonth`) even when muted. Reminder body reworded to be valid whether or not there's a last charge.
+
+### Changed
+- **`recReminded` / `recRemindedMonth` are pruned** to currently-active templates, so the dedup maps don't grow unbounded in Firestore as templates are deleted.
+- **In-app notification tray pruning uses `count()`** (1 aggregation read) instead of `.offset(30)` (~30 doc reads), and only reads the docs to delete when there's actually an overflow.
+
+---
+
 ## [2.76.0] — 2026-07-13
 
 ### Fixed

@@ -4,6 +4,16 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.77.0] — 2026-07-13
+
+### Novedades
+- **Notificaciones en todos tus dispositivos**: si usás FinMoves en el celular y en otro dispositivo, ahora los avisos te llegan a todos. Antes, activar las notificaciones en uno "apagaba" las del otro.
+
+### Mejoras
+- **Recordatorios de recurrentes más confiables**: si tenés un gasto recurrente y hace rato que no lo registrás, ahora FinMoves te lo recuerda igual (una vez al mes). Antes, si pasaba mucho tiempo, el recordatorio se quedaba mudo y no volvía a avisarte.
+
+---
+
 ## [2.76.0] — 2026-07-13
 
 ### Mejoras

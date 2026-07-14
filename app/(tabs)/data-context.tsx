@@ -8,6 +8,7 @@ import { useConfig } from "@/hooks/useConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { listarRecurrentes, type Recurrente } from "@/services/firebase/recurrentes";
 import { listarPlantillas, type Plantilla } from "@/services/firebase/plantillas";
+import { syncPushSubscription } from "@/lib/push-client";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
 interface DataCtx {
@@ -58,6 +59,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [uid]);
   const refreshRecurrentes = useCallback(() => { if (uid) listarRecurrentes(uid).then(setRecurrentes).catch(() => {}); }, [uid]);
   const refreshPlantillas = useCallback(() => { if (uid) listarPlantillas(uid).then(setPlantillas).catch(() => {}); }, [uid]);
+
+  // Auto-reparación de la suscripción push (item B): 1×/sesión, re-registra este device
+  // si su sub local no está en Firestore. Best-effort, no bloquea nada.
+  useEffect(() => {
+    if (uid) syncPushSubscription(uid).catch(() => {});
+  }, [uid]);
 
   // Prefs por-usuario: la config (Firestore) es la fuente de verdad. Al cargarla,
   // hidratamos el store local para no arrastrar prefs de otro usuario del dispositivo.

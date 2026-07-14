@@ -23,9 +23,14 @@ export async function pushYGuardar(
   try {
     const col = adminDb().collection(`users/${uid}/notificaciones`);
     await col.add({ tipo, title: payload.title, body: payload.body, dest, createdAt: Date.now(), leida: false });
-    // Podar: si superó el máximo, borrar las más viejas (una lectura acotada).
-    const snap = await col.orderBy("createdAt", "desc").offset(MAX_NOTIFS).get();
-    if (!snap.empty) await Promise.all(snap.docs.map((d) => d.ref.delete().catch(() => {})));
+    // Podar: si superó el máximo, borrar las más viejas. `count()` cuesta 1 lectura de
+    // agregación (no ~MAX_NOTIFS lecturas de doc como el viejo `.offset(MAX)`), y solo
+    // leemos los docs a borrar cuando efectivamente hay exceso.
+    const total = (await col.count().get()).data().count;
+    if (total > MAX_NOTIFS) {
+      const snap = await col.orderBy("createdAt", "desc").offset(MAX_NOTIFS).get();
+      await Promise.all(snap.docs.map((d) => d.ref.delete().catch(() => {})));
+    }
   } catch (e) {
     console.error("[notif-store]", uid, e);
   }

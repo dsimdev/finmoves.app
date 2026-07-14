@@ -64,10 +64,13 @@ export async function notifyAllUsers(ctx: GlobalCtx): Promise<void> {
     userRefs.map((ref) => adminDb().doc(`${ref.path}/config/push`).get().catch(() => null))
   );
 
-  // Filtrar solo usuarios con suscripción activa.
+  // Filtrar solo usuarios con suscripción activa. Acepta el formato viejo (`subscription`,
+  // una sola) y el nuevo multi-dispositivo (`subscriptions`, array con ≥1 endpoint).
+  const tieneSub = (push: FirebaseFirestore.DocumentData | undefined) =>
+    !!push?.subscription || (Array.isArray(push?.subscriptions) && push!.subscriptions.length > 0);
   const activeUids = userRefs
     .map((ref, i) => ({ uid: ref.id, push: pushDocs[i]?.data() }))
-    .filter(({ push }) => push?.subscription)
+    .filter(({ push }) => tieneSub(push))
     .map(({ uid }) => uid);
 
   // Procesar solo usuarios activos.
@@ -229,8 +232,16 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   const movs = movsSnap.docs.map((d) => d.data() as Movimiento);
 
   const hoy = hoyAR();
+  const mesActual = hoy.slice(0, 7); // "YYYY-MM"
   const reminded = (notify.recReminded as Record<string, string>) ?? {};
-  const nextReminded = { ...reminded };
+  const remindedMonth = (notify.recRemindedMonth as Record<string, string>) ?? {};
+  const activeIds = new Set(recSnap.docs.map((d) => d.id));
+  // Limpieza (item E): descartar del dedup las claves de templates ya borrados/inactivos,
+  // para que `recReminded`/`recRemindedMonth` no crezcan sin límite en Firestore.
+  const nextReminded: Record<string, string> = {};
+  for (const [k, v] of Object.entries(reminded)) if (activeIds.has(k)) nextReminded[k] = v;
+  const nextRemindedMonth: Record<string, string> = {};
+  for (const [k, v] of Object.entries(remindedMonth)) if (activeIds.has(k)) nextRemindedMonth[k] = v;
   const nombres: string[] = [];
   const ids: string[] = [];
 
@@ -248,7 +259,16 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
       if ((m.observaciones || "").trim().toLowerCase() !== obs) continue;
       if (m.fecha > ultima) ultima = m.fecha;
     }
-    if (!ultima) continue;
+    // Item C — recurrente MUDO: sin ninguna carga en la ventana de lookback (~35d). El
+    // dedup por "última carga" no puede disparar (no hay última) → quedaba mudo para
+    // siempre. Avisar igual, pero SOLO una vez por mes calendario (no todos los días).
+    if (!ultima) {
+      if (nextRemindedMonth[d.id] === mesActual) continue; // ya avisé este mes
+      nombres.push(r.descripcion);
+      ids.push(d.id);
+      nextRemindedMonth[d.id] = mesActual;
+      continue;
+    }
     if (diasEntre(ultima, hoy) < RECURRENTE_DIAS) continue;
     if (reminded[d.id] === ultima) continue; // ya avisé por esta última carga
     nombres.push(r.descripcion);
@@ -257,8 +277,10 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   }
 
   if (nombres.length === 0) return;
+  // Body neutral: cubre tanto "hace ~1 mes de la última carga" como el recurrente mudo
+  // (sin cargas en la ventana), donde no hay "última vez" que referenciar.
   const body = nombres.length === 1
-    ? `¿Cargás "${nombres[0]}"? Hace ~1 mes de la última vez.`
+    ? `¿Cargás "${nombres[0]}"? Es tu recurrente y hace rato no lo registrás.`
     : `${nombres.length} recurrentes pendientes: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`;
   // Un solo recurrente → deep-link al modal pre-cargado; varios → listado general.
   const dest = ids.length === 1 ? `/movements?recurrente=${encodeURIComponent(ids[0])}` : "/movements";
@@ -266,7 +288,10 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   // Tag por día, no por mes: dos recurrentes que avisan en días distintos del mes no
   // se pisan en el tray del SO. Dedup SOLO si el push se confirmó: si falla, reintenta mañana.
   const ok = await pushYGuardar(uid, "recurrente", { title: "Recurrentes", body, tag: `rec-${hoy}`, url: dest, actions: [{ action: "cargar", title: "Cargar" }], actionUrls: { cargar: dest } }, dest);
-  if (ok) updates.recReminded = nextReminded;
+  if (ok) {
+    updates.recReminded = nextReminded;
+    updates.recRemindedMonth = nextRemindedMonth;
+  }
 }
 
 // Meta de ahorro: avisa al cruzar 50/75/100% (una vez cada hito).
