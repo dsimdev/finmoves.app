@@ -399,6 +399,7 @@ export const es = {
   reportsSection: "Reportes",
   investmentsSection: "Inversión",
   guideSection: "Guía",
+  guideIntro: "Todo lo que podés hacer en FinMoves, explicado. Tocá cada tema para desplegarlo.",
   guideHowTitle: "Cómo funciona",
   guideMovements: "Movimientos: cargás gastos, ingresos y transferencias del período.",
   guideInvestments: "Inversión: seguís tus reservas en dólares/euros y tu meta de ahorro.",

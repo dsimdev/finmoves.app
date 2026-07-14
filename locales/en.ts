@@ -401,6 +401,7 @@ export const en: AppLocale = {
   reportsSection: "Reports",
   investmentsSection: "Investments",
   guideSection: "Guide",
+  guideIntro: "Everything you can do in FinMoves, explained. Tap each topic to expand it.",
   guideHowTitle: "How it works",
   guideMovements: "Movements: log the period's expenses, income and transfers.",
   guideInvestments: "Investments: track your dollar/euro reserves and your savings goal.",

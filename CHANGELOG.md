@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.81.0] — 2026-07-14
+
+### Changed
+- **Guide rewritten as a full in-app help section** (Settings → Guide). Replaces the old 3-bullet stub with 6 accordion sections — How it works (the *period* model, available balance, salary anchor), Logging movements (types, templates, recurring, receipts), Savings & investment (Move, RESTO carry-over, auto-save, FX reserve), **Gestures** (swipe to edit/delete, swipe between Reports tabs, tap KPIs, tap charts, collapsible days, re-tap tab), Analyze & compare, and Handy settings. Content lives in `locales/guide.ts` (es/en); keeps the replay-tutorial button, changelog and version.
+
+---
+
 ## [2.80.1] — 2026-07-14
 
 ### Fixed

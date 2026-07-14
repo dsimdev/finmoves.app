@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.81.0] — 2026-07-14
+
+### Novedades
+- **Guía renovada y completa** (Configuración → Guía): ahora explica todo lo que podés hacer en FinMoves, organizado en temas que se despliegan — cómo funciona (los períodos), cargar movimientos, ahorros e inversión, los **gestos** (deslizar para editar/borrar, deslizar entre pestañas, tocar los números y gráficos), analizar y comparar, y ajustes útiles.
+
+---
+
 ## [2.80.1] — 2026-07-14
 
 ### Mejoras
