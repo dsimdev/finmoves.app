@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.80.0] — 2026-07-13
+
+### Novedades
+- **Analizar, renovado**: la pantalla de análisis ahora tiene 3 modos para comparar de verdad tus movimientos:
+  - **Comparar**: poné varios términos (ej. Netflix, Spotify) y velos lado a lado — total, promedio, cuántas veces, y cuánto se diferencian. Tocá los que quieras sumar y te muestra el total de lo seleccionado.
+  - **Evolución**: seguí un gasto en el tiempo, por período, por mes o por semana, y ves si sube o baja.
+  - **Proporción**: cuánto pesa algo (ej. delivery) sobre tu gasto del período.
+- **Agrupar como quieras**: por descripción, categoría u observación — así podés comparar, por ejemplo, dos peajes distintos aunque estén en la misma categoría.
+- **Rango de fechas libre**: además de elegir períodos, ahora podés elegir un desde/hasta.
+- **Mientras escribís** te dice cuántos movimientos coinciden, para saber que lo escribiste bien antes de fijarlo.
+
+---
+
 ## [2.79.2] — 2026-07-13
 
 ### Mejoras

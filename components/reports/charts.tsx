@@ -43,9 +43,9 @@ export function Stat({ label, value, sub, color, danger, dimVar }: { label: stri
     : {};
   return (
     <div className="soft" style={{ padding: 15, ...cardStyle }}>
-      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7, textTransform: "capitalize" }}>{label}</div>
+      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 7 }}>{label}</div>
       <div style={{ fontSize: 19, fontWeight: 700, color: color ?? "var(--text)", fontFamily: "var(--font-mono)", lineHeight: 1.05 }}>{value}</div>
-      {sub && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4, textTransform: "capitalize" }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{sub}</div>}
     </div>
   );
 }

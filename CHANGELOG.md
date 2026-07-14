@@ -4,6 +4,25 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.80.0] — 2026-07-13
+
+### Changed
+- **/analisis rewritten around 3 comparison modes** (the old "2-periods → Δ%" comparison wasn't usable). Same keyword search (OR pills), now with a mode switch:
+  - **Compare** (head-to-head): each group with total, average, count, a proportional bar and Δ vs the largest. Tap to select (color + chart). A **"Selected (N)"** stat shows the sum + share of the chosen groups.
+  - **Trend**: one search over time with a real **grain** — by salary period, calendar month, or week (re-groups matches by date), plus period-by-period Δ.
+  - **Share**: what you searched as a % of the period's **spending** (denominator = expenses only), with a per-period breakdown.
+- **Group-by axis** (Compare): Auto / Description / Category / Note. In Auto with ≥2 pills, each searched term is its own group (e.g. AUSA vs AUBASA stay separate even under the same category); Note lets you compare observations within/across categories.
+- **Free date range** (`📅 Range` sheet, from/to) alongside the period chips, applied across all modes.
+- **Only pinned pills filter** now (the in-progress input no longer filters live, which caused residual results). The input shows a live preview — "N movements match · Enter to pin" — to confirm a term before pinning.
+
+### Fixed
+- **Charts always put the most recent point on the left** in Trend (was reversed) — matches the rest of the app.
+- **Duplicate React keys / duplicated group rows**: groups are keyed by a normalized label (lowercase, trimmed, collapsed spaces, no accents), so text variants merge into one group.
+- **Selection no longer resets to $0**: changing the group-by axis or removing a pill clears the stale selection.
+- Removed leftover `text-transform: capitalize` on `Stat` labels (only used by /analisis).
+
+---
+
 ## [2.79.2] — 2026-07-13
 
 ### Fixed
