@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.80.1] — 2026-07-14
+
+### Fixed
+- **Receipt picker showing behind the edit card**: since the edit view moved from a bottom sheet to a `CenterCard` (z-index 9999), the `ComprobanteChooser` (z-index 260) opened underneath it, breaking image/PDF attachment while editing. Raised the chooser to z-index 10001 (above the card and the media viewer).
+
+---
+
 ## [2.80.0] — 2026-07-13
 
 ### Changed

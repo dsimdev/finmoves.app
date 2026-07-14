@@ -44,7 +44,9 @@ export function ComprobanteChooser({ anchor, onClose, onSelect }: {
     <>
       {anchor && createPortal(
         // Backdrop transparente: tap afuera cierra sin tocar lo de abajo.
-        <div style={{ position: "fixed", inset: 0, zIndex: 260 }} onClick={onClose}>
+        // z-index por encima de la CenterCard (9999) y el MediaViewer (10000): el chooser
+        // se abre DESDE la card de edición, así que debe quedar por delante de ella.
+        <div style={{ position: "fixed", inset: 0, zIndex: 10001 }} onClick={onClose}>
           <div className="fade-up" onClick={(e) => e.stopPropagation()} style={{
             position: "absolute",
             right: Math.max(10, window.innerWidth - anchor.right),

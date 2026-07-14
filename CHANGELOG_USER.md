@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.80.1] — 2026-07-14
+
+### Mejoras
+- **Adjuntar imágenes al editar volvió a funcionar**: el selector de foto/PDF quedaba tapado detrás de la tarjeta de edición y no se podía usar. Ya aparece por delante.
+
+---
+
 ## [2.80.0] — 2026-07-13
 
 ### Novedades
