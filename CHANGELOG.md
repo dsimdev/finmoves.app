@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.79.2] — 2026-07-13
+
+### Fixed
+- **Open swipe row now closes on any outside interaction**: a movement row left open by the edit/delete swipe stayed open until another row was swiped. It now closes on any tap elsewhere or on scroll (global `pointerdown`/`scroll` listener while open), so it doesn't linger. Applies to Movements, Notifications and Home.
+
+---
+
 ## [2.79.1] — 2026-07-13
 
 ### Fixed

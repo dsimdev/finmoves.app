@@ -43,8 +43,23 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
   const horizontal = useRef<boolean | null>(null);
   const dragged = useRef(false);
   const cerrar = useRef(() => setPad(0));
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => { if (cerrarAbierta === cerrar.current) cerrarAbierta = null; }, []);
+
+  // Con la fila abierta, cerrarla ante CUALQUIER interacción fuera de sus botones: un tap
+  // en otro lado, un scroll, etc. (antes solo la cerraba abrir otra fila o tocar esta).
+  useEffect(() => {
+    if (pad === 0) return;
+    const cerrarSiFuera = (e: Event) => {
+      if (!rootRef.current?.contains(e.target as Node)) setPad(0);
+    };
+    // pointerdown cubre tap/click; scroll cierra al desplazar la lista. Capture para
+    // adelantarse a que el toque se lo coma otro handler.
+    document.addEventListener("pointerdown", cerrarSiFuera, true);
+    window.addEventListener("scroll", () => setPad(0), { passive: true, once: true });
+    return () => document.removeEventListener("pointerdown", cerrarSiFuera, true);
+  }, [pad]);
 
   const abrir = () => {
     if (cerrarAbierta && cerrarAbierta !== cerrar.current) cerrarAbierta();
@@ -86,7 +101,7 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
   const abierta = pad > 0;
 
   return (
-    <div style={{ position: "relative", borderRadius: radius, overflow: "hidden" }}>
+    <div ref={rootRef} style={{ position: "relative", borderRadius: radius, overflow: "hidden" }}>
       {/* Panel de acciones: asoma a la derecha en el hueco que deja el contenido al encogerse.
           Lapicito (editar) + tacho (eliminar), o solo el tacho si no hay onEdit. */}
       <div

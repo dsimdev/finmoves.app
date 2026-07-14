@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.79.2] — 2026-07-13
+
+### Mejoras
+- **El deslizar de un movimiento se cierra solo**: si abrís los botones de editar/eliminar deslizando una fila, ahora se cierran al tocar cualquier otro lado o al hacer scroll (antes quedaban abiertos hasta deslizar otra fila).
+
+---
+
 ## [2.79.0] — 2026-07-13
 
 ### Novedades
