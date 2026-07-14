@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
+import { requireOwner } from "@/lib/auth-route";
 
 export const dynamic = "force-dynamic";
-
-async function requireOwner(req: NextRequest): Promise<string | NextResponse> {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  let uid: string;
-  try {
-    uid = (await adminAuth().verifyIdToken(token)).uid;
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-  const owner = process.env.OWNER_UID ?? process.env.NEXT_PUBLIC_OWNER_UID;
-  if (!owner || uid !== owner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  return uid;
-}
 
 export async function GET(
   req: NextRequest,

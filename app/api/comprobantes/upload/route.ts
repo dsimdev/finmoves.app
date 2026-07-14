@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { adminAuth, adminDb, adminBucket } from "@/lib/firebase-admin";
+import { adminDb, adminBucket } from "@/lib/firebase-admin";
+import { requireUser } from "@/lib/auth-route";
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB (las imágenes ya vienen comprimidas del cliente)
 // Whitelist explícita: image/* dejaba pasar SVG (contenido activo) — no hay caso de uso.
@@ -10,13 +11,8 @@ const ALLOWED = (ct: string) => ["image/jpeg", "image/png", "image/webp", "appli
 // y tamaño, y sube con el Admin SDK (las reglas de Storage deniegan la escritura
 // directa del cliente). Devuelve una URL con download-token (no expira).
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  let uid: string;
-  try { uid = (await adminAuth().verifyIdToken(token)).uid; }
-  catch { return NextResponse.json({ error: "Invalid token" }, { status: 401 }); }
+  const uid = await requireUser(req);
+  if (typeof uid !== "string") return uid;
 
   // Permiso: dueño o quien tenga comprobantes=true en config/permisos — el doc
   // read-only que escribe SOLO el Admin SDK. Antes se leía config/meta, que el

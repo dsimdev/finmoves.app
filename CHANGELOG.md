@@ -4,6 +4,20 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.76.0] — 2026-07-13
+
+### Fixed
+- **Inflation/CPI feed restored**: the IPC source host changed — the app was hitting `www.argly.com.ar` (which now serves HTML, silently failing `.json()`), while the JSON API lives at `api.argly.com.ar`. Payload shape is unchanged (`{ data: [{ anio, mes, valor }] }`), so only the host was updated in `useInflacionIPC`.
+- **Cross-device edits now refresh**: `useAllMovimientos` synced by document `count`, so a pure edit on another device (same count) stayed stale until the count changed. Added a `config/meta.movsRevision` counter bumped on every create/edit/delete (`bumpRevision` in `services/firebase/movimientos.ts`); the client compares it against its cached value — config is already read once per session, so the check costs no extra reads. On `revision > cached.revision` it forces a full re-fetch.
+
+### Changed
+- **"Inflation" KPI labels itself honestly when it's nominal**: on Home the KPI showed "Inflación" with a "adjusted by CPI" explanation even when the value was nominal (non-ARS user, or ARS with the CPI feed down — `deflatar` returns the raw amount). Now it reads **"Infl. nominal"** with the nominal explanation whenever `!(esARS && ipcDisponible)`. New i18n keys `inflation` / `inflationNominal`.
+
+### Internal
+- **Centralized API-route auth**: `verifyIdToken` + "Bearer" parsing was copy-pasted across 8 routes (`requireOwner` duplicated verbatim in 3). Extracted to `lib/auth-route.ts` (`requireUser`, `requireUserWithEmail`, `requireOwner`, each returning `uid | NextResponse`); all 8 routes migrated. No behavior change.
+
+---
+
 ## [2.75.0] — 2026-07-13
 
 ### Added

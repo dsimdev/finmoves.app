@@ -5,11 +5,21 @@ import {
   deleteDoc,
   setDoc,
   doc,
+  increment,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { trackWrite } from "@/lib/sync-status";
 import { Movimiento } from "@/types";
+
+// Contador de mutaciones por usuario (config/meta.movsRevision). El cliente lo compara
+// con el que tiene cacheado para saber si sus movimientos cambiaron en OTRO dispositivo
+// —incluye ediciones puras, que el chequeo por `count` no detecta (mismo total de docs).
+// config/meta ya se lee 1×/sesión, así que la comparación no cuesta lecturas extra.
+async function bumpRevision(userId: string): Promise<void> {
+  const ref = doc(db, `users/${userId}/config/meta`);
+  await setDoc(ref, { movsRevision: increment(1) }, { merge: true }).catch(() => {});
+}
 
 // El sheet espejo se sincroniza incremental (solo agrega altas nuevas). Editar o
 // borrar un movimiento ya sincronizado lo desactualiza → flag para que el próximo
@@ -59,6 +69,7 @@ export async function crearMovimientoConId(
     ...data,
     timestampCarga: Timestamp.fromDate(data.timestampCarga),
   }));
+  await bumpRevision(userId);
 }
 
 export async function actualizarMovimiento(
@@ -69,6 +80,7 @@ export async function actualizarMovimiento(
   const ref = doc(db, `users/${userId}/movimientos/${movimientoId}`);
   await trackWrite(updateDoc(ref, data));
   await marcarFullSync(userId);
+  await bumpRevision(userId);
 }
 
 export async function eliminarMovimiento(
@@ -78,4 +90,5 @@ export async function eliminarMovimiento(
   const ref = doc(db, `users/${userId}/movimientos/${movimientoId}`);
   await trackWrite(deleteDoc(ref));
   await marcarFullSync(userId);
+  await bumpRevision(userId);
 }

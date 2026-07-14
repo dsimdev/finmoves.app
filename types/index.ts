@@ -101,6 +101,9 @@ export interface ConfigUsuario {
     showReportes?: boolean;
     autoAhorro?: { activo: boolean; monto: number; mediosPago?: string[]; omitirDescripciones?: string[] };
     onboardingCompleto?: boolean;
+    /** Contador de mutaciones de movimientos: se incrementa en cada alta/edición/borrado.
+     *  El cliente lo compara con el cacheado para detectar cambios hechos en otro dispositivo. */
+    movsRevision?: number;
     nombre?: string;
     fotoURL?: string;
     /** Permisos por usuario, gestionados por el dueño desde el panel Admin.

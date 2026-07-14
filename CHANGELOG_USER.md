@@ -4,6 +4,15 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.76.0] — 2026-07-13
+
+### Mejoras
+- **La inflación volvió a funcionar**: el proveedor del dato de inflación (IPC) cambió de dirección y la app había dejado de traerlo. Ya está apuntando al lugar correcto y se actualiza solo.
+- **Inflación más clara**: cuando el número no está ajustado por IPC —por ejemplo si tu moneda no es el peso, o si el dato de inflación no está disponible— la tarjeta ahora dice **"Infl. nominal"** para que sepas que es la variación de tu gasto sin ajustar, y no te confunda un cambio de golpe.
+- **Cambios entre dispositivos**: si editás un movimiento en el celular, al abrir la app en otro dispositivo ahora se ve el cambio (antes, algunas ediciones podían tardar en reflejarse).
+
+---
+
 ## [2.75.0] — 2026-07-13
 
 ### Novedades

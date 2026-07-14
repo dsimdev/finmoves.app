@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { requireOwner } from "@/lib/auth-route";
 import { pushYGuardar } from "@/lib/notif-store";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -11,22 +12,6 @@ const PERMISOS_VALIDOS = ["comprobantes", "inversion"] as const;
 // que refrescos seguidos re-lean 3 docs × usuario. Se invalida al cambiar permisos.
 const USERS_CACHE_TTL = 60_000;
 let usersCache: { data: unknown[]; ts: number } | null = null;
-
-// Verifica que el llamador sea el dueño (OWNER_UID). Devuelve su uid o un error.
-async function requireOwner(req: NextRequest): Promise<string | NextResponse> {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  let uid: string;
-  try {
-    uid = (await adminAuth().verifyIdToken(token)).uid;
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-  const owner = process.env.OWNER_UID ?? process.env.NEXT_PUBLIC_OWNER_UID;
-  if (!owner || uid !== owner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  return uid;
-}
 
 // Setea un permiso de un usuario: body { uid, key, value, motivo }. Solo el dueño.
 export async function POST(req: NextRequest) {

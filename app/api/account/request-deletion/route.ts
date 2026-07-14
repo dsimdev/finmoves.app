@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
+import { requireUserWithEmail } from "@/lib/auth-route";
 import { pushYGuardar } from "@/lib/notif-store";
 import { FieldValue } from "firebase-admin/firestore";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  let uid: string;
-  let email: string;
-  try {
-    const decoded = await adminAuth().verifyIdToken(token);
-    uid = decoded.uid;
-    email = decoded.email ?? uid;
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+  const auth = await requireUserWithEmail(req);
+  if (!("uid" in auth)) return auth;
+  const { uid, email } = auth;
 
   await adminDb().doc(`users/${uid}/config/meta`).set(
     { meta: { pendingDeletion: true, pendingDeletionAt: FieldValue.serverTimestamp() } },

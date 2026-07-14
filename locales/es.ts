@@ -232,6 +232,8 @@ export const es = {
   periodsCount: (n: number) => `${n} períodos`,
   spendSpread: "Desvío",
   kpiSpendSpreadInfo: "Qué tan dispares son tus gastos entre sí. Alto = pocos gastos grandes; bajo = gastos parejos.",
+  inflation: "Inflación",
+  inflationNominal: "Infl. nominal",
   inflationTitle: "Inflación nominal",
   inflationSub: "tu gasto, período a período",
   kpiInflationInfo: "Cuánto cambió tu gasto real respecto al período anterior, ajustado por inflación (IPC) y sin contar compras de dólares.",

@@ -39,8 +39,11 @@ export default function Dashboard() {
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
   const t = useT();
   const { dashboardClasico, showAhorros, monedaPrincipal } = useAppPrefs();
-  const { deflatar } = useInflacionIPC();
+  const { deflatar, ipcDisponible } = useInflacionIPC();
   const esARS = monedaPrincipal === "ARS";
+  // El número es "real" (ajustado por IPC) solo si es ARS Y hay datos de IPC. Si la API
+  // de inflación está caída, deflatar devuelve el monto nominal → no prometer que es real.
+  const inflacionEsReal = esARS && ipcDisponible;
 
   // Modal de alta/edición abierto desde el propio inicio (sin navegar).
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
@@ -136,9 +139,9 @@ export default function Dashboard() {
                 onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastadoPuro), explain: t.kpiSpentRealInfo, color: "var(--red)" })} />
               <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
                 onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
-              {(() => { const ip = inflacionPersonal; const c = ip == null ? "var(--muted)" : deltaColor(ip, false); const mag = ip == null ? null : deltaMag(ip); const v = mag == null ? "—" : `${mag > 0 ? "+" : ""}${mag}%`; return (
-                <MiniStat center basis="1 1 45%" label="Inflación" value={v} color={c}
-                  onClick={() => setKpiInfo({ title: "Inflación", value: v, explain: esARS ? t.kpiInflationInfo : t.kpiInflationInfoNominal, color: c })} />
+              {(() => { const ip = inflacionPersonal; const c = ip == null ? "var(--muted)" : deltaColor(ip, false); const mag = ip == null ? null : deltaMag(ip); const v = mag == null ? "—" : `${mag > 0 ? "+" : ""}${mag}%`; const label = inflacionEsReal ? t.inflation : t.inflationNominal; return (
+                <MiniStat center basis="1 1 45%" label={label} value={v} color={c}
+                  onClick={() => setKpiInfo({ title: label, value: v, explain: inflacionEsReal ? t.kpiInflationInfo : t.kpiInflationInfoNominal, color: c })} />
               ); })()}
               {(() => { const c = desvioCV <= 100 ? "var(--green)" : desvioCV <= 200 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
                 <MiniStat center basis="1 1 45%" label={t.spendSpread} value={v} color={c}

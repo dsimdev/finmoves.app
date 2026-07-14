@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
+import { requireOwner } from "@/lib/auth-route";
 import { Timestamp } from "firebase-admin/firestore";
 
 // Caracteres sin ambigüedad (sin 0/O, 1/I) para que sea fácil de dictar/copiar.
@@ -8,21 +9,6 @@ function randomCode(len = 6): string {
   let out = "";
   for (let i = 0; i < len; i++) out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
   return out;
-}
-
-async function requireOwner(req: NextRequest): Promise<string | NextResponse> {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  let uid: string;
-  try {
-    uid = (await adminAuth().verifyIdToken(token)).uid;
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-  const owner = process.env.OWNER_UID ?? process.env.NEXT_PUBLIC_OWNER_UID;
-  if (!owner || uid !== owner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  return uid;
 }
 
 export const CODE_TTL_MS = 24 * 60 * 60 * 1000; // los códigos sin usar caducan en 24h

@@ -29,7 +29,7 @@ export function useInflacionIPC() {
       }
     } catch {}
 
-    fetch("https://www.argly.com.ar/v1/ipc?historico=true", { cache: "no-store" })
+    fetch("https://api.argly.com.ar/v1/ipc?historico=true", { cache: "no-store" })
       .then((r) => r.json())
       .then((json) => {
         const sorted = (json.data as { anio: number; mes: number; valor: number }[])

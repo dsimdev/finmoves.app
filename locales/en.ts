@@ -234,6 +234,8 @@ export const en: AppLocale = {
   periodsCount: (n: number) => `${n} periods`,
   spendSpread: "Spread",
   kpiSpendSpreadInfo: "How spread out your individual expenses are. High = a few big ones; low = mostly even.",
+  inflation: "Inflation",
+  inflationNominal: "Nominal infl.",
   inflationTitle: "Nominal inflation",
   inflationSub: "your spending, period over period",
   kpiInflationInfo: "How much your real spending changed vs the previous period, adjusted for inflation (CPI) and excluding FX purchases.",

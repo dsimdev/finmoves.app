@@ -37,8 +37,10 @@ const Ctx = createContext<DataCtx | null>(null);
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const router = useRouter();
-  const { movimientos, loading, refresh, updateLocal, removeLocal, prependLocal } = useAllMovimientos(user?.uid);
   const { config, loading: configLoading, refresh: refreshConfig } = useConfig(user?.uid);
+  // La revision (config/meta.movsRevision) le dice al hook de movimientos si hubo cambios
+  // en otro dispositivo que no alteran el count (ediciones puras) → fuerza re-fetch.
+  const { movimientos, loading, refresh, updateLocal, removeLocal, prependLocal } = useAllMovimientos(user?.uid, config?.meta.movsRevision ?? 0);
   const hydratePrefs = useAppPrefs((s) => s.hydrate);
 
   // Recurrentes y plantillas: se leen una vez por sesión (antes se re-leían en cada
