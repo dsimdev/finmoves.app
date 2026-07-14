@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.79.0] — 2026-07-13
+
+### Novedades
+- **Deslizá entre las pestañas de Reportes**: ahora podés cambiar entre Gastos, Ingresos, Movimientos y Períodos deslizando el dedo, sin tener que volver arriba a tocar los botones. La pantalla siguiente ya está lista y el cambio es fluido, con la pastilla de arriba acompañando el gesto.
+
+---
+
 ## [2.78.0] — 2026-07-13
 
 ### Novedades

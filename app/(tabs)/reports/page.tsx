@@ -35,6 +35,7 @@ import { GastosTab } from "@/components/reports/GastosTab";
 import { PeriodosTab } from "@/components/reports/PeriodosTab";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { SwipeTabs } from "@/components/ui/SwipeTabs";
 
 type Sub = "gastos" | "ingresos" | "movimientos" | "periodos";
 
@@ -61,6 +62,9 @@ export default function ReportesPage() {
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const [sub, setSub] = useState<Sub>("gastos");
+  // Progreso del swipe entre subtabs (∈ [-1,1], <0 hacia el siguiente) para que el
+  // indicador de las pills acompañe el dedo en vivo.
+  const [dragP, setDragP] = useState(0);
   const [wrappedOpen, setWrappedOpen] = useState(false);
   const hayWrapped = useMemo(() => wrappedYears(movimientos).length > 0, [movimientos]);
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
@@ -472,7 +476,7 @@ export default function ReportesPage() {
       ) : periodos.length === 0 ? (
         <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>{t.noMovementsReport}</div>
       ) : (
-        <div key={sub} className="fade-up">
+        <div className="fade-up">
           <PageHeader
             title={t.pageTitleReports}
             style={{ marginBottom: 18 }}
@@ -484,15 +488,23 @@ export default function ReportesPage() {
             ) : undefined}
           />
           {showHint && <SectionHint title={t.hintRepTitle} body={t.hintRepBody} onDismiss={dismissHint} />}
-          <div className="subtabs">
+          {/* Indicador deslizante: un fondo que se mueve bajo la pill activa con transición,
+              en vez de encender/apagar el fondo de golpe (feeling native). */}
+          <div className="subtabs" style={{ position: "relative" }}>
+            <div aria-hidden style={{
+              position: "absolute", top: 4, bottom: 4, left: 4,
+              width: `calc((100% - 8px) / ${SUBS.length})`,
+              // Sigue el dedo: base en el tab activo, desplazado por el progreso del swipe
+              // (dragP<0 → hacia el siguiente). Sin transición mientras se arrastra.
+              transform: `translateX(${(SUBS.findIndex((s) => s.id === sub) - dragP) * 100}%)`,
+              transition: dragP !== 0 ? "none" : "transform .24s cubic-bezier(.2,.8,.2,1)",
+              borderRadius: 999, background: APP_GRAD_DIM, border: "1px solid transparent",
+            }} />
             {SUBS.map((s) => {
               const isActive = sub === s.id;
               return (
                 <button key={s.id} onClick={() => setSub(s.id)} className="subtab"
-                  style={isActive ? {
-                    border: "1px solid transparent",
-                    background: APP_GRAD_DIM,
-                  } : {}}>
+                  style={{ position: "relative", zIndex: 1, background: "transparent" }}>
                   {isActive ? <span style={gradText}>{s.label}</span> : s.label}
                 </button>
               );
@@ -587,55 +599,62 @@ export default function ReportesPage() {
             );
           })()}
 
-          {/* ══ GASTOS ══ */}
-          {sub === "gastos" && periodo && kpis && (
-            <GastosTab
-              periodo={periodo} periodos={periodos} activos={activos} anterior={anterior}
-              esPeriodoVigente={esPeriodoVigente} ritmo={ritmo} tendenciaGasto={tendenciaGasto} avgHistorico={avgHistorico}
-              promPorMov={promPorMov} comp={comp} descs={descs} descsCompra={descsCompra}
-              porFecha={porFecha} splitPorFecha={splitPorFecha} catsConPresu={catsConPresu} catsEditables={catsEditables}
-              esCatCompra={esCatCompra} presupuesto={presupuesto} presupuestoEfectivo={presupuestoEfectivo}
-              showBudget={showBudget} config={config} setShowBudget={setShowBudget} setEditingBudget={setEditingBudget}
-              setModalBudget={setModalBudget} setCatModal={setCatModal} setDiaModal={setDiaModal}
-              setModalTop={setModalTop} setKpiInfo={setKpiInfo}
-            />
-          )}
-
-          {/* ══ INGRESOS ══ */}
-          {sub === "ingresos" && periodo && (
-            <IngresosTab
-              periodo={periodo} anterior={anterior} totalIngresos={totalIngresos} deltaIngresos={deltaIngresos}
-              evolSueldoActivo={evolSueldoActivo} suelHistorial={suelHistorial}
-              totalAhorradoDirecto={totalAhorradoDirecto} ahorrosAcumPeriodo={ahorrosAcumPeriodo}
-              deltaAhorros={deltaAhorros} deltaAhorrosPct={deltaAhorrosPct} ingXDesc={ingXDesc}
-              movIngresos={movIngresos} movIngresosAhorros={movIngresosAhorros} movResto={movResto}
-              setKpiInfo={setKpiInfo} setModalSueldo={setModalSueldo} setModalAhorros={setModalAhorros}
-            />
-          )}
-
-          {/* ══ PERÍODOS ══ */}
-          {sub === "periodos" && periodo && (
-            <PeriodosTab
-              periodos={periodos} serie={serie} serieDesc={serieDesc} activos={activos} maxTotal={maxTotal}
-              evolucionIngresos={evolucionIngresos} mejorPeriodo={mejorPeriodo} peorPeriodo={peorPeriodo}
-              inflacionPersonal={inflacionPersonal} medianaGastoPeriodo={medianaGastoPeriodo} proyeccionGasto={proyeccionGasto}
-              medianaAhorroPeriodo={medianaAhorroPeriodo} proyeccionAhorro={proyeccionAhorro} sueldoVsInflacion={sueldoVsInflacion}
-              monedaPrincipal={monedaPrincipal} periodMetric={periodMetric} setPeriodMetric={setPeriodMetric}
-              sueldoRealMode={sueldoRealMode} setSueldoRealMode={setSueldoRealMode} metricPickerOpen={metricPickerOpen}
-              setMetricPickerOpen={setMetricPickerOpen} ipcVar={ipcVar} dolarAt={dolarAt} deflatar={deflatar}
-              setNavPeriodo={setNavPeriodo} setKpiInfo={setKpiInfo}
-            />
-          )}
-
-          {/* ══ MOVIMIENTOS ══ */}
-          {sub === "movimientos" && periodo && movCounts && (
-            <MovimientosTab
-              periodo={periodo} periodos={periodos} movCounts={movCounts} kpis={kpis}
-              finPeriodo={finPeriodo} tendenciaMovs={tendenciaMovs} avgHistoricoMovs={avgHistoricoMovs}
-              oculto={oculto} selectedMovTipo={selectedMovTipo} setSelectedMovTipo={setSelectedMovTipo}
-              setKpiInfo={setKpiInfo} setModalTop={setModalTop} setMedioModal={setMedioModal}
-            />
-          )}
+          {/* Swipe horizontal entre subtabs. Las 4 pantallas van montadas en un track (en el
+              orden de SUBS) → navegar solo desliza, el contenido ya está precargado y fluido.
+              El guard anti-carrusel (para no romper las tiras de pills) vive en SwipeTabs. */}
+          <SwipeTabs
+            index={SUBS.findIndex((s) => s.id === sub)}
+            count={SUBS.length}
+            onIndexChange={(next) => setSub(SUBS[next].id)}
+            onProgress={setDragP}
+          >
+            {/* 0 · Gastos */}
+            {periodo && kpis ? (
+              <GastosTab
+                periodo={periodo} periodos={periodos} activos={activos} anterior={anterior}
+                esPeriodoVigente={esPeriodoVigente} ritmo={ritmo} tendenciaGasto={tendenciaGasto} avgHistorico={avgHistorico}
+                promPorMov={promPorMov} comp={comp} descs={descs} descsCompra={descsCompra}
+                porFecha={porFecha} splitPorFecha={splitPorFecha} catsConPresu={catsConPresu} catsEditables={catsEditables}
+                esCatCompra={esCatCompra} presupuesto={presupuesto} presupuestoEfectivo={presupuestoEfectivo}
+                showBudget={showBudget} config={config} setShowBudget={setShowBudget} setEditingBudget={setEditingBudget}
+                setModalBudget={setModalBudget} setCatModal={setCatModal} setDiaModal={setDiaModal}
+                setModalTop={setModalTop} setKpiInfo={setKpiInfo}
+              />
+            ) : <div />}
+            {/* 1 · Ingresos */}
+            {periodo ? (
+              <IngresosTab
+                periodo={periodo} anterior={anterior} totalIngresos={totalIngresos} deltaIngresos={deltaIngresos}
+                evolSueldoActivo={evolSueldoActivo} suelHistorial={suelHistorial}
+                totalAhorradoDirecto={totalAhorradoDirecto} ahorrosAcumPeriodo={ahorrosAcumPeriodo}
+                deltaAhorros={deltaAhorros} deltaAhorrosPct={deltaAhorrosPct} ingXDesc={ingXDesc}
+                movIngresos={movIngresos} movIngresosAhorros={movIngresosAhorros} movResto={movResto}
+                setKpiInfo={setKpiInfo} setModalSueldo={setModalSueldo} setModalAhorros={setModalAhorros}
+              />
+            ) : <div />}
+            {/* 2 · Movimientos */}
+            {periodo && movCounts ? (
+              <MovimientosTab
+                periodo={periodo} periodos={periodos} movCounts={movCounts} kpis={kpis}
+                finPeriodo={finPeriodo} tendenciaMovs={tendenciaMovs} avgHistoricoMovs={avgHistoricoMovs}
+                oculto={oculto} selectedMovTipo={selectedMovTipo} setSelectedMovTipo={setSelectedMovTipo}
+                setKpiInfo={setKpiInfo} setModalTop={setModalTop} setMedioModal={setMedioModal}
+              />
+            ) : <div />}
+            {/* 3 · Períodos */}
+            {periodo ? (
+              <PeriodosTab
+                periodos={periodos} serie={serie} serieDesc={serieDesc} activos={activos} maxTotal={maxTotal}
+                evolucionIngresos={evolucionIngresos} mejorPeriodo={mejorPeriodo} peorPeriodo={peorPeriodo}
+                inflacionPersonal={inflacionPersonal} medianaGastoPeriodo={medianaGastoPeriodo} proyeccionGasto={proyeccionGasto}
+                medianaAhorroPeriodo={medianaAhorroPeriodo} proyeccionAhorro={proyeccionAhorro} sueldoVsInflacion={sueldoVsInflacion}
+                monedaPrincipal={monedaPrincipal} periodMetric={periodMetric} setPeriodMetric={setPeriodMetric}
+                sueldoRealMode={sueldoRealMode} setSueldoRealMode={setSueldoRealMode} metricPickerOpen={metricPickerOpen}
+                setMetricPickerOpen={setMetricPickerOpen} ipcVar={ipcVar} dolarAt={dolarAt} deflatar={deflatar}
+                setNavPeriodo={setNavPeriodo} setKpiInfo={setKpiInfo}
+              />
+            ) : <div />}
+          </SwipeTabs>
         </div>
       )}
 

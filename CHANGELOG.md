@@ -4,6 +4,17 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.79.0] — 2026-07-13
+
+### Added
+- **Swipe between Reports subtabs** (`SwipeTabs`): the four subtabs (Expenses / Income / Movements / Periods) can now be switched by swiping horizontally, not only by tapping the pills up top. All four screens are mounted side-by-side in a track so navigation just slides — content is preloaded, no re-mount, fluid. Details:
+  - Drag follows the finger with edge resistance on the first/last tab; snaps on release past a 22% threshold.
+  - Anti-carousel guard: a swipe that starts on a real horizontal scroller (the category/period pill strips) with room to scroll that way yields to that scroll instead of changing tab — checked via `overflow-x`, so the track itself never counts.
+  - The active-pill indicator is a sliding highlight that tracks the finger in real time (`onProgress`).
+  - Inactive slides collapse (`max-height: 0`) so the track takes the active tab's height — no empty gap under shorter tabs; the neighbour expands while dragging so it peeks in with a 16px gap.
+
+---
+
 ## [2.78.0] — 2026-07-13
 
 ### Changed
