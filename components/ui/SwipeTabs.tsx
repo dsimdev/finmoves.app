@@ -95,11 +95,15 @@ export function SwipeTabs({ index, count, onIndexChange, onProgress, children }:
   return (
     <div ref={wrap} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}
       style={{ overflow: "hidden", touchAction: "pan-y" }}>
+      {/* El GAP va como separación de flexbox ENTRE slides (no como padding de cada una,
+          que angostaría la pantalla activa). El translateX compensa los `index` gaps que
+          quedan a la izquierda de la slide activa, para que quede alineada al borde. */}
       <div style={{
         display: "flex",
         alignItems: "flex-start",
+        gap: GAP,
         width: `${count * 100}%`,
-        transform: `translateX(calc(${pct}% + ${dx}px))`,
+        transform: `translateX(calc(${pct}% - ${index * GAP}px + ${dx}px))`,
         transition: dragging ? "none" : "transform .26s cubic-bezier(.2,.8,.2,1)",
       }}>
         {children.map((child, i) => {
@@ -112,7 +116,6 @@ export function SwipeTabs({ index, count, onIndexChange, onProgress, children }:
           return (
             <div key={i} style={{
               width: `${100 / count}%`, flexShrink: 0, boxSizing: "border-box",
-              paddingLeft: GAP / 2, paddingRight: GAP / 2,
               alignSelf: "flex-start",
               maxHeight: colapsada ? 0 : undefined,
               overflow: colapsada ? "hidden" : undefined,

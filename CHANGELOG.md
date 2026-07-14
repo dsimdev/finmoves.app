@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.79.1] — 2026-07-13
+
+### Fixed
+- **Reports subtab width**: the active tab was narrowed by per-slide horizontal padding. The 16px gap now lives as flexbox `gap` *between* slides (compensated in the track's translateX), so the active screen uses the full width again — the separation only shows while swiping.
+
+---
+
 ## [2.79.0] — 2026-07-13
 
 ### Added
