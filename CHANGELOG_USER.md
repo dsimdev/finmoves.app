@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.83.1] — 2026-07-15
+
+### Mejoras
+- **Deslizar entre modos en Analizar**: podés cambiar entre Comparar, Evolución y Proporción deslizando el dedo, sin tener que volver arriba a tocar los botones.
+
+---
+
 ## [2.83.0] — 2026-07-15
 
 ### Novedades

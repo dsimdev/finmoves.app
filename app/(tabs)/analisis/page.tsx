@@ -8,6 +8,7 @@ import { parsePeriodoId } from "@/utils/reportes";
 import { MultiLineChart, Stat } from "@/components/reports/charts";
 import { abbr } from "@/components/reports/format";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { SwipeTabs } from "@/components/ui/SwipeTabs";
 import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
 import type { Movimiento } from "@/types";
@@ -68,6 +69,9 @@ export default function AnalisisPage() {
   const [input, setInput] = useState("");
   const [pills, setPills] = useState<string[]>([]);
   const [modo, setModo] = useState<Modo>("comparar");
+  // Progreso del swipe entre modos (∈[-1,1], <0 hacia el siguiente) para que el indicador
+  // del selector acompañe el dedo, igual que en Reportes.
+  const [modoDragP, setModoDragP] = useState(0);
   const [grano, setGrano] = useState<Grano>("periodo");
   // Eje de agrupación en modo Comparar. "auto" = por término buscado si hay ≥2 pills
   // (así AUSA vs AUBASA quedan separados aunque compartan categoría), si no por descripción.
@@ -329,11 +333,20 @@ export default function AnalisisPage() {
         <div className="soft" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>{t.analyzeNoResults}</div>
       ) : (
         <>
-          {/* Selector de modo */}
-          <div className="subtabs" style={{ marginBottom: 14 }}>
+          {/* Selector de modo con indicador deslizante: el fondo acompaña la selección con
+              transición (como las pills de Reportes) en vez de saltar de golpe. */}
+          <div className="subtabs" style={{ position: "relative", marginBottom: 14 }}>
+            <div aria-hidden style={{
+              position: "absolute", top: 4, bottom: 4, left: 4,
+              width: `calc((100% - 8px) / ${MODOS.length})`,
+              // Base en el modo activo, desplazado por el progreso del swipe (sigue el dedo).
+              transform: `translateX(${(MODOS.findIndex((mo) => mo.id === modo) - modoDragP) * 100}%)`,
+              transition: modoDragP !== 0 ? "none" : "transform .24s cubic-bezier(.2,.8,.2,1)",
+              borderRadius: 999, background: "var(--accent-dim)", border: "1px solid var(--accent)",
+            }} />
             {MODOS.map((mo) => (
               <button key={mo.id} onClick={() => setModo(mo.id)} className="subtab"
-                style={modo === mo.id ? { border: "1px solid var(--accent)", background: "var(--accent-dim)", color: "var(--accent)" } : {}}>
+                style={{ position: "relative", zIndex: 1, background: "transparent", color: modo === mo.id ? "var(--accent)" : "var(--muted)" }}>
                 {mo.label}
               </button>
             ))}
@@ -368,12 +381,20 @@ export default function AnalisisPage() {
             </div>
           )}
 
-          {/* ══════════ MODO COMPARAR ══════════ */}
-          {modo === "comparar" && (() => {
-            // Suma de los grupos seleccionados (los marcados con color), para el stat.
-            const sumaSel = seleccionados.reduce((s, key) => s + (analysis.grupos.find((g) => g.key === key)?.total ?? 0), 0);
-            const haySel = seleccionados.length > 0;
-            return (
+          {/* Swipe entre los 3 modos (como las tabs de Reportes): el contenido se desliza y
+              el indicador del selector sigue el dedo (onProgress → modoDragP). */}
+          <SwipeTabs
+            index={MODOS.findIndex((mo) => mo.id === modo)}
+            count={MODOS.length}
+            onIndexChange={(next) => setModo(MODOS[next].id)}
+            onProgress={setModoDragP}
+          >
+            {/* ══ 0 · COMPARAR ══ */}
+            {(() => {
+              // Suma de los grupos seleccionados (los marcados con color), para el stat.
+              const sumaSel = seleccionados.reduce((s, key) => s + (analysis.grupos.find((g) => g.key === key)?.total ?? 0), 0);
+              const haySel = seleccionados.length > 0;
+              return (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
                 <Stat label={t.analyzeTotal} value={money(analysis.total)} color="var(--accent)" dimVar="var(--accent-dim)" />
@@ -468,11 +489,11 @@ export default function AnalisisPage() {
                 })}
               </div>
             </>
-            );
-          })()}
+              );
+            })()}
 
-          {/* ══════════ MODO EVOLUCIÓN ══════════ */}
-          {modo === "evolucion" && evolucion && (
+            {/* ══ 1 · EVOLUCIÓN ══ */}
+            {evolucion ? (
             <>
               {/* Grano temporal */}
               <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", scrollbarWidth: "none" }}>
@@ -509,10 +530,10 @@ export default function AnalisisPage() {
                 ))}
               </div>
             </>
-          )}
+            ) : <div />}
 
-          {/* ══════════ MODO PROPORCIÓN ══════════ */}
-          {modo === "proporcion" && proporcion && (
+            {/* ══ 2 · PROPORCIÓN ══ */}
+            {proporcion ? (
             <>
               <div className="soft" style={{ padding: "16px 14px", marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
@@ -556,7 +577,8 @@ export default function AnalisisPage() {
                 </div>
               )}
             </>
-          )}
+            ) : <div />}
+          </SwipeTabs>
         </>
       )}
 

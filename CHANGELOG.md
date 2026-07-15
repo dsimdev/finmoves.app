@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.83.1] — 2026-07-15
+
+### Changed
+- **Swipe between /analisis modes**: Compare / Trend / Share now swipe like the Reports subtabs (shared `SwipeTabs`), with the mode-selector indicator following the finger. Also gave the mode selector a sliding indicator instead of a hard background swap.
+
+---
+
 ## [2.83.0] — 2026-07-15
 
 ### Changed
