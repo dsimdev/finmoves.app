@@ -4,6 +4,18 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.85.0] — 2026-07-15
+
+### Novedades
+- **Plantillas para ingresos y sin monto**: ahora podés guardar plantillas también de ingresos, y sin monto (lo completás al usarla).
+- **Cargar el sueldo, más rápido** (para el dueño): al cargar el Sueldo ya no te pide la descripción ni el medio de pago (quedan fijos), y las observaciones siguen libres.
+
+### Mejoras
+- **Origen de ahorro**: los orígenes van en una sola fila deslizable, ordenados por los que más usás.
+- **Recurrentes más precisos**: si cargás un movimiento que ya es un recurrente tuyo, aparece la etiqueta "Movimiento recurrente" en vez del check. La identidad del recurrente (incluida la observación) ahora es consistente en todos lados.
+
+---
+
 ## [2.84.0] — 2026-07-15
 
 ### Novedades

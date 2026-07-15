@@ -8,6 +8,7 @@ import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
 import { crearMovimientoConId, nuevoMovimientoId, actualizarMovimiento, eliminarMovimiento } from "@/services/firebase/movimientos";
 import { upsertRecurrente } from "@/services/firebase/recurrentes";
+import { recurrentKey } from "@/utils/recurrent-key";
 import { crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from "@/services/firebase/plantillas";
 import { useData } from "@/app/(tabs)/data-context";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
@@ -149,9 +150,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [moveDir, setMoveDir] = useState<"aDisponible" | "aAhorro">("aDisponible");
 
   // ¿La combinación tipo+categoría+descripción+observación ya es un recurrente activo?
-  // Clave idéntica a la del backend (incluye observación → "eso+" ≠ "eso pass").
+  // Delega en recurrentKey (util compartido): MISMA clave que el doc id, el relojito y el
+  // cron → incluye observación ("eso+" ≠ "eso pass") y no diverge en bordes (obs vacía, etc.).
   const recKey = (t: string, c: string, d?: string, o?: string) =>
-    `${t}__${c}__${(d || "").trim().toLowerCase()}__${(o || "").trim().toLowerCase()}`;
+    recurrentKey({ tipo: t, categoria: c, descripcion: d, observaciones: o });
   const recurrenteKeys = useMemo(
     () => new Set(recurrentes.filter((r) => r.activo).map((r) => recKey(r.tipo, r.categoria, r.descripcion, r.observaciones))),
     [recurrentes]
@@ -275,9 +277,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   }, [open, mode, movimiento?.id, initialView, prefill]);
 
   const aplicarPlantilla = (p: Plantilla) => {
-    setTipo("Gasto");
+    setTipo(p.tipo ?? "Gasto"); // plantillas viejas sin tipo = Gasto
     setCategoria(p.categoria);
-    setMonto(String(p.monto));
+    // Monto: si la plantilla lo tiene, precargar; si no, dejar el campo como está (vacío).
+    if (p.monto != null && p.monto > 0) setMonto(String(p.monto));
     setDescripcion(p.nombre);
     setMedioPago(p.medioPago);
     setObservaciones(p.observaciones ?? "");
@@ -292,11 +295,14 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   };
 
   const guardarComoPlantilla = async () => {
-    if (!user?.uid || tipo !== "Gasto" || !categoria) return;
+    // Plantillas para Gasto e Ingreso. Requiere categoría; el monto es OPCIONAL.
+    if (!user?.uid || (tipo !== "Gasto" && tipo !== "Ingreso") || !categoria) return;
+    const montoNum = parseFloat(monto || "0");
     await crearPlantilla(user.uid, {
       nombre: descripcion.trim() || categoria,
       categoria,
-      monto: parseFloat(monto || "0"),
+      tipo,
+      ...(montoNum > 0 ? { monto: montoNum } : {}), // sin monto → no se guarda el campo
       medioPago,
       ...(observaciones.trim() ? { observaciones: observaciones.trim() } : {}),
     });
@@ -370,11 +376,24 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     return m;
   }, [movimientos]);
 
+  // Frecuencia de uso por origen de ahorro (para ordenar las pills por más usado).
+  const origenUso = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const mv of movimientos) {
+      const o = (mv as Movimiento & { origenAhorro?: string }).origenAhorro;
+      if (o) m.set(o, (m.get(o) ?? 0) + 1);
+    }
+    return m;
+  }, [movimientos]);
+
   // El dueño cobra sueldo mensual: su sueldo SIEMPRE abre período (sin elección),
   // igual que el primer sueldo. El resto de los usuarios eligen con el toggle.
   const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
   const forzarNuevoPeriodo = esSueldo && (sinPeriodos || isOwner);
   const abrePeriodo = esSueldo && (forzarNuevoPeriodo || abreNuevoPeriodo);
+  // Sueldo del dueño: descripción y medio de pago fijos ("Sueldo" / Débito). Se ocultan
+  // sus campos del form; observaciones queda libre; sin opción de recurrente.
+  const sueldoOwner = isOwner && esSueldo;
 
   const canSubmit = (!!periodoActual || abrePeriodo) && (
     esSoloCantidadFX ? usdFinal > 0 :
@@ -436,9 +455,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     const mainData: Omit<Movimiento, "id"> = {
       timestampCarga: now, fecha, tipo,
       categoria: esMove ? "Move" : esUSD ? tipo : categoria,
-      descripcion: esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esVentaFX ? `Venta ${fxLabel}` : esIngresoFX ? `Ingreso ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
+      descripcion: sueldoOwner ? "Sueldo" : esMove ? (moveDir === "aAhorro" ? "Move a ahorros" : "Move a disponible") : esCompraFX ? `Compra ${fxLabel}` : esGastoFX ? `Gasto ${fxLabel}` : esVentaFX ? `Venta ${fxLabel}` : esIngresoFX ? `Ingreso ${fxLabel}` : esAhorros ? (origenAhorro || descripcion.trim()) : descripcion.trim(),
       monto: montoFinal,
-      medioPago: esMove || esCompraFX || esVentaFX ? "Mercado Pago" : esGastoFX || esIngresoFX ? "—" : medioPago,
+      medioPago: sueldoOwner ? "Débito" : esMove || esCompraFX || esVentaFX ? "Mercado Pago" : esGastoFX || esIngresoFX ? "—" : medioPago,
       observaciones, periodoId: periodoIdFinal, userId: uid,
       ...(esMove ? { direccionMove: moveDir } : {}),
       ...(esAhorros && origenAhorro ? { origenAhorro } : {}),
@@ -613,7 +632,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               </div>
             </div>
           ) : (<>
-          <div style={{ display: "grid", gridTemplateColumns: tipo === "Gasto" ? "4fr 1fr" : "1fr", gap: 10, marginBottom: 18, alignItems: "end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: (tipo === "Gasto" || tipo === "Ingreso") ? "4fr 1fr" : "1fr", gap: 10, marginBottom: 18, alignItems: "end" }}>
             <div>
               <div className="label">{t.type}</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -637,8 +656,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 })}
               </div>
             </div>
-            {tipo === "Gasto" && (() => {
-              const ready = !!categoria && parseFloat(monto || "0") > 0;
+            {(tipo === "Gasto" || tipo === "Ingreso") && (() => {
+              // Se puede guardar sin monto: alcanza con la categoría.
+              const ready = !!categoria;
               return (
                 <button type="button" onClick={ready ? guardarComoPlantilla : undefined} disabled={!ready} aria-label={t.tplSave} title={t.tplSave} style={{
                   width: "100%", minHeight: 34, display: "flex", alignItems: "center", justifyContent: "center",
@@ -654,10 +674,13 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             })()}
           </div>
 
-          {/* Plantillas: tap precarga el form; × borra. Solo para gastos. */}
-          {tipo === "Gasto" && plantillas.length > 0 && (
+          {/* Plantillas del tipo actual (Gasto o Ingreso): tap precarga el form; × borra.
+              Las viejas sin `tipo` cuentan como Gasto. */}
+          {(tipo === "Gasto" || tipo === "Ingreso") && (() => {
+            const tplsDelTipo = plantillas.filter((p) => (p.tipo ?? "Gasto") === tipo);
+            return tplsDelTipo.length > 0 ? (
             <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2, scrollbarWidth: "none" }}>
-              {plantillas.map((p) => (
+              {tplsDelTipo.map((p) => (
                 <div key={p.id} className="pill" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, borderColor: "var(--border)", padding: "5px 8px 5px 12px" }}>
                   <button type="button" onClick={() => aplicarPlantilla(p)} style={{ background: "none", border: "none", color: "var(--text)", cursor: "pointer", fontSize: 12, padding: 0 }}>
                     {p.nombre}
@@ -666,7 +689,8 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 </div>
               ))}
             </div>
-          )}
+            ) : null;
+          })()}
 
           {/* Monto + Fecha — el monto es el primer dato; la fecha al lado (ya viene cargada). */}
           <div style={{ display: "grid", gridTemplateColumns: esUSD ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 16 }}>
@@ -761,10 +785,14 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           {esAhorros && (
             <div style={{ marginBottom: 18 }}>
               <div className="label">{t.origin}</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {config?.origenesAhorro.filter((o) => o.activo).map((o) => (
+              {/* Una sola fila con scroll lateral, ordenada por más usado. */}
+              <div style={{ display: "flex", gap: 6, flexWrap: "nowrap", overflowX: "auto", paddingBottom: 2, scrollbarWidth: "none" }}>
+                {[...(config?.origenesAhorro.filter((o) => o.activo) ?? [])]
+                  .sort((a, b) => (origenUso.get(b.nombre) ?? 0) - (origenUso.get(a.nombre) ?? 0))
+                  .map((o) => (
                   <button key={o.nombre} type="button" onClick={() => setOrigenAhorro(o.nombre)}
                     className="pill" style={{
+                      flexShrink: 0,
                       borderColor: origenAhorro === o.nombre ? "var(--blue)" : "var(--border)",
                       background: origenAhorro === o.nombre ? "var(--blue-dim)" : "transparent",
                       color: origenAhorro === o.nombre ? "var(--blue)" : "var(--muted)",
@@ -860,7 +888,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           )}
 
-          {!esMove && !esUSD && !esAhorros && (
+          {!esMove && !esUSD && !esAhorros && !sueldoOwner && (
             <div style={{ marginBottom: 14 }}>
               <div className="label">{t.description}</div>
               <input className="input" type="text" list="finmoves-desc-sug" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} autoComplete="off" />
@@ -871,7 +899,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               )}
             </div>
           )}
-          {!esMove && !esUSD && (
+          {!esMove && !esUSD && !sueldoOwner && (
             <div style={{ marginBottom: 14 }}>
               <div className="label">{t.paymentMethod}</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -933,19 +961,24 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           </div>
 
-          {!esMove && !esUSD && !esAhorros && (
-            <button type="button" onClick={() => setRepetir((v) => !v)} style={{
-              marginTop: 16, display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "9px 11px",
-              background: repetir ? "var(--accent-dim)" : "transparent",
-              border: `1px solid ${repetir ? "var(--accent)" : "var(--border)"}`, borderRadius: "var(--radius-sm)",
-              color: repetir ? "var(--accent)" : "var(--muted)", cursor: "pointer", fontSize: 13, textAlign: "left",
-            }}>
-              <span style={{ width: 16, height: 16, flexShrink: 0, borderRadius: 4, border: `1px solid ${repetir ? "var(--accent)" : "var(--border-hi)"}`, background: repetir ? "var(--accent)" : "transparent" }} />
-              <span style={{ flex: 1 }}>{t.repeatEachPeriod}</span>
-              {yaEsRecurrente && (
-                <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: 999, padding: "2px 8px", textTransform: "uppercase", letterSpacing: 0.5 }}>{t.alreadyRecurrent}</span>
-              )}
-            </button>
+          {!esMove && !esUSD && !esAhorros && !sueldoOwner && (
+            yaEsRecurrente ? (
+              // Ya es recurrente: no ofrecemos "repetir", solo informamos que lo es (con ícono).
+              <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 12, fontWeight: 600 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></svg>
+                {t.recurrentMovement}
+              </div>
+            ) : (
+              <button type="button" onClick={() => setRepetir((v) => !v)} style={{
+                marginTop: 16, display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "9px 11px",
+                background: repetir ? "var(--accent-dim)" : "transparent",
+                border: `1px solid ${repetir ? "var(--accent)" : "var(--border)"}`, borderRadius: "var(--radius-sm)",
+                color: repetir ? "var(--accent)" : "var(--muted)", cursor: "pointer", fontSize: 13, textAlign: "left",
+              }}>
+                <span style={{ width: 16, height: 16, flexShrink: 0, borderRadius: 4, border: `1px solid ${repetir ? "var(--accent)" : "var(--border-hi)"}`, background: repetir ? "var(--accent)" : "transparent" }} />
+                <span style={{ flex: 1 }}>{t.repeatEachPeriod}</span>
+              </button>
+            )
           )}
         </form>
       )}

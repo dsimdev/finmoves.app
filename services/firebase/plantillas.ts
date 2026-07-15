@@ -1,12 +1,15 @@
 import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, increment } from "firebase/firestore";
 import { db } from "./firebase";
 
-// Plantilla de gasto frecuente: precarga el form de alta con un toque.
+// Plantilla de movimiento frecuente: precarga el form de alta con un toque.
 export interface Plantilla {
   id: string;
-  nombre: string;        // etiqueta (= descripción del gasto)
+  nombre: string;        // etiqueta (= descripción del movimiento)
   categoria: string;
-  monto: number;
+  /** Tipo del movimiento. Ausente = "Gasto" (plantillas viejas, retrocompat). */
+  tipo?: "Gasto" | "Ingreso";
+  /** Opcional: se puede guardar una plantilla SIN monto (el usuario lo completa al aplicar). */
+  monto?: number;
   medioPago: string;
   observaciones?: string;
   usageCount?: number;

@@ -4,6 +4,21 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.85.0] — 2026-07-15
+
+### Added
+- **Templates for Income too, and without an amount**: templates now work for Income (not just expenses) and can be saved with no amount (category is enough — the amount is filled in when applied). Each type shows its own templates. `Plantilla` gained `tipo` and made `monto` optional.
+
+### Changed
+- **Owner salary entry is streamlined**: for the owner, logging a Salary hides the description and payment-method fields (fixed to "Sueldo" / "Débito"), keeps notes free, and drops the recurring option — a salary is always a salary.
+- **Savings origin is a single scrollable row** ordered by most used (was a wrapping two-row block in alphabetical/creation order).
+- **Unified recurring-item key** (`utils/recurrent-key.ts`): the doc id, the client clock icon and the cron now derive the identity from the *same* normalization (type + category + description + note), so a recurring item never matches too much or too little at the edges (empty note, special chars). The "repeat each period" checkbox is replaced by a **"Movimiento recurrente"** badge when the entry already matches one. Tests cover the ESO+/ESO Pass case.
+
+### Internal
+- Added `utils/recurrent-reminder.ts` (pure, tested 25 / 28 / weekly reminder logic) — not wired to the cron yet.
+
+---
+
 ## [2.84.0] — 2026-07-15
 
 ### Changed

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useData } from "../data-context";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { movMatchesAny } from "@/utils/search";
+import { recurrentKey } from "@/utils/recurrent-key";
 import { useMoney } from "@/hooks/useHideValues";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { Movimiento, TipoMovimiento } from "@/types";
@@ -37,15 +38,14 @@ export default function MovimientosPage() {
   const t = useT();
 
   // Recurrentes activos → para marcar con un relojito los movimientos que matchean.
-  // La clave incluye la observación: "Steam·eso+" y "Steam·eso pass" son recurrentes
-  // distintos, así que un movimiento solo se marca si coincide TAMBIÉN la observación.
-  const recKey = (tipo: string, categoria: string, descripcion?: string, observaciones?: string) =>
-    `${tipo}__${categoria}__${(descripcion || "").trim().toLowerCase()}__${(observaciones || "").trim().toLowerCase()}`;
+  // La clave incluye la observación (recurrentKey, la MISMA que usan el doc id y el cron):
+  // "Steam·eso+" y "Steam·eso pass" son recurrentes distintos, así que un movimiento solo
+  // se marca si coincide TAMBIÉN la observación.
   const recurrenteKeys = useMemo(
-    () => new Set(recurrentes.filter((r) => r.activo).map((r) => recKey(r.tipo, r.categoria, r.descripcion, r.observaciones))),
+    () => new Set(recurrentes.filter((r) => r.activo).map((r) => recurrentKey(r))),
     [recurrentes]
   );
-  const esRecurrente = (m: Movimiento) => recurrenteKeys.has(recKey(m.tipo, m.categoria, m.descripcion, m.observaciones));
+  const esRecurrente = (m: Movimiento) => recurrenteKeys.has(recurrentKey(m));
   const [showHint, dismissHint] = useHint("swipeRow");
 
   const periodos = agruparPorPeriodo(movimientos);
