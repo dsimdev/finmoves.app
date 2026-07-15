@@ -49,12 +49,31 @@ export async function uploadComprobante(_uid: string, file: File): Promise<{ url
   const token = await getIdToken(user);
   const form = new FormData();
   form.append("file", new Blob([data], { type: contentType }), esImagen ? "comprobante.jpg" : (file.name || "comprobante.pdf"));
-  const res = await fetch("/api/comprobantes/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Error al subir el comprobante");
+
+  // Backoff ante "Failed to fetch": el API de Cloud Run escala a 0 (minInstances:0), así
+  // que la 1ª subida tras un rato pega en frío y la request de red se cae (no es un error
+  // HTTP, es un TypeError del fetch). Reintentar le da tiempo a despertar. Un error HTTP
+  // (403/413/415…) es definitivo → NO se reintenta. Cubre alta Y edición (antes solo el
+  // alta reintentaba desde el modal; la edición fallaba entera en frío).
+  const delays = [0, 1500, 4000];
+  let lastErr: unknown;
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]));
+    try {
+      const res = await fetch("/api/comprobantes/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Error al subir el comprobante"); // HTTP → no reintentar
+      }
+      return res.json();
+    } catch (e) {
+      lastErr = e;
+      // Solo reintentar el fallo de RED (TypeError "Failed to fetch"); los Error propios sí cortan.
+      const esRed = e instanceof TypeError;
+      if (!esRed || i === delays.length - 1) throw e;
+    }
   }
-  return res.json();
+  throw lastErr instanceof Error ? lastErr : new Error("Error al subir el comprobante");
 }
 
 // Copia una foto de perfil (ej. la de Google) a nuestro Storage y devuelve la URL

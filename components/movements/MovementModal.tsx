@@ -205,25 +205,18 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     return () => clearTimeout(id);
   }, [bgError, pendingReceipt]);
 
-  // Sube el comprobante y parchea la URL en el movimiento ya visible. Reintenta una vez;
-  // si falla, deja el File pendiente para que el usuario reintente sin volver a elegirlo.
+  // Sube el comprobante y parchea la URL en el movimiento ya visible. El reintento ante el
+  // cold start de Cloud Run vive ahora en uploadComprobante (cubre alta y edición); si aun
+  // así falla, deja el File pendiente para que el usuario reintente sin volver a elegirlo.
   const subirComprobante = async (movId: string, file: File) => {
     if (!user?.uid) return;
     setPendingReceipt(null);
-    // Backoff: el Cloud Run del API escala a 0 (minInstances 0). La 1ª subida tras un
-    // rato pega en frío y suele fallar con "Failed to fetch"; reintentar con espera le
-    // da tiempo a despertar y se recupera solo, sin mostrar error.
-    const delays = [0, 1500, 4000];
-    for (let i = 0; i < delays.length; i++) {
-      if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]));
-      try {
-        const up = await uploadComprobante(user.uid, file);
-        await actualizarMovimiento(user.uid, movId, { comprobanteUrl: up.url, comprobantePath: up.path });
-        onUpdated?.(movId, { comprobanteUrl: up.url, comprobantePath: up.path });
-        return;
-      } catch (err) {
-        if (i === delays.length - 1) { console.error("[comprobante] no se pudo subir", err); setPendingReceipt({ movId, file }); }
-      }
+    try {
+      const up = await uploadComprobante(user.uid, file);
+      await actualizarMovimiento(user.uid, movId, { comprobanteUrl: up.url, comprobantePath: up.path });
+      onUpdated?.(movId, { comprobanteUrl: up.url, comprobantePath: up.path });
+    } catch (err) {
+      console.error("[comprobante] no se pudo subir", err); setPendingReceipt({ movId, file });
     }
   };
   const [addError, setAddError] = useState("");

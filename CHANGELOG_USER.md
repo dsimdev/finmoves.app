@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.82.1] — 2026-07-15
+
+### Mejoras
+- **Subir imágenes más confiable**: adjuntar una foto al editar un movimiento podía fallar con un error de conexión la primera vez tras un rato. Ahora reintenta solo y se recupera.
+
+---
+
 ## [2.82.0] — 2026-07-15
 
 ### Novedades

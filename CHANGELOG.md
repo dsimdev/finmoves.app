@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.82.1] — 2026-07-15
+
+### Fixed
+- **Receipt upload "Failed to fetch" on edit**: the cold-start retry (Cloud Run scales to 0) only existed in the add flow, so editing a movement to attach an image could fail outright when the API was cold. Moved the network-error backoff into `uploadComprobante` so both add and edit retry; only network `TypeError`s retry, HTTP errors (403/413/415) fail fast. Removed the now-redundant double backoff in the add path.
+
+---
+
 ## [2.82.0] — 2026-07-15
 
 ### Changed
