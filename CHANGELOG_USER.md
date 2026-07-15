@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.85.1] — 2026-07-15
+
+### Mejoras
+- **Recordatorios de recurrentes más insistentes**: ahora te avisamos a los ~25 días, de nuevo a los ~28 si no lo cargaste, y después una vez por semana hasta que lo registres. Si es un recurrente nuevo que nunca cargaste, cuenta desde que lo creaste.
+
+---
+
 ## [2.85.0] — 2026-07-15
 
 ### Novedades

@@ -3,6 +3,7 @@ import { pushYGuardar } from "./notif-store";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { reservaFX, tiposReserva } from "@/utils/reserva";
+import { shouldRemind, type RecReminderState } from "@/utils/recurrent-reminder";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
@@ -10,11 +11,11 @@ const DOLAR_THRESHOLD_PCT = 3;
 const HITOS = [50, 75, 100];
 const SUELDO_REMINDER_DAYS = 30; // si pasó ~1 mes sin abrir período nuevo
 const CARGA_OLVIDADA_DIAS = 3;   // días sin registrar ningún movimiento
-const RECURRENTE_DIAS = 28; // días desde la última carga antes de recordar un recurrente
-const RECURRENTE_LOOKBACK_DIAS = 35; // ventana de lectura (por fecha) para hallar la última carga.
-// Cubre el umbral de 28d con ~7d de margen: el cron corre a diario y deduplica, así que
-// el aviso dispara el primer día que se cruza el umbral (día 28, aún dentro de la ventana).
-// No bajar de ~32: por debajo se arriesga perder el aviso si el cron falla varios días seguidos.
+// Ventana de lectura (por fecha) para hallar la última carga de un recurrente. Debe cubrir
+// el umbral máximo del esquema (día 28 + margen) para que la "última carga" no se pierda:
+// si cae fuera de la ventana, el recurrente se ve como nunca-cargado y usa createdAt.
+// Los umbrales del esquema (25 / 28 / semanal) viven en utils/recurrent-reminder.
+const RECURRENTE_LOOKBACK_DIAS = 40;
 
 // Fecha de hoy en AR (UTC-3) como YYYY-MM-DD, para comparar contra recordatorios.
 function hoyAR(): string {
@@ -214,16 +215,17 @@ async function checkRecordatorios(uid: string) {
   }));
 }
 
-// Recurrentes (por fecha): por cada template activo, busca la última vez que se cargó
-// un movimiento que matchee (tipo+categoría+descripción). Si pasaron ~28 días desde esa
-// fecha, recuerda por push. Dedup por última-fecha → no re-avisa hasta que lo cargues de
-// nuevo (ahí cambia la fecha y, al mes, vuelve a avisar).
+// Recurrentes: por cada template activo, calcula su fecha de REFERENCIA = la última carga
+// que matchee (tipo+categoría+descripción+observación), o `createdAt` si nunca se cargó.
+// Desde esa referencia aplica el esquema día 25 (aviso previo) / 28 (vencido) / luego
+// semanal, vía shouldRemind (pura, testeada). Al cargar, la referencia cambia y el ciclo
+// se reinicia solo. Dedup por estado {ref,lastNotified,stage} en notify.recReminders.
 async function checkRecurrentes(uid: string, notify: Record<string, unknown>, updates: Record<string, unknown>) {
   const recSnap = await adminDb().collection(`users/${uid}/recurrentes`).where("activo", "==", true).get();
   if (recSnap.empty) return;
 
-  // Ventana por FECHA del evento (no por cantidad): una sola query, index-free (desigualdad
-  // de un solo campo) y robusta al volumen del período. `fecha` se guarda como YYYY-MM-DD.
+  // Ventana por FECHA del evento: una sola query, index-free y robusta al volumen. Cubre
+  // el umbral (28d) con margen para hallar la última carga. `fecha` se guarda como YYYY-MM-DD.
   const desde = isoHaceDiasAR(RECURRENTE_LOOKBACK_DIAS);
   const movsSnap = await adminDb()
     .collection(`users/${uid}/movimientos`)
@@ -232,24 +234,19 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   const movs = movsSnap.docs.map((d) => d.data() as Movimiento);
 
   const hoy = hoyAR();
-  const mesActual = hoy.slice(0, 7); // "YYYY-MM"
-  const reminded = (notify.recReminded as Record<string, string>) ?? {};
-  const remindedMonth = (notify.recRemindedMonth as Record<string, string>) ?? {};
+  const reminders = (notify.recReminders as Record<string, RecReminderState>) ?? {};
   const activeIds = new Set(recSnap.docs.map((d) => d.id));
-  // Limpieza (item E): descartar del dedup las claves de templates ya borrados/inactivos,
-  // para que `recReminded`/`recRemindedMonth` no crezcan sin límite en Firestore.
-  const nextReminded: Record<string, string> = {};
-  for (const [k, v] of Object.entries(reminded)) if (activeIds.has(k)) nextReminded[k] = v;
-  const nextRemindedMonth: Record<string, string> = {};
-  for (const [k, v] of Object.entries(remindedMonth)) if (activeIds.has(k)) nextRemindedMonth[k] = v;
+  // Limpieza: descartar del dedup las claves de templates borrados/inactivos (no crecer sin fin).
+  const nextReminders: Record<string, RecReminderState> = {};
+  for (const [k, v] of Object.entries(reminders)) if (activeIds.has(k)) nextReminders[k] = v;
+
   const nombres: string[] = [];
   const ids: string[] = [];
 
   for (const d of recSnap.docs) {
-    const r = d.data() as { tipo: string; categoria: string; descripcion: string; observaciones?: string };
-    // Última carga que matchee (tipo+categoría+descripción+observación) dentro de la ventana.
-    // La observación distingue recurrentes homónimos (ej. "Steam·eso+" vs "Steam·eso pass");
-    // los recurrentes viejos sin observación guardada matchean cargas sin observación.
+    const r = d.data() as { tipo: string; categoria: string; descripcion: string; observaciones?: string; createdAt?: number };
+    // Última carga que matchee (misma clave que el relojito/doc). La observación distingue
+    // recurrentes homónimos (ej. "Steam·eso+" vs "Steam·eso pass").
     const desc = (r.descripcion || "").trim().toLowerCase();
     const obs = (r.observaciones || "").trim().toLowerCase();
     let ultima = "";
@@ -259,39 +256,27 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
       if ((m.observaciones || "").trim().toLowerCase() !== obs) continue;
       if (m.fecha > ultima) ultima = m.fecha;
     }
-    // Item C — recurrente MUDO: sin ninguna carga en la ventana de lookback (~35d). El
-    // dedup por "última carga" no puede disparar (no hay última) → quedaba mudo para
-    // siempre. Avisar igual, pero SOLO una vez por mes calendario (no todos los días).
-    if (!ultima) {
-      if (nextRemindedMonth[d.id] === mesActual) continue; // ya avisé este mes
-      nombres.push(r.descripcion);
-      ids.push(d.id);
-      nextRemindedMonth[d.id] = mesActual;
-      continue;
-    }
-    if (diasEntre(ultima, hoy) < RECURRENTE_DIAS) continue;
-    if (reminded[d.id] === ultima) continue; // ya avisé por esta última carga
+    // Referencia = última carga, o createdAt si nunca se cargó (recurrente nuevo). Si no hay
+    // ninguna de las dos (raro), se saltea.
+    const ref = ultima || (r.createdAt ? new Date(r.createdAt - 3 * 60 * 60 * 1000).toISOString().slice(0, 10) : "");
+    if (!ref) continue;
+
+    const nuevo = shouldRemind(ref, hoy, reminders[d.id]);
+    if (!nuevo) continue;
     nombres.push(r.descripcion);
     ids.push(d.id);
-    nextReminded[d.id] = ultima;
+    nextReminders[d.id] = nuevo;
   }
 
   if (nombres.length === 0) return;
-  // Body neutral: cubre tanto "hace ~1 mes de la última carga" como el recurrente mudo
-  // (sin cargas en la ventana), donde no hay "última vez" que referenciar.
   const body = nombres.length === 1
     ? `¿Cargás "${nombres[0]}"? Es tu recurrente y hace rato no lo registrás.`
     : `${nombres.length} recurrentes pendientes: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`;
-  // Un solo recurrente → deep-link al modal pre-cargado; varios → listado general.
   const dest = ids.length === 1 ? `/movements?recurrente=${encodeURIComponent(ids[0])}` : "/movements";
-  // El botón "Cargar" va al MISMO dest que el cuerpo (con prefill si es uno solo).
-  // Tag por día, no por mes: dos recurrentes que avisan en días distintos del mes no
-  // se pisan en el tray del SO. Dedup SOLO si el push se confirmó: si falla, reintenta mañana.
+  // Tag por día: dos recurrentes que avisan en días distintos no se pisan en el tray.
+  // Dedup SOLO si el push se confirmó: si falla, reintenta mañana (no marca el estado nuevo).
   const ok = await pushYGuardar(uid, "recurrente", { title: "Recurrentes", body, tag: `rec-${hoy}`, url: dest, actions: [{ action: "cargar", title: "Cargar" }], actionUrls: { cargar: dest } }, dest);
-  if (ok) {
-    updates.recReminded = nextReminded;
-    updates.recRemindedMonth = nextRemindedMonth;
-  }
+  if (ok) updates.recReminders = nextReminders;
 }
 
 // Meta de ahorro: avisa al cruzar 50/75/100% (una vez cada hito).

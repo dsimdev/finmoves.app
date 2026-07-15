@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.85.1] — 2026-07-15
+
+### Changed
+- **Recurring reminders now follow a 25 / 28 / weekly schedule**, wired into the cron. Reference date = last matching entry, or the recurring item's `createdAt` if it was never logged (so a brand-new recurring item reminds ~25 days after you created it). Day 25 = heads-up, day 28 = due, then weekly until you log it; logging resets the cycle. Dedup moved to `notifyMeta.recReminders[id] = {ref, lastNotified, stage}` (replaces the old last-date dedup and the "muted once a month" branch). Logic is the tested pure `shouldRemind` (utils/recurrent-reminder). Lookback window raised to 40 days.
+
+---
+
 ## [2.85.0] — 2026-07-15
 
 ### Added
