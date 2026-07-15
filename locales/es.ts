@@ -443,12 +443,14 @@ export const es = {
   obEnableNotifications: "Notificaciones",
   obSecurityUnavailable: "Tu dispositivo no soporta estas opciones por ahora.",
   // Primera visita — hints contextuales
-  hintMovTitle: "Períodos y movimientos",
-  hintMovBody: "Cada sueldo abre un período. Registrá gastos, ingresos y moves entre tus bolsas.",
-  hintRepTitle: "Análisis por período",
-  hintRepBody: "Gastos, ingresos, movimientos y evolución. Todo filtrado por período y año.",
-  hintInvTitle: "Reserva en divisas",
-  hintInvBody: "Seguí tu reserva, el precio promedio de compra y tu meta de ahorro.",
+  hintMovTitle: "Deslizá para editar o borrar",
+  hintMovBody: "Deslizá una fila hacia la izquierda y aparecen el lápiz (editar) y el tacho (borrar).",
+  hintRepTitle: "Deslizá entre las pestañas",
+  hintRepBody: "Deslizá con el dedo para pasar de Gastos a Ingresos, Movimientos y Períodos.",
+  hintInvTitle: "Tocá los números",
+  hintInvBody: "Tocá cualquier número de color para ver qué significa y cómo se calcula.",
+  hintHomeTitle: "Tocá los números",
+  hintHomeBody: "Los números de colores son tappeables: tocalos para entender qué significan.",
 
   // UpdateBanner
 

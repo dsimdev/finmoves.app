@@ -445,12 +445,14 @@ export const en: AppLocale = {
   obEnableNotifications: "Notifications",
   obSecurityUnavailable: "Your device doesn't support these options yet.",
   // First visit — contextual hints
-  hintMovTitle: "Periods & movements",
-  hintMovBody: "Each salary opens a period. Log expenses, income and moves between your balances.",
-  hintRepTitle: "Period analysis",
-  hintRepBody: "Expenses, income, movements and trends. All filtered by period and year.",
-  hintInvTitle: "Currency reserve",
-  hintInvBody: "Track your reserve, average purchase price and savings goal.",
+  hintMovTitle: "Swipe to edit or delete",
+  hintMovBody: "Swipe a row left and the pencil (edit) and trash (delete) appear.",
+  hintRepTitle: "Swipe between tabs",
+  hintRepBody: "Swipe with your finger to move from Expenses to Income, Movements and Periods.",
+  hintInvTitle: "Tap the numbers",
+  hintInvBody: "Tap any colored number to see what it means and how it's calculated.",
+  hintHomeTitle: "Tap the numbers",
+  hintHomeBody: "The colored numbers are tappable: tap them to understand what they mean.",
 
   // UpdateBanner
 

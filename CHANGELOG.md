@@ -4,6 +4,14 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.83.0] — 2026-07-15
+
+### Changed
+- **Gesture hints now persist in Firestore** (`config/meta.hintsVistos`) instead of localStorage, so they don't reappear after a reinstall. New `useHint(key)` hook (reads from the already-loaded config → no extra reads; optimistic dismiss + one small write). Retired `useFirstVisit`.
+- **Hint copy reoriented to the discoverable gestures** (was describing "what the screen is"): Movements → "swipe a row to edit or delete", Reports → "swipe between tabs", Investments & Home → "tap the numbers" (shared `tapKpis` key, dismissed once for both). Added a hint on Home (non-classic dashboard, where the KPIs are tappable).
+
+---
+
 ## [2.82.1] — 2026-07-15
 
 ### Fixed

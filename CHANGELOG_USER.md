@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.83.0] — 2026-07-15
+
+### Novedades
+- **Tips de gestos**: la primera vez en cada pantalla, un aviso te muestra los gestos que quizás no descubras solo — deslizar una fila para editar/borrar, deslizar entre las pestañas de Reportes, y tocar los números para entenderlos. Y ahora no vuelven a aparecer aunque reinstales la app.
+
+---
+
 ## [2.82.1] — 2026-07-15
 
 ### Mejoras

@@ -18,6 +18,8 @@ import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiasPeriodo } from "@/components/ui/DiasPeriodo";
+import { SectionHint } from "@/components/ui/SectionHint";
+import { useHint } from "@/hooks/useHint";
 import { deltaColor, deltaMag, colorPct, colorPctDim } from "@/components/reports/format";
 
 function TipoColor(m: Movimiento) {
@@ -39,6 +41,7 @@ export default function Dashboard() {
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
   const t = useT();
   const { dashboardClasico, showAhorros, monedaPrincipal } = useAppPrefs();
+  const [showTapHint, dismissTapHint] = useHint("tapKpis");
   const { deflatar, ipcDisponible } = useInflacionIPC();
   const esARS = monedaPrincipal === "ARS";
   // El número es "real" (ajustado por IPC) solo si es ARS Y hay datos de IPC. Si la API
@@ -126,6 +129,9 @@ export default function Dashboard() {
               <div className="progress-fill" style={{ width: `${Math.max(0, Math.min(pctDisp, 100))}%`, background: barColor }} />
             </div>
           </div>
+
+          {/* Hint: los KPIs son tappeables. Solo en modo no-clásico (ahí tienen onClick). */}
+          {!dashboardClasico && showTapHint && <SectionHint title={t.hintHomeTitle} body={t.hintHomeBody} onDismiss={dismissTapHint} />}
 
           {/* KPIs */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>

@@ -11,7 +11,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useT } from "@/hooks/useTranslation";
-import { useFirstVisit } from "@/hooks/useFirstVisit";
+import { useHint } from "@/hooks/useHint";
 import { SectionHint } from "@/components/ui/SectionHint";
 import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -45,7 +45,7 @@ export default function MovimientosPage() {
     [recurrentes]
   );
   const esRecurrente = (m: Movimiento) => recurrenteKeys.has(recKey(m.tipo, m.categoria, m.descripcion, m.observaciones));
-  const [showHint, dismissHint] = useFirstVisit("movements");
+  const [showHint, dismissHint] = useHint("swipeRow");
 
   const periodos = agruparPorPeriodo(movimientos);
   const años = useMemo(() => Array.from(new Set(periodos.map((p) => p.periodoId.split("/")[2] ?? ""))).filter(Boolean), [periodos]);

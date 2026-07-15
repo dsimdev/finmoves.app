@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
-import { useFirstVisit } from "@/hooks/useFirstVisit";
+import { useHint } from "@/hooks/useHint";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { useDolarHistorico } from "@/hooks/useDolarHistorico";
 import { SectionHint } from "@/components/ui/SectionHint";
@@ -58,7 +58,7 @@ export default function ReportesPage() {
   const { movimientos, loading, config } = useData();
   const { cotizacion } = useCotizacion();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
-  const [showHint, dismissHint] = useFirstVisit("reports");
+  const [showHint, dismissHint] = useHint("swipeTabs");
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const [sub, setSub] = useState<Sub>("gastos");

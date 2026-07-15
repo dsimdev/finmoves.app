@@ -104,6 +104,9 @@ export interface ConfigUsuario {
     /** Contador de mutaciones de movimientos: se incrementa en cada alta/edición/borrado.
      *  El cliente lo compara con el cacheado para detectar cambios hechos en otro dispositivo. */
     movsRevision?: number;
+    /** Hints contextuales de gestos ya descartados por el usuario (persistidos en Firestore
+     *  para que no reaparezcan al reinstalar, a diferencia del viejo localStorage). */
+    hintsVistos?: Record<string, boolean>;
     nombre?: string;
     fotoURL?: string;
     /** Permisos por usuario, gestionados por el dueño desde el panel Admin.

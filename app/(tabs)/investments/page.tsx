@@ -9,7 +9,7 @@ import { useData } from "../data-context";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { useCotizacion } from "@/hooks/useCotizacion";
 import { useT } from "@/hooks/useTranslation";
-import { useFirstVisit } from "@/hooks/useFirstVisit";
+import { useHint } from "@/hooks/useHint";
 import { SectionHint } from "@/components/ui/SectionHint";
 
 function fechaCortaConAnio(fecha: string): string {
@@ -54,7 +54,7 @@ export default function DolaresPage() {
   const { oculto, toggle, m: money } = useMoney();
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
 
-  const [showHint, dismissHint] = useFirstVisit("investments");
+  const [showHint, dismissHint] = useHint("tapKpis");
 
   const monedaInversionesEfectiva: "USD" | "EUR" =
     monedaPrincipal === "USD" ? "EUR" :
