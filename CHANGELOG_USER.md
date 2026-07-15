@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.82.0] — 2026-07-15
+
+### Novedades
+- **Onboarding renovado**: al empezar, ahora además de configurar tu cuenta te enseña lo básico — qué es un período (tu sueldo lo abre), un par de gestos clave (deslizar para editar, tocar los números, deslizar entre pestañas) y dónde está la guía completa.
+
+---
+
 ## [2.81.0] — 2026-07-14
 
 ### Novedades

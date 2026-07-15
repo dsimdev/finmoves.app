@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -60,7 +59,6 @@ function Section({ section }: { section: GuideSection }) {
 
 export default function HelpSettings() {
   const t = useT();
-  const router = useRouter();
   const lang = useAppPrefs((s) => s.lang);
   const secciones = GUIDE[lang] ?? GUIDE.es;
   const [changelog, setChangelog] = useState<string | null>(null);
@@ -86,8 +84,6 @@ export default function HelpSettings() {
       <p style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6, margin: "0 4px 16px" }}>{t.guideIntro}</p>
 
       {secciones.map((s) => <Section key={s.id} section={s} />)}
-
-      <button onClick={() => router.push("/onboarding?replay=1")} style={{ width: "100%", marginTop: 4, height: 46, borderRadius: 13, border: "1px solid var(--accent)44", background: "var(--accent-dim)", color: "var(--accent)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{t.replayTutorial}</button>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 36, padding: "18px 0 4px" }}>
         <button onClick={() => setShowGithubConfirm(true)} aria-label="GitHub" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>

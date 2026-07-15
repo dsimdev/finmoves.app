@@ -17,7 +17,14 @@ import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/pus
 
 type Moneda = "ARS" | "USD" | "EUR";
 
-const TOTAL_STEPS = 4;
+// **negrita** dentro de los textos de enseñanza.
+const boldify = (text: string) => text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+  part.startsWith("**") && part.endsWith("**") ? <strong key={i} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong> : part
+);
+
+// 6 pasos, setup + enseñanza intercalados:
+// 0 Bienvenida+nombre · 1 Moneda/inversión · 2 Sueldo+período · 3 Gestos · 4 Seguridad · 5 Listo
+const TOTAL_STEPS = 6;
 
 export default function OnboardingPage() {
   const t = useT();
@@ -41,8 +48,6 @@ export default function OnboardingPage() {
   const [bioBusy, setBioBusy] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
 
-  const replay = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("replay");
-
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
@@ -55,8 +60,8 @@ export default function OnboardingPage() {
   }, [user?.uid]);
 
   useEffect(() => {
-    if (!replay && config && config.meta.onboardingCompleto !== false) router.replace("/");
-  }, [config, router, replay]);
+    if (config && config.meta.onboardingCompleto !== false) router.replace("/");
+  }, [config, router]);
 
   if (authLoading || cfgLoading || !user || !config) {
     return <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}><LoadingSpinner /></div>;
@@ -64,7 +69,6 @@ export default function OnboardingPage() {
 
   const finish = async () => {
     if (saving) return;
-    if (replay) { router.replace("/"); return; }
     setSaving(true);
     setMonedaPrincipal(moneda);
     setPref("showAhorros", invierte);
@@ -226,7 +230,7 @@ export default function OnboardingPage() {
           )}
 
           {step === 2 && (
-            <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+            <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
               <div>
                 <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5, marginBottom: 6 }}>{t.obSalaryTitle}</div>
                 <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{t.obSalarySub}</div>
@@ -237,10 +241,38 @@ export default function OnboardingPage() {
                   style={{ flex: 1, background: "none", border: "none", color: "var(--text)", outline: "none", fontSize: 19, fontWeight: 700, fontFamily: "var(--font-mono)", minWidth: 0 }} />
               </div>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.obSalaryOptional}</div>
+              {/* Lección intercalada: el sueldo abre el período (concepto base de la app). */}
+              <div style={{ marginTop: 4, textAlign: "left", background: "var(--accent-dim)", border: "1px solid var(--accent)33", borderRadius: 14, padding: "13px 15px", fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 5 }}>{t.obPeriodTitle}</div>
+                {boldify(t.obPeriodBody)}
+              </div>
             </div>
           )}
 
+          {/* Paso ENSEÑANZA: gestos clave (una idea por línea, liviano). */}
           {step === 3 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5, marginBottom: 6 }}>{t.obGesturesTitle}</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { icon: <><line x1="7" y1="12" x2="17" y2="12" /><polyline points="11 8 7 12 11 16" /></>, txt: t.obGesturesSwipe, color: "var(--yellow)" },
+                  { icon: <><circle cx="12" cy="12" r="3" /><path d="M12 5v-.01M12 19v.01M5 12h-.01M19 12h.01" /></>, txt: t.obGesturesTap, color: "var(--green)" },
+                  { icon: <><polyline points="9 18 15 12 9 6" transform="translate(-3 0)" /><polyline points="9 18 15 12 9 6" transform="translate(3 0)" /></>, txt: t.obGesturesTabs, color: "var(--blue)" },
+                ].map((g, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: 14, padding: "13px 15px" }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: `color-mix(in srgb, ${g.color} 16%, transparent)`, color: g.color }}>
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{g.icon}</svg>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{g.txt}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5, marginBottom: 6 }}>{t.obSecurityTitle}</div>
@@ -257,6 +289,19 @@ export default function OnboardingPage() {
             </div>
           )}
 
+          {/* Paso FINAL: cierre + puntero a la guía completa. */}
+          {step === 5 && (
+            <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+              <div style={{ width: 64, height: 64, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--green-dim)", color: "var(--green)" }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.5, marginBottom: 8 }}>{t.obReadyTitle}</div>
+                <div style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.6 }}>{boldify(t.obReadyBody)}</div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -266,7 +311,7 @@ export default function OnboardingPage() {
         )}
         <button onClick={isLast ? finish : () => setStep((s) => s + 1)} disabled={saving}
           className="btn" style={{ flex: 1, height: 50, fontSize: 15, fontWeight: 700, color: "#fff", border: "none", borderRadius: 14, background: "linear-gradient(110deg, var(--blue) 10%, var(--green) 130%)", opacity: saving ? 0.5 : 1 }}>
-          {step === 0 ? t.obStart : isLast ? t.obFinish : t.obNext}
+          {step === 0 ? t.obStart : isLast ? t.obGo : t.obNext}
         </button>
       </div>
     </div>

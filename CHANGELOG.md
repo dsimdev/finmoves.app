@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.82.0] — 2026-07-15
+
+### Changed
+- **Onboarding rebuilt as 6 interleaved steps** (setup + teaching, not just setup): Welcome+name → Currency/investing → **Salary + the *period* lesson** (the salary opens the period — taught right next to the input) → **Gestures** (swipe to edit, tap the numbers, swipe between Reports tabs — one idea each) → Security → **All set** (points to the full Guide). Removed the replay-tutorial flow (`?replay=1` and its button) — the full Guide covers everything now.
+
+---
+
 ## [2.81.0] — 2026-07-14
 
 ### Changed
