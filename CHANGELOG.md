@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.83.2] — 2026-07-15
+
+### Fixed
+- **Dismissed gesture hints reappeared forever when switching tabs**: `useHint` tracked the dismiss in component-local state, which resets when the screen remounts, and the in-memory config never reflected the Firestore write — so the hint came back on every tab change. Added `patchConfigMeta` to `DataProvider` (which persists across tabs) and `useHint` now optimistically patches `hintsVistos` in memory on dismiss, so it stays gone.
+
+---
+
 ## [2.83.1] — 2026-07-15
 
 ### Changed

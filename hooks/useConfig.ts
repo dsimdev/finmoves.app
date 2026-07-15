@@ -31,6 +31,18 @@ export function useConfig(userId: string | undefined) {
 
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
 
+  // Parche optimista de campos de meta en el config EN MEMORIA (y en el cache), sin re-leer
+  // Firestore. Lo usan cosas que escriben meta y necesitan que el resto de la app lo vea ya
+  // (ej. descartar un hint: si no, al cambiar de tab el config viejo lo re-muestra).
+  const patchMeta = useCallback((patch: Partial<ConfigUsuario["meta"]>) => {
+    setConfig((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, meta: { ...prev.meta, ...patch } };
+      if (userId) saveConfigCache(userId, next);
+      return next;
+    });
+  }, [userId]);
+
   useEffect(() => {
     if (!userId) return;
 
@@ -61,5 +73,5 @@ export function useConfig(userId: string | undefined) {
     fetch();
   }, [userId, version]);
 
-  return { config, loading, refresh };
+  return { config, loading, refresh, patchMeta };
 }

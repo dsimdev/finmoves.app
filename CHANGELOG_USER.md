@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.83.2] — 2026-07-15
+
+### Mejoras
+- **Los tips ahora se quedan cerrados**: si descartabas un tip de gesto y cambiabas de pestaña, volvía a aparecer una y otra vez. Ya no.
+
+---
+
 ## [2.83.1] — 2026-07-15
 
 ### Mejoras

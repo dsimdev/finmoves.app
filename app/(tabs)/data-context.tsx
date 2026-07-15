@@ -21,6 +21,7 @@ interface DataCtx {
   config: ConfigUsuario | null;
   configLoading: boolean;
   refreshConfig: () => void;
+  patchConfigMeta: (patch: Partial<ConfigUsuario["meta"]>) => void;
   recurrentes: Recurrente[];
   recurrentesLoaded: boolean;
   plantillas: Plantilla[];
@@ -38,7 +39,7 @@ const Ctx = createContext<DataCtx | null>(null);
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const router = useRouter();
-  const { config, loading: configLoading, refresh: refreshConfig } = useConfig(user?.uid);
+  const { config, loading: configLoading, refresh: refreshConfig, patchMeta: patchConfigMeta } = useConfig(user?.uid);
   // La revision (config/meta.movsRevision) le dice al hook de movimientos si hubo cambios
   // en otro dispositivo que no alteran el count (ediciones puras) → fuerza re-fetch.
   const { movimientos, loading, refresh, updateLocal, removeLocal, prependLocal } = useAllMovimientos(user?.uid, config?.meta.movsRevision ?? 0);
@@ -88,7 +89,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [config, router]);
 
   return (
-    <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig, recurrentes, recurrentesLoaded, plantillas, refreshRecurrentes, refreshPlantillas, mutateRecurrentes: setRecurrentes, mutatePlantillas: setPlantillas }}>
+    <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig, patchConfigMeta, recurrentes, recurrentesLoaded, plantillas, refreshRecurrentes, refreshPlantillas, mutateRecurrentes: setRecurrentes, mutatePlantillas: setPlantillas }}>
       {children}
     </Ctx.Provider>
   );
