@@ -48,17 +48,17 @@ export default function SettingsLanding() {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6" /></svg>
       </Link>
 
-      <NavRow href="/settings/preferences" color="var(--accent)" title={t.preferences} sub={t.darkMode}
+      <NavRow href="/settings/preferences" color="var(--muted)" title={t.preferences} sub={t.darkMode}
         icon={i(<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>)} />
 
-      <NavRow href="/settings/notifications" color="var(--green)" title={t.notifications} sub={t.notificationsSub}
+      <NavRow href="/settings/notifications" color="var(--muted)" title={t.notifications} sub={t.notificationsSub}
         icon={i(<><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>)} />
 
-      <NavRow href="/settings/movements" color="var(--blue)" title={t.settingsTabMovements} sub={`${t.categories} · ${t.settingsTabBudgets}`}
+      <NavRow href="/settings/movements" color="var(--muted)" title={t.settingsTabMovements} sub={`${t.categories} · ${t.settingsTabBudgets}`}
         icon={i(<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>)} />
 
       {inversionAllowed && (
-        <NavRow href="/settings/investment" color="var(--green)" title={t.settingsTabInvestments} sub={t.investmentCurrency}
+        <NavRow href="/settings/investment" color="var(--muted)" title={t.settingsTabInvestments} sub={t.investmentCurrency}
           icon={i(<><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/></>)} />
       )}
 

@@ -11,6 +11,7 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { SwipeTabs } from "@/components/ui/SwipeTabs";
 import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
+import { words, termMatches } from "@/utils/search";
 import type { Movimiento } from "@/types";
 
 // Sin selector de período de la app → fechas con año (d/m/aa).
@@ -42,12 +43,9 @@ const claveSemana = (iso: string) => {
 const mesLabel = (k: string) => { const [y, m] = k.split("-"); return `${m}/${yy(y)}`; };
 const semanaLabel = (k: string) => { const [y, m, d] = k.split("-"); return `${+d}/${+m}`; };
 
-// Match por PALABRA EXACTA: "car" pega en la categoría "Car" pero NO en "carga"/"recarga".
-const palabras = (s: string) => s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-const termMatch = (textWords: Set<string>, term: string) => {
-  const tw = palabras(term);
-  return tw.length > 0 && tw.every((qw) => textWords.has(qw));
-};
+// Búsqueda por palabra exacta: helpers compartidos con el filtro de Movimientos (utils/search).
+const palabras = words;
+const termMatch = termMatches;
 
 // Color para el grupo SELECCIONADO (por orden de selección; el total va en --accent).
 const SEED = ["var(--green)", "var(--yellow)", "var(--purple)", "var(--teal)", "#ff6e40", "#b388ff"];

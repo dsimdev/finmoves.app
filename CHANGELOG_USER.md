@@ -4,6 +4,17 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.84.0] — 2026-07-15
+
+### Novedades
+- **Filtrar movimientos sin salir de la pantalla**: la lupa en Movimientos ahora abre un buscador ahí mismo. Escribí una palabra (ej. "peajes") y la lista se filtra a ese período, con un resumen arriba (total, cuántos y promedio). Ya no te lleva a otra pantalla.
+- **Análisis avanzado desde Reportes**: el análisis completo (comparar, evolución, proporción) ahora se abre con un ícono en Reportes.
+
+### Mejoras
+- **Íconos de Configuración** unificados en gris, más prolijos.
+
+---
+
 ## [2.83.2] — 2026-07-15
 
 ### Mejoras

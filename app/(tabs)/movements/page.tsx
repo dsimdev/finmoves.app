@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
 import { useData } from "../data-context";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
+import { movMatchesAny } from "@/utils/search";
 import { useMoney } from "@/hooks/useHideValues";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { Movimiento, TipoMovimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { MovementModal } from "@/components/movements/MovementModal";
+import { MovementsFilter } from "@/components/movements/MovementsFilter";
 import { useT } from "@/hooks/useTranslation";
 import { useHint } from "@/hooks/useHint";
 import { SectionHint } from "@/components/ui/SectionHint";
@@ -58,6 +59,12 @@ export default function MovimientosPage() {
   const [periodoSel, setPeriodoSel] = useState<string | null>(null);
   const activePeriodoId = periodoSel ?? periodosDelAño[0]?.periodoId;
   const periodoActual = periodos.find((p) => p.periodoId === activePeriodoId);
+
+  // Filtro in-place (lupa): términos que acotan la lista al período SELECCIONADO. El popup
+  // se abre desde la lupa del header y filtra sin navegar a otra pantalla.
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterTerms, setFilterTerms] = useState<string[]>([]);
+  const filterActivo = filterTerms.length > 0;
 
   // Modal de alta/edición (componente compartido). `view` permite abrir directo en borrado.
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete"; prefill?: { tipo?: "Gasto" | "Ingreso"; categoria?: string; descripcion?: string; observaciones?: string } } | null>(null);
@@ -114,6 +121,8 @@ export default function MovimientosPage() {
   const movsFiltrados = useMemo(() =>
     [...(periodoActual?.movimientos ?? [])]
       .filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR")
+      // Filtro de la lupa: si hay términos, acotar a los que matchean (OR, palabra exacta).
+      .filter((m) => !filterActivo || movMatchesAny(m, filterTerms))
       .sort((a, b) => {
         const d = b.fecha.localeCompare(a.fecha);
         if (d !== 0) return d;
@@ -127,8 +136,16 @@ export default function MovimientosPage() {
         if (bSueldo && !aSueldo) return -1;
         return 0;
       }),
-    [periodoActual]
+    [periodoActual, filterActivo, filterTerms]
   );
+
+  // Resumen del filtro (total, cantidad, promedio) sobre lo matcheado en el período.
+  const filterResumen = useMemo(() => {
+    if (!filterActivo) return null;
+    const total = movsFiltrados.reduce((s, m) => s + m.monto, 0);
+    const count = movsFiltrados.length;
+    return { total, count, avg: count > 0 ? total / count : 0 };
+  }, [filterActivo, movsFiltrados]);
 
   const movsPorFecha = useMemo(() => {
     const groups: { fecha: string; movs: typeof movsFiltrados }[] = [];
@@ -144,10 +161,13 @@ export default function MovimientosPage() {
   // arranca abierto; el resto se muestra como resumen (total + nº) y se abren al tocar.
   const [diasAbiertos, setDiasAbiertos] = useState<Set<string>>(new Set());
   useEffect(() => {
-    setDiasAbiertos(new Set(movsPorFecha[0] ? [movsPorFecha[0].fecha] : []));
-    // Solo al cambiar de período/año: no resetear al editar para no cerrar lo que abriste.
+    // Con filtro activo, abrir TODOS los días (querés ver el resultado completo, no colapsado).
+    // Sin filtro, solo el día más reciente (evita el scroll infinito).
+    if (filterActivo) setDiasAbiertos(new Set(movsPorFecha.map((g) => g.fecha)));
+    else setDiasAbiertos(new Set(movsPorFecha[0] ? [movsPorFecha[0].fecha] : []));
+    // Al cambiar de período/año o al (des)activar el filtro. No al editar (no cerrar lo abierto).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePeriodoId]);
+  }, [activePeriodoId, filterActivo]);
   const toggleDia = (fecha: string) => setDiasAbiertos((prev) => {
     const next = new Set(prev);
     next.has(fecha) ? next.delete(fecha) : next.add(fecha);
@@ -167,9 +187,10 @@ export default function MovimientosPage() {
               title={t.pageTitleMovements}
               style={{ marginBottom: 0 }}
               right={
-                <Link href="/analisis" aria-label={t.analyzeTitle} style={{ color: "var(--muted)", display: "flex", padding: 6, margin: -6 }}>
+                <button onClick={() => setFilterOpen(true)} aria-label={t.filterTitle} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", color: filterActivo ? "var(--accent)" : "var(--muted)", padding: 6, margin: -6, display: "flex" }}>
                   <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                </Link>
+                  {filterActivo && <span style={{ position: "absolute", top: 2, right: 2, minWidth: 15, height: 15, padding: "0 3px", borderRadius: 8, background: "var(--accent)", color: "#fff", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>{filterTerms.length}</span>}
+                </button>
               }
             />
             {periodoActual && (
@@ -212,9 +233,29 @@ export default function MovimientosPage() {
             })}
           </div>
 
+          {/* Resumen del filtro (lupa): total / cantidad / promedio de lo matcheado en el período. */}
+          {filterResumen && (
+            <div className="soft" style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", marginBottom: 10, border: "1px solid var(--accent)44" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {filterTerms.map((term) => (
+                    <span key={term} style={{ fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: 999, padding: "2px 10px" }}>{term}</span>
+                  ))}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 5 }}>
+                  {t.filterCount(filterResumen.count)} · {t.filterAvg(money(filterResumen.avg))}
+                </div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--accent)" }}>{money(filterResumen.total)}</div>
+                <button onClick={() => setFilterTerms([])} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 11, fontWeight: 600, cursor: "pointer", padding: "2px 0 0", textDecoration: "underline" }}>{t.filterClear}</button>
+              </div>
+            </div>
+          )}
+
           {movsFiltrados.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
-              {t.noMovementsAdd}
+              {filterActivo ? t.filterNoResults : t.noMovementsAdd}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -351,6 +392,13 @@ export default function MovimientosPage() {
       onCreated={handleCreated}
       onUpdated={updateMovimiento}
       onDeleted={removeMovimiento}
+    />
+    <MovementsFilter
+      open={filterOpen}
+      onClose={() => setFilterOpen(false)}
+      movs={periodoActual?.movimientos ?? []}
+      terms={filterTerms}
+      onChange={setFilterTerms}
     />
     </>
   );

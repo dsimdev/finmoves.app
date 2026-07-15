@@ -4,6 +4,15 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.84.0] — 2026-07-15
+
+### Changed
+- **/analisis is now reached from Reports** (advanced reports): a sliders icon in the Reports header (next to Wrapped) opens it. The magnifier in Movements no longer navigates there.
+- **Movements magnifier is now an in-place filter**: it opens an anchored popover (same mold as the notifications panel) with OR keyword pills + a live match preview. It filters the **selected period** in the same screen — the list narrows to the matches (e.g. "tolls"), all days expanded, with a summary card on top (terms + total / count / average, and a clear button). The header icon shows a badge with the number of active terms. Shared matching extracted to `utils/search.ts`.
+- **Settings row icons unified to grey** (`var(--muted)`), matching the Guide row, instead of one color each.
+
+---
+
 ## [2.83.2] — 2026-07-15
 
 ### Fixed

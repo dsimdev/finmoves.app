@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
@@ -480,12 +481,21 @@ export default function ReportesPage() {
           <PageHeader
             title={t.pageTitleReports}
             style={{ marginBottom: 18 }}
-            right={hayWrapped ? (
-              <button onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(110deg, var(--blue), var(--green))", border: "none", color: "#fff", borderRadius: 999, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px var(--accent)55" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                {t.yearWrapped}
-              </button>
-            ) : undefined}
+            right={
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                {hayWrapped && (
+                  <button onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(110deg, var(--blue), var(--green))", border: "none", color: "#fff", borderRadius: 999, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px var(--accent)55" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    {t.yearWrapped}
+                  </button>
+                )}
+                {/* Acceso a Análisis (reportes avanzados). Ícono de "ajustes/sliders" para
+                    distinguirlo de la lupa de Movimientos. */}
+                <Link href="/analisis" aria-label={t.analyzeTitle} style={{ color: "var(--muted)", display: "flex", padding: 6, margin: -6 }}>
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                </Link>
+              </div>
+            }
           />
           {showHint && <SectionHint title={t.hintRepTitle} body={t.hintRepBody} onDismiss={dismissHint} />}
           {/* Indicador deslizante: un fondo que se mueve bajo la pill activa con transición,
