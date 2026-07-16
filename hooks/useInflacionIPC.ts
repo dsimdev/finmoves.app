@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const LS_KEY = "finmoves.ipc.argly";
+const LS_KEY = "finmoves.ipc.v2"; // v2: pasa por /api/ipc; invalida cache viejo (roto por CORS)
 const TTL = 24 * 60 * 60 * 1000;
 
 type IpcEntry = { fecha: string; valor: number }; // "YYYY-MM" → cumulative index
@@ -29,12 +29,14 @@ export function useInflacionIPC() {
       }
     } catch {}
 
-    fetch("https://api.argly.com.ar/v1/ipc?historico=true", { cache: "no-store" })
+    // Vía ruta propia /api/ipc: argly no manda CORS y el navegador bloquea el fetch directo.
+    // El servidor lo trae sin CORS y lo cachea; acá pegamos al mismo origen.
+    fetch("/api/ipc")
       .then((r) => r.json())
       .then((json) => {
-        const sorted = (json.data as { anio: number; mes: number; valor: number }[])
-          .sort((a, b) => a.anio !== b.anio ? a.anio - b.anio : a.mes - b.mes);
-        if (sorted.length === 0) return;
+        const arr = json.data as { anio: number; mes: number; valor: number }[] | undefined;
+        if (!Array.isArray(arr) || arr.length === 0) return;
+        const sorted = [...arr].sort((a, b) => a.anio !== b.anio ? a.anio - b.anio : a.mes - b.mes);
         let idx = 100;
         const entries: IpcEntry[] = sorted.map(({ anio, mes, valor }) => {
           idx = idx * (1 + valor / 100);
@@ -43,7 +45,7 @@ export function useInflacionIPC() {
         setData(entries);
         localStorage.setItem(LS_KEY, JSON.stringify({ ts: Date.now(), entries }));
       })
-      .catch(() => {});
+      .catch((e) => { console.warn("[ipc] no se pudo cargar la inflación", e); });
   }, []);
 
   const deflatar = useCallback(

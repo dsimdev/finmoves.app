@@ -161,13 +161,8 @@ export function GastosTab({
         </div>
       )}
 
-      {/* Descripción (top) */}
-      {reportOn("gastos_otros") && (
-      <div className="soft" style={{ marginBottom: 12, cursor: "pointer", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }} onClick={() => setModalTop("descs")}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.top5Descriptions}</div>
-        {descs.map((d) => <Bar key={d.nombre} nombre={d.nombre} monto={d.monto} pct={d.pct} color={descsCompra.has(d.nombre || "—") ? "var(--yellow)" : "var(--red)"} oculto={oculto} />)}
-      </div>
-      )}
+      {/* "Top 5 descripciones" eliminado (v2.85.2): con el filtro in-place de Movimientos
+          ya se ve el detalle por descripción; ahorra pantalla en Reportes. */}
 
       {/* Por fecha — barra apilada: rojo gasto, amarillo compra USD */}
       {reportOn("gastos_otros") && porFecha.length > 0 && (

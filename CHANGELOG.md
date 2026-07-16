@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.86.0] — 2026-07-16
+
+### Fixed
+- **Inflation (CPI) restored — it was CORS**: argly's API returns 200 but without an `Access-Control-Allow-Origin` header, so the browser blocked the direct fetch (silently). Now it goes through our own `/api/ipc` route (server-side, no CORS, cached 6h) and the client hits same-origin. Bumped the localStorage cache key to invalidate stale/broken caches. Added a `console.warn` in the catch so a future breakage isn't silent.
+
+### Changed
+- **Home shortcuts are now real quick-adds**: New movement · **Currency** (opens the reserve/FX modal, shown only for ARS users with investing on) · **Reminder** (opens a quick reminder card right there — text + date — instead of going to Settings; calendar icon, teal, to not clash with notifications).
+- **/analisis renamed to "Análisis"** (was "Filter & compare") and its back button returns to **Reports** (it's advanced reports now).
+- **Reports header**: Wrapped moved to the left and only shows in the year-end window (Dec 26 – Jan 5). Removed the "Top 5 descriptions" block (the in-place filter in Movements covers it, saving screen space).
+- **Filtered day total**: when a filter is active and a day is open, the day's total shows on the right in the type's color (red expense, green income, etc.).
+
+---
+
 ## [2.85.1] — 2026-07-15
 
 ### Changed

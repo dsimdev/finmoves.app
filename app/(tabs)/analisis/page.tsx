@@ -288,7 +288,7 @@ export default function AnalisisPage() {
   return (
     <div className="page fade-up">
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-        <button onClick={() => router.back()} aria-label={t.back} style={{ background: "none", border: "none", color: "var(--text)", cursor: "pointer", padding: 4, display: "flex", marginLeft: -4 }}>
+        <button onClick={() => router.push("/reports")} aria-label={t.back} style={{ background: "none", border: "none", color: "var(--text)", cursor: "pointer", padding: 4, display: "flex", marginLeft: -4 }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.4 }}>{t.analyzeTitle}</h1>

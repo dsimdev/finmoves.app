@@ -12,6 +12,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MiniStat } from "@/components/ui/MiniStat";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { MovementModal } from "@/components/movements/MovementModal";
+import { ReminderCard } from "@/components/home/ReminderCard";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
@@ -40,7 +41,7 @@ export default function Dashboard() {
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
   const { oculto, toggle: toggleOculto, m: money } = useMoney();
   const t = useT();
-  const { dashboardClasico, showAhorros, monedaPrincipal } = useAppPrefs();
+  const { dashboardClasico, monedaPrincipal, showAhorros } = useAppPrefs();
   const [showTapHint, dismissTapHint] = useHint("tapKpis");
   const { deflatar, ipcDisponible } = useInflacionIPC();
   const esARS = monedaPrincipal === "ARS";
@@ -51,6 +52,8 @@ export default function Dashboard() {
   // Modal de alta/edición abierto desde el propio inicio (sin navegar).
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete" } | null>(null);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reserveOpen, setReserveOpen] = useState(false);
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const ultimoCargado = useMemo(() => {
@@ -174,14 +177,20 @@ export default function Dashboard() {
                   {svg("var(--green)", <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>)}
                   <span style={lbl}>{t.newShort}</span>
                 </button>
-                {showAhorros && <Link href="/investments" style={chip}>
-                  {svg("var(--yellow)", <><circle cx="12" cy="12" r="9"/><path d="M12 7v10M14.5 9.5C14.5 8.4 13.4 8 12 8s-3 .8-3 2 1.2 1.7 3 2 3 .8 3 2-1.3 2-3 2"/></>)}
-                  <span style={lbl}>{t.portfolio}</span>
-                </Link>}
-                <Link href="/reports" style={chip}>
-                  {svg("var(--red)", <><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 4-6"/></>)}
-                  <span style={lbl}>{t.pageTitleReports}</span>
-                </Link>
+                {/* Divisa: abre el modal en modo reserva (FX). Solo con inversión activa y
+                    moneda principal ARS (la reserva FX no aplica si ya operás en USD/EUR). */}
+                {showAhorros && esARS && (
+                  <button onClick={() => setReserveOpen(true)} style={{ ...chip, border: "1px solid var(--border)" }}>
+                    {svg("var(--yellow)", <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>)}
+                    <span style={lbl}>{t.reserve}</span>
+                  </button>
+                )}
+                {/* Recordatorio: card de carga rápida (texto + fecha). Ícono de calendario
+                    (la campana confundía con notificaciones) y color teal. */}
+                <button onClick={() => setReminderOpen(true)} style={{ ...chip, border: "1px solid var(--border)" }}>
+                  {svg("var(--teal)", <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>)}
+                  <span style={lbl}>{t.reminderShort}</span>
+                </button>
               </div>
             );
           })()}
@@ -239,6 +248,22 @@ export default function Dashboard() {
         initialView={modalState?.view}
         detailReadOnly
         onClose={() => setModalState(null)}
+        onChanged={refresh}
+        onCreated={prependMovimiento}
+        onUpdated={updateMovimiento}
+        onDeleted={removeMovimiento}
+      />
+      <ReminderCard open={reminderOpen} onClose={() => setReminderOpen(false)} />
+      {/* Carga de divisa (modo reserva) desde el atajo del Inicio. */}
+      <MovementModal
+        open={reserveOpen}
+        mode="add"
+        reserveMode
+        movimiento={null}
+        movimientos={movimientos}
+        config={config}
+        activePeriodoId={p?.periodoId}
+        onClose={() => setReserveOpen(false)}
         onChanged={refresh}
         onCreated={prependMovimiento}
         onUpdated={updateMovimiento}

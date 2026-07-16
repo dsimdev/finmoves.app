@@ -67,7 +67,14 @@ export default function ReportesPage() {
   // indicador de las pills acompañe el dedo en vivo.
   const [dragP, setDragP] = useState(0);
   const [wrappedOpen, setWrappedOpen] = useState(false);
-  const hayWrapped = useMemo(() => wrappedYears(movimientos).length > 0, [movimientos]);
+  // El Wrapped (resumen anual) solo se ofrece en la VENTANA de fin de año: 5 días antes del
+  // 31/12 y 5 después (26/12 → 5/1). Fuera de esa ventana no aparece, aunque haya datos.
+  const hayWrapped = useMemo(() => {
+    if (wrappedYears(movimientos).length === 0) return false;
+    const ar = new Date(Date.now() - 3 * 60 * 60 * 1000); // hoy en AR
+    const m = ar.getUTCMonth() + 1, d = ar.getUTCDate();
+    return (m === 12 && d >= 26) || (m === 1 && d <= 5);
+  }, [movimientos]);
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
   const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movcat" | null>(null);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
@@ -481,20 +488,19 @@ export default function ReportesPage() {
           <PageHeader
             title={t.pageTitleReports}
             style={{ marginBottom: 18 }}
+            left={hayWrapped ? (
+              // Wrapped a la IZQUIERDA, solo en la ventana de fin de año (ver hayWrapped).
+              <button onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(110deg, var(--blue), var(--green))", border: "none", color: "#fff", borderRadius: 999, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px var(--accent)55" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                {t.yearWrapped}
+              </button>
+            ) : undefined}
             right={
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                {hayWrapped && (
-                  <button onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(110deg, var(--blue), var(--green))", border: "none", color: "#fff", borderRadius: 999, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px var(--accent)55" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                    {t.yearWrapped}
-                  </button>
-                )}
-                {/* Acceso a Análisis (reportes avanzados). Ícono de "ajustes/sliders" para
-                    distinguirlo de la lupa de Movimientos. */}
-                <Link href="/analisis" aria-label={t.analyzeTitle} style={{ color: "var(--muted)", display: "flex", padding: 6, margin: -6 }}>
-                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-                </Link>
-              </div>
+              // Acceso a Análisis (reportes avanzados). Ícono de "ajustes/sliders" para
+              // distinguirlo de la lupa de Movimientos.
+              <Link href="/analisis" aria-label={t.analyzeTitle} style={{ color: "var(--muted)", display: "flex", padding: 6, margin: -6 }}>
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              </Link>
             }
           />
           {showHint && <SectionHint title={t.hintRepTitle} body={t.hintRepBody} onDismiss={dismissHint} />}

@@ -291,6 +291,24 @@ export default function MovimientosPage() {
                         {nGasto > 0 && <span style={{ color: "var(--red)" }}>{nGasto}</span>}
                       </span>
                     )}
+                    {/* Con filtro activo y el día abierto: total de lo filtrado ese día a la
+                        derecha, con el color del tipo (rojo gasto, verde ingreso, etc.). Si el
+                        día mezcla tipos, queda neutro (accent). */}
+                    {filterActivo && abierto && (() => {
+                      // Color por tipo homogéneo (los conteos ya están calculados arriba).
+                      const tipos = [nGasto > 0, nIngreso > 0, nMoveAhorro > 0, nMoveDisp > 0, nUsd > 0].filter(Boolean).length;
+                      const color = tipos !== 1 ? "var(--accent)"
+                        : nGasto > 0 ? "var(--red)"
+                        : nIngreso > 0 ? "var(--green)"
+                        : nMoveAhorro > 0 ? "var(--purple)"
+                        : nMoveDisp > 0 ? "var(--teal)"
+                        : "var(--yellow)"; // usd/fx
+                      return (
+                        <span style={{ flex: 1, textAlign: "right", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", color }}>
+                          {money(movs.reduce((s, m) => s + m.monto, 0))}
+                        </span>
+                      );
+                    })()}
                   </button>
                   {abierto && (
                   <>

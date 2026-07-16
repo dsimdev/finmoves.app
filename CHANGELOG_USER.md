@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.86.0] — 2026-07-16
+
+### Novedades
+- **Atajos útiles en Inicio**: además de cargar un movimiento, ahora podés cargar una **divisa** (compra/venta de dólares o euros) y crear un **recordatorio** directo desde el inicio, sin dar vueltas.
+- **Total del día al filtrar**: cuando filtrás tus movimientos, cada día abierto te muestra su total a la derecha, en el color según el tipo.
+
+### Mejoras
+- **La inflación volvió a funcionar**: el proveedor del dato dejó de permitir el acceso directo desde el navegador; ahora lo traemos por otro camino y se actualiza solo.
+- **"Análisis"** (antes "Filtrar y comparar") ahora se abre desde Reportes y al volver, regresás a Reportes.
+- **Reportes más despejado**: sacamos el "Top 5 descripciones" (ya lo cubre el filtro de Movimientos) y el resumen anual (Wrapped) aparece cerca de fin de año.
+
+---
+
 ## [2.85.1] — 2026-07-15
 
 ### Mejoras
