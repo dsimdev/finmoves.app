@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.86.1] — 2026-07-16
+
+### Fixed
+- **Home and Reports were showing the same number with contradictory labels**: both called `inflacionPersonal` (the average change across *all* periods), but Home's copy claimed it was "vs the previous period" — which was false, hence the two cards always matching. Home now uses a new `variacionGastoVsAnterior`: the **current period vs. the whole previous one** (the immediate read), while Reports keeps the historical average. Home's KPI is relabelled **"Gasto vs anterior"** (calling a single-period delta "inflation" was misleading) and its explanation warns the value starts negative early in a period. Five tests cover the new function.
+
+---
+
 ## [2.86.0] — 2026-07-16
 
 ### Fixed

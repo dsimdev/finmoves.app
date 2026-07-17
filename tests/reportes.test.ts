@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal } from "@/utils/reportes";
+import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal, variacionGastoVsAnterior } from "@/utils/reportes";
 import type { PeriodoResumen } from "@/utils/periodo";
 import type { Movimiento } from "@/types";
 
@@ -89,5 +89,41 @@ describe("inflacionPersonal", () => {
 
   it("null con menos de 2 períodos completos", () => {
     expect(inflacionPersonal([periodo({ periodoId: "1/2/2026", movimientos: gastos(100_000) })])).toBeNull();
+  });
+});
+
+describe("variacionGastoVsAnterior (Inicio: período EN CURSO vs. el anterior)", () => {
+  // periodos viene DESC: [0] = en curso, [1] = anterior.
+  const desc = [
+    periodo({ periodoId: "1/2/2026", movimientos: gastos(60_000) }),  // en curso
+    periodo({ periodoId: "1/1/2026", movimientos: gastos(100_000) }), // anterior
+  ];
+
+  it("compara el período en curso contra todo el anterior", () => {
+    // 60k vs 100k → -40%
+    expect(variacionGastoVsAnterior(desc)).toBeCloseTo(-40);
+  });
+
+  it("da positivo si ya gastaste más que el período anterior", () => {
+    const más = [
+      periodo({ periodoId: "1/2/2026", movimientos: gastos(130_000) }),
+      periodo({ periodoId: "1/1/2026", movimientos: gastos(100_000) }),
+    ];
+    expect(variacionGastoVsAnterior(más)).toBeCloseTo(30);
+  });
+
+  it("aplica la deflación cuando se pasa (variación real)", () => {
+    // Deflactar el actual ÷1.2 → 50k vs 100k = -50% real.
+    const deflate = (g: number, id: string) => (id === "1/2/2026" ? g / 1.2 : g);
+    expect(variacionGastoVsAnterior(desc, deflate)).toBeCloseTo(-50);
+  });
+
+  it("null con menos de 2 períodos", () => {
+    expect(variacionGastoVsAnterior([desc[0]])).toBeNull();
+  });
+
+  it("null si el período anterior no tuvo gasto (no se puede dividir)", () => {
+    const sinGastoPrev = [desc[0], periodo({ periodoId: "1/1/2026", movimientos: [] })];
+    expect(variacionGastoVsAnterior(sinGastoPrev)).toBeNull();
   });
 });

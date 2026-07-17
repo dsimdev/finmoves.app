@@ -226,6 +226,24 @@ export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: strin
 // nuevo primero); se excluye el primero (período en curso, incompleto). Única fuente
 // para Inicio y Reportes — antes cada pantalla usaba su propia fórmula (promedio
 // nominal vs. última variación deflactada) y podían dar signos opuestos.
+// Variación del gasto del período EN CURSO vs. el anterior (el dato inmediato del Inicio,
+// distinto del promedio histórico de inflacionPersonal que usa Reportes). `periodos` viene
+// en orden descendente (el [0] es el que está corriendo). OJO: el período en curso está
+// incompleto, así que al arrancar el período el número da muy negativo y sube al gastar.
+// `deflate` lleva a términos reales (IPC) en ARS; identidad en otras monedas.
+export function variacionGastoVsAnterior(
+  periodos: PeriodoResumen[],
+  deflate: (gasto: number, periodoId: string) => number = (g) => g,
+): number | null {
+  if (periodos.length < 2) return null;
+  const gastoPuro = (p: PeriodoResumen) =>
+    deflate(p.movimientos.filter((m) => m.tipo === "Gasto").reduce((s, m) => s + m.monto, 0), p.periodoId);
+  const actual = gastoPuro(periodos[0]);
+  const anterior = gastoPuro(periodos[1]);
+  if (anterior <= 0) return null;
+  return ((actual - anterior) / anterior) * 100;
+}
+
 export function inflacionPersonal(
   periodos: PeriodoResumen[],
   deflate: (gasto: number, periodoId: string) => number = (g) => g,

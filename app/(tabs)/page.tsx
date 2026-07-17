@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useData } from "./data-context";
 import { useMoney } from "@/hooks/useHideValues";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
-import { serieTendencia, inflacionPersonal as calcInflacionPersonal } from "@/utils/reportes";
+import { serieTendencia, variacionGastoVsAnterior as calcVariacionVsAnterior } from "@/utils/reportes";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { Movimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -74,10 +74,11 @@ export default function Dashboard() {
     const sd = Math.sqrt(gastos.reduce((s, m) => s + (m.monto - avg) ** 2, 0) / gastos.length);
     return Math.round((sd / avg) * 100);
   }, [gastos, promPorMov]);
-  // Solo ARS deflacta por IPC (variación real); otras monedas, nominal. Misma
-  // fórmula exacta que Reportes (helper compartido).
+  // Inicio muestra el dato INMEDIATO: cuánto cambió tu gasto en el período EN CURSO vs. el
+  // anterior. (Reportes muestra otra cosa: el promedio histórico entre períodos.) Solo ARS
+  // deflacta por IPC (variación real); otras monedas, nominal.
   const inflacionPersonal = useMemo(
-    () => calcInflacionPersonal(periodos, esARS ? deflatar : undefined),
+    () => calcVariacionVsAnterior(periodos, esARS ? deflatar : undefined),
     [periodos, deflatar, esARS],
   );
   const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR").slice(0, 5) ?? [];

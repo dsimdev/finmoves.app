@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.86.1] — 2026-07-16
+
+### Mejoras
+- **Inicio y Reportes ya no muestran lo mismo**: en Inicio, el número ahora es **"Gasto vs anterior"** — cuánto llevás gastado en este período comparado con todo el anterior (el dato del momento). En Reportes seguís viendo la tendencia: el promedio entre todos tus períodos. Antes los dos mostraban el mismo número con explicaciones distintas.
+
+---
+
 ## [2.86.0] — 2026-07-16
 
 ### Novedades
