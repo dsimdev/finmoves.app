@@ -13,11 +13,11 @@ import { parsePeriodoId } from "@/utils/reportes";
 
 type Slide = { bg: string; accent: string; kicker: string; hero: string; label: string; sub?: string };
 
-// Feature seasonal: el recap "Tu año" SOLO está disponible en diciembre. Ese mes
-// lista todos los años con datos (cerrados + el año en curso). Fuera de diciembre
-// devuelve [] → el botón no aparece. Más reciente primero.
+// Años con datos (cerrados + el año en curso), más reciente primero. NO decide CUÁNDO
+// mostrar el recap: de eso se encarga el llamador (Reportes lo ofrece solo en la ventana
+// de fin de año, 26/12–5/1). Antes esta función tenía el gate "solo diciembre" adentro,
+// lo que hacía imposible mostrarlo los primeros días de enero.
 export function wrappedYears(movimientos: { fecha: string }[]): string[] {
-  if (new Date().getMonth() !== 11) return [];
   return Array.from(new Set(movimientos.map((m) => m.fecha.slice(0, 4)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
 }
 

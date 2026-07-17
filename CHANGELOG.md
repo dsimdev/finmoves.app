@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.87.0] — 2026-07-16
+
+### Added
+- **Reminders card on Home**: the Reminder shortcut now opens a card that shows the **next reminder due** as a hero (calendar icon, urgency colour — red overdue, yellow today/tomorrow, teal later) plus a compact form to add a new one. To see all reminders, Settings → Notifications.
+- **Year Wrapped notification**: on Dec 31 the cron sends one push announcing the annual recap is available (deduped per year, only if the user has movements that year). New `wrapped` notification type with its own icon in the tray.
+
+### Fixed
+- **"Forgotten entry" reminder went silent for good**: its dedup keyed off the last movement's timestamp — which doesn't change while you're not logging — so it warned once at 3 days and never again, exactly when it mattered most. Now it re-warns every ~3 days while you keep not logging (cadence keyed off the last notified day, resets when you log).
+- **Year Wrapped couldn't show in January**: `wrappedYears` had a "December only" gate inside, which made the Jan 1–5 half of the year-end window (added in 2.86.0) dead code. The gate now lives only in the caller.
+- **Recurring items and reminders no longer depend on `config/meta`**: they were inside an `if (config)` block, so a missing config doc silently skipped them; they live in their own collections.
+
+### Changed
+- **Home's KPI is the same inflation metric as the Periods card** (average change across periods), reverting 2.86.1's per-period delta at the user's request — both cards now genuinely show the same thing, with matching copy.
+
+---
+
 ## [2.86.1] — 2026-07-16
 
 ### Fixed

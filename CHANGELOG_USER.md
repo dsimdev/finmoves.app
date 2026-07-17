@@ -4,6 +4,19 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.87.0] — 2026-07-16
+
+### Novedades
+- **Recordatorios a mano**: el atajo de Recordatorio en Inicio ahora te muestra el **próximo a vencer** (con color según la urgencia) y te deja cargar uno nuevo ahí mismo. Para ver todos, Configuración → Notificaciones.
+- **Aviso del resumen anual**: el 31/12 te llega una notificación para que veas tu año en FinMoves.
+
+### Mejoras
+- **El aviso de "hace días que no cargás" ya no se calla**: antes avisaba una sola vez y no volvía a insistir aunque pasaran semanas. Ahora te recuerda cada ~3 días mientras sigas sin cargar.
+- **El resumen anual también aparece en enero** (del 26/12 al 5/1), como estaba previsto.
+- **Inflación**: en Inicio volvés a ver la misma métrica que en Reportes → Períodos.
+
+---
+
 ## [2.86.1] — 2026-07-16
 
 ### Mejoras

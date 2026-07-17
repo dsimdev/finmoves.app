@@ -118,9 +118,12 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
         await guardDiario(checkMeta(uid, config, notify, updates));
         await guardDiario(checkSueldo(uid, recientes, notify, updates));
         await guardDiario(checkCargaOlvidada(uid, recientes, notify, updates));
-        await guardDiario(checkRecurrentes(uid, notify, updates));
+        // Wrapped: el 31/12, avisa que está el resumen anual (necesita los movimientos).
+        await guardDiario(checkWrapped(uid, recientes, notify, updates));
       }
-      // Recordatorios puntuales del usuario (colección propia, independiente de config).
+      // Recurrentes y recordatorios NO dependen de config/meta (viven en sus colecciones):
+      // se chequean aunque el doc de config falte.
+      await guardDiario(checkRecurrentes(uid, notify, updates));
       await guardDiario(checkRecordatorios(uid));
       // Cerrar el día SOLO si ningún check diario falló: si uno falló, la próxima corrida
       // del cron lo reintenta hoy mismo (los que sí avisaron no repiten: su dedup quedó).
@@ -169,17 +172,22 @@ async function checkVersion(uid: string, notify: Record<string, unknown>, update
   updates.lastVersionNotified = current;
 }
 
-// Carga olvidada: si pasaron >= N días desde el último movimiento cargado, avisa
-// una sola vez por ese hueco (se re-arma cuando el usuario vuelve a cargar algo).
+// Carga olvidada: si pasaron >= N días desde el último movimiento cargado, avisa; y si
+// SEGUÍS sin cargar, vuelve a insistir cada CARGA_OLVIDADA_DIAS. Antes el dedup era por
+// timestamp del último movimiento: como ese timestamp no cambia mientras no cargues, avisaba
+// UNA sola vez y se callaba para siempre — justo cuando más falta hacía. Ahora la cadencia
+// se mide por el último día que se avisó (y se reinicia sola al volver a cargar).
 async function checkCargaOlvidada(uid: string, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
   if (movs.length === 0) return;
   const ultimo = movs[0].timestampCarga as Date; // más reciente (orden desc)
   const dias = Math.floor((Date.now() - ultimo.getTime()) / 86_400_000);
   if (dias < CARGA_OLVIDADA_DIAS) return;
-  const key = ultimo.getTime();
-  if (notify.cargaRemindedFor === key) return; // ya avisé por este hueco
+  const hoy = hoyAR();
+  const last = notify.cargaLastNotified as string | undefined;
+  // Ya avisé hoy, o hace menos de CARGA_OLVIDADA_DIAS → esperar.
+  if (last && diasEntre(last, hoy) < CARGA_OLVIDADA_DIAS) return;
   const ok = await pushYGuardar(uid, "carga", { title: "FinMoves", body: `Hace ${dias} días que no registrás un movimiento`, tag: "carga", url: "/movements", ...CARGAR_ACCION }, "/movements?nuevo=1");
-  if (ok) updates.cargaRemindedFor = key;
+  if (ok) updates.cargaLastNotified = hoy;
 }
 
 // Recordatorios puntuales, en dos tiempos:
@@ -323,6 +331,20 @@ async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<stri
     : `Vas ${top}% de tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}`;
   const ok = await pushYGuardar(uid, "meta", { title: "Meta de ahorro", body, tag: "meta", url: "/investments" }, "/investments");
   if (ok) updates.metaHitos = Array.from(new Set([...yaNotificados, ...nuevos]));
+}
+
+// Wrapped (resumen anual): el 31/12 avisa UNA vez que está disponible el recap del año.
+// El botón vive en Reportes y se ofrece del 26/12 al 5/1; este push es el empujón del día.
+// Dedup por año (wrappedNotifiedYear) → si el cron corre varias veces ese día, avisa una sola.
+async function checkWrapped(uid: string, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  const hoy = hoyAR();                 // YYYY-MM-DD (AR)
+  if (hoy.slice(5) !== "12-31") return; // solo el 31/12
+  const año = hoy.slice(0, 4);
+  if (notify.wrappedNotifiedYear === año) return; // ya avisé este año
+  // Solo si tiene movimientos de este año (si no, el recap estaría vacío).
+  if (!movs.some((m) => m.fecha?.startsWith(año))) return;
+  const ok = await pushYGuardar(uid, "wrapped", { title: "Tu año en FinMoves", body: `Ya podés ver tu resumen de ${año} 🎉`, tag: `wrapped-${año}`, url: "/reports" }, "/reports");
+  if (ok) updates.wrappedNotifiedYear = año;
 }
 
 // Recordatorio de sueldo: si pasó más de ~1 mes desde el último período abierto.

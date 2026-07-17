@@ -22,6 +22,7 @@ const META: Record<NotifTipo, { color: string; icon: ReactNode }> = {
   permiso: { color: "var(--teal)", icon: <><path d="M9 12l2 2 4-4" /><path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z" /></> },
   sync: { color: "var(--blue)", icon: <><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></> },
   baja: { color: "var(--red)", icon: <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></> },
+  wrapped: { color: "var(--green)", icon: <><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></> },
 };
 
 const hace = (ms: number): string => {
