@@ -4,6 +4,13 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.89.1] — 2026-07-18
+
+- **Tu reserva ahora es exactamente lo que cargaste.** Antes se le sumaba un "saldo inicial"
+  que ya no se podía ver ni editar, así que el total mostraba plata que no correspondía a ningún
+  movimiento. Si tenías uno cargado, vas a ver la reserva más baja: ese es el número real de lo
+  que registraste.
+
 ## [2.89.0] — 2026-07-17
 
 ### Metas de ahorro para todos

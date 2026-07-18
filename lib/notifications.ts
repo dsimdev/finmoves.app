@@ -333,7 +333,6 @@ async function checkMetaFX(uid: string, config: ConfigUsuario, notify: Record<st
 
   const moneda: "USD" | "EUR" = config.meta?.metaFX?.moneda ?? "USD";
   const { compra, gasto, venta, ingreso } = tiposReserva(moneda);
-  const base = moneda === "USD" ? (config.meta?.saldoUSD ?? 0) : (config.meta?.saldoEUR ?? 0);
 
   const q = adminDb()
     .collection(`users/${uid}/movimientos`)
@@ -341,7 +340,6 @@ async function checkMetaFX(uid: string, config: ConfigUsuario, notify: Record<st
 
   // count() cuesta 1 lectura: si el nº de movs de inversión (y la moneda) no cambió
   // desde la última corrida, reusamos la suma cacheada en vez de leer todos los docs.
-  // El saldo base se suma aparte SIEMPRE, así un cambio de base se refleja igual.
   const count = (await q.count().get()).data().count;
   let movSum: number;
   if (count === notify.metaMovCount && notify.metaCacheMoneda === moneda && typeof notify.metaMovSum === "number") {
@@ -354,7 +352,7 @@ async function checkMetaFX(uid: string, config: ConfigUsuario, notify: Record<st
     updates.metaCacheMoneda = moneda;
   }
 
-  const pct = ((base + movSum) / metaMonto) * 100;
+  const pct = (movSum / metaMonto) * 100;
   const nuevos = HITOS.filter((h) => pct >= h && !yaNotificados.includes(h));
   if (nuevos.length === 0) return;
 

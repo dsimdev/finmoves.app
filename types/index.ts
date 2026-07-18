@@ -82,7 +82,11 @@ export interface ConfigUsuario {
     usdMensual: number;
     tipoCambioRef: TipoCambioRef;
     presupuestoTemplate?: Record<string, number>;
+    /** @deprecated Saldo inicial cargado a mano. Ya NO se suma a la reserva (v2.89.1): la
+     *  reserva es solo lo cargado como movimientos. Se conserva el campo por los datos
+     *  viejos en Firestore, pero ningún cálculo lo lee. */
     saldoUSD?: number;
+    /** @deprecated Ver saldoUSD. */
     saldoEUR?: number;
     // ── Metas de ahorro ──────────────────────────────────────────────────────
     // metaPropia: en la moneda PRINCIPAL del usuario (ARS/USD/EUR). El progreso se mide

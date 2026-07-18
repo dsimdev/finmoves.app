@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.89.1] — 2026-07-18
+
+### Removed
+- **Manual initial reserve (`saldoUSD`/`saldoEUR`) no longer feeds any calculation.** v2.89.0
+  removed the config input but left the stored value being added to the reserve in five places
+  (Investments, Reports, MovementModal, `checkMetaFX`), so the balance included an amount the user
+  could no longer see or edit. The FX reserve is now purely what was loaded as movements,
+  consistent with "savings are computed, not entered". The type fields are kept and marked
+  `@deprecated` for the legacy documents in Firestore; nothing reads them.
+
 ## [2.89.0] — 2026-07-17
 
 ### Added

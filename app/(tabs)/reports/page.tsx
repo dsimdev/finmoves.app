@@ -360,11 +360,10 @@ export default function ReportesPage() {
     : (cotizacion?.oficial ?? null);
   const simBoloInv = monedaInversiones === "EUR" ? "€" : "U$D";
 
-  // Reserva real en FX (misma cuenta que página Inversión).
-  const SALDO_INICIAL = monedaInversiones === "EUR" ? (config?.meta.saldoEUR ?? 0) : (config?.meta.saldoUSD ?? 0);
+  // Reserva real en FX (misma cuenta que página Inversión): solo movimientos, sin saldo inicial.
   const reservaFX = useMemo(
-    () => Math.max(0, calcularReservaFX(movimientos, monedaInversiones === "EUR" ? "EUR" : "USD", SALDO_INICIAL)),
-    [movimientos, monedaInversiones, SALDO_INICIAL]
+    () => Math.max(0, calcularReservaFX(movimientos, monedaInversiones === "EUR" ? "EUR" : "USD")),
+    [movimientos, monedaInversiones]
   );
 
   const metaMonto = config?.meta.metaMonto;
