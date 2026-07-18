@@ -4,6 +4,24 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.91.0] — 2026-07-18
+
+### Ahora festejamos tus metas en el momento
+- **Cuando cruzás el 50%, 75% o 100% de una meta, te lo festejamos ahí mismo**, apenas cargás el
+  movimiento que te hizo llegar. Antes te llegaba una notificación al rato (o al día siguiente)
+  avisándote algo que ya habías visto en pantalla: tus ahorros solo se mueven cuando cargás algo,
+  así que la notificación siempre llegaba tarde.
+- **El aviso del dólar sigue igual**: ese sí tiene sentido, porque la cotización se mueve sola
+  mientras vos hacés otra cosa.
+
+### Arreglos
+- **El resumen de Movimientos contaba de más.** Los ingresos y gastos en dólares de tu reserva
+  aparecían mezclados con los movimientos del período, inflando el total y los gráficos. La
+  reserva se maneja aparte; las compras y ventas de divisa sí siguen contando porque mueven pesos.
+- El detalle de un ingreso en euros mostraba "USD".
+- Al cargar un Ingreso ya no aparece el campo de descripción antes de elegir la categoría: tanto
+  Sueldo como Ahorros la completan solos.
+
 ## [2.90.1] — 2026-07-18
 
 - Correcciones visuales menores en el historial de la reserva.

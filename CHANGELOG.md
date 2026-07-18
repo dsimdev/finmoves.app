@@ -4,6 +4,53 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.91.0] — 2026-07-18
+
+### Changed
+- **Goal milestones (50/75/100%) are celebrated in-app instead of pushed.** Both `metaPropia`
+  (accumulated savings) and `metaFX` (currency reserve) only move when the user loads a
+  movement — meaning they are looking at the app at that exact moment. The cron ran afterwards
+  and repeated something already seen, or announced it the next day. `checkMeta`,
+  `checkMetaPropia` and `checkMetaFX` are gone from `lib/notifications.ts`; the celebration now
+  lives in `MetaCelebration` + `utils/meta-hitos`, fired from `DataProvider` the instant the
+  accumulated total crosses a milestone. Milestones persist in `config/meta`
+  (`metaPropiaHitos`/`metaFXHitos`) so they don't repeat after a reinstall, and reset when the
+  goal amount (or FX currency) changes. **`checkDolar` stays on push**: the exchange rate moves
+  without the user doing anything, which is what a notification is for.
+- Dropping `checkMetaFX` also removes its per-user daily `count()` query over reserve movements
+  and the `metaMovCount`/`metaMovSum`/`metaCacheMoneda` cache from `notifyMeta`.
+
+### Fixed
+- **The Movements breakdown (Reports) counted `IngresoUSD`/`GastoUSD`.** Those types never touch
+  available balance — they only move the reserve — so they inflated the movement total, the type
+  donut and the per-category/per-payment-method breakdowns. Now filtered via `afectaDisponible()`.
+  `CompraUSD`/`VentaUSD` still count: they do move pesos, consistent with `esGasto()`.
+- **An `IngresoEUR` detail showed "USD".** The FX label only listed `Compra`/`Gasto`/`Venta` EUR;
+  it now derives from the type suffix (`monedaMovFX`).
+- `num()` guards every branch of the FX calculation against `NaN`; a 0 exchange rate in ARS mode
+  used to yield `Infinity`.
+- The description field (and "repeat each period") no longer appear under Income before a category
+  is chosen: both options resolve the description themselves, so the field only showed up to
+  vanish on the next tap.
+
+### Internal
+- **`MovementModal` split: 1284 → 1132 lines.** `movement-shared.tsx` holds the detail pieces that
+  were written twice (Movements detail and Investment reserve detail): `DetalleHero`, `DetalleFX`,
+  `DetalleTextos`, `ComprobanteButton`, `detalleTipo` and the chip icons. `utils/movement-fx.ts`
+  holds the ~15 inline FX booleans as pure functions. `useAddForm.ts` holds the 15 add-form
+  `useState`s, with pure, tested state transitions (`estadoInicial`/`estadoReseteado`/
+  `estadoParcheado`).
+- Fewer renders: `aplicarPlantilla` fired 6 sequential setters (6 form renders) and the open effect
+  up to 6 more; each is now a single patch.
+- The reserve detail card used 13px/9px where the movement detail used 14px/10px for the same
+  information. Unified.
+- Removed the dead `detailReadOnly` prop: Home passed it and the modal never read it (the detail
+  has been read-only for everyone since v2.78).
+- **Test coverage 93 → 155.** New suites for `utils/search` (exact-word rule of the in-place filter
+  and /analisis), `lib/sheet-format` (`sanitizeCell` is a security defense against spreadsheet
+  formula injection), `lib/changelog-versions` (update-banner edges), `utils/movement-fx` and the
+  add-form transitions — all gaps flagged by the v2.75 audit.
+
 ## [2.90.1] — 2026-07-18
 
 ### Fixed
