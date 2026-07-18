@@ -340,7 +340,7 @@ export default function DolaresPage() {
     );
     if (!borrable) return <div key={m.id}>{fila}</div>;
     return (
-      <SwipeToDelete key={m.id} onDelete={() => setFxDelete(m)} deleteLabel={t.delete} railBg="var(--red-dim)">
+      <SwipeToDelete key={m.id} onDelete={() => setFxDelete(m)} deleteLabel={t.delete}>
         {fila}
       </SwipeToDelete>
     );
