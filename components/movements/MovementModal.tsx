@@ -346,6 +346,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // Sueldo del dueño: descripción y medio de pago fijos ("Sueldo" / Débito). Se ocultan
   // sus campos del form; observaciones queda libre; sin opción de recurrente.
   const sueldoOwner = isOwner && esSueldo;
+  // Ingreso sin categoría elegida todavía: las dos opciones (Sueldo y Ahorros) resuelven la
+  // descripción por su cuenta, así que mostrarla en el paso previo es ofrecer un campo que
+  // va a desaparecer apenas elija. Se espera a que haya categoría.
+  const ingresoSinCategoria = tipo === "Ingreso" && !categoria;
 
   const canSubmit = (!!periodoActual || abrePeriodo) && (
     esSoloCantidadFX ? usdFinal > 0 :
@@ -840,7 +844,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           )}
 
-          {!esMove && !esUSD && !esAhorros && !sueldoOwner && (
+          {!esMove && !esUSD && !esAhorros && !sueldoOwner && !ingresoSinCategoria && (
             <div style={{ marginBottom: 14 }}>
               <div className="label">{t.description}</div>
               <input className="input" type="text" list="finmoves-desc-sug" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} autoComplete="off" />
@@ -913,7 +917,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           </div>
 
-          {!esMove && !esUSD && !esAhorros && !sueldoOwner && (
+          {!esMove && !esUSD && !esAhorros && !sueldoOwner && !ingresoSinCategoria && (
             yaEsRecurrente ? (
               // Ya es recurrente: no ofrecemos "repetir", solo informamos que lo es (con ícono).
               <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: "var(--radius-sm)", color: "var(--accent)", fontSize: 12, fontWeight: 600 }}>
