@@ -74,7 +74,11 @@ export default function InvestmentSettings() {
   const guardarPropia = async () => {
     if (!config) return;
     const newMeta = { ...config.meta };
-    if (propiaMonto && parseFloat(propiaMonto) > 0) newMeta.metaPropia = { monto: parseFloat(propiaMonto), ...(propiaFecha ? { fecha: propiaFecha } : {}) };
+    const nuevoMonto = propiaMonto && parseFloat(propiaMonto) > 0 ? parseFloat(propiaMonto) : null;
+    // Objetivo nuevo → los hitos festejados del anterior no aplican (si no, una meta más
+    // alta arrancaría "con el 50% ya usado" y nunca festejaría ese tramo de nuevo).
+    if (nuevoMonto !== (config.meta.metaPropia?.monto ?? null)) delete newMeta.metaPropiaHitos;
+    if (nuevoMonto) newMeta.metaPropia = { monto: nuevoMonto, ...(propiaFecha ? { fecha: propiaFecha } : {}) };
     else delete newMeta.metaPropia;
     await saveConfig({ ...config, meta: newMeta });
   };
@@ -82,7 +86,10 @@ export default function InvestmentSettings() {
   const guardarFX = async () => {
     if (!config) return;
     const newMeta = { ...config.meta };
-    if (fxMonto && parseFloat(fxMonto) > 0) newMeta.metaFX = { monto: parseFloat(fxMonto), moneda: monedaFX, ...(fxFecha ? { fecha: fxFecha } : {}) };
+    const nuevoMontoFX = fxMonto && parseFloat(fxMonto) > 0 ? parseFloat(fxMonto) : null;
+    // Igual que la meta propia: monto o moneda distintos = objetivo nuevo, hitos limpios.
+    if (nuevoMontoFX !== (config.meta.metaFX?.monto ?? null) || monedaFX !== config.meta.metaFX?.moneda) delete newMeta.metaFXHitos;
+    if (nuevoMontoFX) newMeta.metaFX = { monto: nuevoMontoFX, moneda: monedaFX, ...(fxFecha ? { fecha: fxFecha } : {}) };
     else delete newMeta.metaFX;
     if (cotizManualOn && cotizManualVal && parseFloat(cotizManualVal) > 0) { newMeta.cotizacionManualActiva = true; newMeta.cotizacionManual = parseFloat(cotizManualVal); }
     else { delete newMeta.cotizacionManualActiva; delete newMeta.cotizacionManual; }
