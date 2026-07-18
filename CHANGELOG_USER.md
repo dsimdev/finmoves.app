@@ -14,6 +14,11 @@ Lo nuevo y lo que mejoró, versión por versión.
 - **El aviso del dólar sigue igual**: ese sí tiene sentido, porque la cotización se mueve sola
   mientras vos hacés otra cosa.
 
+### En Reportes
+- El número grande de Ingresos ahora se llama **Total disponible** (es todo lo que entró en el
+  período) y abajo te muestra, además de la comparación con el período anterior, **cuánto te
+  queda hoy** sin gastar. Los dos datos juntos, sin tener que ir al Inicio.
+
 ### Arreglos
 - **El resumen de Movimientos contaba de más.** Los ingresos y gastos en dólares de tu reserva
   aparecían mezclados con los movimientos del período, inflando el total y los gráficos. La

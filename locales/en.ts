@@ -283,7 +283,9 @@ export const en: AppLocale = {
   top5Descriptions: "Top 5 descriptions",
   byDay: "By day",
   expensesCount: (n: number) => `${n} expense${n !== 1 ? "s" : ""}`,
-  availableIncome: "Available income",
+  availableIncome: "Total available",
+  /** Income hero subtitle: what's left unspent today, next to the comparison. */
+  currentlyAvailable: "left",
   leave: "LEAVE",
   totalIncome: "Total income",
   toSavingsLabel: "To savings",
