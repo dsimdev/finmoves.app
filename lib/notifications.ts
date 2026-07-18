@@ -1,7 +1,7 @@
 import { adminDb } from "./firebase-admin";
 import { pushYGuardar } from "./notif-store";
 import { agruparPorPeriodo } from "@/utils/periodo";
-import { parsePeriodoId } from "@/utils/reportes";
+import { parsePeriodoId, serieTendencia } from "@/utils/reportes";
 import { reservaFX, tiposReserva } from "@/utils/reserva";
 import { shouldRemind, type RecReminderState } from "@/utils/recurrent-reminder";
 import { Timestamp } from "firebase-admin/firestore";
@@ -115,7 +115,7 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
           const data = d.data();
           return { ...data, id: d.id, timestampCarga: (data.timestampCarga as Timestamp).toDate() } as Movimiento;
         });
-        await guardDiario(checkMeta(uid, config, notify, updates));
+        await guardDiario(checkMeta(uid, config, recientes, notify, updates));
         await guardDiario(checkSueldo(uid, recientes, notify, updates));
         await guardDiario(checkCargaOlvidada(uid, recientes, notify, updates));
         // Wrapped: el 31/12, avisa que está el resumen anual (necesita los movimientos).
@@ -287,18 +287,51 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   if (ok) updates.recReminders = nextReminders;
 }
 
-// Meta de ahorro: avisa al cruzar 50/75/100% (una vez cada hito).
-async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<string, unknown>, updates: Record<string, unknown>) {
-  const metaMonto = config.meta?.metaMonto;
+// Metas de ahorro: avisan al cruzar 50/75/100% (una vez cada hito). Hay dos:
+//  - metaPropia: sobre los ahorros acumulados (todos los usuarios).
+//  - metaFX: sobre la reserva en divisa (solo ARS con inversión). Es el ex `metaMonto`.
+async function checkMeta(uid: string, config: ConfigUsuario, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  await checkMetaPropia(uid, config, movs, notify, updates);
+  await checkMetaFX(uid, config, notify, updates);
+}
+
+// Meta sobre ahorros acumulados. Usa los movimientos recientes ya leídos por el cron para
+// reconstruir la serie de ahorros (aproximación suficiente para el hito: cubre los períodos
+// recientes desde el seed). El símbolo es la moneda principal del usuario.
+async function checkMetaPropia(uid: string, config: ConfigUsuario, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  const meta = config.meta?.metaPropia;
+  if (!meta?.monto || meta.monto <= 0) return;
+  const yaNotificados = (notify.metaPropiaHitos as number[] | undefined) ?? [];
+  if (yaNotificados.includes(100)) return;
+
+  const serie = serieTendencia(agruparPorPeriodo(movs), config.meta?.ahorrosAcumSeedPeriodoId ?? undefined);
+  if (serie.length === 0) return;
+  const acum = Math.max(0, serie[serie.length - 1]!.ahorrosAcum);
+  const pct = (acum / meta.monto) * 100;
+  const nuevos = HITOS.filter((h) => pct >= h && !yaNotificados.includes(h));
+  if (nuevos.length === 0) return;
+
+  const principal = config.meta?.monedaPrincipal;
+  const simbolo = principal === "EUR" ? "€" : principal === "USD" ? "U$D" : "$";
+  const top = Math.max(...nuevos);
+  const body = top >= 100
+    ? `¡Alcanzaste tu meta de ahorro de ${simbolo} ${Math.round(meta.monto).toLocaleString("es-AR")}! 🎉`
+    : `Vas ${top}% de tu meta de ahorro de ${simbolo} ${Math.round(meta.monto).toLocaleString("es-AR")}`;
+  const ok = await pushYGuardar(uid, "meta", { title: "Meta de ahorro", body, tag: "meta-propia", url: "/investments" }, "/investments");
+  if (ok) updates.metaPropiaHitos = Array.from(new Set([...yaNotificados, ...nuevos]));
+}
+
+// Meta sobre la reserva en divisa (solo ARS). Lee la config nueva metaFX (con retrocompat al
+// ex `metaMonto`/`metaMoneda`). count()-cache sobre los movimientos de reserva para no leer todo.
+async function checkMetaFX(uid: string, config: ConfigUsuario, notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  if (config.meta?.monedaPrincipal && config.meta.monedaPrincipal !== "ARS") return;
+  const metaMonto = config.meta?.metaFX?.monto ?? config.meta?.metaMonto;
   if (!metaMonto || metaMonto <= 0) return;
 
-  // Ya alcanzó el 100% → no queda ningún hito por avisar, evitamos leer nada.
   const yaNotificados = (notify.metaHitos as number[] | undefined) ?? [];
   if (yaNotificados.includes(100)) return;
 
-  // monedaInversiones vive en prefs del cliente; en el server usamos USD por defecto.
-  const principal = config.meta?.monedaPrincipal;
-  const moneda: "USD" | "EUR" = principal === "EUR" ? "USD" : principal === "USD" ? "EUR" : "USD";
+  const moneda: "USD" | "EUR" = config.meta?.metaFX?.moneda ?? "USD";
   const { compra, gasto, venta, ingreso } = tiposReserva(moneda);
   const base = moneda === "USD" ? (config.meta?.saldoUSD ?? 0) : (config.meta?.saldoEUR ?? 0);
 
@@ -329,7 +362,7 @@ async function checkMeta(uid: string, config: ConfigUsuario, notify: Record<stri
   const body = top >= 100
     ? `¡Alcanzaste tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}! 🎉`
     : `Vas ${top}% de tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}`;
-  const ok = await pushYGuardar(uid, "meta", { title: "Meta de ahorro", body, tag: "meta", url: "/investments" }, "/investments");
+  const ok = await pushYGuardar(uid, "meta", { title: "Meta en divisa", body, tag: "meta", url: "/investments" }, "/investments");
   if (ok) updates.metaHitos = Array.from(new Set([...yaNotificados, ...nuevos]));
 }
 

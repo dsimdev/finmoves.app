@@ -340,3 +340,17 @@ export function periodosParaMetaUSD(serie: PuntoTendencia[], metaUSD: number, co
   const metaEnARS = metaUSD * cotizacionBlue;
   return periodosParaMetaARS(serie, metaEnARS);
 }
+
+// Progreso de la META PROPIA (en la moneda principal del usuario). El "acumulado" son los
+// ahorros ya calculados en esa moneda (serie.ahorrosAcum), no un saldo cargado a mano. Como
+// meta y ahorros están en la MISMA moneda, no hay conversión. Devuelve todo lo que la card
+// necesita: acumulado, %, faltante, y períodos estimados para llegar (por el ritmo de ahorro).
+export function progresoMetaPropia(serie: PuntoTendencia[], metaMonto: number): {
+  acumulado: number; pct: number; faltante: number; periodos: number | null;
+} | null {
+  if (metaMonto <= 0 || serie.length === 0) return null;
+  const acumulado = Math.max(0, serie[serie.length - 1]!.ahorrosAcum);
+  const pct = Math.min(100, Math.round((acumulado / metaMonto) * 100));
+  const faltante = Math.max(0, metaMonto - acumulado);
+  return { acumulado, pct, faltante, periodos: periodosParaMetaARS(serie, metaMonto) };
+}

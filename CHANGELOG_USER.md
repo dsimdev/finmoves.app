@@ -4,6 +4,28 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.89.0] — 2026-07-17
+
+### Metas de ahorro para todos
+- Ahora **cualquier usuario** puede ponerse una **meta de ahorro** en su moneda, medida sobre los
+  ahorros que la app ya venía calculando. No hace falta cargar ningún saldo a mano.
+- Si tu moneda es **dólar o euro**, la pestaña **Inversión** ahora te muestra lo tuyo: tu
+  **patrimonio** (disponible + ahorros), tu **meta**, tu **ritmo de ahorro** y tu **mejor y peor
+  período**.
+- Si trabajás en **pesos**, seguís teniendo tu **reserva en divisa** y su meta como hasta ahora,
+  y además tu propia meta de ahorro más abajo.
+
+### Cambios en Inversión
+- La pestaña **Inversión** se movió al **4° lugar** de la barra.
+- El **historial** de tu reserva ahora se abre desde un ícono arriba a la derecha, en un panel
+  aparte (queda más limpia la pantalla). El botón para **cargar reserva** vive dentro de ese panel.
+- Podés **prender o apagar** la pestaña Inversión desde Configuración; si la apagás, tus metas
+  quedan guardadas igual.
+
+### Correcciones
+- El **ritmo de ahorro** ya no puede dar un número mayor a lo que tenés ahorrado.
+- Arreglos menores.
+
 ## [2.87.0] — 2026-07-16
 
 ### Novedades

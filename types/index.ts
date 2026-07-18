@@ -84,6 +84,14 @@ export interface ConfigUsuario {
     presupuestoTemplate?: Record<string, number>;
     saldoUSD?: number;
     saldoEUR?: number;
+    // ── Metas de ahorro ──────────────────────────────────────────────────────
+    // metaPropia: en la moneda PRINCIPAL del usuario (ARS/USD/EUR). El progreso se mide
+    //   sobre los ahorros acumulados YA calculados (no se carga saldo a mano). Para TODOS.
+    metaPropia?: { monto: number; fecha?: string };
+    // metaFX: meta de la reserva en divisa (comprar USD/EUR). SOLO usuarios ARS. Migrada
+    //   desde los campos viejos metaMonto/metaMoneda ("USD" siempre) / metaFecha.
+    metaFX?: { monto: number; fecha?: string; moneda: "USD" | "EUR" };
+    // Campos viejos (una sola meta USD): se conservan por retrocompat / migración a metaFX.
     metaFecha?: string; // YYYY-MM-DD
     metaMoneda?: "USD"; // siempre USD
     metaMonto?: number;
