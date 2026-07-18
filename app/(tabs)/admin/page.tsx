@@ -116,7 +116,7 @@ export default function AdminPage() {
   if (!isOwner) return null;
 
   return (
-    <div className="page">
+    <div className="page page-narrow">
       <div style={{ marginBottom: 24 }}>
         <div className="label">administración</div>
         <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>Panel</div>

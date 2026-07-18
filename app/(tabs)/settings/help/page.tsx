@@ -78,7 +78,7 @@ export default function HelpSettings() {
   }, []);
 
   return (
-    <div className="page">
+    <div className="page page-narrow">
       <SubHeader title={t.guideSection} />
 
       <p style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6, margin: "0 4px 16px" }}>{t.guideIntro}</p>

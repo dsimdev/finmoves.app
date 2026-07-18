@@ -114,7 +114,7 @@ export default function InvestmentSettings() {
   );
 
   return (
-    <div className="page">
+    <div className="page page-narrow">
       <SubHeader title={t.settingsTabInvestments} />
 
       {/* Toggle: mostrar la tab Inversión */}

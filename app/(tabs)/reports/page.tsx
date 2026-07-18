@@ -502,7 +502,7 @@ export default function ReportesPage() {
   }, [periodo]);
 
   return (
-    <div className="page">
+    <div className="page page-wide">
       {loading ? (
         <LoadingSpinner />
       ) : periodos.length === 0 ? (

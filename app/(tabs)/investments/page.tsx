@@ -353,7 +353,7 @@ export default function DolaresPage() {
 
   return (
     <>
-    <div className="page">
+    <div className="page page-mid">
       {loading ? (
         <LoadingSpinner />
       ) : (

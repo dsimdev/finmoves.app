@@ -176,7 +176,7 @@ export default function MovimientosPage() {
 
   return (
     <>
-    <div className="page">
+    <div className="page page-mid">
 
       {loading ? (
         <LoadingSpinner />

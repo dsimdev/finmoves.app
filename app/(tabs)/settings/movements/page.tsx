@@ -153,7 +153,7 @@ export default function MovementsSettings() {
   const closeAdd = () => { setAdding(false); setNuevoNombre(""); };
 
   return (
-    <div className="page">
+    <div className="page page-narrow">
       <SubHeader title={t.settingsTabMovements} />
 
       <div style={card}>

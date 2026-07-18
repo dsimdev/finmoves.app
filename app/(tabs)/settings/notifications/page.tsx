@@ -74,7 +74,7 @@ export default function NotificacionesSettings() {
   const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: 16, marginBottom: 12 };
 
   return (
-    <div className="page">
+    <div className="page page-narrow">
       <SubHeader title={t.notifications} />
 
       <div style={{ ...card, display: "flex", alignItems: "center", gap: 12 }}>
