@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useModalBack } from "@/hooks/useModalBack";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
 
 /**
  * Bottom-sheet genérico y arrastrable (patrón único de la app):
@@ -27,6 +28,8 @@ export function BottomSheet({ open, onClose, title, children }: {
   useEffect(() => { setMounted(true); }, []);
   useScrollLock(open);
   useModalBack(open, onClose);
+  // En escritorio el sheet se muestra como card centrada (ver el panel más abajo).
+  const isDesktop = useIsDesktop();
   // onClose suele venir inline (nueva identidad por render). Guardarlo en un ref evita
   // que los efectos que lo usan se re-ejecuten en cada render: al tipear en un input, el
   // efecto de foco volvía a enfocar el panel y cerraba el teclado.
@@ -151,12 +154,37 @@ export function BottomSheet({ open, onClose, title, children }: {
   return createPortal(
     <div style={{ position: "fixed", left: 0, top: vv ? vv.top : 0, width: "100%", height: vv ? vv.h : "100%", zIndex: 200, pointerEvents: open ? "all" : "none" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: open ? "blur(4px)" : "blur(0px)", WebkitBackdropFilter: open ? "blur(4px)" : "blur(0px)", opacity: open ? 1 : 0, transition: "opacity 0.35s ease, backdrop-filter 0.35s ease" }} />
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "var(--surface)", borderRadius: "26px 26px 0 0", maxHeight: "92%", overflowY: "auto", border: "1px solid var(--border)", borderBottom: "none", boxShadow: "0 -16px 50px rgba(0,0,0,0.5)", transform: open ? `translateY(${ty}px)` : "translateY(101%)", opacity: open ? 1 : 0.4, transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease", willChange: "transform", outline: "none", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}>
-        <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
-          style={{ padding: "4px 16px 0", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1, cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}>
-          <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 12px" }}>
-            <div style={{ width: 42, height: 5, background: "var(--border)", borderRadius: 99 }} />
-          </div>
+      {/* En escritorio el panel deja de subir desde abajo y pasa a ser una card centrada:
+          pegado al borde inferior y a 1920px de ancho no es un diálogo, es una franja. El
+          arrastre y el handle son gestos táctiles → tampoco van con mouse. */}
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} style={{
+        position: "absolute", background: "var(--surface)", overflowY: "auto",
+        border: "1px solid var(--border)", outline: "none",
+        ...(isDesktop ? {
+          left: "50%", top: "50%", width: "min(560px, calc(100% - 48px))",
+          maxHeight: "min(86vh, 860px)", borderRadius: 18,
+          boxShadow: "0 24px 70px rgba(0,0,0,0.55)",
+          transform: `translate(-50%, -50%) scale(${open ? 1 : 0.97})`,
+          opacity: open ? 1 : 0,
+          transition: "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease",
+        } : {
+          left: 0, right: 0, bottom: 0, borderRadius: "26px 26px 0 0", maxHeight: "92%",
+          borderBottom: "none", boxShadow: "0 -16px 50px rgba(0,0,0,0.5)",
+          transform: open ? `translateY(${ty}px)` : "translateY(101%)",
+          opacity: open ? 1 : 0.4,
+          transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
+          willChange: "transform", userSelect: "none" as const,
+          WebkitUserSelect: "none" as const, WebkitTouchCallout: "none" as const,
+        }),
+      }}>
+        <div {...(isDesktop ? {} : { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp })}
+          style={{ padding: isDesktop ? "18px 20px 0" : "4px 16px 0", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1, cursor: isDesktop ? "default" : dragging ? "grabbing" : "grab", touchAction: isDesktop ? "auto" : "none" }}>
+          {/* El handle es la afordancia del arrastre: sin arrastre, no va. */}
+          {!isDesktop && (
+            <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 12px" }}>
+              <div style={{ width: 42, height: 5, background: "var(--border)", borderRadius: 99 }} />
+            </div>
+          )}
           {title !== undefined && (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 0 12px", marginBottom: 16, borderBottom: "1px solid var(--border)" }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>{title}</span>
@@ -164,7 +192,7 @@ export function BottomSheet({ open, onClose, title, children }: {
             </div>
           )}
         </div>
-        <div ref={contentRef} style={{ padding: "0 16px 40px" }}>{children}</div>
+        <div ref={contentRef} style={{ padding: isDesktop ? "0 20px 24px" : "0 16px 40px" }}>{children}</div>
       </div>
     </div>,
     document.body

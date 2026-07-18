@@ -230,6 +230,9 @@ export const en: AppLocale = {
   remainingLabel: "Remaining",
   reached: "Reached!",
   reachedBadge: "REACHED",
+  /** Desktop: quick add covers simple expenses; this opens the full modal (income,
+   *  moves, FX, receipts, a different date). */
+  fullEntry: "Full entry",
   metaHitoTitle: "You're {pct}% to your goal!",
   metaHitoBody: "Keep it up, every entry counts.",
   metaHitoFullTitle: "Goal reached!",

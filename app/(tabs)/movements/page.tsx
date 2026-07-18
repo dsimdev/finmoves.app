@@ -12,6 +12,10 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { MovementModal } from "@/components/movements/MovementModal";
 import { MovementsFilter } from "@/components/movements/MovementsFilter";
+import { MovementsTable } from "@/components/desktop/MovementsTable";
+import { SearchBar } from "@/components/desktop/SearchBar";
+import { QuickAdd } from "@/components/desktop/QuickAdd";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { useT } from "@/hooks/useTranslation";
 import { useHint } from "@/hooks/useHint";
 import { SectionHint } from "@/components/ui/SectionHint";
@@ -62,6 +66,16 @@ export default function MovimientosPage() {
 
   // Filtro in-place (lupa): términos que acotan la lista al período SELECCIONADO. El popup
   // se abre desde la lupa del header y filtra sin navegar a otra pantalla.
+  // En pantalla ancha, la lista táctil se reemplaza por una tabla densa y ordenable.
+  const isDesktop = useIsDesktop();
+  // Error de la carga rápida (la escritura falla después de mostrar la fila optimista).
+  // Se auto-cierra: es un aviso, no un estado que haya que despejar a mano.
+  const [quickError, setQuickError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!quickError) return;
+    const id = setTimeout(() => setQuickError(null), 5000);
+    return () => clearTimeout(id);
+  }, [quickError]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterTerms, setFilterTerms] = useState<string[]>([]);
   const filterActivo = filterTerms.length > 0;
@@ -176,7 +190,9 @@ export default function MovimientosPage() {
 
   return (
     <>
-    <div className="page page-mid">
+    {/* La tabla de escritorio usa todo el ancho (más columnas legibles); la lista táctil
+        del móvil se queda en su columna cómoda. */}
+    <div className={`page ${isDesktop ? "page-fluid" : "page-mid"}`}>
 
       {loading ? (
         <LoadingSpinner />
@@ -187,10 +203,14 @@ export default function MovimientosPage() {
               title={t.pageTitleMovements}
               style={{ marginBottom: 0 }}
               right={
+                /* La lupa abre el popover del filtro. En escritorio no va: el buscador es
+                   una barra siempre visible sobre la tabla (SearchBar). */
+                isDesktop ? null : (
                 <button onClick={() => setFilterOpen(true)} aria-label={t.filterTitle} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", color: filterActivo ? "var(--accent)" : "var(--muted)", padding: 6, margin: -6, display: "flex" }}>
                   <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                   {filterActivo && <span style={{ position: "absolute", top: 2, right: 2, minWidth: 15, height: 15, padding: "0 3px", borderRadius: 8, background: "var(--accent)", color: "#fff", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>{filterTerms.length}</span>}
                 </button>
+                )
               }
             />
             {periodoActual && (
@@ -253,11 +273,46 @@ export default function MovimientosPage() {
             </div>
           )}
 
+          {/* Escritorio: buscador siempre visible sobre la tabla (en móvil es el popover
+              de la lupa, que acá taparía justo las filas que estás mirando) + carga rápida
+              con teclado. El modal completo sigue disponible en "Nuevo movimiento". */}
+          {isDesktop && (
+            <>
+              <SearchBar
+                movs={periodoActual?.movimientos ?? []}
+                terms={filterTerms}
+                onChange={setFilterTerms}
+                onNew={openAdd}
+              />
+              <QuickAdd
+                config={config}
+                periodoId={activePeriodoId ?? null}
+                onCreated={prependMovimiento}
+                onRollback={removeMovimiento}
+                onError={setQuickError}
+              />
+              {quickError && (
+                <div style={{ background: "var(--red-dim)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "9px 13px", marginBottom: 12, fontSize: 12, color: "var(--red)" }}>
+                  {quickError}
+                </div>
+              )}
+            </>
+          )}
+
           {movsFiltrados.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
               {filterActivo ? t.filterNoResults : t.noMovementsAdd}
             </div>
+          ) : isDesktop ? (
+            /* Escritorio: tabla densa y ordenable en vez de la lista táctil agrupada por día.
+               Misma data y mismo orden canónico (utils/movement-sort); cambia la presentación. */
+            <MovementsTable
+              movimientos={movsFiltrados}
+              onEdit={(m) => setModalState({ mode: "edit", mov: m, view: "form" })}
+              onDelete={(m) => setModalState({ mode: "edit", mov: m, view: "delete" })}
+            />
           ) : (
+
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {movsPorFecha.map(({ fecha, movs }, idx) => {
                 // El día más reciente siempre abierto; el resto colapsa a un resumen (fecha + total).
@@ -368,8 +423,10 @@ export default function MovimientosPage() {
 
     </div>
 
-    {/* Botón flotante — fijo sobre el navbar, se oculta tras inactividad */}
-    {!loading && <button
+    {/* Botón flotante — fijo sobre el navbar, se oculta tras inactividad. Es un patrón
+        táctil (al alcance del pulgar): en escritorio lo reemplaza el botón con texto que
+        vive en la barra del buscador. */}
+    {!loading && !isDesktop && <button
       onClick={() => openAdd()}
       aria-label={t.newMovement}
       style={{
