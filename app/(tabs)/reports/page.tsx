@@ -19,7 +19,7 @@ import {
   gastosPorMedioPago, gastosPorDescripcion, gastosPorFecha,
   kpisPeriodo, ritmoGasto, comparativaCategorias,
   serieTendencia, parsePeriodoId, diasSinGastos,
-  historialSueldo, proyectarAhorros,
+  historialSueldo, proyectarAhorros, ritmoAhorro,
   progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
   inflacionPersonal as calcInflacionPersonal,
 } from "@/utils/reportes";
@@ -95,6 +95,8 @@ export default function ReportesPage() {
   const [metricPickerOpen, setMetricPickerOpen] = useState(false);
   const { deflatar, ipcVar, ipcMensualUltimo } = useInflacionIPC();
   const { dolarAt } = useDolarHistorico();
+  // El IPC (deflactor y factor de proyección) es argentino: solo aplica si la moneda es ARS.
+  const esARS = monedaPrincipal === "ARS";
   const [selectedMovTipo, setSelectedMovTipo] = useState<string | null>(null);
 
   // Multi-select: si no hay selección, usa el primero
@@ -273,11 +275,12 @@ export default function ReportesPage() {
   // ── Tendencias ──
   const seedPeriodoId = config?.meta.ahorrosAcumSeedPeriodoId;
 
-  // Auto-guardar seed la primera vez que carga con períodos pero sin seed
+  // Auto-guardar seed la primera vez que carga con períodos pero sin seed: se ancla al PRIMER
+  // período con movimientos para que los promedios usen toda la historia del usuario (antes
+  // tomaba el anteúltimo y descartaba el resto). Es el origen común a ahorros y reserva FX.
   useEffect(() => {
     if (!user?.uid || !config || seedPeriodoId || periodos.length === 0) return;
-    const cron = [...periodos].reverse();
-    const newSeedId = cron[Math.max(0, cron.length - 2)]?.periodoId;
+    const newSeedId = periodos[periodos.length - 1]?.periodoId; // periodos[0] es el más nuevo
     if (!newSeedId) return;
     updateDoc(doc(db, `users/${user.uid}/config/meta`), { "meta.ahorrosAcumSeedPeriodoId": newSeedId });
   }, [user?.uid, !!config, !!seedPeriodoId, periodos.length]);
@@ -368,11 +371,11 @@ export default function ReportesPage() {
 
   const metaMonto = config?.meta.metaMonto;
   const progresoMeta = metaMonto && cotizActual ? progresoMetaUSD(reservaFX * cotizActual, metaMonto, cotizActual) : null;
-  const periodosParaMetaMonto = metaMonto && cotizActual ? periodosParaMetaUSD(serie, metaMonto, cotizActual) : null;
+  const periodosParaMetaMonto = metaMonto && cotizActual ? periodosParaMetaUSD(serie, metaMonto, cotizActual, esARS ? deflatar : undefined, seedPeriodoId) : null;
   const ahorrosEnUSD = reservaFX > 0 ? reservaFX : null;
   const promAhorroUSD = cotizActual && serie.length > 0
     ? (serie.reduce((s, p) => s + Math.max(0, p.ahorros), 0) / serie.length) / cotizActual : null;
-  const proyUSD = cotizActual && serie.length >= 2 ? proyectarAhorros(serie, 3) / cotizActual : null;
+  const proyUSD = cotizActual && serie.length >= 2 ? proyectarAhorros(serie, 3, esARS ? deflatar : undefined, seedPeriodoId) / cotizActual : null;
 
   // ── Tendencias: Gastos ──
   const promGastoPorPeriodo = periodos.length > 0
@@ -387,28 +390,46 @@ export default function ReportesPage() {
   const medianaGastoPeriodo = useMemo(() => mediana(periodos.map((p) => p.gastadoPuro)), [periodos]);
   // Lo que entró a ahorros por período: depósitos (moveAhorros) + ingresos directos a ahorro.
   const medianaAhorroPeriodo = useMemo(() => mediana(periodos.map((p) => p.moveAhorros + p.ahorros)), [periodos]);
-  // Proyección de ahorro: como el gasto, deflacta cada período a pesos de hoy y
-  // proyecta al próximo período con el último IPC mensual (evita que los períodos
-  // viejos, en pesos "más baratos", la dejen por debajo del nivel actual).
-  const proyeccionAhorro = periodos.length >= 2 ? (() => {
-    const hist = periodos.slice(1);
-    const realAvg = hist.reduce((s, p) => s + deflatar(p.moveAhorros + p.ahorros, p.periodoId), 0) / hist.length;
-    const factor = ipcMensualUltimo != null ? 1 + ipcMensualUltimo / 100 : 1;
-    return Math.round(realAvg * factor);
-  })() : null;
+  // Proyección de ahorro del próximo período: usa el ritmo unificado (ahorro NETO, últimos
+  // VENTANA_PERIODOS cerrados, deflactado) y lo lleva al próximo período con el IPC mensual.
+  // Antes promediaba el ahorro BRUTO sobre todo el histórico y no coincidía con Inversión.
+  const proyeccionAhorro = (() => {
+    const ritmo = ritmoAhorro(serie, esARS ? deflatar : undefined, seedPeriodoId);
+    if (ritmo === null) return null;
+    // El factor lleva un ahorro POSITIVO a pesos del próximo período. No se aplica si:
+    //  - el ritmo es negativo (la inflación no hace que desahorres más), ni
+    //  - la moneda no es ARS (el IPC argentino no rige un ahorro en USD/EUR — igual que
+    //    el deflactor de arriba, que ya queda en identidad).
+    const factor = ritmo > 0 && esARS && ipcMensualUltimo != null ? 1 + ipcMensualUltimo / 100 : 1;
+    return Math.round(ritmo * factor);
+  })();
   const estadPeriodos = useMemo(() => estadisticasPeriodos(periodos), [periodos]);
   const avgHistorico = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.gastadoPuro, 0) / (periodos.length - 1) : 0;
   const tendenciaGasto = periodos.length >= 2 && avgHistorico > 0
     ? ((periodos[0].gastadoPuro - avgHistorico) / avgHistorico) * 100 : null;
-  // Proyección mejorada: deflacta cada período histórico a pesos de hoy (los viejos
-  // valían "menos pesos" y subestimaban) y proyecta al próximo período sumando el
-  // último IPC mensual conocido.
+  // Proyección de gasto del próximo período: mezcla el promedio histórico (base estable) con
+  // el ritmo del período EN CURSO (reactivo a cómo venís gastando ahora). Solo con el promedio
+  // el número no se movía nunca — los períodos cerrados ya no cambian; solo con el ritmo actual
+  // sería muy volátil al arranque del período, cuando pocos días pesan demasiado.
+  // El peso del período en curso crece con los días transcurridos (tope 50%): al principio casi
+  // no influye, a mitad de período pesa la mitad.
   const proyeccionGasto = periodos.length >= 2 ? (() => {
-    const hist = periodos.slice(1); // excluye el período en curso (incompleto)
-    const realAvg = hist.reduce((s, p) => s + deflatar(p.gastadoPuro, p.periodoId), 0) / hist.length;
-    const factor = ipcMensualUltimo != null ? 1 + ipcMensualUltimo / 100 : 1;
-    return Math.round(realAvg * factor);
+    // Histórico: períodos cerrados desde el seed, deflactados a pesos de hoy (los viejos valían
+    // "menos pesos" y subestimaban). IPC solo en ARS: en USD/EUR no aplica el índice argentino.
+    const seedIdx = seedPeriodoId ? periodos.findIndex((p) => p.periodoId === seedPeriodoId) : periodos.length - 1;
+    const hist = periodos.slice(1, (seedIdx >= 0 ? seedIdx : periodos.length - 1) + 1);
+    if (hist.length === 0) return null;
+    const realAvg = hist.reduce((s, p) => s + (esARS ? deflatar(p.gastadoPuro, p.periodoId) : p.gastadoPuro), 0) / hist.length;
+    const factor = esARS && ipcMensualUltimo != null ? 1 + ipcMensualUltimo / 100 : 1;
+    const base = realAvg * factor;
+
+    // Ritmo del período en curso extrapolado a período completo.
+    const enCurso = periodos[0];
+    const ritmo = ritmoGasto(enCurso, null);
+    if (!ritmo.enCurso || ritmo.diasTranscurridos < 3) return Math.round(base); // muy temprano: solo histórico
+    const peso = Math.min(0.5, ritmo.diasTranscurridos / 60);
+    return Math.round(base * (1 - peso) + ritmo.proyeccionCierre * peso);
   })() : null;
   const avgHistoricoMovs = periodos.length >= 2
     ? periodos.slice(1).reduce((s, p) => s + p.movimientos.length, 0) / (periodos.length - 1) : 0;

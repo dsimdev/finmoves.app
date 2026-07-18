@@ -188,7 +188,12 @@ export interface PuntoTendencia {
   gastadoPuro: number;
   disponible: number;
   total: number;
+  /** Ahorro BRUTO del período: depósitos + ingresos directos a ahorro. NO descuenta los
+   *  retiros hacia disponible — para proyectar usá `ahorroNeto`. */
   ahorros: number;
+  /** Ahorro NETO: lo que realmente sumó al acumulado (bruto − moves a disponible). Es el
+   *  delta de `ahorrosAcum` salvo cuando el clamp a 0 lo corta. Base de toda proyección. */
+  ahorroNeto: number;
   ahorrosAcum: number;
 }
 
@@ -206,7 +211,8 @@ export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: strin
   let acum = 0;
   return cron.map((p, i) => {
     const ahorrosDelPeriodo = p.ahorros + p.moveAhorros;
-    if (i >= startIdx) acum = Math.max(0, acum + ahorrosDelPeriodo - p.moveDisponible);
+    const neto = ahorrosDelPeriodo - p.moveDisponible;
+    if (i >= startIdx) acum = Math.max(0, acum + neto);
     return {
       periodoId: p.periodoId,
       sueldo: p.sueldo,
@@ -215,6 +221,7 @@ export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: strin
       disponible: p.disponible,
       total: p.total,
       ahorros: ahorrosDelPeriodo,
+      ahorroNeto: neto,
       ahorrosAcum: acum,
     };
   });
@@ -312,21 +319,60 @@ export function historialSueldo(
   return events;
 }
 
-export function proyectarAhorros(serie: PuntoTendencia[], nPeriodos: number): number {
-  if (serie.length === 0) return 0;
-  const ultimos = serie.slice(-Math.min(2, serie.length));
-  const promedio = ultimos.reduce((s, p) => s + p.ahorros, 0) / ultimos.length;
-  return serie[serie.length - 1]!.ahorrosAcum + Math.max(0, promedio) * nPeriodos;
+// ── Ritmo de ahorro: base ÚNICA de todas las proyecciones ────────────────────
+// Reglas (unificadas en v2.90.0; antes cada pantalla usaba la suya y se contradecían):
+//  1. Ventana: TODOS los períodos desde el seed (`ahorrosAcumSeedPeriodoId`) hasta el actual
+//     inclusive. El seed marca desde cuándo la carga de movimientos es confiable, así que
+//     promedia toda la historia útil en vez de descartar datos buenos. Se incluye el período
+//     en curso porque el acumulado (`ahorrosAcum`, el número grande) también lo cuenta:
+//     excluirlo daba "ritmo 0" a alguien que sí había ahorrado este período.
+//  2. Ahorro NETO (`ahorroNeto`): descuenta lo que se movió de vuelta a disponible. Usar el
+//     bruto daba ritmos mayores al propio acumulado.
+//  3. Deflactado: `deflate` lleva cada período a moneda de hoy (IPC en ARS; identidad en
+//     USD/EUR). Sin esto, promediar períodos viejos subestima con inflación alta.
+// La serie que llega ya viene acumulada desde el seed (serieTendencia), pero incluye los
+// puntos anteriores con acum 0: `desdeSeed` los recorta para que no diluyan el promedio.
+export function desdeSeed(serie: PuntoTendencia[], seedPeriodoId?: string): PuntoTendencia[] {
+  if (!seedPeriodoId) return serie;
+  const idx = serie.findIndex((p) => p.periodoId === seedPeriodoId);
+  return idx >= 0 ? serie.slice(idx) : serie;
 }
 
-export function periodosParaMetaARS(serie: PuntoTendencia[], metaARS: number): number | null {
+export function ritmoAhorro(
+  serie: PuntoTendencia[],
+  deflate: (monto: number, periodoId: string) => number = (m) => m,
+  seedPeriodoId?: string,
+): number | null {
+  // serie viene cronológica (más viejo → más nuevo); el último es el período en curso.
+  const ventana = desdeSeed(serie, seedPeriodoId);
+  if (ventana.length === 0) return null;
+  const suma = ventana.reduce((s, p) => s + deflate(p.ahorroNeto ?? 0, p.periodoId), 0);
+  return Number.isFinite(suma) ? suma / ventana.length : null;
+}
+
+export function proyectarAhorros(
+  serie: PuntoTendencia[],
+  nPeriodos: number,
+  deflate: (monto: number, periodoId: string) => number = (m) => m,
+  seedPeriodoId?: string,
+): number {
+  if (serie.length === 0) return 0;
+  const ritmo = ritmoAhorro(serie, deflate, seedPeriodoId) ?? 0;
+  return serie[serie.length - 1]!.ahorrosAcum + Math.max(0, ritmo) * nPeriodos;
+}
+
+export function periodosParaMetaARS(
+  serie: PuntoTendencia[],
+  metaARS: number,
+  deflate: (monto: number, periodoId: string) => number = (m) => m,
+  seedPeriodoId?: string,
+): number | null {
   if (serie.length === 0) return null;
   const acumActual = serie[serie.length - 1]!.ahorrosAcum;
   if (acumActual >= metaARS) return 0;
-  const ultimos = serie.slice(-Math.min(3, serie.length));
-  const promedio = ultimos.reduce((s, p) => s + p.ahorros, 0) / ultimos.length;
-  if (promedio <= 0) return null;
-  return Math.ceil((metaARS - acumActual) / promedio);
+  const ritmo = ritmoAhorro(serie, deflate, seedPeriodoId);
+  if (ritmo === null || ritmo <= 0) return null;
+  return Math.ceil((metaARS - acumActual) / ritmo);
 }
 
 // ── Estadísticas de metas de ahorro ──────────────────────────────────────
@@ -336,21 +382,32 @@ export function progresoMetaUSD(ahorrosAcumARS: number, metaUSD: number, cotizac
   return Math.round((ahorrosAcumARS / metaEnARS) * 100);
 }
 
-export function periodosParaMetaUSD(serie: PuntoTendencia[], metaUSD: number, cotizacionBlue: number): number | null {
+export function periodosParaMetaUSD(
+  serie: PuntoTendencia[],
+  metaUSD: number,
+  cotizacionBlue: number,
+  deflate: (monto: number, periodoId: string) => number = (m) => m,
+  seedPeriodoId?: string,
+): number | null {
   const metaEnARS = metaUSD * cotizacionBlue;
-  return periodosParaMetaARS(serie, metaEnARS);
+  return periodosParaMetaARS(serie, metaEnARS, deflate, seedPeriodoId);
 }
 
 // Progreso de la META PROPIA (en la moneda principal del usuario). El "acumulado" son los
 // ahorros ya calculados en esa moneda (serie.ahorrosAcum), no un saldo cargado a mano. Como
 // meta y ahorros están en la MISMA moneda, no hay conversión. Devuelve todo lo que la card
 // necesita: acumulado, %, faltante, y períodos estimados para llegar (por el ritmo de ahorro).
-export function progresoMetaPropia(serie: PuntoTendencia[], metaMonto: number): {
+export function progresoMetaPropia(
+  serie: PuntoTendencia[],
+  metaMonto: number,
+  deflate: (monto: number, periodoId: string) => number = (m) => m,
+  seedPeriodoId?: string,
+): {
   acumulado: number; pct: number; faltante: number; periodos: number | null;
 } | null {
   if (metaMonto <= 0 || serie.length === 0) return null;
   const acumulado = Math.max(0, serie[serie.length - 1]!.ahorrosAcum);
   const pct = Math.min(100, Math.round((acumulado / metaMonto) * 100));
   const faltante = Math.max(0, metaMonto - acumulado);
-  return { acumulado, pct, faltante, periodos: periodosParaMetaARS(serie, metaMonto) };
+  return { acumulado, pct, faltante, periodos: periodosParaMetaARS(serie, metaMonto, deflate, seedPeriodoId) };
 }

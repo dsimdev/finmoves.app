@@ -93,10 +93,14 @@ export function PeriodosTab({
                 <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                   <MiniStat center basis="1 1 0" label={t.avgSavings} value={oculto ? "••" : abbr(medianaAhorroPeriodo)} color="var(--blue)"
                     onClick={() => setKpiInfo({ title: t.avgSavings, value: oculto ? "••" : money(medianaAhorroPeriodo), explain: t.kpiTypicalSavingsInfo, color: "var(--blue)" })} />
-                  {proyeccionAhorro != null && (
-                    <MiniStat center basis="1 1 0" label={t.projSavings} value={oculto ? "••" : abbr(proyeccionAhorro)} color="var(--blue)"
-                      onClick={() => setKpiInfo({ title: t.projSavings, value: oculto ? "••" : money(proyeccionAhorro), explain: t.kpiProjInfo, color: "var(--blue)" })} />
-                  )}
+                  {proyeccionAhorro != null && (() => {
+                    // Negativo = al ritmo actual estás consumiendo ahorros, no sumando: en rojo.
+                    const col = proyeccionAhorro < 0 ? "var(--red)" : "var(--blue)";
+                    return (
+                      <MiniStat center basis="1 1 0" label={t.projSavings} value={oculto ? "••" : abbr(proyeccionAhorro)} color={col}
+                        onClick={() => setKpiInfo({ title: t.projSavings, value: oculto ? "••" : money(proyeccionAhorro), explain: t.kpiProjInfo, color: col })} />
+                    );
+                  })()}
                 </div>
               )}
 
