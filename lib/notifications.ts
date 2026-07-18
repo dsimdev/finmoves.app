@@ -1,14 +1,12 @@
 import { adminDb } from "./firebase-admin";
 import { pushYGuardar } from "./notif-store";
 import { agruparPorPeriodo } from "@/utils/periodo";
-import { parsePeriodoId, serieTendencia } from "@/utils/reportes";
-import { reservaFX, tiposReserva } from "@/utils/reserva";
+import { parsePeriodoId } from "@/utils/reportes";
 import { shouldRemind, type RecReminderState } from "@/utils/recurrent-reminder";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
 const DOLAR_THRESHOLD_PCT = 3;
-const HITOS = [50, 75, 100];
 const SUELDO_REMINDER_DAYS = 30; // si pasó ~1 mes sin abrir período nuevo
 const CARGA_OLVIDADA_DIAS = 3;   // días sin registrar ningún movimiento
 // Ventana de lectura (por fecha) para hallar la última carga de un recurrente. Debe cubrir
@@ -115,7 +113,6 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
           const data = d.data();
           return { ...data, id: d.id, timestampCarga: (data.timestampCarga as Timestamp).toDate() } as Movimiento;
         });
-        await guardDiario(checkMeta(uid, config, recientes, notify, updates));
         await guardDiario(checkSueldo(uid, recientes, notify, updates));
         await guardDiario(checkCargaOlvidada(uid, recientes, notify, updates));
         // Wrapped: el 31/12, avisa que está el resumen anual (necesita los movimientos).
@@ -287,82 +284,12 @@ async function checkRecurrentes(uid: string, notify: Record<string, unknown>, up
   if (ok) updates.recReminders = nextReminders;
 }
 
-// Metas de ahorro: avisan al cruzar 50/75/100% (una vez cada hito). Hay dos:
-//  - metaPropia: sobre los ahorros acumulados (todos los usuarios).
-//  - metaFX: sobre la reserva en divisa (solo ARS con inversión). Es el ex `metaMonto`.
-async function checkMeta(uid: string, config: ConfigUsuario, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
-  await checkMetaPropia(uid, config, movs, notify, updates);
-  await checkMetaFX(uid, config, notify, updates);
-}
-
-// Meta sobre ahorros acumulados. Usa los movimientos recientes ya leídos por el cron para
-// reconstruir la serie de ahorros (aproximación suficiente para el hito: cubre los períodos
-// recientes desde el seed). El símbolo es la moneda principal del usuario.
-async function checkMetaPropia(uid: string, config: ConfigUsuario, movs: Movimiento[], notify: Record<string, unknown>, updates: Record<string, unknown>) {
-  const meta = config.meta?.metaPropia;
-  if (!meta?.monto || meta.monto <= 0) return;
-  const yaNotificados = (notify.metaPropiaHitos as number[] | undefined) ?? [];
-  if (yaNotificados.includes(100)) return;
-
-  const serie = serieTendencia(agruparPorPeriodo(movs), config.meta?.ahorrosAcumSeedPeriodoId ?? undefined);
-  if (serie.length === 0) return;
-  const acum = Math.max(0, serie[serie.length - 1]!.ahorrosAcum);
-  const pct = (acum / meta.monto) * 100;
-  const nuevos = HITOS.filter((h) => pct >= h && !yaNotificados.includes(h));
-  if (nuevos.length === 0) return;
-
-  const principal = config.meta?.monedaPrincipal;
-  const simbolo = principal === "EUR" ? "€" : principal === "USD" ? "U$D" : "$";
-  const top = Math.max(...nuevos);
-  const body = top >= 100
-    ? `¡Alcanzaste tu meta de ahorro de ${simbolo} ${Math.round(meta.monto).toLocaleString("es-AR")}! 🎉`
-    : `Vas ${top}% de tu meta de ahorro de ${simbolo} ${Math.round(meta.monto).toLocaleString("es-AR")}`;
-  const ok = await pushYGuardar(uid, "meta", { title: "Meta de ahorro", body, tag: "meta-propia", url: "/investments" }, "/investments");
-  if (ok) updates.metaPropiaHitos = Array.from(new Set([...yaNotificados, ...nuevos]));
-}
-
-// Meta sobre la reserva en divisa (solo ARS). Lee la config nueva metaFX (con retrocompat al
-// ex `metaMonto`/`metaMoneda`). count()-cache sobre los movimientos de reserva para no leer todo.
-async function checkMetaFX(uid: string, config: ConfigUsuario, notify: Record<string, unknown>, updates: Record<string, unknown>) {
-  if (config.meta?.monedaPrincipal && config.meta.monedaPrincipal !== "ARS") return;
-  const metaMonto = config.meta?.metaFX?.monto ?? config.meta?.metaMonto;
-  if (!metaMonto || metaMonto <= 0) return;
-
-  const yaNotificados = (notify.metaHitos as number[] | undefined) ?? [];
-  if (yaNotificados.includes(100)) return;
-
-  const moneda: "USD" | "EUR" = config.meta?.metaFX?.moneda ?? "USD";
-  const { compra, gasto, venta, ingreso } = tiposReserva(moneda);
-
-  const q = adminDb()
-    .collection(`users/${uid}/movimientos`)
-    .where("tipo", "in", [compra, gasto, venta, ingreso]);
-
-  // count() cuesta 1 lectura: si el nº de movs de inversión (y la moneda) no cambió
-  // desde la última corrida, reusamos la suma cacheada en vez de leer todos los docs.
-  const count = (await q.count().get()).data().count;
-  let movSum: number;
-  if (count === notify.metaMovCount && notify.metaCacheMoneda === moneda && typeof notify.metaMovSum === "number") {
-    movSum = notify.metaMovSum as number;
-  } else {
-    const snap = await q.get();
-    movSum = reservaFX(snap.docs.map((d) => d.data() as Movimiento), moneda);
-    updates.metaMovCount = count;
-    updates.metaMovSum = movSum;
-    updates.metaCacheMoneda = moneda;
-  }
-
-  const pct = (movSum / metaMonto) * 100;
-  const nuevos = HITOS.filter((h) => pct >= h && !yaNotificados.includes(h));
-  if (nuevos.length === 0) return;
-
-  const top = Math.max(...nuevos);
-  const body = top >= 100
-    ? `¡Alcanzaste tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}! 🎉`
-    : `Vas ${top}% de tu meta de ${moneda} ${Math.round(metaMonto).toLocaleString("es-AR")}`;
-  const ok = await pushYGuardar(uid, "meta", { title: "Meta en divisa", body, tag: "meta", url: "/investments" }, "/investments");
-  if (ok) updates.metaHitos = Array.from(new Set([...yaNotificados, ...nuevos]));
-}
+// Los hitos de meta (50/75/100%) NO se notifican por push: tanto los ahorros acumulados
+// (metaPropia) como la reserva en divisa (metaFX) sólo se mueven cuando el usuario carga un
+// movimiento, o sea que está mirando la app en ese preciso momento. El cron corría después y
+// repetía algo ya visto (o lo avisaba al día siguiente). El festejo vive in-app, al cruzar el
+// hito: components/investments/MetaCelebration + utils/meta-hitos.
+// El dólar (checkDolar) SÍ sigue por push: la cotización se mueve sin que el usuario haga nada.
 
 // Wrapped (resumen anual): el 31/12 avisa UNA vez que está disponible el recap del año.
 // El botón vive en Reportes y se ofrece del 26/12 al 5/1; este push es el empujón del día.

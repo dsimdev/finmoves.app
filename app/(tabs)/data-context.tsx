@@ -9,6 +9,8 @@ import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { listarRecurrentes, type Recurrente } from "@/services/firebase/recurrentes";
 import { listarPlantillas, type Plantilla } from "@/services/firebase/plantillas";
 import { syncPushSubscription } from "@/lib/push-client";
+import { useMetaHitos } from "@/hooks/useMetaHitos";
+import { MetaCelebration } from "@/components/investments/MetaCelebration";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
 interface DataCtx {
@@ -87,9 +89,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (config && config.meta.onboardingCompleto === false) router.replace("/onboarding");
   }, [config, router]);
 
+  // Hitos de meta (50/75/100%): se festejan acá, en el momento en que la carga mueve el
+  // acumulado. Reemplazan al push del cron, que llegaba después de que el usuario ya lo vio.
+  const { festejo, cerrarFestejo } = useMetaHitos(uid, movimientos, config, patchConfigMeta);
+
   return (
     <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig, patchConfigMeta, recurrentes, recurrentesLoaded, plantillas, refreshRecurrentes, refreshPlantillas, mutateRecurrentes: setRecurrentes, mutatePlantillas: setPlantillas }}>
       {children}
+      {festejo && <MetaCelebration key={festejo.key} hito={festejo.hito} onDone={cerrarFestejo} />}
     </Ctx.Provider>
   );
 }

@@ -92,6 +92,11 @@ export interface ConfigUsuario {
     // metaPropia: en la moneda PRINCIPAL del usuario (ARS/USD/EUR). El progreso se mide
     //   sobre los ahorros acumulados YA calculados (no se carga saldo a mano). Para TODOS.
     metaPropia?: { monto: number; fecha?: string };
+    /** Hitos (50/75/100) ya festejados in-app, para no repetir el confeti. Se resetean al
+     *  cambiar el monto de la meta (empieza un objetivo nuevo). Antes eran dedup de push
+     *  (metaPropiaHitos/metaHitos en notifyMeta); los hitos ya no notifican, ver notifications.ts. */
+    metaPropiaHitos?: number[];
+    metaFXHitos?: number[];
     // metaFX: meta de la reserva en divisa (comprar USD/EUR). SOLO usuarios ARS. Migrada
     //   desde los campos viejos metaMonto/metaMoneda ("USD" siempre) / metaFecha.
     metaFX?: { monto: number; fecha?: string; moneda: "USD" | "EUR" };
