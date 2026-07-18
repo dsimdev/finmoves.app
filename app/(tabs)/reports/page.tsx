@@ -23,6 +23,7 @@ import {
   progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
   inflacionPersonal as calcInflacionPersonal,
 } from "@/utils/reportes";
+import { afectaDisponible } from "@/utils/movement-fx";
 import { reservaFX as calcularReservaFX } from "@/utils/reserva";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
@@ -439,7 +440,10 @@ export default function ReportesPage() {
   // ── Movimientos: estadísticas de frecuencia ──
   const movCounts = useMemo(() => {
     if (!periodo) return null;
-    const movs = periodo.movimientos;
+    // Los reportes del período cuentan la economía en PESOS: Ingreso/Gasto FX sólo mueven la
+    // reserva (no pasan por el disponible), así que no son movimientos de este período.
+    // Compra/Venta de divisa sí entran: mueven pesos, igual que los trata esGasto().
+    const movs = periodo.movimientos.filter((m) => afectaDisponible(m.tipo));
     const tipoColor = TIPO_COLOR;
     const vTipo = (m: typeof movs[0]) =>
       m.tipo === "Move" ? (m.direccionMove === "aAhorro" ? "MoveAhorro" : "MoveDisponible") : m.tipo;

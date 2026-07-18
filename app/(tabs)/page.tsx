@@ -247,7 +247,6 @@ export default function Dashboard() {
         config={config}
         activePeriodoId={p?.periodoId}
         initialView={modalState?.view}
-        detailReadOnly
         onClose={() => setModalState(null)}
         onChanged={refresh}
         onCreated={prependMovimiento}

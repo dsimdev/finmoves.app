@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { esTipoFX, monedaDeTipo, fxFlags, num, calcularFX } from "@/utils/movement-fx";
+import { esTipoFX, monedaDeTipo, fxFlags, num, calcularFX, afectaDisponible } from "@/utils/movement-fx";
 
 describe("esTipoFX / monedaDeTipo", () => {
   it("reconoce los 8 tipos FX", () => {
@@ -35,6 +35,25 @@ describe("fxFlags", () => {
   it("un tipo no-FX no activa ninguna rama", () => {
     const f = fxFlags("Gasto");
     expect(f).toEqual({ esFX: false, esCompraOVenta: false, esSoloCantidad: false, moneda: "USD" });
+  });
+});
+
+describe("afectaDisponible (qué entra en los reportes del período)", () => {
+  it("Compra y Venta de divisa SÍ: mueven pesos del disponible", () => {
+    expect(afectaDisponible("CompraUSD")).toBe(true);
+    expect(afectaDisponible("VentaEUR")).toBe(true);
+  });
+
+  it("Ingreso y Gasto FX NO: sólo mueven la reserva, sin pasar por pesos", () => {
+    // Regresión: aparecían en el donut de Movimientos de Reportes ensuciando el conteo.
+    expect(afectaDisponible("IngresoUSD")).toBe(false);
+    expect(afectaDisponible("GastoUSD")).toBe(false);
+    expect(afectaDisponible("IngresoEUR")).toBe(false);
+    expect(afectaDisponible("GastoEUR")).toBe(false);
+  });
+
+  it("los tipos normales siempre cuentan", () => {
+    for (const t of ["Gasto", "Ingreso", "Move"]) expect(afectaDisponible(t)).toBe(true);
   });
 });
 

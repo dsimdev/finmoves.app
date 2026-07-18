@@ -27,6 +27,14 @@ export interface FxFlags {
   moneda: "USD" | "EUR";
 }
 
+// ¿El movimiento mueve plata del disponible en ARS? Compra y Venta de divisa sí (salen o
+// entran pesos); Ingreso y Gasto FX no: sólo mueven la reserva, sin pasar por pesos.
+// Los reportes del período cuentan la economía en pesos, así que excluyen estos últimos.
+export function afectaDisponible(tipo: string): boolean {
+  if (!esTipoFX(tipo)) return true;
+  return tipo.startsWith("Compra") || tipo.startsWith("Venta");
+}
+
 export function fxFlags(tipo: string): FxFlags {
   const esFX = esTipoFX(tipo);
   const esCompraOVenta = esFX && (tipo.startsWith("Compra") || tipo.startsWith("Venta"));
