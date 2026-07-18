@@ -46,7 +46,7 @@ export default function PreferencesSettings() {
   const ic: React.CSSProperties = { width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
 
   return (
-    <div className="page">
+    <div className="page page-narrow">
       <SubHeader title={t.preferences} />
 
       {/* Tema */}

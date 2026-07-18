@@ -20,7 +20,7 @@ export default function SettingsLanding() {
   const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
   const inversionAllowed = isOwner || config?.meta.permisos?.inversion === true;
 
-  if (loading || !config) return <div className="page"><LoadingSpinner /></div>;
+  if (loading || !config) return <div className="page page-narrow"><LoadingSpinner /></div>;
 
   const googlePhoto = auth.currentUser?.providerData.find((p) => p.providerId === "google.com")?.photoURL;
   const fotoSrc = config.meta.fotoURL || googlePhoto || null;

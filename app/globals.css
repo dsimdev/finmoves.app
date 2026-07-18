@@ -87,13 +87,23 @@ input[type="number"] { -moz-appearance: textfield; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-/* ── Layout ── */
+/* ── Layout ──
+   El ancho lo decide CADA pantalla vía --page-max: Reportes gana con espacio (grillas),
+   los formularios se leen mejor angostos. 600px sigue siendo el default móvil-first, así
+   que una pantalla que no opte por nada se comporta como antes. */
 .page {
+  --page-max: 600px;
   padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(var(--nav-h) + 20px);
-  max-width: 600px;
+  max-width: var(--page-max);
   margin: 0 auto;
   min-height: 100dvh;
 }
+
+/* Anchos por pantalla: se aplican SOLO en desktop (ver el media query de abajo), así el
+   móvil nunca se ve afectado por estas clases. */
+.page-wide { --page-max-desktop: 1200px; }  /* Reportes, Inicio: grillas y tableros */
+.page-mid  { --page-max-desktop: 1000px; }  /* Movimientos: lista + detalle */
+.page-narrow { --page-max-desktop: 700px; } /* Configuración: formularios en una columna */
 
 /* ── Cards ── */
 .card {
@@ -340,11 +350,23 @@ input[type="number"] { -moz-appearance: textfield; }
   z-index: 100;
 }
 
+/* ── Desktop (a partir de 768px: aparece la sidenav, desaparece la bottom-nav) ──
+   El contenido se centra en el espacio QUE QUEDA a la derecha de la sidenav (padding-left
+   de 200px + margin auto), no pegado a ella como antes. Cada pantalla toma su ancho de
+   --page-max-desktop; sin clase, sigue en los 600px de siempre. */
 @media (min-width: 768px) {
   .sidenav { display: flex; }
   .bottom-nav { display: none !important; }
+  /* La sidenav ocupa 200px fijos a la izquierda; el contenido se centra en lo que queda.
+     `margin-left: 200px` reserva la sidenav y `margin-right: auto` + `max-width` centran
+     el bloque dentro del resto. Se usa margin (no padding) porque con box-sizing:border-box
+     el padding entra dentro de max-width y comería ancho real de contenido. */
   .page {
-    margin: 0 auto 0 200px;
+    --page-max: var(--page-max-desktop, 600px);
+    max-width: calc(200px + var(--page-max));
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: calc(16px + 200px);
     padding-bottom: 20px;
   }
 }
@@ -355,6 +377,54 @@ input[type="number"] { -moz-appearance: textfield; }
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* ── Landing (home no-logueada) ──
+   Móvil-first: todo apilado y centrado, como venía. A partir de 900px el hero pasa a dos
+   columnas (texto + captura) y las features a grilla de 2. */
+.landing-main { max-width: 900px; }
+.landing-hero { text-align: center; margin-bottom: 56px; }
+.landing-hero-copy > img { margin-left: auto; margin-right: auto; }
+.landing-hero-copy > p { margin-left: auto; margin-right: auto; }
+.landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.landing-hero-shot { display: none; }
+.landing-install-hint { display: none; }
+.landing-features { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+@media (min-width: 900px) {
+  .landing-main { max-width: 1280px; padding-top: 40px; }
+  /* Hero en dos columnas: el texto manda (1.1fr) y la captura acompaña. */
+  .landing-hero {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
+    align-items: center;
+    text-align: left;
+    margin-bottom: 80px;
+  }
+  .landing-hero-copy > img { margin-left: 0; }
+  .landing-hero-copy > p { margin-left: 0; }
+  .landing-cta { justify-content: flex-start; }
+  .landing-hero-shot { display: flex; justify-content: center; }
+  /* En desktop la PWA no se instala desde acá: se explica que va en el celular. */
+  .landing-install-hint {
+    display: block;
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  /* El carrusel es la vista de capturas del móvil; en desktop lo reemplaza el hero-shot
+     más la grilla de features. */
+  .landing-carousel-only { display: none; }
+  .landing-features { grid-template-columns: 1fr 1fr; gap: 16px; }
+}
+
+/* Monitores grandes: más ancho y las 4 features en una fila. A dos columnas cada card
+   queda tan ancha que el texto se lee incómodo (líneas larguísimas para 2 renglones). */
+@media (min-width: 1400px) {
+  .landing-main { max-width: 1440px; }
+  .landing-hero { gap: 64px; margin-bottom: 96px; }
+  .landing-features { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* ── Landing: feature card hover ── */

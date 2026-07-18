@@ -90,7 +90,7 @@ export default function Dashboard() {
   const barColorDim = colorPctDim(gastadoPct);
 
   return (
-    <div className="page">
+    <div className="page page-wide">
 
       {loading ? (
         <LoadingSpinner />
