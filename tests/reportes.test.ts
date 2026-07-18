@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal, variacionGastoVsAnterior } from "@/utils/reportes";
+import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal, variacionGastoVsAnterior, progresoMetaPropia } from "@/utils/reportes";
 import type { PeriodoResumen } from "@/utils/periodo";
 import type { Movimiento } from "@/types";
 
@@ -125,5 +125,39 @@ describe("variacionGastoVsAnterior (Inicio: período EN CURSO vs. el anterior)",
   it("null si el período anterior no tuvo gasto (no se puede dividir)", () => {
     const sinGastoPrev = [desc[0], periodo({ periodoId: "1/1/2026", movimientos: [] })];
     expect(variacionGastoVsAnterior(sinGastoPrev)).toBeNull();
+  });
+});
+
+describe("progresoMetaPropia (meta en moneda propia, sobre ahorros acumulados)", () => {
+  // serie: el último punto tiene el ahorrosAcum vigente; `ahorros` = aporte del período.
+  const serie = [
+    { periodoId: "1/1/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorrosAcum: 100_000 },
+    { periodoId: "1/2/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorrosAcum: 200_000 },
+    { periodoId: "1/3/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorrosAcum: 300_000 },
+  ];
+
+  it("calcula acumulado, % y faltante", () => {
+    const r = progresoMetaPropia(serie, 500_000);
+    expect(r).not.toBeNull();
+    expect(r!.acumulado).toBe(300_000);
+    expect(r!.pct).toBe(60);         // 300k / 500k
+    expect(r!.faltante).toBe(200_000);
+  });
+
+  it("estima períodos para llegar por el ritmo de ahorro", () => {
+    // ritmo ~100k/período, faltan 200k → 2 períodos.
+    expect(progresoMetaPropia(serie, 500_000)!.periodos).toBe(2);
+  });
+
+  it("cap del % en 100 cuando ya la superaste", () => {
+    const r = progresoMetaPropia(serie, 250_000);
+    expect(r!.pct).toBe(100);
+    expect(r!.faltante).toBe(0);
+    expect(r!.periodos).toBe(0);
+  });
+
+  it("null sin meta o sin serie", () => {
+    expect(progresoMetaPropia(serie, 0)).toBeNull();
+    expect(progresoMetaPropia([], 500_000)).toBeNull();
   });
 });

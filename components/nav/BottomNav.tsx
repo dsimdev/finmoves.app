@@ -44,6 +44,16 @@ const TABS = [
     ),
   },
   {
+    href: "/reports",
+    key: "reports",
+    icon: ({ active, color, dim }: IconProps) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="18" height="18" rx="3" stroke={active ? color : "var(--muted)"} strokeWidth="1.8" fill={active ? dim : "none"} />
+        <path d="M7 17L10 13L13 15L17 10" stroke={active ? color : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/investments",
     key: "investments",
     icon: ({ active, color, dim }: IconProps) => (
@@ -52,16 +62,6 @@ const TABS = [
         <path d="M12 7V17" stroke={active ? color : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" />
         <path d="M14.5 9.5C14.5 8.4 13.4 8 12 8C10.3 8 9 8.8 9 10C9 11.2 10.2 11.7 12 12C13.8 12.3 15 12.8 15 14C15 15.2 13.7 16 12 16C10.5 16 9.5 15.6 9.5 14.5"
           stroke={active ? color : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" fill="none" />
-      </svg>
-    ),
-  },
-  {
-    href: "/reports",
-    key: "reports",
-    icon: ({ active, color, dim }: IconProps) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="3" width="18" height="18" rx="3" stroke={active ? color : "var(--muted)"} strokeWidth="1.8" fill={active ? dim : "none"} />
-        <path d="M7 17L10 13L13 15L17 10" stroke={active ? color : "var(--muted)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -80,12 +80,14 @@ const TABS = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { showReportes, showAhorros } = useAppPrefs();
+  const { showAhorros, showReportes } = useAppPrefs();
   const syncError = useSyncError();
 
+  // showAhorros = toggle del usuario para mostrar la tab Inversión. Dentro vive la meta de
+  // ahorro (todos) y la reserva FX (permiso + ARS). Reportes también es opcional.
   const visible = TABS.filter((t) => {
-    if (t.key === "reports" && !showReportes) return false;
     if (t.key === "investments" && !showAhorros) return false;
+    if (t.key === "reports" && !showReportes) return false;
     return true;
   });
 

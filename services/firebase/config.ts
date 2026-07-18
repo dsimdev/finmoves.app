@@ -25,6 +25,17 @@ export async function obtenerConfig(userId: string): Promise<ConfigUsuario> {
     permisos: (permisosSnap?.exists() ? permisosSnap.data() : {}) as ConfigUsuario["meta"]["permisos"],
   };
 
+  // Migración meta única (USD, sobre reserva FX) → metaFX. Solo en memoria; se persiste
+  // cuando el usuario guarde desde Configuración. Deriva metaFX de los campos viejos si aún
+  // no existe. metaPropia arranca vacía (la define el usuario). No pisa lo que ya haya.
+  if (!config.meta.metaFX && config.meta.metaMonto && config.meta.metaMonto > 0) {
+    config.meta.metaFX = {
+      monto: config.meta.metaMonto,
+      fecha: config.meta.metaFecha,
+      moneda: config.meta.metaMoneda ?? "USD",
+    };
+  }
+
   return config;
 }
 

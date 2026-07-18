@@ -4,6 +4,44 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.89.0] — 2026-07-17
+
+### Added
+- **Per-currency savings goals — reserve ungated for everyone.** The Investments tab is no
+  longer ARS-only. Two goal concepts now coexist:
+  - `metaPropia` (all users): a savings goal measured against the already-computed accumulated
+    savings (`serieTendencia.ahorrosAcum`), in the user's own currency. No name, no manual balance.
+  - `metaFX` (ARS only): the currency-reserve goal, measured against the FX reserve (formerly the
+    single `metaMonto`). ARS users keep both goals.
+- **Investments tab for EUR/USD users.** Users whose primary currency is EUR/USD (no FX reserve)
+  now get real content: net worth in their currency (disponible + ahorros), the savings goal
+  (second), savings rate (per-period, projection, periods-to-goal) and best/weakest period. All
+  derived from data already computed — no new reads.
+- **Config split into two sections** (`settings/investment`): "savings goal" (all users) and
+  "currency reserve" (ARS + permission). The manual "initial reserve" field was removed — savings
+  are computed, not entered. Investment currency locks while an FX goal is active.
+- Notifications: `checkMetaPropia` (milestones over accumulated savings, from the cron's recent-
+  movements read) and `checkMetaFX` (milestones over the reserve, with count()-cache), replacing
+  the single `checkMeta`.
+
+### Changed
+- **Navbar reorder**: Investments moved to 4th position (after Reports).
+- `showAhorros` is again a user toggle gating the whole Investments tab (off ⇒ tab hidden from
+  the navbar; goals are preserved, only hidden). The FX reserve (net worth, saldo, FX goal,
+  history) is gated separately by ARS + investment permission.
+- FX history (USD/EUR) moved out of the main list into a bottom-sheet panel opened from a header
+  icon; the reserve "+" now lives inside that panel (elsewhere the reserve is loaded from Home
+  shortcuts). The always-on floating FAB was removed.
+- `changeMoneda` no longer forces `showAhorros=false` for non-ARS currencies — EUR/USD users can
+  keep the tab.
+- Config migration: legacy `metaMonto`/`metaMoneda`/`metaFecha` are read into `metaFX` in-memory.
+
+### Fixed
+- **Savings rate no longer exceeds accumulated savings.** The per-period rate summed gross savings
+  without subtracting what was moved back to disponible, so it could read higher than the total.
+  It now averages the net delta of `ahorrosAcum` between periods (best/weakest period use the same
+  delta), consistent with the hero figure.
+
 ## [2.88.0] — 2026-07-16
 
 ### Changed

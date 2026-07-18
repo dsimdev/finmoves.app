@@ -34,7 +34,8 @@ export default function PreferencesSettings() {
     setMonedaBusy(true);
     try {
       const newMeta = { ...config.meta, monedaPrincipal: newMoneda };
-      if (newMoneda !== "ARS") { newMeta.showAhorros = false; setPref("showAhorros", false); }
+      // La tab Inversión ya no depende de la moneda: el usuario EUR/USD también tiene meta de
+      // ahorro y patrimonio. Solo la reserva FX se limita a ARS (se gatea aparte, no acá).
       await setDoc(doc(db, `users/${user.uid}/config/meta`), { ...config, meta: newMeta });
       setMonedaPrincipal(newMoneda);
       setPendingMoneda(null);
