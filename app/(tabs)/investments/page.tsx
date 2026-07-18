@@ -24,7 +24,8 @@ function fechaCortaConAnio(fecha: string): string {
   return fecha;
 }
 import { agruparPorPeriodo } from "@/utils/periodo";
-import { serieTendencia, progresoMetaPropia, parsePeriodoId } from "@/utils/reportes";
+import { serieTendencia, progresoMetaPropia, parsePeriodoId, ritmoAhorro, desdeSeed } from "@/utils/reportes";
+import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { EyeIcon } from "@/components/ui/EyeIcon";
@@ -34,15 +35,22 @@ import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { Movimiento } from "@/types";
 import { calcularReserva } from "@/utils/reserva";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { eliminarMovimiento } from "@/services/firebase/movimientos";
 
 export default function DolaresPage() {
   const { movimientos, loading, config, refresh: refreshData, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
   const { user } = useAuth();
   const { cotizacion, minutosDesdeActualizacion, refresh } = useCotizacion();
+  const { deflatar } = useInflacionIPC();
 
   // Modal: alta de reserva (+/-) desde el botón, o detalle/edición al tocar una fila del historial.
   const [modal, setModal] = useState<{ mode: "add" } | { mode: "edit"; mov: Movimiento } | null>(null);
   const [historialOpen, setHistorialOpen] = useState(false);
+  // Borrado por swipe de un ingreso/gasto de divisa (no existen en Movimientos).
+  const [fxDelete, setFxDelete] = useState<Movimiento | null>(null);
+  const [fxDeleting, setFxDeleting] = useState(false);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
 
   useEffect(() => { refresh(); }, []);
@@ -105,7 +113,9 @@ export default function DolaresPage() {
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
 
   const metaMonto = config?.meta.metaMonto ?? null;
-  const inversionSeedId = config?.meta.inversionSeedPeriodoId;
+  // Origen ÚNICO de todos los promedios (ahorros y reserva FX): desde acá se acumula y se
+  // promedia. `inversionSeedPeriodoId` quedó obsoleto al unificar en un solo seed.
+  const seedId = config?.meta.ahorrosAcumSeedPeriodoId;
 
   // ── Net worth ──
   const disponibleActual = periodos[0]?.disponible ?? 0;
@@ -130,33 +140,36 @@ export default function DolaresPage() {
   // Meta propia: progreso sobre los ahorros acumulados ya calculados (misma serie del patrimonio).
   const serieAhorros = useMemo(() => serieTendencia(periodos, config?.meta.ahorrosAcumSeedPeriodoId ?? undefined), [periodos, config?.meta.ahorrosAcumSeedPeriodoId]);
   const metaPropia = config?.meta.metaPropia;
-  const progresoPropia = metaPropia?.monto ? progresoMetaPropia(serieAhorros, metaPropia.monto) : null;
+  // Deflactar solo en ARS: en USD/EUR el IPC argentino no aplica (identidad).
+  const deflateAhorro = monedaPrincipal === "ARS" ? deflatar : undefined;
+  const progresoPropia = metaPropia?.monto ? progresoMetaPropia(serieAhorros, metaPropia.monto, deflateAhorro, seedId) : null;
   const fxLabel = historialUSD.length > 0 && historialEUR.length > 0 ? "divisas" : historialEUR.length > 0 ? "EUR" : "U$D";
 
-  // Datos de ahorro para el usuario SIN reserva FX (EUR/USD): ritmo, proyección y mejor/peor
-  // período. Todo sale de la serie ya calculada — solo la ventana desde el seed (evita arrastrar
-  // períodos viejos con carga incompleta). El [0] de la serie es el más antiguo (orden cronológico).
+  // Ritmo/proyección/mejor-peor: mismas reglas que Reportes (ritmoAhorro): ahorro NETO,
+  // ventana de los últimos VENTANA_PERIODOS cerrados y deflactado en ARS.
   const ahorroStats = useMemo(() => {
-    const seedIdx = config?.meta.ahorrosAcumSeedPeriodoId ? serieAhorros.findIndex((p) => p.periodoId === config.meta.ahorrosAcumSeedPeriodoId) : 0;
-    const desde = Math.max(seedIdx >= 0 ? seedIdx : 0, 1); // arranca en 1: necesitamos el punto previo para el delta
-    // El ritmo se mide como la VARIACIÓN NETA del ahorro acumulado por período (delta de
-    // ahorrosAcum), no el ahorro bruto: así incluye lo que se desgató a disponible y nunca
-    // puede ser mayor que el acumulado. Cada delta = cuánto subió/bajó el total ese período.
-    const deltas = serieAhorros.slice(desde).map((p, i) => ({ periodoId: p.periodoId, delta: p.ahorrosAcum - serieAhorros[desde + i - 1]!.ahorrosAcum }));
-    if (deltas.length === 0) return null;
-    const ritmo = deltas.reduce((s, d) => s + d.delta, 0) / deltas.length;
+    const ritmo = ritmoAhorro(serieAhorros, deflateAhorro, seedId);
+    if (ritmo === null) return null;
+    // Misma ventana que ritmoAhorro: desde el seed, incluido el período en curso.
+    const ventana = desdeSeed(serieAhorros, seedId);
+    if (ventana.length === 0) return null;
+    const conNeto = ventana.map((p) => ({ periodoId: p.periodoId, delta: deflateAhorro ? deflateAhorro(p.ahorroNeto, p.periodoId) : p.ahorroNeto }));
     const acum = serieAhorros[serieAhorros.length - 1]?.ahorrosAcum ?? 0;
-    const mejor = deltas.reduce((a, b) => (b.delta > a.delta ? b : a));
-    const peor = deltas.reduce((a, b) => (b.delta < a.delta ? b : a));
-    return { ritmo, proyeccion: acum + Math.max(0, ritmo) * 3, mejor, peor };
-  }, [serieAhorros, config?.meta.ahorrosAcumSeedPeriodoId]);
+    const mejor = conNeto.reduce((a, b) => (b.delta > a.delta ? b : a));
+    const peor = conNeto.reduce((a, b) => (b.delta < a.delta ? b : a));
+    // La proyección sigue el ritmo real: si es negativo el acumulado BAJA (no se congela en 0,
+    // que contradecía al "por período" negativo mostrado al lado). Piso en 0: no hay ahorro < 0.
+    return { ritmo, proyeccion: Math.max(0, acum + ritmo * 3), mejor, peor };
+  }, [serieAhorros, deflateAhorro, seedId]);
 
-  // Auto-anclar el seed la primera vez: el período actual es desde cuando se
-  // empezó a corregir bien la carga FX. La ventana de promedio crece período a período.
+  // Auto-anclar el seed la primera vez al PRIMER período con movimientos: los promedios usan
+  // toda la historia del usuario. (Antes anclaba al período en curso y descartaba lo anterior.)
+  // Se puede mover después desde Reportes; es el único origen, común a ahorros y reserva FX.
   useEffect(() => {
-    if (!user?.uid || !config || inversionSeedId || periodos.length === 0) return;
-    updateDoc(doc(db, `users/${user.uid}/config/meta`), { "meta.inversionSeedPeriodoId": periodos[0].periodoId });
-  }, [user?.uid, !!config, !!inversionSeedId, periodos.length]);
+    if (!user?.uid || !config || config.meta.ahorrosAcumSeedPeriodoId || periodos.length === 0) return;
+    const primero = periodos[periodos.length - 1].periodoId; // periodos[0] es el más nuevo
+    updateDoc(doc(db, `users/${user.uid}/config/meta`), { "meta.ahorrosAcumSeedPeriodoId": primero });
+  }, [user?.uid, !!config, config?.meta.ahorrosAcumSeedPeriodoId, periodos.length]);
 
   // FX neto comprado por período (CompraFX - GastoFX - VentaFX por cantidadUSD).
   const tipoCompraFX  = esEUR ? "CompraEUR"  : "CompraUSD";
@@ -169,21 +182,25 @@ export default function DolaresPage() {
     return s;
   }, 0);
 
-  // Promedio del ritmo FX sobre la ventana desde el seed (incluido) hasta el actual.
-  // periodos[0] es el más nuevo; el seed queda más atrás → tomamos del 0 al seed.
+  // Ritmo FX: flujo NETO de divisa por período (compras + ingresos − gastos − ventas), desde
+  // el seed hasta el actual inclusive. Mismo origen y mismas reglas que el ritmo de ahorro
+  // (ver ritmoAhorro), para que dos números de la misma pantalla no promedien distinto.
+  // No se deflacta: la divisa ya es la unidad estable.
+  // periodos[0] es el más NUEVO → la ventana va del 0 hasta el índice del seed.
   const promAhorroUSD = useMemo(() => {
     if (periodos.length === 0) return null;
-    const seedIdx = inversionSeedId ? periodos.findIndex((p) => p.periodoId === inversionSeedId) : 0;
-    const ventana = periodos.slice(0, (seedIdx >= 0 ? seedIdx : 0) + 1);
+    const seedIdx = seedId ? periodos.findIndex((p) => p.periodoId === seedId) : periodos.length - 1;
+    const ventana = periodos.slice(0, (seedIdx >= 0 ? seedIdx : periodos.length - 1) + 1);
     if (ventana.length === 0) return null;
-    const prom = ventana.reduce((s, p) => s + netFXDe(p.movimientos), 0) / ventana.length;
-    return prom > 0 ? prom : null;
-  }, [periodos, inversionSeedId, tipoCompraFX, tipoGastoFX, tipoVentaFX]);
+    return ventana.reduce((s, p) => s + netFXDe(p.movimientos), 0) / ventana.length;
+  }, [periodos, seedId, tipoCompraFX, tipoGastoFX, tipoVentaFX, tipoIngresoFX]);
 
+  // Un ritmo negativo (vendiste más de lo que compraste) se muestra tal cual, en rojo: antes
+  // se descartaba y las tarjetas de proyección/meta desaparecían sin explicar por qué.
   const ritmoFX = promAhorroUSD ?? 0;
   const periodosParaMeta = metaMonto && ritmoFX > 0
     ? Math.ceil(Math.max(0, metaMonto - totalDisplay) / ritmoFX) : null;
-  const proyUSD = ritmoFX > 0 ? totalDisplay + ritmoFX * 3 : null;
+  const proyUSD = promAhorroUSD !== null ? Math.max(0, totalDisplay + ritmoFX * 3) : null;
 
   // Card de meta propia (sobre ahorros, moneda principal). Se ubica arriba (usuario sin FX)
   // o al final (usuario ARS con reserva FX) — ver render.
@@ -216,11 +233,13 @@ export default function DolaresPage() {
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: barColor, fontFamily: "var(--font-mono)", minWidth: 36, textAlign: "right" }}>{progresoPropia.pct}%</span>
         </div>
-        {progresoPropia.periodos !== null && (
-          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 10 }}>
-            {progresoPropia.periodos === 0 ? t.reached : t.savingsGoalPeriods(progresoPropia.periodos)}
-          </div>
-        )}
+        {/* Sin ritmo positivo no hay estimación posible (estarías alejándote de la meta):
+            en vez de dejar la card muda, se dice por qué. */}
+        <div style={{ fontSize: 11, color: progresoPropia.periodos === null ? "var(--red)" : "var(--muted)", marginTop: 10 }}>
+          {progresoPropia.periodos === null
+            ? t.noSavingsPace
+            : progresoPropia.periodos === 0 ? t.reached : t.savingsGoalPeriods(progresoPropia.periodos)}
+        </div>
       </div>
     );
   })() : null;
@@ -261,8 +280,8 @@ export default function DolaresPage() {
     <div className="card" style={{ marginBottom: 10 }}>
       <div className="label" style={{ marginBottom: 14 }}>{t.savingsRateTitle}</div>
       <div style={{ display: "flex", gap: 8 }}>
-        <MiniStat basis="1 1 0" center color="var(--green)" label={t.statPerPeriod} value={oculto ? "••" : `${simboloPropio} ${Math.round(ahorroStats.ritmo).toLocaleString("es-AR")}`} />
-        <MiniStat basis="1 1 0" center color="var(--green)" label={t.statProjection} value={oculto ? "••••" : `${simboloPropio} ${Math.round(ahorroStats.proyeccion).toLocaleString("es-AR")}`} />
+        <MiniStat basis="1 1 0" center color={ahorroStats.ritmo < 0 ? "var(--red)" : "var(--green)"} label={t.statPerPeriod} value={oculto ? "••" : `${simboloPropio} ${Math.round(ahorroStats.ritmo).toLocaleString("es-AR")}`} />
+        <MiniStat basis="1 1 0" center color={ahorroStats.ritmo < 0 ? "var(--red)" : "var(--green)"} label={t.statProjection} value={oculto ? "••••" : `${simboloPropio} ${Math.round(ahorroStats.proyeccion).toLocaleString("es-AR")}`} />
         {progresoPropia?.periodos != null && (
           <MiniStat basis="1 1 0" center color="var(--green)" label={t.statToGoal} value={progresoPropia.periodos === 0 ? t.reached : `${progresoPropia.periodos} ${t.periodsShort}`} />
         )}
@@ -294,8 +313,13 @@ export default function DolaresPage() {
     const esVenta = m.tipo === (moneda === "EUR" ? "VentaEUR" : "VentaUSD");
     const esIngreso = m.tipo === (moneda === "EUR" ? "IngresoEUR" : "IngresoUSD");
     const esSalida = esRetiro || esVenta;
-    return (
-      <div key={m.id} className="row" onClick={() => { setHistorialOpen(false); setModal({ mode: "edit", mov: m }); }} style={{ cursor: "pointer" }}>
+    // Solo ingresos y gastos de divisa se pueden borrar con swipe: no aparecen en Movimientos,
+    // así que este es su único acceso. Compras y ventas se editan desde Movimientos como el resto.
+    const borrable = esIngreso || esRetiro;
+    // Al tocar la fila se abre el detalle SIN cerrar el panel: al salir del modal se vuelve
+    // a la lista donde estabas, en vez de caer en la pantalla de Inversión.
+    const fila = (
+      <div className="row" onClick={() => setModal({ mode: "edit", mov: m })} style={{ cursor: "pointer" }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 500 }}>{fechaCortaConAnio(m.fecha)}</div>
           {esVenta
@@ -313,6 +337,12 @@ export default function DolaresPage() {
           {!esRetiro && !esIngreso && <div style={{ fontSize: 10, color: esVenta ? "var(--green)" : "var(--muted)" }}>{esVenta ? "+" : ""}{money(m.monto)}</div>}
         </div>
       </div>
+    );
+    if (!borrable) return <div key={m.id}>{fila}</div>;
+    return (
+      <SwipeToDelete key={m.id} onDelete={() => setFxDelete(m)} deleteLabel={t.delete} railBg="var(--red-dim)">
+        {fila}
+      </SwipeToDelete>
     );
   };
 
@@ -480,9 +510,11 @@ export default function DolaresPage() {
                   {(() => {
                     const avg = oculto ? "••" : (promAhorroUSD !== null ? Math.round(promAhorroUSD).toLocaleString("es-AR") : "—");
                     const goal = Math.round(metaUSD).toLocaleString("es-AR");
+                    // Ritmo negativo = vendiste/gastaste más divisa de la que compraste.
+                    const col = (promAhorroUSD ?? 0) < 0 ? "var(--red)" : "var(--yellow)";
                     return (
-                    <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statPerPeriod} value={avg}
-                      onClick={() => setKpiInfo({ title: t.statPerPeriod, value: `${avg} / ${goal}`, explain: t.kpiPerPeriodInfo, color: "var(--yellow)" })} />
+                    <MiniStat basis="1 1 0" center color={col} label={t.statPerPeriod} value={avg}
+                      onClick={() => setKpiInfo({ title: t.statPerPeriod, value: `${avg} / ${goal}`, explain: t.kpiPerPeriodInfo, color: col })} />
                   ); })()}
                   {proyUSD !== null && (
                     <MiniStat basis="1 1 0" center color="var(--yellow)" label={t.statProjection}
@@ -555,6 +587,27 @@ export default function DolaresPage() {
       onDeleted={removeMovimiento}
     />
     {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
+    {fxDelete && (
+      <ConfirmModal title={t.delete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)" loading={fxDeleting}
+        onCancel={() => setFxDelete(null)}
+        onConfirm={async () => {
+          if (!user?.uid) return;
+          setFxDeleting(true);
+          try {
+            await eliminarMovimiento(user.uid, fxDelete.id);
+            removeMovimiento(fxDelete.id);
+            setFxDelete(null);
+          } finally { setFxDeleting(false); }
+        }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ marginBottom: 6 }}>{t.deleteMovementTitle}</div>
+          <div style={{ fontSize: 18, color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 8 }}>
+            {fxDelete.tipo.startsWith("Gasto") ? "−" : "+"}{fxDelete.cantidadUSD?.toFixed(2)}
+          </div>
+          <div style={{ fontSize: 11 }}>{t.actionIrreversible}</div>
+        </div>
+      </ConfirmModal>
+    )}
     </>
   );
 }

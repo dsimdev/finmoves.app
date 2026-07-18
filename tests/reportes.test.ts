@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal, variacionGastoVsAnterior, progresoMetaPropia } from "@/utils/reportes";
+import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal, variacionGastoVsAnterior, progresoMetaPropia, ritmoAhorro } from "@/utils/reportes";
 import type { PeriodoResumen } from "@/utils/periodo";
 import type { Movimiento } from "@/types";
 
@@ -130,10 +130,12 @@ describe("variacionGastoVsAnterior (Inicio: período EN CURSO vs. el anterior)",
 
 describe("progresoMetaPropia (meta en moneda propia, sobre ahorros acumulados)", () => {
   // serie: el último punto tiene el ahorrosAcum vigente; `ahorros` = aporte del período.
+  // El ritmo se mide sobre `ahorroNeto` de los períodos CERRADOS (se excluye el último, en
+  // curso). Con 100k netos por período y 200k faltantes → 2 períodos.
   const serie = [
-    { periodoId: "1/1/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorrosAcum: 100_000 },
-    { periodoId: "1/2/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorrosAcum: 200_000 },
-    { periodoId: "1/3/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorrosAcum: 300_000 },
+    { periodoId: "1/1/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, ahorrosAcum: 100_000 },
+    { periodoId: "1/2/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, ahorrosAcum: 200_000 },
+    { periodoId: "1/3/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, ahorrosAcum: 300_000 },
   ];
 
   it("calcula acumulado, % y faltante", () => {
@@ -159,5 +161,72 @@ describe("progresoMetaPropia (meta en moneda propia, sobre ahorros acumulados)",
   it("null sin meta o sin serie", () => {
     expect(progresoMetaPropia(serie, 0)).toBeNull();
     expect(progresoMetaPropia([], 500_000)).toBeNull();
+  });
+});
+
+describe("ritmoAhorro (base única de las proyecciones)", () => {
+  const punto = (id: string, neto: number, acum: number) => ({
+    periodoId: id, sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0,
+    ahorros: neto, ahorroNeto: neto, ahorrosAcum: acum,
+  });
+
+  it("usa el ahorro NETO, no el bruto: los retiros a disponible bajan el ritmo", () => {
+    // Bruto 100k por período, pero el del medio devolvió 60k a disponible → neto 40k.
+    const conRetiro = [
+      { ...punto("1/1/2026", 100_000, 100_000), ahorros: 100_000, ahorroNeto: 100_000 },
+      { ...punto("1/2/2026", 40_000, 140_000), ahorros: 100_000, ahorroNeto: 40_000 },
+      { ...punto("1/3/2026", 100_000, 240_000), ahorros: 100_000, ahorroNeto: 100_000 },
+    ];
+    // (100k + 40k + 100k) / 3 = 80k, no los 100k que daría el bruto.
+    expect(ritmoAhorro(conRetiro)).toBe(80_000);
+  });
+
+  it("serieTendencia expone ahorroNeto descontando los moves a disponible", () => {
+    // Deposita 100k (ahorros + moveAhorros) pero devuelve 30k a disponible → bruto 100k, neto 70k.
+    const s = serieTendencia([periodo({ periodoId: "1/2/2026", ahorros: 100_000, moveDisponible: 30_000 })]);
+    const ultimo = s[s.length - 1]!;
+    expect(ultimo.ahorros).toBe(100_000);
+    expect(ultimo.ahorroNeto).toBe(70_000);
+  });
+
+  it("INCLUYE el período en curso: lo ahorrado este período cuenta en el ritmo", () => {
+    // Regresión: al excluirlo, alguien que ahorró 300k este período veía "ritmo 0" mientras
+    // el acumulado (que sí lo cuenta) mostraba la plata. Los dos números se contradecían.
+    const serie = [punto("1/1/2026", 0, 0), punto("1/2/2026", 0, 0), punto("1/3/2026", 300_000, 300_000)];
+    expect(ritmoAhorro(serie)).toBe(100_000); // 300k / 3, no 0
+  });
+
+  it("promedia TODO desde el seed, no una ventana fija", () => {
+    // Con seed en el 3er período, los 2 viejos (10k) quedan fuera: (90+100+110)/3 = 100k.
+    const serie = [
+      punto("1/1/2026", 10_000, 10_000), punto("1/2/2026", 10_000, 20_000),
+      punto("1/3/2026", 90_000, 110_000), punto("1/4/2026", 100_000, 210_000),
+      punto("1/5/2026", 110_000, 320_000),
+    ];
+    expect(ritmoAhorro(serie, undefined, "1/3/2026")).toBe(100_000);
+  });
+
+  it("sin seed usa toda la serie", () => {
+    // (10+10+90+100+110)/5 = 64k: entra todo, incluidos los períodos viejos.
+    const serie = [
+      punto("1/1/2026", 10_000, 10_000), punto("1/2/2026", 10_000, 20_000),
+      punto("1/3/2026", 90_000, 110_000), punto("1/4/2026", 100_000, 210_000),
+      punto("1/5/2026", 110_000, 320_000),
+    ];
+    expect(ritmoAhorro(serie)).toBe(64_000);
+  });
+
+  it("seed inexistente cae a la serie completa (no rompe)", () => {
+    const serie = [punto("1/1/2026", 100_000, 100_000), punto("1/2/2026", 200_000, 300_000)];
+    expect(ritmoAhorro(serie, undefined, "9/9/2099")).toBe(150_000);
+  });
+
+  it("aplica el deflactor a cada período", () => {
+    const serie = [punto("1/1/2026", 100_000, 100_000), punto("1/2/2026", 100_000, 200_000)];
+    expect(ritmoAhorro(serie, (m) => m * 2)).toBe(200_000);
+  });
+
+  it("null si no hay serie", () => {
+    expect(ritmoAhorro([])).toBeNull();
   });
 });

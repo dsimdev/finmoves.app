@@ -4,6 +4,38 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.90.0] — 2026-07-18
+
+### Changed
+- **All projections now derive from a single `ritmoAhorro()` helper.** Four different windows
+  coexisted (last 2, last 3, since-seed, full history) and three of them averaged GROSS savings,
+  so the same question ("how much do you save per period?") got different answers per screen and
+  the rate could exceed the accumulated total. Unified rules:
+  - **Net savings** (`ahorroNeto`, new field on `PuntoTendencia`): gross minus what was moved
+    back to available — consistent with `ahorrosAcum`, the headline figure.
+  - **Everything since the seed** (`ahorrosAcumSeedPeriodoId`), current period included: the
+    accumulated total counts it, so excluding it reported "zero pace" to someone who had in fact
+    saved that period.
+  - **CPI deflation only for ARS**: `deflatar` and the projection factor were being applied to
+    USD/EUR users, inflating their projections with Argentine inflation.
+- **Single seed for every average.** `inversionSeedPeriodoId` is obsolete; the FX reserve pace now
+  uses `ahorrosAcumSeedPeriodoId` like savings do. Auto-anchoring points at the FIRST period with
+  movements (it used to pick the current or second-to-last one, discarding prior history).
+- **Spending projection blends history with the current pace.** It averaged only closed periods,
+  which never change, so the figure was effectively static. It now mixes the deflated historical
+  average with the in-progress period's daily rate, weighted by elapsed days (capped at 50%,
+  history-only below 3 days).
+- FX reserve history rows for currency income/spending are swipe-to-delete: those movements don't
+  appear under Movements, so this is their only entry point. Purchases and sales are unaffected.
+- Opening a history row's detail no longer closes the history panel underneath it.
+- KPI explanations rewritten: shorter, and no longer claiming a fixed 3-period window.
+
+### Fixed
+- The inflation factor no longer amplifies negative rates (inflation doesn't make you dis-save
+  faster), and a negative pace renders in red with the projection actually declining instead of
+  freezing at zero — previously the FX pace was discarded when negative and the projection and
+  goal cards silently disappeared.
+
 ## [2.89.1] — 2026-07-18
 
 ### Removed

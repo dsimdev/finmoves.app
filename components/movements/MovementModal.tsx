@@ -1179,9 +1179,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     {readOnly && movimiento && (() => {
       const dc = detalleTipo(movimiento);
       return (
-      <CenterCard open={open} onClose={onClose} title={t.detail}>
+      <CenterCard open={open && view !== "delete"} onClose={onClose} title={t.detail}>
         {/* Héroe: mismo look que el detalle de Movimientos (ícono en halo + monto grande
-            en el color del tipo + chips), pero sin acciones (reserva es solo lectura). */}
+            en el color del tipo + chips), pero sin acciones (reserva es solo lectura).
+            Borrar se hace con swipe en la fila del historial, no desde acá. */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 18 }}>
           <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, background: `color-mix(in srgb, ${dc.color} 16%, transparent)`, border: `1px solid color-mix(in srgb, ${dc.color} 45%, transparent)`, color: dc.color }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{dc.icon}</svg>

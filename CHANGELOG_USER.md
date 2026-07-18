@@ -4,6 +4,28 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.90.0] — 2026-07-18
+
+### Los números de ahorro y proyección ahora son consistentes
+- **Tu ritmo de ahorro descuenta lo que sacás.** Antes solo miraba lo que depositabas, así que
+  podía mostrar un ritmo mayor a tus propios ahorros. Ahora resta lo que movés de vuelta a
+  disponible: es lo que realmente sumás por período.
+- **Cuenta el período actual.** Si ya ahorraste este período, cuenta — antes te decía "no
+  ahorrás nada" mientras el total de arriba mostraba la plata.
+- **Todos los promedios arrancan desde el mismo punto** y usan toda tu historia desde ahí, en
+  vez de una ventana fija distinta en cada pantalla.
+- **La proyección de gasto ahora se mueve.** Antes promediaba solo períodos terminados y el
+  número quedaba casi siempre igual; ahora también mira cómo venís gastando este período.
+- Si estás **usando** ahorros en vez de sumarlos, el número aparece en rojo y te lo dice con
+  todas las letras, en lugar de mostrar un cero o desaparecer.
+- Si tu moneda es dólar o euro, las proyecciones ya **no** se ajustan por inflación argentina.
+
+### Reserva en divisa
+- **Deslizá una fila del historial para borrar** un ingreso o gasto en divisa (esos movimientos
+  no aparecen en Movimientos, así que era la única forma de sacarlos).
+- Abrir el detalle de un movimiento ya no cierra el historial: al volver seguís donde estabas.
+- Textos de ayuda más cortos y claros en todas las tarjetas.
+
 ## [2.89.1] — 2026-07-18
 
 - **Tu reserva ahora es exactamente lo que cargaste.** Antes se le sumaba un "saldo inicial"
