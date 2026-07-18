@@ -228,6 +228,9 @@ export const es = {
   remainingLabel: "Faltan",
   reached: "¡Alcanzada!",
   reachedBadge: "ALCANZADA",
+  /** Escritorio: la carga rápida cubre gastos simples; esto abre el modal completo
+   *  (ingresos, moves, divisa, comprobantes, otra fecha). */
+  fullEntry: "Carga completa",
   metaHitoTitle: "¡Vas {pct}% de tu meta!",
   metaHitoBody: "Seguí así, cada carga suma.",
   metaHitoFullTitle: "¡Meta alcanzada!",

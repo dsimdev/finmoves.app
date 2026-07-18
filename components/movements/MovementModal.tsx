@@ -24,6 +24,7 @@ import { agruparPorPeriodo, formatARS, fechaCorta, fechaAPeriodoId } from "@/uti
 import { serieTendencia } from "@/utils/reportes";
 import { reservaFX } from "@/utils/reserva";
 import { fxFlags, calcularFX, num } from "@/utils/movement-fx";
+import { montoAutoAhorro } from "@/utils/auto-ahorro";
 import {
   DetalleHero, DetalleFX, DetalleTextos, ComprobanteButton,
   IconoCalendario, IconoTarjeta, IconoRecurrente, detalleChip, esMovimientoFX, monedaMovFX,
@@ -434,15 +435,14 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       };
       created.push({ ...restoData, id: nuevoMovimientoId(uid) });
     }
-    const autoAhorroMedios = config?.meta.autoAhorro?.mediosPago;
-    const autoAhorroOmitir = config?.meta.autoAhorro?.omitirDescripciones ?? [];
-    if (tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
-        (!autoAhorroMedios?.length || autoAhorroMedios.includes(medioPago)) &&
-        !autoAhorroOmitir.some((d) => d.toLowerCase() === descripcion.trim().toLowerCase())) {
+    // Auto-ahorro: la regla vive en utils/auto-ahorro, compartida con la carga rápida de
+    // escritorio (si divergieran, el mismo gasto ahorraría o no según desde dónde se cargue).
+    const montoAA = montoAutoAhorro(config, { tipo, categoria, descripcion, medioPago });
+    if (montoAA > 0) {
       const aaData: Omit<Movimiento, "id"> = {
         timestampCarga: now, fecha, tipo: "Move",
         categoria: "Move", descripcion: "Auto-ahorro",
-        monto: config.meta.autoAhorro.monto,
+        monto: montoAA,
         medioPago: "Mercado Pago", observaciones: `por ${categoria}`,
         periodoId: periodoIdFinal, userId: uid, direccionMove: "aAhorro",
       };
@@ -871,18 +871,20 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
             </div>
           )}
 
-          {/* Auto-ahorro: solo una vez cargada la descripción (y si no está en la lista a omitir). */}
-          {tipo === "Gasto" && config?.meta.autoAhorro?.activo && (config.meta.autoAhorro.monto ?? 0) > 0 &&
-           descripcion.trim().length > 0 &&
-           (!config.meta.autoAhorro.mediosPago?.length || config.meta.autoAhorro.mediosPago.includes(medioPago)) &&
-           !(config.meta.autoAhorro.omitirDescripciones ?? []).some((d) => d.toLowerCase() === descripcion.trim().toLowerCase()) && (
-            <div style={{ background: "var(--blue-dim)", border: "1px solid var(--blue)33", borderRadius: "var(--radius-sm)", padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "var(--blue)", display: "flex", alignItems: "center", gap: 8 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {money(config.meta.autoAhorro.monto)} {t.toSavings}
-            </div>
-          )}
+          {/* Auto-ahorro: preview de lo que se va a sumar. Misma regla que el alta (utils/
+              auto-ahorro), más el requisito de que ya haya descripción escrita. */}
+          {descripcion.trim().length > 0 && (() => {
+            const monto = montoAutoAhorro(config, { tipo, categoria, descripcion, medioPago });
+            if (monto <= 0) return null;
+            return (
+              <div style={{ background: "var(--blue-dim)", border: "1px solid var(--blue)33", borderRadius: "var(--radius-sm)", padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "var(--blue)", display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {money(monto)} {t.toSavings}
+              </div>
+            );
+          })()}
 
           {addError && (
             <div style={{ background: "var(--red-dim)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: 12, marginBottom: 14, fontSize: 12, color: "var(--red)" }}>

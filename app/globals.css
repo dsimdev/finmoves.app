@@ -102,8 +102,12 @@ input[type="number"] { -moz-appearance: textfield; }
 /* Anchos por pantalla: se aplican SOLO en desktop (ver el media query de abajo), así el
    móvil nunca se ve afectado por estas clases. */
 .page-wide { --page-max-desktop: 1200px; }  /* Reportes, Inicio: grillas y tableros */
-.page-mid  { --page-max-desktop: 1000px; }  /* Movimientos: lista + detalle */
+.page-mid  { --page-max-desktop: 1000px; }  /* Inversión: cards en grilla */
 .page-narrow { --page-max-desktop: 700px; } /* Configuración: formularios en una columna */
+/* Fluido: usa TODO el ancho disponible (menos la sidenav y un margen). Para tablas, donde
+   cada píxel extra es una columna que se lee mejor; centrar y dejar aire a los costados
+   sería desperdiciarlo. El tope alto evita líneas ilegibles en monitores ultrawide. */
+.page-fluid { --page-max-desktop: 2000px; }
 
 /* ── Cards ── */
 .card {
@@ -354,7 +358,10 @@ input[type="number"] { -moz-appearance: textfield; }
    El contenido se centra en el espacio QUE QUEDA a la derecha de la sidenav (padding-left
    de 200px + margin auto), no pegado a ella como antes. Cada pantalla toma su ancho de
    --page-max-desktop; sin clase, sigue en los 600px de siempre. */
-@media (min-width: 768px) {
+/* 1200px es EL umbral de escritorio, el mismo que usa useIsDesktop() para montar la tabla
+   y el buscador. Antes la sidenav aparecía a 768px: entre 768 y 1200 se veía la barra
+   lateral con la lista táctil del móvil, mezcla que no es ninguna de las dos cosas. */
+@media (min-width: 1200px) {
   .sidenav { display: flex; }
   .bottom-nav { display: none !important; }
   /* La sidenav ocupa 200px fijos a la izquierda; el contenido se centra en lo que queda.
@@ -378,6 +385,186 @@ input[type="number"] { -moz-appearance: textfield; }
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ── Buscador siempre visible (escritorio) ──
+   En móvil el filtro es un popover anclado a la lupa (no hay lugar); acá vive sobre la
+   tabla, sin taparla. */
+.searchbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.searchbar-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 0 1 340px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 12px;
+  height: 38px;
+}
+.searchbar-input:focus-within { border-color: var(--accent); }
+.searchbar-input input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+.searchbar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.searchbar-clear {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px;
+}
+.searchbar-clear:hover { color: var(--text); }
+
+/* Abre el modal completo para lo que la carga rápida no cubre. Es SECUNDARIO (el verde de
+   acción queda para "Guardar" de la carga rápida). `margin-left: auto` lo manda al extremo
+   derecho de la barra, lejos del buscador. */
+.btn-full-entry {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 15px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+}
+.btn-full-entry:hover { color: var(--text); border-color: var(--border-hi); }
+
+/* ── Carga rápida (escritorio) ──
+   Fila de campos sobre la tabla: monto → descripción → categoría → medio → guardar, en el
+   orden en que se tipea. Enter guarda y devuelve el foco al monto para encadenar cargas. */
+.quickadd {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.quickadd input,
+.quickadd select {
+  height: 36px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 0 10px;
+  outline: none;
+  min-width: 0;
+}
+.quickadd input:focus,
+.quickadd select:focus { border-color: var(--accent); }
+.quickadd .qa-monto { width: 130px; font-family: var(--font-mono); font-weight: 600; }
+/* Descripción y observación se reparten el ancho sobrante; la descripción algo más, que es
+   la que se completa siempre (la observación es opcional). */
+.quickadd .qa-desc { flex: 1.4 1 0; }
+.quickadd .qa-obs { flex: 1 1 0; }
+.quickadd select { cursor: pointer; }
+.qa-save {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid var(--green);
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.qa-save:disabled { opacity: 0.4; cursor: default; border-color: var(--border); color: var(--muted); background: transparent; }
+.qa-save:not(:disabled):hover { background: color-mix(in srgb, var(--green) 22%, transparent); }
+
+/* ── Tabla de datos (escritorio) ──
+   Densidad alta: filas de 38px, montos completos y columnas ordenables. Es la vista que el
+   móvil no puede dar (ahí cada movimiento es una fila táctil de 56px agrupada por día). */
+.dt-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+/* `table-layout: auto` + anchos por columna: fecha/categoría/medio/monto ocupan lo que
+   necesitan y la DESCRIPCIÓN se queda con todo el resto (es el campo que más varía y el
+   que se corta primero cuando falta espacio). */
+.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dt th:nth-child(1), .dt td:nth-child(1) { width: 1%; white-space: nowrap; }  /* fecha */
+.dt th:nth-child(2), .dt td:nth-child(2) { width: auto; }                     /* descripción */
+.dt th:nth-child(3), .dt td:nth-child(3),
+.dt th:nth-child(4), .dt td:nth-child(4) { width: 1%; white-space: nowrap; }  /* categoría, medio */
+.dt th:nth-child(5), .dt td:nth-child(5) { width: 1%; white-space: nowrap; }  /* monto */
+.dt thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  white-space: nowrap;
+}
+.dt thead th:hover { color: var(--text); }
+.dt tbody td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+.dt tbody tr:last-child td { border-bottom: none; }
+.dt tbody tr:hover { background: var(--surface-alt); }
+
+/* Acciones de fila: ocultas hasta el hover, para que la tabla se lea limpia. */
+.dt-actions { display: flex; gap: 2px; justify-content: flex-end; opacity: 0; transition: opacity .12s; }
+.dt tbody tr:hover .dt-actions { opacity: 1; }
+.dt-actions button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px 6px;
+  border-radius: 6px;
+  display: flex;
+}
+.dt-actions button:hover { color: var(--text); background: var(--surface); }
+.dt-actions button.dt-danger:hover { color: var(--red); }
+/* Teclado: el foco tiene que verse aunque el hover no esté activo. */
+.dt-actions button:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+.dt tbody tr:focus-within .dt-actions { opacity: 1; }
 
 /* ── Landing (home no-logueada) ──
    Móvil-first: todo apilado y centrado, como venía. A partir de 900px el hero pasa a dos
