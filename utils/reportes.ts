@@ -191,9 +191,14 @@ export interface PuntoTendencia {
   /** Ahorro BRUTO del período: depósitos + ingresos directos a ahorro. NO descuenta los
    *  retiros hacia disponible — para proyectar usá `ahorroNeto`. */
   ahorros: number;
-  /** Ahorro NETO: lo que realmente sumó al acumulado (bruto − moves a disponible). Es el
-   *  delta de `ahorrosAcum` salvo cuando el clamp a 0 lo corta. Base de toda proyección. */
+  /** Ahorro NETO del período: bruto − moves a disponible. Puede quedar por debajo de
+   *  `deltaAcum` si el retiro supera lo acumulado (ver `deltaAcum`). */
   ahorroNeto: number;
+  /** Lo que el acumulado se movió DE VERDAD en el período (`ahorrosAcum` − el anterior).
+   *  Igual a `ahorroNeto` salvo cuando el clamp a 0 lo corta: ahí es menor en magnitud,
+   *  porque no se puede retirar un ahorro que nunca se registró. Base de los promedios:
+   *  usar el neto crudo daba ritmos que contradecían al acumulado mostrado al lado. */
+  deltaAcum: number;
   ahorrosAcum: number;
 }
 
@@ -212,6 +217,11 @@ export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: strin
   return cron.map((p, i) => {
     const ahorrosDelPeriodo = p.ahorros + p.moveAhorros;
     const neto = ahorrosDelPeriodo - p.moveDisponible;
+    // El acumulado no puede ser negativo (no existe "ahorro negativo"): si el retiro supera
+    // lo acumulado, se clampea a 0. `deltaAcum` es lo que el acumulado REALMENTE se movió,
+    // que en ese caso es menos que `neto` — la diferencia es plata que salió pero que nunca
+    // estuvo registrada como ahorro. Los promedios usan este delta, no el neto crudo.
+    const previo = acum;
     if (i >= startIdx) acum = Math.max(0, acum + neto);
     return {
       periodoId: p.periodoId,
@@ -222,6 +232,7 @@ export function serieTendencia(periodos: PeriodoResumen[], seedPeriodoId?: strin
       total: p.total,
       ahorros: ahorrosDelPeriodo,
       ahorroNeto: neto,
+      deltaAcum: i >= startIdx ? acum - previo : 0,
       ahorrosAcum: acum,
     };
   });
@@ -346,7 +357,10 @@ export function ritmoAhorro(
   // serie viene cronológica (más viejo → más nuevo); el último es el período en curso.
   const ventana = desdeSeed(serie, seedPeriodoId);
   if (ventana.length === 0) return null;
-  const suma = ventana.reduce((s, p) => s + deflate(p.ahorroNeto ?? 0, p.periodoId), 0);
+  // `deltaAcum` (no `ahorroNeto`): el ritmo tiene que explicar el acumulado que se muestra
+  // al lado. Con un retiro mayor a lo acumulado, el neto crudo daba un ritmo negativo enorme
+  // mientras el acumulado real apenas bajaba a 0. Fallback al neto para series ya serializadas.
+  const suma = ventana.reduce((s, p) => s + deflate(p.deltaAcum ?? p.ahorroNeto ?? 0, p.periodoId), 0);
   return Number.isFinite(suma) ? suma / ventana.length : null;
 }
 

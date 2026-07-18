@@ -145,15 +145,20 @@ export default function DolaresPage() {
   const progresoPropia = metaPropia?.monto ? progresoMetaPropia(serieAhorros, metaPropia.monto, deflateAhorro, seedId) : null;
   const fxLabel = historialUSD.length > 0 && historialEUR.length > 0 ? "divisas" : historialEUR.length > 0 ? "EUR" : "U$D";
 
-  // Ritmo/proyección/mejor-peor: mismas reglas que Reportes (ritmoAhorro): ahorro NETO,
-  // ventana de los últimos VENTANA_PERIODOS cerrados y deflactado en ARS.
+  // Ritmo/proyección/mejor-peor: mismas reglas que Reportes (ritmoAhorro): delta REAL del
+  // acumulado, ventana desde el seed (período en curso incluido) y deflactado en ARS.
   const ahorroStats = useMemo(() => {
     const ritmo = ritmoAhorro(serieAhorros, deflateAhorro, seedId);
     if (ritmo === null) return null;
     // Misma ventana que ritmoAhorro: desde el seed, incluido el período en curso.
     const ventana = desdeSeed(serieAhorros, seedId);
     if (ventana.length === 0) return null;
-    const conNeto = ventana.map((p) => ({ periodoId: p.periodoId, delta: deflateAhorro ? deflateAhorro(p.ahorroNeto, p.periodoId) : p.ahorroNeto }));
+    // `deltaAcum` igual que el ritmo: el "peor período" tiene que ser una caída que el
+    // acumulado haya tenido de verdad, no un retiro mayor a lo que había registrado.
+    const conNeto = ventana.map((p) => {
+      const d = p.deltaAcum ?? p.ahorroNeto;
+      return { periodoId: p.periodoId, delta: deflateAhorro ? deflateAhorro(d, p.periodoId) : d };
+    });
     const acum = serieAhorros[serieAhorros.length - 1]?.ahorrosAcum ?? 0;
     const mejor = conNeto.reduce((a, b) => (b.delta > a.delta ? b : a));
     const peor = conNeto.reduce((a, b) => (b.delta < a.delta ? b : a));
