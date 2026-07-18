@@ -1,7 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal, variacionGastoVsAnterior, progresoMetaPropia, ritmoAhorro } from "@/utils/reportes";
+import { agruparPorPeriodo } from "@/utils/periodo";
 import type { PeriodoResumen } from "@/utils/periodo";
 import type { Movimiento } from "@/types";
+
+// Movimiento mínimo para armar series; se sobreescribe lo que cada caso necesita.
+const mov = (o: Partial<Movimiento>): Movimiento => ({
+  id: Math.random().toString(36).slice(2), timestampCarga: new Date(), fecha: "2026-01-01",
+  tipo: "Gasto", categoria: "x", descripcion: "", monto: 0, medioPago: "—",
+  observaciones: "", periodoId: "1/1/2026", userId: "u", ...o,
+});
 
 function periodo(p: Partial<PeriodoResumen>): PeriodoResumen {
   return {
@@ -133,9 +141,9 @@ describe("progresoMetaPropia (meta en moneda propia, sobre ahorros acumulados)",
   // El ritmo se mide sobre `ahorroNeto` de los períodos CERRADOS (se excluye el último, en
   // curso). Con 100k netos por período y 200k faltantes → 2 períodos.
   const serie = [
-    { periodoId: "1/1/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, ahorrosAcum: 100_000 },
-    { periodoId: "1/2/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, ahorrosAcum: 200_000 },
-    { periodoId: "1/3/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, ahorrosAcum: 300_000 },
+    { periodoId: "1/1/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, deltaAcum: 100_000, ahorrosAcum: 100_000 },
+    { periodoId: "1/2/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, deltaAcum: 100_000, ahorrosAcum: 200_000 },
+    { periodoId: "1/3/2026", sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0, ahorros: 100_000, ahorroNeto: 100_000, deltaAcum: 100_000, ahorrosAcum: 300_000 },
   ];
 
   it("calcula acumulado, % y faltante", () => {
@@ -167,7 +175,7 @@ describe("progresoMetaPropia (meta en moneda propia, sobre ahorros acumulados)",
 describe("ritmoAhorro (base única de las proyecciones)", () => {
   const punto = (id: string, neto: number, acum: number) => ({
     periodoId: id, sueldo: 0, gastado: 0, gastadoPuro: 0, disponible: 0, total: 0,
-    ahorros: neto, ahorroNeto: neto, ahorrosAcum: acum,
+    ahorros: neto, ahorroNeto: neto, deltaAcum: neto, ahorrosAcum: acum,
   });
 
   it("usa el ahorro NETO, no el bruto: los retiros a disponible bajan el ritmo", () => {
@@ -179,6 +187,44 @@ describe("ritmoAhorro (base única de las proyecciones)", () => {
     ];
     // (100k + 40k + 100k) / 3 = 80k, no los 100k que daría el bruto.
     expect(ritmoAhorro(conRetiro)).toBe(80_000);
+  });
+
+  it("retiro MAYOR al acumulado: el ritmo sigue al acumulado real, no al neto crudo", () => {
+    // El acumulado no puede ser negativo: si sacás 500k teniendo 50k, baja a 0 (no a -450k).
+    // El ritmo tiene que explicar ESE movimiento — antes promediaba el neto crudo y daba
+    // -140k/período mientras el acumulado mostrado al lado era +30k.
+    const serie = [
+      { ...punto("1/1/2026", 50_000, 50_000) },
+      { ...punto("1/2/2026", -500_000, 0), ahorroNeto: -500_000, deltaAcum: -50_000 },
+      { ...punto("1/3/2026", 30_000, 30_000) },
+    ];
+    // (50k - 50k + 30k) / 3 = 10k. Con el neto crudo daba (50k - 500k + 30k)/3 = -140k.
+    expect(ritmoAhorro(serie)).toBe(10_000);
+  });
+
+  it("serieTendencia calcula deltaAcum recortado por el clamp a 0", () => {
+    const movs: Movimiento[] = [
+      mov({ fecha: "2026-01-01", periodoId: "1/1/2026", tipo: "Ingreso", categoria: "Sueldo", monto: 100_000 }),
+      mov({ fecha: "2026-01-05", periodoId: "1/1/2026", tipo: "Move", direccionMove: "aAhorro", monto: 50_000 }),
+      mov({ fecha: "2026-02-01", periodoId: "1/2/2026", tipo: "Ingreso", categoria: "Sueldo", monto: 100_000 }),
+      mov({ fecha: "2026-02-05", periodoId: "1/2/2026", tipo: "Move", direccionMove: "aDisponible", monto: 500_000 }),
+    ];
+    const s = serieTendencia(agruparPorPeriodo(movs), "1/1/2026");
+    const segundo = s[1]!;
+    expect(segundo.ahorroNeto).toBe(-500_000); // lo que se movió nominalmente
+    expect(segundo.deltaAcum).toBe(-50_000);   // lo que el acumulado REALMENTE bajó
+    expect(segundo.ahorrosAcum).toBe(0);       // clampeado, nunca negativo
+  });
+
+  it("sin clamp de por medio, deltaAcum coincide con ahorroNeto", () => {
+    const movs: Movimiento[] = [
+      mov({ fecha: "2026-01-01", periodoId: "1/1/2026", tipo: "Ingreso", categoria: "Sueldo", monto: 100_000 }),
+      mov({ fecha: "2026-01-05", periodoId: "1/1/2026", tipo: "Move", direccionMove: "aAhorro", monto: 80_000 }),
+      mov({ fecha: "2026-02-01", periodoId: "1/2/2026", tipo: "Ingreso", categoria: "Sueldo", monto: 100_000 }),
+      mov({ fecha: "2026-02-05", periodoId: "1/2/2026", tipo: "Move", direccionMove: "aDisponible", monto: 30_000 }),
+    ];
+    const s = serieTendencia(agruparPorPeriodo(movs), "1/1/2026");
+    for (const p of s) expect(p.deltaAcum).toBe(p.ahorroNeto);
   });
 
   it("serieTendencia expone ahorroNeto descontando los moves a disponible", () => {
