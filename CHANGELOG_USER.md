@@ -4,6 +4,10 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.90.1] — 2026-07-18
+
+- Correcciones visuales menores en el historial de la reserva.
+
 ## [2.90.0] — 2026-07-18
 
 ### Los números de ahorro y proyección ahora son consistentes

@@ -4,6 +4,13 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.90.1] — 2026-07-18
+
+### Fixed
+- Removed the red rail behind the swipe-to-delete action in the FX history. `railBg` exists to
+  separate the trash icon from the red expense amounts in Movements; the FX history uses green,
+  yellow and blue amounts, so the red background read as an alert with nothing to warn about.
+
 ## [2.90.0] — 2026-07-18
 
 ### Changed
