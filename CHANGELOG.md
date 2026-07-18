@@ -20,6 +20,10 @@ All notable changes to FinMoves are documented here.
 - Dropping `checkMetaFX` also removes its per-user daily `count()` query over reserve movements
   and the `metaMovCount`/`metaMovSum`/`metaCacheMoneda` cache from `notifyMeta`.
 
+- The Income hero in Reports is now **"Total available"** (it shows everything that came in for
+  the period, not what is left). Its subtitle carries the period-over-period comparison plus the
+  currently-available figure from Home, so both numbers read together without switching screens.
+
 ### Fixed
 - **The Movements breakdown (Reports) counted `IngresoUSD`/`GastoUSD`.** Those types never touch
   available balance — they only move the reserve — so they inflated the movement total, the type

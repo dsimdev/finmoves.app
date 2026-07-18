@@ -281,7 +281,9 @@ export const es = {
   top5Descriptions: "Top 5 descripciones",
   byDay: "Por día",
   expensesCount: (n: number) => `${n} gasto${n !== 1 ? "s" : ""}`,
-  availableIncome: "Ingresos disponibles",
+  availableIncome: "Total disponible",
+  /** Subtítulo del hero de Ingresos: lo que queda hoy sin gastar, junto a la comparativa. */
+  currentlyAvailable: "quedan",
   leave: "VACACIONES",
   totalIncome: "Total ingresado",
   toSavingsLabel: "A ahorros",

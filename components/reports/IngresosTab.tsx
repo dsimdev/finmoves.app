@@ -32,7 +32,7 @@ interface Props {
   setModalAhorros: (v: boolean) => void;
 }
 
-// Subtab "Ingresos" de Reportes: hero de ingreso disponible, mini-stats (sueldo, moves,
+// Subtab "Ingresos" de Reportes: hero del total disponible, mini-stats (sueldo, moves,
 // total ingresado, ahorros acumulados), ingresos por descripción y detalle de movimientos.
 export function IngresosTab({
   periodo, anterior, totalIngresos, deltaIngresos, evolSueldoActivo, suelHistorial,
@@ -61,11 +61,18 @@ export function IngresosTab({
         <div style={{ fontSize: 34, fontWeight: 700, color: "#00e676cc", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
           {money(totalIngresos)}
         </div>
-        {deltaIngresos !== null && (() => { const mag = deltaMag(deltaIngresos); return (
-          <div style={{ marginTop: 8, fontSize: 12, color: deltaColor(deltaIngresos, true), fontWeight: 600 }}>
-            {mag === 0 ? "0" : <>{mag > 0 ? "↑" : "↓"}{Math.abs(mag)}</>}% vs {shortPer(anterior!.periodoId)}
-          </div>
-        ); })()}
+        {/* Subtítulo: la comparativa contra el período anterior + lo que queda hoy sin gastar
+            (el mismo número que el hero de Inicio, para no tener que cambiar de pantalla). */}
+        <div style={{ marginTop: 8, fontSize: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {deltaIngresos !== null && (() => { const mag = deltaMag(deltaIngresos); return (
+            <span style={{ color: deltaColor(deltaIngresos, true), fontWeight: 600 }}>
+              {mag === 0 ? "0" : <>{mag > 0 ? "↑" : "↓"}{Math.abs(mag)}</>}% vs {shortPer(anterior!.periodoId)}
+            </span>
+          ); })()}
+          <span style={{ color: "var(--muted)" }}>
+            {deltaIngresos !== null && "· "}{t.currentlyAvailable} <span style={{ fontFamily: "var(--font-mono)" }}>{money(periodo.disponible)}</span>
+          </span>
+        </div>
       </div>
 
       {/* Mini-stats: Sueldo · Retiros */}
