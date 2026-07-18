@@ -13,6 +13,7 @@ import { crearPlantilla, eliminarPlantilla, usarPlantilla, type Plantilla } from
 import { useData } from "@/app/(tabs)/data-context";
 import { uploadComprobante, deleteComprobante } from "@/lib/storage";
 import { useComprobante } from "./useComprobante";
+import { useAddForm } from "./useAddForm";
 import { ComprobanteChooser } from "./ComprobanteChooser";
 import { MediaViewer } from "@/components/ui/MediaViewer";
 import { Loader } from "@/components/ui/Loader";
@@ -28,11 +29,6 @@ import {
   IconoCalendario, IconoTarjeta, IconoRecurrente, detalleChip, esMovimientoFX, monedaMovFX,
 } from "./movement-shared";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
-
-const hoyISO = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-};
 
 interface MovementModalProps {
   open: boolean;
@@ -103,22 +99,17 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   // el primer render (antes de que corra el efecto de apertura) muestre el form por error.
   const [view, setView] = useState<"detail" | "form" | "delete">("detail");
 
-  // ── Add state ──
-  const [tipo, setTipo] = useState<TipoMovimiento>("Gasto");
-  const [categoria, setCategoria] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [monto, setMonto] = useState("");
-  const [fecha, setFecha] = useState(hoyISO);
-  const [medioPago, setMedioPago] = useState("Mercado Pago");
-  const [observaciones, setObservaciones] = useState("");
-  const [origenAhorro, setOrigenAhorro] = useState("");
-  const [cantidadUSD, setCantidadUSD] = useState("");
-  const [montoARSInput, setMontoARSInput] = useState("");
-  const [modoCarga, setModoCarga] = useState<"USD" | "ARS">("USD");
-  const [cotizManual, setCotizManual] = useState("");
-  const [abreNuevoPeriodo, setAbreNuevoPeriodo] = useState(false);
-  const [repetir, setRepetir] = useState(false);
-  const [moveDir, setMoveDir] = useState<"aDisponible" | "aAhorro">("aDisponible");
+  // ── Add state (hook dedicado: 15 campos + reset) ──
+  const {
+    form, set: setAddFields, reset: resetAddFields,
+    setTipo, setCategoria, setDescripcion, setMonto, setFecha, setMedioPago, setObservaciones,
+    setOrigenAhorro, setCantidadUSD, setMontoARSInput, setModoCarga, setCotizManual,
+    setAbreNuevoPeriodo, setRepetir, setMoveDir,
+  } = useAddForm();
+  const {
+    tipo, categoria, descripcion, monto, fecha, medioPago, observaciones, origenAhorro,
+    cantidadUSD, montoARSInput, modoCarga, cotizManual, abreNuevoPeriodo, repetir, moveDir,
+  } = form;
 
   // ¿La combinación tipo+categoría+descripción+observación ya es un recurrente activo?
   // Delega en recurrentKey (util compartido): MISMA clave que el doc id, el relojito y el
@@ -137,7 +128,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     : false;
   useEffect(() => {
     if (yaEsRecurrente) setRepetir(true);
-  }, [yaEsRecurrente]);
+  }, [yaEsRecurrente, setRepetir]);
   // Alta pre-cargada desde una notificación de recurrente: si ya hay una carga que
   // matchea en los últimos ~28 días, la notificación es vieja (este ciclo ya se cargó)
   // → banner de aviso para no meter un duplicado sin querer.
@@ -206,10 +197,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const [tplDelete, setTplDelete] = useState<Plantilla | null>(null);
   const [tplSavedFlash, setTplSavedFlash] = useState(false);
 
+  // Limpia el form conservando tipo y medio de pago (ver estadoReseteado). Los botones de
+  // tipo hacen setTipo(x) y DESPUÉS resetAdd(): el tipo recién elegido sobrevive al reset.
   const resetAdd = () => {
-    setDescripcion(""); setMonto(""); setCategoria(""); setOrigenAhorro("");
-    setCantidadUSD(""); setCotizManual(""); setObservaciones(""); setAddError("");
-    setMontoARSInput(""); setModoCarga("USD"); setFecha(hoyISO()); setAbreNuevoPeriodo(false); setMoveDir("aDisponible"); setRepetir(false);
+    resetAddFields();
+    setAddError("");
     resetComprobante();
   };
 
@@ -219,16 +211,19 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     if (mode === "add") {
       setView("form");
       resetAdd();
-      if (reserveMode) setTipo(esEURMode ? "CompraEUR" : "CompraUSD");
-      else if (sinPeriodos) { setTipo("Ingreso"); setCategoria("Sueldo"); }
-      else setTipo("Gasto");
-      // Alta desde un recurrente: pre-cargar todo menos el monto (queda en blanco).
-      if (prefill) {
-        if (prefill.tipo) setTipo(prefill.tipo);
-        if (prefill.categoria) setCategoria(prefill.categoria);
-        if (prefill.descripcion) setDescripcion(prefill.descripcion);
-        if (prefill.observaciones) setObservaciones(prefill.observaciones);
-      }
+      // Tipo inicial según el modo, y encima el prefill del recurrente (que pre-carga todo
+      // menos el monto). Un solo parche: antes eran hasta 6 setters encadenados.
+      setAddFields({
+        ...(reserveMode
+          ? { tipo: (esEURMode ? "CompraEUR" : "CompraUSD") as TipoMovimiento }
+          : sinPeriodos
+          ? { tipo: "Ingreso" as TipoMovimiento, categoria: "Sueldo" }
+          : { tipo: "Gasto" as TipoMovimiento }),
+        ...(prefill?.tipo ? { tipo: prefill.tipo } : {}),
+        ...(prefill?.categoria ? { categoria: prefill.categoria } : {}),
+        ...(prefill?.descripcion ? { descripcion: prefill.descripcion } : {}),
+        ...(prefill?.observaciones ? { observaciones: prefill.observaciones } : {}),
+      });
     } else if (mode === "edit" && movimiento) {
       // El sueldo que abre período (ancla) no se puede borrar → nunca abrir en "delete".
       const esAncla = movimiento.tipo === "Ingreso" && movimiento.categoria === "Sueldo" &&
@@ -247,13 +242,16 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   }, [open, mode, movimiento?.id, initialView, prefill]);
 
   const aplicarPlantilla = (p: Plantilla) => {
-    setTipo(p.tipo ?? "Gasto"); // plantillas viejas sin tipo = Gasto
-    setCategoria(p.categoria);
+    // Un solo parche (antes eran 6 setters seguidos = 6 renders del form).
     // Monto: si la plantilla lo tiene, precargar; si no, dejar el campo como está (vacío).
-    if (p.monto != null && p.monto > 0) setMonto(String(p.monto));
-    setDescripcion(p.nombre);
-    setMedioPago(p.medioPago);
-    setObservaciones(p.observaciones ?? "");
+    setAddFields({
+      tipo: p.tipo ?? "Gasto", // plantillas viejas sin tipo = Gasto
+      categoria: p.categoria,
+      descripcion: p.nombre,
+      medioPago: p.medioPago,
+      observaciones: p.observaciones ?? "",
+      ...(p.monto != null && p.monto > 0 ? { monto: String(p.monto) } : {}),
+    });
     if (user?.uid) {
       usarPlantilla(user.uid, p.id).then(() => {
         mutatePlantillas((prev) => {
@@ -923,7 +921,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
                 {t.recurrentMovement}
               </div>
             ) : (
-              <button type="button" onClick={() => setRepetir((v) => !v)} style={{
+              <button type="button" onClick={() => setRepetir(!repetir)} style={{
                 marginTop: 16, display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "9px 11px",
                 background: repetir ? "var(--accent-dim)" : "transparent",
                 border: `1px solid ${repetir ? "var(--accent)" : "var(--border)"}`, borderRadius: "var(--radius-sm)",
