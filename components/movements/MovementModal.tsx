@@ -23,6 +23,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { agruparPorPeriodo, formatARS, fechaCorta, fechaAPeriodoId } from "@/utils/periodo";
 import { serieTendencia } from "@/utils/reportes";
 import { reservaFX } from "@/utils/reserva";
+import { fxFlags, calcularFX, num } from "@/utils/movement-fx";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
 
 const hoyISO = () => {
@@ -321,24 +322,14 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const esSueldo = tipo === "Ingreso" && categoria === "Sueldo";
   const esAhorros = tipo === "Ingreso" && categoria === "Ahorros";
   const esMove = tipo === "Move";
-  const esCompraUSD = tipo === "CompraUSD";
-  const esGastoUSD = tipo === "GastoUSD";
-  const esCompraEUR = tipo === "CompraEUR";
-  const esGastoEUR = tipo === "GastoEUR";
-  const esVentaUSD = tipo === "VentaUSD";
-  const esVentaEUR = tipo === "VentaEUR";
-  const esIngresoUSD = tipo === "IngresoUSD";
-  const esIngresoEUR = tipo === "IngresoEUR";
-  const esCompraFX = esCompraUSD || esCompraEUR;
-  const esGastoFX = esGastoUSD || esGastoEUR;
-  const esVentaFX = esVentaUSD || esVentaEUR;
-  const esIngresoFX = esIngresoUSD || esIngresoEUR;
-  // Compra y Venta usan el form con cotización (cantidad + cotización → ARS).
-  // Gasto e Ingreso FX solo necesitan cantidad (suman/restan a la reserva, sin disponible ni cotización).
-  const esCompraOVenta = esCompraFX || esVentaFX;
-  const esSoloCantidadFX = esGastoFX || esIngresoFX;
-  const esUSD = esCompraFX || esGastoFX || esVentaFX || esIngresoFX;
-  const fxLabel = esCompraEUR || esGastoEUR || esVentaEUR || esIngresoEUR ? "EUR" : "USD";
+  // Derivaciones FX: utils/movement-fx (puras y testeadas). Compra/Venta usan el form con
+  // cotización (cantidad + cotización → ARS); Gasto/Ingreso FX sólo cantidad (suman/restan
+  // a la reserva, sin tocar el disponible).
+  const { esFX: esUSD, esCompraOVenta, esSoloCantidad: esSoloCantidadFX, moneda: fxLabel } = fxFlags(tipo);
+  const esCompraFX = tipo === "CompraUSD" || tipo === "CompraEUR";
+  const esGastoFX = tipo === "GastoUSD" || tipo === "GastoEUR";
+  const esVentaFX = tipo === "VentaUSD" || tipo === "VentaEUR";
+  const esIngresoFX = tipo === "IngresoUSD" || tipo === "IngresoEUR";
   const tipoColor = TIPOS.find((tx) => tx.t === tipo)?.color ?? "var(--accent)";
 
   const categoriasFiltradas = tipo === "Gasto"
@@ -350,15 +341,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
           { id: "ahorros", nombre: "Ahorros", tipo: "Ingreso" as const, activa: true }])
     : [];
 
-  const cotizActual = cotizManual ? parseFloat(cotizManual) : (fxLabel === "EUR" ? cotizacion?.oficial_euro : cotizacion?.oficial) ?? 0;
-  const usdFinal = !esUSD ? 0 : esSoloCantidadFX
-    ? parseFloat(cantidadUSD || "0")
-    : modoCarga === "USD"
-    ? parseFloat(cantidadUSD || "0")
-    : (cotizActual ? parseFloat(montoARSInput || "0") / cotizActual : 0);
-  const arsCompraUSD = !esCompraOVenta ? 0 : modoCarga === "USD"
-    ? parseFloat(cantidadUSD || "0") * cotizActual
-    : parseFloat(montoARSInput || "0");
+  const cotizActual = cotizManual ? num(cotizManual) : (fxLabel === "EUR" ? cotizacion?.oficial_euro : cotizacion?.oficial) ?? 0;
+  const { cantidad: usdFinal, ars: arsCompraUSD } = calcularFX({
+    tipo, modoCarga, cantidadFX: cantidadUSD, montoARS: montoARSInput, cotizacion: cotizActual,
+  });
 
   // Reserva FX actual (misma cuenta que Inversión): compras − gastos/ventas, sin saldo base.
   const reservaActualFX = useMemo(() => {
@@ -437,7 +423,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     // Validación síncrona: si algo falla, el sheet queda abierto con el error.
     if (!user?.uid) { setAddError(t.errNotAuth); return; }
     if (!esMove && !esUSD && !categoria) { setAddError(t.errSelectCat); return; }
-    const montoFinal = esCompraOVenta ? arsCompraUSD : esSoloCantidadFX ? 0 : parseFloat(monto);
+    const montoFinal = esCompraOVenta ? arsCompraUSD : esSoloCantidadFX ? 0 : num(monto);
     if (!esSoloCantidadFX && (!montoFinal || montoFinal <= 0)) { setAddError(t.errInvalidAmount); return; }
     if (esUSD && (!usdFinal || usdFinal <= 0)) { setAddError(t.errInvalidFX(fxLabel)); return; }
     const periodoIdFinal = abrePeriodo ? fechaAPeriodoId(fecha) : (periodoActual?.periodoId ?? null);
