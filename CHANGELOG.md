@@ -4,6 +4,16 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.88.0] — 2026-07-16
+
+### Changed
+- **Google Sheets sync is now manual, not automatic**: the cron no longer syncs on its own — it only pushes a reminder when the last backup is over 30 days old (deduped monthly). In Settings → Data, a **"Sync now"** button appears when the backup is stale (over 30 days, or never). The app trusts Firestore; the sheet is an occasional backup you trigger yourself.
+
+### Added
+- **Self-healing sheet**: if the spreadsheet no longer exists (404 — deleted, or a stale ID), the sync **creates a new one**, stores its ID in Firestore (`syncMeta.spreadsheetId`), shares it with the owner's email, and does a full sync into it. The active ID now comes from Firestore (env as fallback), and the data tab is resolved by title ("Movimientos") instead of a fixed GID — robust to a recreated sheet.
+
+---
+
 ## [2.87.0] — 2026-07-16
 
 ### Added

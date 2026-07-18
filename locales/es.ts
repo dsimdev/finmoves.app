@@ -344,6 +344,7 @@ export const es = {
   syncErrorMsg: (at: string) => `Error de sync: ${at}`,
   lastSyncMsg: (at: string) => `Última sync: ${at}`,
   neverSynced: "Nunca sincronizado",
+  syncNow: "Sincronizar",
   retrying: "Reintentando...",
   syncing: "Sincronizando…",
   retry: "Reintentar",

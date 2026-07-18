@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
-import { syncUserMovimientosToSheet } from "@/lib/sync-sheets";
 import { pushYGuardar } from "@/lib/notif-store";
 import { notifyAllUsers } from "@/lib/notifications";
 import { Timestamp } from "firebase-admin/firestore";
@@ -29,48 +28,32 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "OWNER_UID not set" }, { status: 500 });
   }
 
-  // ── 1) Sync a Google Sheets — SOLO el dueño (es su funcionalidad) ──
+  // ── 1) Backup a Google Sheets — SOLO el dueño (es su funcionalidad) ──
   const syncMetaRef = adminDb().doc(`users/${ownerUid}/config/syncMeta`);
-  const appendLog = async (entry: { status: "ok" | "error"; type: "auto"; at: Timestamp; message: string }) => {
-    try {
-      const snap = await syncMetaRef.get();
-      const prev = (snap.data()?.logs ?? []) as unknown[];
-      await syncMetaRef.set({ logs: [entry, ...prev].slice(0, 30) }, { merge: true });
-    } catch { /* ignore */ }
-  };
 
-  // El sync a Sheets se auto-limita a ~1×/día aunque la cron corra más seguido
-  // (la frecuencia alta es para las notificaciones, no para re-sincronizar Sheets).
-  // Diario es barato: el sync es incremental (lee solo docs nuevos); el espejo
-  // completo corre únicamente cuando la app editó/borró algo (flag needsFullSync).
-  const SYNC_MIN_INTERVAL_MS = 20 * 60 * 60 * 1000;
-  const lastAutoSync = (await syncMetaRef.get()).data()?.lastAutoSync as Timestamp | undefined;
-  const shouldSync = !lastAutoSync || Date.now() - lastAutoSync.toMillis() > SYNC_MIN_INTERVAL_MS;
+  // El sync a Sheets YA NO corre automático: la app confía en Firestore y el Sheet queda
+  // como backup ocasional que el dueño dispara a mano. El cron solo AVISA cuando pasaron
+  // >30 días desde el último sync (manual), para que decida cuándo hacer el respaldo.
+  // Dedup por mes calendario (via lastStaleNotified) → no repite el aviso todos los días.
+  const SYNC_STALE_MS = 30 * 24 * 60 * 60 * 1000;
+  const syncMeta = (await syncMetaRef.get()).data() ?? {};
+  const lastSync = syncMeta.lastSync as Timestamp | undefined;
+  const lastStaleNotified = syncMeta.lastStaleNotified as string | undefined;
+  const mesActual = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 7); // YYYY-MM (AR)
+  const stale = !lastSync || Date.now() - lastSync.toMillis() > SYNC_STALE_MS;
 
-  let result: { ok: boolean; synced?: number; error?: string; skipped?: boolean };
-  if (!shouldSync) {
-    result = { ok: true, skipped: true };
+  let result: { ok: boolean; stale?: boolean; notified?: boolean };
+  if (stale && lastStaleNotified !== mesActual) {
+    const dias = lastSync ? Math.floor((Date.now() - lastSync.toMillis()) / 86_400_000) : null;
+    const ok = await pushYGuardar(ownerUid, "sync", {
+      title: "Backup de Sheets pendiente",
+      body: dias ? `Hace ${dias} días que no respaldás. Sincronizá cuando quieras.` : "Todavía no respaldaste a Sheets. Sincronizá cuando quieras.",
+      tag: "sync-stale", url: "/settings/data",
+    }, "/settings/data");
+    if (ok) await syncMetaRef.set({ lastStaleNotified: mesActual }, { merge: true });
+    result = { ok: true, stale: true, notified: ok };
   } else {
-    try {
-      const { synced, mode } = await syncUserMovimientosToSheet(ownerUid);
-      await syncMetaRef.set({ lastAutoSync: Timestamp.now() }, { merge: true });
-      const message = mode === "full"
-        ? `Sync automática · ${synced} movimientos (completa)`
-        : `Sync automática · +${synced} nuevos`;
-      await appendLog({ status: "ok", type: "auto", at: Timestamp.now(), message });
-      // Aviso de sync OK — solo al dueño y solo si hubo algo que sincronizar.
-      if (synced > 0 || mode === "full") {
-        await pushYGuardar(ownerUid, "sync", { title: "Sheets sincronizado", body: message, tag: "sync-ok", url: "/settings/data" }, "/settings/data");
-      }
-      result = { ok: true, synced };
-    } catch (err) {
-      console.error("[cron/sync-sheets]", err);
-      const message = err instanceof Error ? err.message : String(err);
-      await appendLog({ status: "error", type: "auto", at: Timestamp.now(), message });
-      // Push genérico (el detalle queda en el log que el dueño ve en Configuración).
-      await pushYGuardar(ownerUid, "sync", { title: "Falló sync Sheets", body: "Revisá el detalle en Configuración.", tag: "sync-error", url: "/settings/data" }, "/settings/data");
-      result = { ok: false, error: message };
-    }
+    result = { ok: true, stale };
   }
 
   // ── 1.5) Limpieza de códigos de invitación sin uso vencidos (>24h) ──

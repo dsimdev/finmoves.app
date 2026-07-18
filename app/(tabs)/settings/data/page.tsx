@@ -25,6 +25,9 @@ export default function DataSettings() {
   const [syncError, setSyncError] = useState<{ message: string; at: Date } | null>(null);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [showSyncLog, setShowSyncLog] = useState(false);
+  // El sync ya no es automático: el botón "Sincronizar ahora" aparece cuando el backup está
+  // vencido (nunca sincronizó, o pasaron >30 días desde el último).
+  const syncStale = !lastSync || Date.now() - lastSync.getTime() > 30 * 24 * 60 * 60 * 1000;
   const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const [genBusy, setGenBusy] = useState(false);
@@ -119,9 +122,16 @@ export default function DataSettings() {
                 : t.neverSynced}
             </div>
           </div>
-          {syncError && (
-            <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); if (!syncing) handleSync(); }} style={{ flexShrink: 0, background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer" }}>
-              {syncing ? t.retrying : t.retry}
+          {/* Botón de sincronizar: al haber error (rojo, reintentar) o cuando el backup está
+              VENCIDO — >30 días desde el último sync, o nunca (el sync ya no es automático). */}
+          {(syncError || syncStale) && (
+            <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); if (!syncing) handleSync(); }} style={{
+              flexShrink: 0, borderRadius: "var(--radius-sm)", padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: syncing ? "default" : "pointer",
+              ...(syncError
+                ? { background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)44" }
+                : { background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)44" }),
+            }}>
+              {syncing ? t.syncing : syncError ? t.retry : t.syncNow}
             </span>
           )}
         </button>

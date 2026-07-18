@@ -346,6 +346,7 @@ export const en: AppLocale = {
   syncErrorMsg: (at: string) => `Sync error: ${at}`,
   lastSyncMsg: (at: string) => `Last sync: ${at}`,
   neverSynced: "Never synced",
+  syncNow: "Sync now",
   retrying: "Retrying...",
   syncing: "Syncing…",
   retry: "Retry",
