@@ -360,12 +360,11 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     ? parseFloat(cantidadUSD || "0") * cotizActual
     : parseFloat(montoARSInput || "0");
 
-  // Reserva FX actual (misma cuenta que Inversión): saldo base + compras − gastos/ventas.
+  // Reserva FX actual (misma cuenta que Inversión): compras − gastos/ventas, sin saldo base.
   const reservaActualFX = useMemo(() => {
     if (!reserveMode) return 0;
-    const base = (esEURMode ? config?.meta.saldoEUR : config?.meta.saldoUSD) ?? 0;
-    return reservaFX(movimientos, esEURMode ? "EUR" : "USD", base);
-  }, [reserveMode, esEURMode, movimientos, config?.meta.saldoUSD, config?.meta.saldoEUR]);
+    return reservaFX(movimientos, esEURMode ? "EUR" : "USD");
+  }, [reserveMode, esEURMode, movimientos]);
 
   // Frecuencia de uso por categoría de gasto (para ordenar las pills).
   const catUso = useMemo(() => {

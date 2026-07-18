@@ -72,10 +72,10 @@ export default function DolaresPage() {
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
   const historialUSD = comprasUSD; // compras (+) y retiros (−) de la reserva
   const { total: desdeMovimientosUSD, costoPromedio: costoPromedioUSD } = calcularReserva(comprasUSD, "USD");
-  const totalUSD = (config?.meta.saldoUSD ?? 0) + desdeMovimientosUSD;
+  // La reserva es SOLO lo cargado como movimientos: el saldo inicial a mano se eliminó
+  // (los ahorros se calculan, no se cargan). Ver CHANGELOG v2.89.1.
+  const totalUSD = desdeMovimientosUSD;
   const reservaUSDenARS = cotizacionUSD ? totalUSD * cotizacionUSD : null;
-  // Ganancia SOLO sobre lo comprado en la app: el saldo base no tiene costo conocido,
-  // meterlo en el valor inflaba la ganancia con plata que nunca se compró acá.
   const gananciaUSD = cotizacionUSD && costoPromedioUSD > 0 ? desdeMovimientosUSD * (cotizacionUSD - costoPromedioUSD) : null;
   const gananciaPctUSD = gananciaUSD && desdeMovimientosUSD * costoPromedioUSD > 0 ? (gananciaUSD / (desdeMovimientosUSD * costoPromedioUSD)) * 100 : null;
 
@@ -85,7 +85,7 @@ export default function DolaresPage() {
     .sort((a, b) => b.timestampCarga.getTime() - a.timestampCarga.getTime());
   const historialEUR = comprasEUR; // compras (+) y retiros (−) de la reserva
   const { total: desdeMovimientosEUR, costoPromedio: costoPromedioEUR } = calcularReserva(comprasEUR, "EUR");
-  const totalEUR = (config?.meta.saldoEUR ?? 0) + desdeMovimientosEUR;
+  const totalEUR = desdeMovimientosEUR;
   const reservaEURenARS = cotizacionEUR ? totalEUR * cotizacionEUR : null;
   const gananciaEUR = cotizacionEUR && costoPromedioEUR > 0 ? desdeMovimientosEUR * (cotizacionEUR - costoPromedioEUR) : null;
   const gananciaPctEUR = gananciaEUR && desdeMovimientosEUR * costoPromedioEUR > 0 ? (gananciaEUR / (desdeMovimientosEUR * costoPromedioEUR)) * 100 : null;
