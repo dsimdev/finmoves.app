@@ -464,6 +464,33 @@ input[type="number"] { -moz-appearance: textfield; }
    Las cards (patrimonio, reserva USD/EUR, metas) son autocontenidas y de alto parecido:
    en pantalla ancha entran de a dos sin competir. `align-items: start` para que cada una
    conserve su alto en vez de estirarse a la de al lado. */
+/* ── Inicio en escritorio ──
+   Dos columnas: a la izquierda el estado del período (hero + KPIs + atajos), a la derecha
+   los últimos movimientos, que en móvil quedan al final de un scroll largo. */
+@media (min-width: 1200px) {
+  .home-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 0.62fr);
+    gap: 18px;
+    align-items: start;
+  }
+  /* El hero deja de ser una card angosta estirada: el monto crece con la pantalla y la
+     barra de progreso ocupa el ancho real. */
+  .home-hero { padding: 26px 28px !important; }
+  .home-hero .home-hero-value { font-size: clamp(34px, 3.4vw, 54px) !important; }
+
+  /* Los 4 KPIs en fila, con altura propia (no chatos como en la fila de dos del móvil). */
+  .home-kpis > * { flex: 1 1 0 !important; min-height: 88px; }
+
+  /* Atajos: en móvil son botones táctiles grandes; acá alcanzan como una fila compacta. */
+  .home-shortcuts > * { min-height: 0 !important; padding: 12px 14px !important; }
+
+  /* La columna derecha acompaña el scroll de la izquierda. */
+  .home-side { position: sticky; top: 24px; }
+  /* Las filas de movimientos respiran: en móvil van apretadas por el alto de pantalla. */
+  .home-side .row { padding: 13px 0 !important; }
+}
+
 /* ── Tablero de Inversión (escritorio) ──
    Los números salen de las cards: en móvil el marco agrupa porque hay que scrollear, pero
    en pantalla ancha solo encierra. Quedan sueltos en una franja, separados por líneas. */
