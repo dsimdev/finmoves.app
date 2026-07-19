@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useData } from "./data-context";
 import { useMoney } from "@/hooks/useHideValues";
-import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
+import { agruparPorPeriodo, fechaCorta, gastosPorCategoria } from "@/utils/periodo";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { serieTendencia, inflacionPersonal as calcInflacionPersonal } from "@/utils/reportes";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { Movimiento } from "@/types";
@@ -81,8 +82,19 @@ export default function Dashboard() {
     () => calcInflacionPersonal(periodos, esARS ? deflatar : undefined),
     [periodos, deflatar, esARS],
   );
-  const ultimos = p?.movimientos.filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR").slice(0, 5) ?? [];
+  const isDesktop = useIsDesktop();
+  // En escritorio la columna de movimientos tiene que llegar tan abajo como la del período:
+  // con 5 filas queda cortada a la mitad de la pantalla.
+  const ultimos = p?.movimientos
+    .filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR")
+    .slice(0, isDesktop ? 12 : 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
+  // En escritorio sobra espacio bajo los atajos: el desglose por categoría del período
+  // responde "en qué se me va" sin ir a Reportes. En móvil no entra y no se muestra.
+  const catsPeriodo = useMemo(
+    () => (p ? gastosPorCategoria(p.movimientos, p.gastado).slice(0, 8) : []),
+    [p],
+  );
   // Color anclado al gasto sobre el ingreso (misma escala que Reportes): verde mientras
   // hay margen, rojo solo al pasarte. Así no se pone en alerta por mover plata a ahorros.
   const gastadoPct = p && p.total > 0 ? (p.gastado / p.total) * 100 : 0;
@@ -90,7 +102,7 @@ export default function Dashboard() {
   const barColorDim = colorPctDim(gastadoPct);
 
   return (
-    <div className="page page-wide">
+    <div className="page page-fluid">
 
       {loading ? (
         <LoadingSpinner />
@@ -107,12 +119,17 @@ export default function Dashboard() {
             right={<NotificationsBell />}
           />
 
+          {/* En escritorio: estado del período a la izquierda, últimos movimientos a la
+              derecha (en móvil quedan al final de un scroll largo). */}
+          <div className="home-grid">
+          <div>
+
           {/* Hero */}
-          <div className="soft" style={{ borderColor: `${barColor}44`, marginBottom: 12, background: `linear-gradient(135deg, var(--surface) 0%, ${barColorDim} 100%)` }}>
+          <div className="soft home-hero" style={{ borderColor: `${barColor}44`, marginBottom: 12, background: `linear-gradient(135deg, var(--surface) 0%, ${barColorDim} 100%)` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 7 }}>{t.available}</div>
-                <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -1, color: "var(--text)", lineHeight: 1, fontFamily: "var(--font-mono)" }}>
+                <div className="home-hero-value" style={{ fontSize: 34, fontWeight: 700, letterSpacing: -1, color: "var(--text)", lineHeight: 1, fontFamily: "var(--font-mono)" }}>
                   {money(p.disponible)}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 7 }}>
@@ -138,7 +155,7 @@ export default function Dashboard() {
           {!dashboardClasico && showTapHint && <SectionHint title={t.hintHomeTitle} body={t.hintHomeBody} onDismiss={dismissTapHint} />}
 
           {/* KPIs */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <div className="home-kpis" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
             {dashboardClasico ? (<>
               <MiniStat basis="1 1 45%" label={t.salary} value={money(p.sueldo)} color="var(--green)" />
               <MiniStat basis="1 1 45%" label={t.spent} value={money(p.gastadoPuro)} color="var(--red)" />
@@ -172,7 +189,7 @@ export default function Dashboard() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
             );
             return (
-              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <div className="home-shortcuts" style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                 {/* Nuevo movimiento → abre el modal acá mismo */}
                 <button onClick={() => setModalState({ mode: "add" })} style={{ ...chip, border: "1px solid var(--border)" }}>
                   {svg("var(--green)", <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>)}
@@ -196,7 +213,32 @@ export default function Dashboard() {
             );
           })()}
 
+          {/* En escritorio, el desglose del período llena el espacio que queda bajo los
+              atajos y responde "en qué se me va" sin ir a Reportes. */}
+          {isDesktop && catsPeriodo.length > 0 && (
+            <div className="soft" style={{ background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{t.byCategory}</div>
+              {catsPeriodo.map((c) => (
+                <div key={c.categoria} style={{ marginBottom: 11 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5, gap: 12 }}>
+                    <span style={{ fontSize: 13 }}>{c.categoria}</span>
+                    <span style={{ fontSize: 12.5, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+                      {money(c.monto)}
+                      <span style={{ color: "var(--muted)", marginLeft: 8, fontSize: 11 }}>{c.pct}%</span>
+                    </span>
+                  </div>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{ width: `${Math.min(c.pct, 100)}%`, background: "var(--red)" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          </div>
+
           {/* Latest movements */}
+          <div className="home-side">
           <div className="soft" style={{ background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{t.latestMovements}</div>
@@ -225,7 +267,7 @@ export default function Dashboard() {
                 </span>
               </button>
             ))}
-            {p.movimientos.length > 5 && (
+            {p.movimientos.length > ultimos.length && (
               <Link href="/movements" style={{
                 display: "block", textAlign: "center", margin: "14px auto 2px",
                 color: "var(--muted)", fontSize: 12, fontStyle: "italic",
@@ -234,6 +276,8 @@ export default function Dashboard() {
                 {t.seeMore}
               </Link>
             )}
+          </div>
+          </div>
           </div>
         </div>
       )}
