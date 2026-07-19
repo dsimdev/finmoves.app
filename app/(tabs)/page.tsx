@@ -87,7 +87,7 @@ export default function Dashboard() {
   // con 5 filas queda cortada a la mitad de la pantalla.
   const ultimos = p?.movimientos
     .filter((m) => m.tipo !== "GastoUSD" && m.tipo !== "GastoEUR" && m.tipo !== "IngresoUSD" && m.tipo !== "IngresoEUR")
-    .slice(0, isDesktop ? 12 : 5) ?? [];
+    .slice(0, isDesktop ? 11 : 5) ?? [];
   const pctDisp = p && p.total > 0 ? Math.round((p.disponible / p.total) * 100) : 0;
   // En escritorio sobra espacio bajo los atajos: el desglose por categoría del período
   // responde "en qué se me va" sin ir a Reportes. En móvil no entra y no se muestra.

@@ -362,6 +362,9 @@ export const es = {
   allDescriptions: "Todas las descripciones",
   allCategories: "Todas las categorías",
   virtualPeriods: (n: number) => `${n} períodos`,
+  /** Escritorio: el comparador necesita al menos 2 períodos elegidos. */
+  compareHint: "Elegí dos o más períodos para compararlos lado a lado.",
+  compareTitle: "Comparar períodos",
 
   // Settings
   preferences: "Preferencias",

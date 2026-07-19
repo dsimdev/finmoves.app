@@ -364,6 +364,9 @@ export const en: AppLocale = {
   allDescriptions: "All descriptions",
   allCategories: "All categories",
   virtualPeriods: (n: number) => `${n} periods`,
+  /** Desktop: the comparison view needs at least 2 selected periods. */
+  compareHint: "Pick two or more periods to compare them side by side.",
+  compareTitle: "Compare periods",
 
   // Settings
   preferences: "Preferences",
