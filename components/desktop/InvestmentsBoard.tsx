@@ -85,13 +85,16 @@ export function InvestmentsBoard({ grupos, metas, historial }: {
       {metas.length > 0 && (
         <div className="inv-metas">
           {metas.map((m) => (
-            <div key={m.label} className="soft">
+            <div key={m.label} className="soft" style={{ borderColor: `color-mix(in srgb, ${m.color} 30%, var(--border))` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-                <span className="label" style={{ marginBottom: 0 }}>{m.label}</span>
+                <span className="inv-section-title" style={{ margin: 0, color: m.color }}>{m.label}</span>
                 {m.fecha && <span style={{ fontSize: 10, color: "var(--muted)" }}>{m.fecha}</span>}
               </div>
+              {/* El objetivo es un dato neutro: el color (rojo/amarillo/verde) indica cuánto
+                  llevás, así que va sólo en la barra y el porcentaje. Pintar el monto hacía
+                  ver "en rojo" una meta que simplemente está empezada. */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
-                <span style={{ fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", color: m.color }}>{m.objetivo}</span>
+                <span style={{ fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text)" }}>{m.objetivo}</span>
                 <span style={{ fontSize: 13, color: "var(--muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
                   {m.alcanzada ? t.reached : `${t.remainingLabel} ${m.faltante}`}
                 </span>

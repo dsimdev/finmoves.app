@@ -38,6 +38,8 @@ import { PeriodosTab } from "@/components/reports/PeriodosTab";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { SwipeTabs } from "@/components/ui/SwipeTabs";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
+import { PeriodCompare } from "@/components/desktop/PeriodCompare";
 
 type Sub = "gastos" | "ingresos" | "movimientos" | "periodos";
 
@@ -64,6 +66,8 @@ export default function ReportesPage() {
 
   const periodos = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
   const [sub, setSub] = useState<Sub>("gastos");
+  // En escritorio, elegir 2+ períodos muestra la comparación lado a lado.
+  const isDesktop = useIsDesktop();
   // Progreso del swipe entre subtabs (∈ [-1,1], <0 hacia el siguiente) para que el
   // indicador de las pills acompañe el dedo en vivo.
   const [dragP, setDragP] = useState(0);
@@ -502,7 +506,7 @@ export default function ReportesPage() {
   }, [periodo]);
 
   return (
-    <div className="page page-wide">
+    <div className={`page ${isDesktop ? "page-fluid" : "page-wide"}`}>
       {loading ? (
         <LoadingSpinner />
       ) : periodos.length === 0 ? (
@@ -642,6 +646,16 @@ export default function ReportesPage() {
           {/* Swipe horizontal entre subtabs. Las 4 pantallas van montadas en un track (en el
               orden de SUBS) → navegar solo desliza, el contenido ya está precargado y fluido.
               El guard anti-carrusel (para no romper las tiras de pills) vive en SwipeTabs. */}
+          {/* Escritorio con 2+ períodos elegidos: comparación lado a lado. En móvil los
+              períodos seleccionados se SUMAN en uno virtual (no hay ancho para columnas);
+              acá cada uno es su columna y se lee la evolución de izquierda a derecha. */}
+          {isDesktop && periodosActivos.length >= 2 && (
+            <div style={{ marginBottom: 18 }}>
+              <h2 className="inv-section-title">{t.compareTitle}</h2>
+              <PeriodCompare periodos={periodosActivos} />
+            </div>
+          )}
+
           <SwipeTabs
             index={SUBS.findIndex((s) => s.id === sub)}
             count={SUBS.length}
