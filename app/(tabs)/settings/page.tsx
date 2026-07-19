@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../data-context";
 import { useT } from "@/hooks/useTranslation";
@@ -14,8 +16,16 @@ export default function SettingsLanding() {
   const { user } = useAuth();
   const { config, configLoading: loading } = useData();
   const t = useT();
+  const router = useRouter();
+  const isDesktop = useIsDesktop();
   const [fotoError, setFotoError] = useState(false);
   useEffect(() => { setFotoError(false); }, [config?.meta.fotoURL]);
+
+  // En escritorio el menú lo reemplaza la columna de secciones del layout: esta pantalla
+  // quedaría vacía, así que se entra directo a la primera sección.
+  useEffect(() => {
+    if (isDesktop) router.replace("/settings/account");
+  }, [isDesktop, router]);
 
   const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
   const inversionAllowed = isOwner || config?.meta.permisos?.inversion === true;
@@ -29,11 +39,15 @@ export default function SettingsLanding() {
   const i = (children: React.ReactNode) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
 
   return (
-    <div className="page fade-up">
+    <div className="page page-fluid fade-up">
       <PageHeader title={t.pageTitleSettings} />
 
+      {/* En escritorio el menú pasa a grilla de 2 columnas (ver .settings-menu): una fila
+          por sección a todo el ancho deja el ícono perdido y la línea larguísima. */}
+      <div className="settings-menu">
+
       {/* Header de perfil → edita perfil */}
-      <Link href="/settings/account" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 14, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+      <Link href="/settings/account" className="settings-profile" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 14, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
         {fotoSrc && !fotoError ? (
           <img src={fotoSrc} alt="" width={52} height={52} referrerPolicy="no-referrer" onError={() => setFotoError(true)} style={{ width: 52, height: 52, borderRadius: 14, objectFit: "cover", flexShrink: 0, border: "1px solid var(--green)44" }} />
         ) : (
@@ -64,6 +78,7 @@ export default function SettingsLanding() {
 
       <NavRow href="/settings/help" color="var(--muted)" title={t.guideSection} sub={`v${process.env.NEXT_PUBLIC_APP_VERSION}`}
         icon={i(<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>)} />
+      </div>
     </div>
   );
 }

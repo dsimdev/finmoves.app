@@ -38,6 +38,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { eliminarMovimiento } from "@/services/firebase/movimientos";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
+import { InvestmentsBoard, type KpiGrupo, type MetaBoard } from "@/components/desktop/InvestmentsBoard";
+import { FxHistoryTable } from "@/components/desktop/FxHistoryTable";
+import { MediaViewer } from "@/components/ui/MediaViewer";
 
 export default function DolaresPage() {
   const { movimientos, loading, config, refresh: refreshData, updateMovimiento, removeMovimiento, prependMovimiento } = useData();
@@ -52,6 +56,8 @@ export default function DolaresPage() {
   const [fxDelete, setFxDelete] = useState<Movimiento | null>(null);
   const [fxDeleting, setFxDeleting] = useState(false);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
+  // Comprobante del historial FX (escritorio): se abre a pantalla completa desde la fila.
+  const [viewer, setViewer] = useState<{ src: string; isPdf: boolean } | null>(null);
 
   useEffect(() => { refresh(); }, []);
   const t = useT();
@@ -59,6 +65,8 @@ export default function DolaresPage() {
   const { monedaInversiones, monedaPrincipal } = useAppPrefs();
 
   const [showHint, dismissHint] = useHint("tapKpis");
+  // En escritorio los números salen de las cards y se muestran como tablero.
+  const isDesktop = useIsDesktop();
 
   const monedaInversionesEfectiva: "USD" | "EUR" =
     monedaPrincipal === "USD" ? "EUR" :
@@ -207,6 +215,114 @@ export default function DolaresPage() {
     ? Math.ceil(Math.max(0, metaMonto - totalDisplay) / ritmoFX) : null;
   const proyUSD = promAhorroUSD !== null ? Math.max(0, totalDisplay + ritmoFX * 3) : null;
 
+  // ── Tablero de escritorio ──
+  // Los mismos números que las cards del móvil, pero sueltos: en pantalla ancha el marco de
+  // la card solo encierra. La lógica es la ya calculada arriba; acá solo se formatea.
+  // Un grupo por TEMA, con el color que esa sección tiene en móvil: patrimonio verde,
+  // reserva amarilla. Los datos de un mismo tema van juntos en su card.
+  const boardGrupos: KpiGrupo[] = useMemo(() => {
+    const g: KpiGrupo[] = [];
+
+    // Patrimonio: el total y de qué se compone.
+    if (showFX && showNetWorth) {
+      g.push({
+        titulo: t.netWorth, color: "var(--green)",
+        kpis: [
+          {
+            label: t.total, value: money(totalPatrimonio), hero: true, color: "var(--green)",
+            sub: totalEnUSD ? `≈ U$D ${totalEnUSD.toLocaleString("es-AR", { maximumFractionDigits: 0 })} · ${t.official}` : undefined,
+          },
+          { label: t.available, value: money(disponibleActual) },
+          { label: t.savings, value: money(ahorrosTotales) },
+          ...(fxEnARS > 0 ? [{ label: simbolo, value: money(fxEnARS) }] : []),
+        ],
+      });
+    } else {
+      g.push({
+        titulo: t.savings, color: "var(--green)",
+        kpis: [{ label: t.total, value: money(ahorrosTotales), hero: true, color: "var(--green)" }],
+      });
+    }
+
+    // Posición en divisa: cuánto tenés, a qué precio lo compraste y cuánto ganaste. Los
+    // tres son el mismo tema, por eso van en una card y no sueltos entre los demás.
+    if (showFX) {
+      const cotiz = esEUR ? cotizacionEUR : cotizacionUSD;
+      const ganancia = esEUR ? gananciaEUR : gananciaUSD;
+      const gananciaPct = esEUR ? gananciaPctEUR : gananciaPctUSD;
+      const costoProm = esEUR ? costoPromedioEUR : costoPromedioUSD;
+      g.push({
+        titulo: t.reserve, color: "var(--yellow)",
+        kpis: [
+          {
+            label: simbolo, value: oculto ? MASK : `${simbolo} ${totalDisplay.toFixed(2)}`, hero: true, color: "var(--yellow)",
+            sub: cotiz ? `≈ ${money(totalDisplay * cotiz)} · ${t.official} $${Math.round(cotiz).toLocaleString("es-AR")}` : undefined,
+          },
+          ...(costoProm > 0 ? [{ label: t.avgPrice, value: oculto ? MASK : `$${Math.round(costoProm).toLocaleString("es-AR")}` }] : []),
+          ...(ganancia !== null ? [{
+            label: t.profit,
+            value: oculto ? MASK : `${ganancia >= 0 ? "+" : ""}${money(ganancia)}`,
+            color: ganancia >= 0 ? "var(--green)" : "var(--red)",
+            sub: gananciaPct !== null ? `${gananciaPct >= 0 ? "+" : ""}${gananciaPct.toFixed(1)}%` : undefined,
+          }] : []),
+        ],
+      });
+    }
+
+    // Ritmo de ahorro y su proyección. "Por período" solo no dice de qué.
+    if (ahorroStats) {
+      g.push({
+        titulo: t.savingsRateTitle, color: "var(--blue)",
+        kpis: [
+          {
+            label: t.perPeriodSub,
+            value: oculto ? MASK : `${simboloPropio} ${Math.round(ahorroStats.ritmo).toLocaleString("es-AR")}`,
+            hero: true,
+            color: ahorroStats.ritmo < 0 ? "var(--red)" : "var(--green)",
+          },
+          { label: t.statProjection, value: oculto ? MASK : `${simboloPropio} ${Math.round(ahorroStats.proyeccion).toLocaleString("es-AR")}` },
+        ],
+      });
+    }
+    return g;
+  }, [showFX, showNetWorth, totalPatrimonio, totalEnUSD, disponibleActual, ahorrosTotales, esEUR,
+      cotizacionEUR, cotizacionUSD, gananciaEUR, gananciaUSD, gananciaPctEUR, gananciaPctUSD,
+      costoPromedioEUR, costoPromedioUSD, totalDisplay, simbolo, simboloPropio, ahorroStats,
+      fxEnARS, oculto, money, t]);
+
+  const boardMetas: MetaBoard[] = useMemo(() => {
+    const m: MetaBoard[] = [];
+    if (showFX && metaMonto) {
+      const pct = Math.min(100, Math.round((totalDisplay / metaMonto) * 100));
+      m.push({
+        label: t.fxGoal, fecha: fechaCortaConAnio(config?.meta.metaFX?.fecha ?? config?.meta.metaFecha ?? ""),
+        objetivo: `${simbolo} ${metaMonto.toLocaleString("es-AR")}`,
+        faltante: oculto ? MASK : (metaMonto - totalDisplay).toLocaleString("es-AR", { maximumFractionDigits: 0 }),
+        pct, color: pct >= 80 ? "var(--green)" : pct >= 40 ? "var(--yellow)" : "var(--red)",
+        alcanzada: totalDisplay >= metaMonto,
+        stats: [
+          { label: t.statPerPeriod, value: oculto ? MASK : Math.round(ritmoFX).toLocaleString("es-AR") },
+          ...(proyUSD !== null ? [{ label: t.statProjection, value: oculto ? MASK : Math.round(proyUSD).toLocaleString("es-AR") }] : []),
+          ...(periodosParaMeta !== null ? [{ label: t.statToGoal, value: periodosParaMeta === 0 ? t.reached : `${periodosParaMeta} ${t.periodsShort}` }] : []),
+        ],
+      });
+    }
+    if (progresoPropia && metaPropia) {
+      m.push({
+        label: t.savingsGoal, fecha: fechaCortaConAnio(metaPropia.fecha ?? ""),
+        objetivo: oculto ? MASK : money(progresoPropia.acumulado),
+        faltante: oculto ? MASK : money(progresoPropia.faltante),
+        pct: progresoPropia.pct,
+        color: progresoPropia.pct >= 80 ? "var(--green)" : progresoPropia.pct >= 40 ? "var(--yellow)" : "var(--red)",
+        alcanzada: progresoPropia.faltante <= 0,
+        stats: progresoPropia.periodos !== null
+          ? [{ label: t.statToGoal, value: progresoPropia.periodos === 0 ? t.reached : `${progresoPropia.periodos} ${t.periodsShort}` }]
+          : undefined,
+      });
+    }
+    return m;
+  }, [showFX, metaMonto, totalDisplay, simbolo, config, oculto, ritmoFX, proyUSD, periodosParaMeta, progresoPropia, metaPropia, money, t]);
+
   // Card de meta propia (sobre ahorros, moneda principal). Se ubica arriba (usuario sin FX)
   // o al final (usuario ARS con reserva FX) — ver render.
   const metaPropiaCard = progresoPropia && metaPropia ? (() => {
@@ -353,13 +469,15 @@ export default function DolaresPage() {
 
   return (
     <>
-    <div className="page page-mid">
+    <div className={`page ${isDesktop ? "page-fluid" : "page-mid"}`}>
       {loading ? (
         <LoadingSpinner />
       ) : (
         <div className="fade-up">
+          {/* El ícono abre el panel del historial: en escritorio el historial ya se muestra
+              completo en el tablero, así que no va. */}
           <PageHeader title={t.portfolio} style={{ marginBottom: 24 }} right={
-            showFX ? (
+            showFX && !isDesktop ? (
               <button onClick={() => setHistorialOpen(true)} aria-label={t.usdHistory} style={{ background: "transparent", border: "none", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--muted)", padding: 0 }}>
                 <svg width="21" height="21" viewBox="0 0 24 24" fill="none">
                   <line x1="9" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -374,6 +492,26 @@ export default function DolaresPage() {
           } />
           {showHint && <SectionHint title={t.hintInvTitle} body={t.hintInvBody} onDismiss={dismissHint} />}
 
+          {/* Escritorio: tablero con los números fuera de las cards (ver InvestmentsBoard).
+              Móvil: las cards apiladas de siempre. */}
+          {isDesktop ? (
+            <InvestmentsBoard
+              grupos={boardGrupos}
+              metas={boardMetas}
+              historial={showFX ? (
+                <FxHistoryTable
+                  movimientos={esEUR ? historialEUR : historialUSD}
+                  onDelete={setFxDelete}
+                  onVerComprobante={(m) => setViewer({
+                    src: m.comprobanteUrl!,
+                    isPdf: !!m.comprobantePath?.toLowerCase().endsWith(".pdf"),
+                  })}
+                />
+              ) : undefined}
+            />
+          ) : (
+          <>
+
           {/* Usuario SIN reserva FX (EUR/USD): patrimonio en su moneda, meta 2da, ritmo y períodos.
               Todo desde la serie ya calculada. Para el ARS estas cards no aplican (usa las FX). */}
           {!showFX && (<>
@@ -385,7 +523,7 @@ export default function DolaresPage() {
 
           {/* ── NET WORTH ── (solo FX/ARS) */}
           {showFX && showNetWorth && (
-            <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--green) 8%, var(--surface)) 100%)", border: "1px solid color-mix(in srgb, var(--green) 20%, var(--border))", marginBottom: 10 }}>
+            <div className="card inv-hero" style={{ background: "linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--green) 8%, var(--surface)) 100%)", border: "1px solid color-mix(in srgb, var(--green) 20%, var(--border))", marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div className="label" style={{ marginBottom: 0 }}>patrimonio</div>
                 <button onClick={toggle} aria-label={t.hideValues} style={{ background: "transparent", border: "none", color: oculto ? "var(--accent)" : "var(--muted)", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}>
@@ -539,6 +677,8 @@ export default function DolaresPage() {
           {/* Meta de ahorro al final para el usuario ARS con reserva FX. */}
           {showFX && metaPropiaCard}
 
+          </>
+          )}
         </div>
       )}
     </div>
@@ -592,6 +732,7 @@ export default function DolaresPage() {
       onDeleted={removeMovimiento}
     />
     {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
+    {viewer && <MediaViewer src={viewer.src} isPdf={viewer.isPdf} onClose={() => setViewer(null)} />}
     {fxDelete && (
       <ConfirmModal title={t.delete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)" loading={fxDeleting}
         onCancel={() => setFxDelete(null)}
