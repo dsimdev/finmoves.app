@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { useRouter } from "next/navigation";
 import { useData } from "../data-context";
 import { agruparPorPeriodo } from "@/utils/periodo";
@@ -63,6 +64,14 @@ export default function AnalisisPage() {
   const { movimientos } = useData();
   const { m: money } = useMoney();
   const t = useT();
+
+  // Análisis es táctil de punta a punta (swipe entre modos, pills, tap para desglosar) y en
+  // escritorio no se ofrece desde ningún lado. Si se llega por URL, vuelve a Reportes, donde
+  // el comparador de períodos cubre esa necesidad.
+  const isDesktop = useIsDesktop();
+  useEffect(() => {
+    if (isDesktop) router.replace("/reports");
+  }, [isDesktop, router]);
 
   const [input, setInput] = useState("");
   const [pills, setPills] = useState<string[]>([]);
