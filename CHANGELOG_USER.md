@@ -4,6 +4,33 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.92.0] — 2026-07-18
+
+### FinMoves ahora se usa en la computadora
+Hasta ahora la app en una pantalla grande era la versión del celular estirada, con mucho
+espacio desperdiciado. Ahora cada pantalla aprovecha el monitor:
+
+- **Movimientos**: una tabla con todos tus movimientos, que podés **ordenar por cualquier
+  columna** (fecha, monto, categoría). El buscador queda siempre a la vista y hay una fila
+  para **cargar gastos con el teclado**: escribís el monto, Tab, la descripción, Enter, y
+  ya estás cargando el siguiente. Sin tocar el mouse.
+- **Inicio**: tu período a la izquierda (disponible, KPIs, en qué se te va) y los últimos
+  movimientos a la derecha, todo de un vistazo.
+- **Reportes**: elegí dos o más períodos y los ves **comparados lado a lado**, con cuánto
+  subió o bajó cada cosa entre uno y otro.
+- **Inversión**: tu patrimonio, tu posición en dólares y tu ritmo de ahorro agrupados, y el
+  historial de la reserva completo (antes había que abrirlo con el ícono del reloj).
+- **Configuración**: las secciones a la izquierda y el contenido al lado, sin entrar y volver.
+
+En el celular no cambia nada: sigue funcionando exactamente igual.
+
+### Arreglos
+- **El "por período" de tus ahorros podía contradecir a tu patrimonio.** Si alguna vez
+  sacaste de ahorros más de lo que tenías registrado, la app mostraba un ritmo muy negativo
+  mientras arriba tu total decía otra cosa. Ahora los dos números cuentan la misma historia.
+- El monto de tus metas se veía en rojo aunque recién estuvieras empezando: el color ahora
+  está solo en la barra de progreso.
+
 ## [2.91.0] — 2026-07-18
 
 ### Ahora festejamos tus metas en el momento
