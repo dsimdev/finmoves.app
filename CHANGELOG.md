@@ -4,6 +4,61 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.92.0] — 2026-07-18
+
+### Added — desktop
+FinMoves now has a real desktop interface (≥1200px, gated by `useIsDesktop()`), not a
+responsive version of the mobile one. The lesson from the first attempt: rearranging mobile
+components with CSS does not produce a desktop app — they carry mobile assumptions inside
+(abbreviated amounts, pills two-per-row, heroes that assume they own the screen). What works
+is writing the desktop view as a new component over the same data and the same tested logic.
+
+- **Landing**: two-column hero (copy + screenshot) and a feature grid; the carousel stays on
+  mobile. Copy moved from a hardcoded `T` object to `locales/landing.ts`.
+- **Home**: two-column board — the period on the left (hero + KPIs in a row + shortcuts +
+  per-category breakdown) and latest movements in a panel that follows the scroll.
+- **Movements**: `MovementsTable`, a dense table sortable by column with full amounts;
+  `SearchBar` always visible (on mobile the filter is a popover that would cover the rows);
+  `QuickAdd` to log expenses from the keyboard (Tab across fields, Enter saves and returns
+  focus to the amount).
+- **Reports**: `PeriodCompare`, periods side by side — one column per period, one row per
+  metric, each cell carrying its delta against the previous period. On mobile selected
+  periods still merge into a single virtual one.
+- **Investments**: `InvestmentsBoard` groups the figures by theme (net worth / FX position /
+  savings pace), each with the color that section has on mobile; `FxHistoryTable` shows the
+  full reserve history instead of hiding it behind the clock icon.
+- **Settings**: section column + content beside it, via a `layout.tsx` that mounts the
+  sub-pages as children without modifying them.
+- **Admin**: `UsersTable` with permissions as toggle columns instead of a per-user accordion.
+- `BottomSheet` renders as a centered card on desktop (pinned to the bottom edge at full
+  width is not a dialog); the FAB, the header magnifier and the drag handle — all touch
+  patterns — are not offered there.
+- **Analysis is now mobile-only**: it is touch-driven end to end (swipe between modes, term
+  pills, tap to break out a group) and the period comparison covers that need. Reaching it by
+  URL on desktop redirects to Reports.
+- Per-screen widths via `--page-max` instead of the global `max-width: 600px`: `page-fluid`
+  for tables, `page-wide`/`page-mid`/`page-narrow` for the rest. Mobile is untouched: the
+  classes only set `--page-max-desktop`, read inside the media query.
+- The sidenav appeared at 768px while the desktop layout started at 1200: in between you got
+  a sidebar next to the touch list. Unified at 1200.
+
+### Fixed
+- **The savings pace contradicted the accumulated total.** When a withdrawal exceeds what was
+  ever recorded, `ahorrosAcum` clamps to 0 but the pace averaged the nominal movement: with
+  50k saved, a 500k withdrawal and 30k after, the card read "−140,000 per period" while net
+  worth above read 30,000. `PuntoTendencia.deltaAcum` exposes how much the accumulated total
+  actually moved and `ritmoAhorro` averages that. "Worst period" had the same bias.
+  (Closes finding 2 of the v2.75→v2.90 audit.)
+- Goal target amounts were painted with the progress color, so a barely-started goal looked
+  "in the red". Color now belongs to the bar and the percentage only.
+
+### Internal
+- `utils/movement-sort` (canonical + per-column ordering, 12 tests; they caught an inverted
+  direction bug in text sorting), `utils/auto-ahorro` (the rule was written twice inside the
+  modal; now a single definition, 7 tests, shared with quick add), `hooks/useMediaQuery`
+  (`useIsDesktop` via `useSyncExternalStore`, no hydration flash).
+- **177 tests** (up from 155).
+
 ## [2.91.0] — 2026-07-18
 
 ### Changed
