@@ -460,6 +460,135 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .btn-full-entry:hover { color: var(--text); border-color: var(--border-hi); }
 
+/* ── Inversión en escritorio ──
+   Las cards (patrimonio, reserva USD/EUR, metas) son autocontenidas y de alto parecido:
+   en pantalla ancha entran de a dos sin competir. `align-items: start` para que cada una
+   conserve su alto en vez de estirarse a la de al lado. */
+/* ── Tablero de Inversión (escritorio) ──
+   Los números salen de las cards: en móvil el marco agrupa porque hay que scrollear, pero
+   en pantalla ancha solo encierra. Quedan sueltos en una franja, separados por líneas. */
+/* Una card por tema, con el color de esa sección (igual que en móvil). Los datos de un
+   mismo tema van juntos adentro, no sueltos en una franja continua. */
+.inv-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+  /* `stretch` (no `start`): las cards de una fila comparten alto, si no los bordes quedan
+     desparejos según cuántos datos tenga cada tema. */
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+.inv-card { position: relative; display: flex; flex-direction: column; }
+.inv-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+/* Los KPIs del grupo, uno al lado del otro dentro de su card. El margin-top:auto de la
+   última fila empuja los datos secundarios al pie, así los números principales de las tres
+   cards quedan a la misma altura. */
+.inv-card-kpis { display: flex; flex-wrap: wrap; gap: 22px 28px; flex: 1; align-content: flex-start; }
+.inv-kpi { min-width: 0; }
+.inv-kpi-label {
+  font-size: 9.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 7px;
+}
+/* Los montos no se cortan: si no entran, achican en vez de desbordar. */
+.inv-kpi-value {
+  font-size: clamp(16px, 1.35vw, 21px);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* El número principal de cada card (patrimonio total, reserva) manda sobre sus vecinos. */
+.inv-kpi-hero { flex-basis: 100%; }
+.inv-kpi-hero .inv-kpi-value { font-size: clamp(24px, 2vw, 32px); }
+.inv-kpi-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.inv-eye {
+  position: absolute;
+  top: 10px; right: 12px;
+  background: none; border: none; cursor: pointer;
+  color: var(--muted);
+  padding: 4px;
+  display: flex;
+}
+
+/* auto-fit + minmax: a 1900px entran 3 metas por fila y a 1300px dos, sin fijar el número.
+   El tope de 1fr evita que una sola meta se estire a todo el ancho. */
+.inv-metas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+.inv-meta-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+
+/* Título de sección del tablero (separa el historial de las metas). */
+.inv-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.3px;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+/* ── Menú de Configuración en escritorio ──
+   En móvil son filas apiladas (patrón de lista táctil). En pantalla ancha, una fila por
+   sección deja un ícono chico perdido a la izquierda y una línea larguísima: entran mejor
+   como tarjetas en grilla. */
+@media (min-width: 1200px) {
+  /* Configuración deja de ser un menú que navega: columna de secciones + contenido al lado.
+     Las sub-páginas se montan como children sin modificarse. */
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .settings-nav { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 2px; }
+  .settings-nav-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: var(--muted);
+    font-weight: 700;
+    padding: 0 12px;
+    margin-bottom: 12px;
+  }
+  .settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    border: 1px solid transparent;
+  }
+  .settings-nav-item:hover { background: var(--surface); color: var(--text); }
+  .settings-nav-item.is-active {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+    font-weight: 600;
+  }
+  /* La sub-página trae su propio .page (padding, ancho, min-height): adentro del contenedor
+     ya no corresponde — el ancho y el margen los pone la grilla. */
+  .settings-content > .page {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 760px !important;
+    min-height: 0 !important;
+    width: 100%;
+  }
+}
+
 /* ── Carga rápida (escritorio) ──
    Fila de campos sobre la tabla: monto → descripción → categoría → medio → guardar, en el
    orden en que se tipea. Enter guarda y devuelve el foco al monto para encadenar cargas. */
@@ -519,15 +648,15 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: 14px;
   overflow: hidden;
 }
-/* `table-layout: auto` + anchos por columna: fecha/categoría/medio/monto ocupan lo que
-   necesitan y la DESCRIPCIÓN se queda con todo el resto (es el campo que más varía y el
-   que se corta primero cuando falta espacio). */
+/* Todas las columnas ocupan lo que necesitan (`width: 1%` + nowrap) salvo las marcadas como
+   `dt-flex`, que se quedan con el espacio sobrante. Sin esto, una columna de texto libre se
+   come el ancho y empuja los montos contra el borde. */
 .dt { width: 100%; border-collapse: collapse; font-size: 13px; }
-.dt th:nth-child(1), .dt td:nth-child(1) { width: 1%; white-space: nowrap; }  /* fecha */
-.dt th:nth-child(2), .dt td:nth-child(2) { width: auto; }                     /* descripción */
-.dt th:nth-child(3), .dt td:nth-child(3),
-.dt th:nth-child(4), .dt td:nth-child(4) { width: 1%; white-space: nowrap; }  /* categoría, medio */
-.dt th:nth-child(5), .dt td:nth-child(5) { width: 1%; white-space: nowrap; }  /* monto */
+.dt th, .dt td { width: 1%; white-space: nowrap; }
+.dt th.dt-flex, .dt td.dt-flex { width: auto; white-space: normal; }
+/* El <th> centra por defecto: cada encabezado se alinea como su columna (izquierda salvo
+   que la celda pida otra cosa), si no el título flota lejos de sus datos. */
+.dt th { text-align: left; }
 .dt thead th {
   position: sticky;
   top: 0;

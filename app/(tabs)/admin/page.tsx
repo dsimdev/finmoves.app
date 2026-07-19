@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { auth } from "@/services/firebase/firebase";
 import { getIdToken } from "firebase/auth";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
+import { UsersTable } from "@/components/desktop/UsersTable";
 
 type AdminUser = {
   uid: string; email: string; nombre: string;
@@ -18,6 +20,8 @@ export default function AdminPage() {
   const { user } = useAuth();
   const router = useRouter();
   const isOwner = !!user?.email && user.email === process.env.NEXT_PUBLIC_OWNER_EMAIL;
+  // En pantalla ancha los usuarios van como tabla con los permisos en columnas.
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     if (user && !isOwner) router.replace("/");
@@ -115,8 +119,10 @@ export default function AdminPage() {
 
   if (!isOwner) return null;
 
+  // Con la tabla de usuarios (escritorio) hace falta ancho; en móvil, la columna angosta de
+  // siempre porque son cards apiladas.
   return (
-    <div className="page page-narrow">
+    <div className={`page ${isDesktop ? "page-fluid" : "page-narrow"}`}>
       <div style={{ marginBottom: 24 }}>
         <div className="label">administración</div>
         <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>Panel</div>
@@ -168,6 +174,13 @@ export default function AdminPage() {
           <div style={{ color: "var(--muted)", fontSize: 12, textAlign: "center", padding: "12px 0" }}>…</div>
         ) : users.length === 0 ? (
           <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>sin usuarios</div>
+        ) : isDesktop ? (
+          /* Escritorio: los permisos entran como columnas de toggles, así se ve quién tiene
+             qué sin abrir un acordeón por usuario. */
+          <UsersTable
+            users={users}
+            onTogglePerm={(u, key, label, value) => setPendingPerm({ uid: u.uid, key, value, label, nombre: u.nombre || u.email })}
+          />
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {users.map((u) => (

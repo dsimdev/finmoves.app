@@ -51,6 +51,7 @@ export function MovementsTable({ movimientos, onEdit, onDelete }: Props) {
               const activa = orden.col === c.id;
               return (
                 <th key={c.id} onClick={() => toggleOrden(c.id)}
+                  className={c.id === "descripcion" ? "dt-flex" : undefined}
                   style={{ textAlign: c.align ?? "left", cursor: "pointer", color: activa ? "var(--text)" : undefined }}
                   aria-sort={activa ? (orden.dir === "asc" ? "ascending" : "descending") : "none"}>
                   {t[c.labelKey]}
@@ -69,7 +70,7 @@ export function MovementsTable({ movimientos, onEdit, onDelete }: Props) {
             return (
               <tr key={m.id} onDoubleClick={() => onEdit(m)}>
                 <td style={{ color: "var(--muted)", whiteSpace: "nowrap" }}>{fechaCorta(m.fecha)}</td>
-                <td>
+                <td className="dt-flex">
                   {/* Punto de color por tipo: la misma paleta que la lista del móvil, pero
                       como marca chica en vez de ícono grande (en tabla el color alcanza). */}
                   <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: d.color, marginRight: 9, verticalAlign: "middle" }} />
