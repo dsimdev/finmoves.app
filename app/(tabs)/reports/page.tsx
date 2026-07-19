@@ -525,10 +525,14 @@ export default function ReportesPage() {
             ) : undefined}
             right={
               // Acceso a Análisis (reportes avanzados). Ícono de "ajustes/sliders" para
-              // distinguirlo de la lupa de Movimientos.
+              // distinguirlo de la lupa de Movimientos. Es una función TÁCTIL (swipe entre
+              // modos, pills, tap para desglosar): en escritorio no se ofrece — el comparador
+              // de períodos de esta misma pantalla cubre esa necesidad.
+              isDesktop ? undefined : (
               <Link href="/analisis" aria-label={t.analyzeTitle} style={{ color: "var(--muted)", display: "flex", padding: 6, margin: -6 }}>
                 <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
               </Link>
+              )
             }
           />
           {showHint && <SectionHint title={t.hintRepTitle} body={t.hintRepBody} onDismiss={dismissHint} />}
