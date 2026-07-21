@@ -4,6 +4,14 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.92.2] — 2026-07-21
+
+### Arreglos
+- La guía todavía mencionaba el ahorro automático, que ya habíamos sacado. Corregido para que
+  no explique algo que ya no está.
+
+---
+
 ## [2.92.1] — 2026-07-20
 
 ### Se fue el ahorro automático
