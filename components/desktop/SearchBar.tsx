@@ -9,13 +9,18 @@ import type { Movimiento } from "@/types";
 // anclado a la lupa porque no hay lugar; acá la barra vive sobre la tabla y no la tapa.
 // Misma semántica que MovementsFilter: términos como pills, OR entre ellos, palabra exacta.
 
-export function SearchBar({ movs, terms, onChange, onNew }: {
+export function SearchBar({ movs, movsGlobal, terms, onChange, onNew, todosPeriodos, onTodosPeriodosChange }: {
   /** Movimientos del período (para el preview de coincidencias mientras se tipea). */
   movs: Movimiento[];
+  /** Todos los movimientos (preview cuando el ámbito es global). */
+  movsGlobal: Movimiento[];
   terms: string[];
   onChange: (terms: string[]) => void;
   /** Alta de movimiento: en escritorio reemplaza al botón flotante del móvil. */
   onNew: () => void;
+  /** Ámbito: período seleccionado (false) o todo el historial (true). */
+  todosPeriodos: boolean;
+  onTodosPeriodosChange: (v: boolean) => void;
 }) {
   const t = useT();
   const [input, setInput] = useState("");
@@ -29,7 +34,9 @@ export function SearchBar({ movs, terms, onChange, onNew }: {
   };
   const removeTerm = (v: string) => onChange(terms.filter((x) => x !== v));
 
-  const preview = input.trim() ? movs.filter((m) => movMatchesAny(m, [input.trim()])).length : null;
+  const preview = input.trim()
+    ? (todosPeriodos ? movsGlobal : movs).filter((m) => movMatchesAny(m, [input.trim()])).length
+    : null;
 
   return (
     <div className="searchbar">
@@ -54,10 +61,27 @@ export function SearchBar({ movs, terms, onChange, onNew }: {
         {/* Cuántos coinciden con lo tipeado, antes de fijarlo como término. */}
         {preview !== null && (
           <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
-            {preview > 0 ? t.filterPreview(preview) : t.filterNoResults}
+            {preview > 0 ? t.filterPreview(preview) : (todosPeriodos ? t.filterNoResultsGlobal : t.filterNoResults)}
           </span>
         )}
       </div>
+
+      {/* Ámbito de la búsqueda: con "todos los períodos" el selector de pills de arriba se
+          reduce a los que tienen coincidencias. Mismo comportamiento que en móvil. */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={todosPeriodos}
+        onClick={() => onTodosPeriodosChange(!todosPeriodos)}
+        className="searchbar-pill"
+        style={{
+          background: todosPeriodos ? "var(--accent-dim)" : "transparent",
+          borderColor: todosPeriodos ? "var(--accent)" : "var(--border)",
+          color: todosPeriodos ? "var(--accent)" : "var(--muted)",
+        }}
+      >
+        {t.filterAllPeriods}
+      </button>
 
       {/* Términos fijados: cada uno es un OR con los demás. */}
       {terms.map((term) => (

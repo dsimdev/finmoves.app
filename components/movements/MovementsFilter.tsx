@@ -9,15 +9,23 @@ import { movMatchesAny } from "@/utils/search";
 import type { Movimiento } from "@/types";
 
 // Filtro in-place de Movimientos: popover anclado a la lupa del header (mismo molde que el
-// panel de notificaciones). No navega: los términos elegidos acotan la lista del período
-// seleccionado en la misma pantalla. Pills OR + preview de cuántos coinciden antes de fijar.
-export function MovementsFilter({ open, onClose, movs, terms, onChange }: {
+// panel de notificaciones). No navega: los términos elegidos acotan la lista en la misma
+// pantalla. Pills OR + preview de cuántos coinciden antes de fijar.
+//
+// Ámbito: por defecto acota al período seleccionado. Con "todos los períodos" la búsqueda
+// pasa a ser global y el selector de año/período de la pantalla se reduce a los que tienen
+// coincidencias (la navegación por pills sigue siendo la misma, solo se acorta).
+export function MovementsFilter({ open, onClose, movs, movsGlobal, terms, onChange, todosPeriodos, onTodosPeriodosChange }: {
   open: boolean;
   onClose: () => void;
   /** Movimientos del período seleccionado (para el preview de coincidencias). */
   movs: Movimiento[];
+  /** Todos los movimientos (preview cuando el ámbito es global). */
+  movsGlobal: Movimiento[];
   terms: string[];
   onChange: (terms: string[]) => void;
+  todosPeriodos: boolean;
+  onTodosPeriodosChange: (v: boolean) => void;
 }) {
   const t = useT();
   const [input, setInput] = useState("");
@@ -40,10 +48,14 @@ export function MovementsFilter({ open, onClose, movs, terms, onChange }: {
   };
   const removeTerm = (v: string) => onChange(terms.filter((x) => x !== v));
 
-  // Preview: cuántos movimientos del período coinciden con lo tipeado (sin fijarlo aún).
-  const previewCount = input.trim()
-    ? movs.filter((m) => movMatchesAny(m, [input.trim()])).length
-    : null;
+  // Preview: cuántos coinciden con lo tipeado (sin fijarlo aún), sobre el ámbito elegido.
+  // En global además se cuenta en cuántos períodos distintos aparece, que es lo que va a
+  // quedar en el selector de pills al fijar el término.
+  const termino = input.trim();
+  const base = todosPeriodos ? movsGlobal : movs;
+  const matches = termino ? base.filter((m) => movMatchesAny(m, [termino])) : null;
+  const previewCount = matches?.length ?? null;
+  const previewPeriodos = todosPeriodos && matches ? new Set(matches.map((m) => m.periodoId)).size : 0;
 
   if (!mounted || !open) return null;
 
@@ -94,9 +106,37 @@ export function MovementsFilter({ open, onClose, movs, terms, onChange }: {
           </div>
           {previewCount !== null && (
             <div style={{ marginTop: 8, fontSize: 11.5, color: previewCount > 0 ? "var(--green)" : "var(--muted)" }}>
-              {previewCount > 0 ? t.filterPreview(previewCount) : t.filterNoResults}
+              {previewCount > 0
+                ? `${t.filterPreview(previewCount)}${previewPeriodos > 1 ? ` · ${t.filterPeriodsFound(previewPeriodos)}` : ""}`
+                : (todosPeriodos ? t.filterNoResultsGlobal : t.filterNoResults)}
             </div>
           )}
+
+          {/* Ámbito de la búsqueda. Al pasar a global, el selector de año/período de la
+              pantalla se reduce a los que tienen coincidencias (no hace falta otra vista). */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={todosPeriodos}
+            onClick={() => onTodosPeriodosChange(!todosPeriodos)}
+            style={{
+              display: "flex", alignItems: "center", gap: 9, width: "100%", marginTop: 12,
+              background: "none", border: "none", padding: "4px 0", cursor: "pointer",
+              color: todosPeriodos ? "var(--accent)" : "var(--muted)", fontSize: 12.5, fontWeight: 600,
+            }}
+          >
+            <span style={{
+              width: 34, height: 19, borderRadius: 999, flexShrink: 0, position: "relative", display: "block",
+              background: todosPeriodos ? "var(--accent)" : "var(--surface-alt)",
+              border: `1px solid ${todosPeriodos ? "var(--accent)" : "var(--border)"}`, transition: "background .15s",
+            }}>
+              <span style={{
+                position: "absolute", top: 2, left: todosPeriodos ? 16 : 2, width: 13, height: 13,
+                borderRadius: "50%", background: "#fff", transition: "left .15s",
+              }} />
+            </span>
+            {t.filterAllPeriods}
+          </button>
 
           {terms.length > 0 && (
             <button onClick={() => onChange([])} style={{ width: "100%", marginTop: 12, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>{t.filterClear}</button>
