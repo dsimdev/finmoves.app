@@ -3,6 +3,7 @@ import { pushYGuardar } from "./notif-store";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { shouldRemind, type RecReminderState } from "@/utils/recurrent-reminder";
+import { categoriasEnRiesgo } from "@/utils/budget-alert";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
@@ -117,6 +118,9 @@ async function notifyUser(uid: string, ctx: GlobalCtx): Promise<void> {
         await guardDiario(checkCargaOlvidada(uid, recientes, notify, updates));
         // Wrapped: el 31/12, avisa que está el resumen anual (necesita los movimientos).
         await guardDiario(checkWrapped(uid, recientes, notify, updates));
+        // Desvío de presupuesto: proyecta el cierre del período por categoría y avisa si va
+        // camino a pasarse (necesita config para el presupuesto y los movimientos del período).
+        await guardDiario(checkPresupuesto(uid, recientes, config, notify, updates));
       }
       // Recurrentes y recordatorios NO dependen de config/meta (viven en sus colecciones):
       // se chequean aunque el doc de config falte.
@@ -303,6 +307,50 @@ async function checkWrapped(uid: string, movs: Movimiento[], notify: Record<stri
   if (!movs.some((m) => m.fecha?.startsWith(año))) return;
   const ok = await pushYGuardar(uid, "wrapped", { title: "Tu año en FinMoves", body: `Ya podés ver tu resumen de ${año} 🎉`, tag: `wrapped-${año}`, url: "/reports" }, "/reports");
   if (ok) updates.wrappedNotifiedYear = año;
+}
+
+// Desvío de presupuesto: proyecta, al ritmo del período en curso, si alguna categoría va a
+// cerrar por encima de su presupuesto, y avisa ANTES de pasarse. La lógica (proyección +
+// guarda de "período ya avanzado" + umbral) vive en utils/budget-alert (pura, testeada).
+// Dedup: máx 1 aviso por categoría por período. `budgetAvisos` = { [periodoId]: string[] }.
+// Solo se conserva la entrada del período en curso (los viejos se descartan solos).
+async function checkPresupuesto(uid: string, movs: Movimiento[], config: ConfigUsuario, notify: Record<string, unknown>, updates: Record<string, unknown>) {
+  const periodos = agruparPorPeriodo(movs);
+  if (periodos.length === 0) return;
+  const actual = periodos[0]; // el más nuevo = período en curso
+
+  // Presupuesto efectivo: override del período (colección presupuestos/) o el template de config.
+  const safeId = actual.periodoId.replace(/\//g, "_");
+  const override = (await adminDb().doc(`users/${uid}/presupuestos/${safeId}`).get()).data() as
+    | { categorias?: Record<string, number> } | undefined;
+  const presupuesto = override?.categorias ?? config.meta.presupuestoTemplate ?? {};
+  if (Object.keys(presupuesto).length === 0) return;
+
+  // Gasto por categoría del período (Gasto y CompraUSD cuentan, igual que en reportes).
+  const gastadoPorCategoria: Record<string, number> = {};
+  for (const m of actual.movimientos) {
+    if (m.tipo === "Gasto" || m.tipo === "CompraUSD") {
+      gastadoPorCategoria[m.categoria] = (gastadoPorCategoria[m.categoria] ?? 0) + m.monto;
+    }
+  }
+
+  // Días transcurridos del período en curso (mismo cálculo que ritmoGasto: hoy − inicio).
+  const inicio = parsePeriodoId(actual.periodoId);
+  const dias = Math.max(1, Math.round((Date.now() - inicio.getTime()) / 86_400_000));
+
+  const avisadas = ((notify.budgetAvisos as Record<string, string[]>) ?? {})[actual.periodoId] ?? [];
+  const enRiesgo = categoriasEnRiesgo(gastadoPorCategoria, presupuesto, dias, avisadas);
+  if (enRiesgo.length === 0) return;
+
+  const primera = enRiesgo[0];
+  const body = enRiesgo.length === 1
+    ? `A este ritmo, ${primera.categoria} cierra en ${primera.pctProyectado}% de su presupuesto.`
+    : `${enRiesgo.length} categorías van camino a pasarse: ${enRiesgo.slice(0, 3).map((c) => c.categoria).join(", ")}${enRiesgo.length > 3 ? "…" : ""}`;
+
+  const ok = await pushYGuardar(uid, "presupuesto", { title: "Presupuesto", body, tag: `presu-${safeId}`, url: "/reports" }, "/reports");
+  // Dedup SOLO si el push se confirmó (regla v2.71.0). Se marcan TODAS las avisadas ahora y se
+  // deja únicamente la entrada del período en curso, para no acumular períodos viejos.
+  if (ok) updates.budgetAvisos = { [actual.periodoId]: [...avisadas, ...enRiesgo.map((c) => c.categoria)] };
 }
 
 // Recordatorio de sueldo: si pasó más de ~1 mes desde el último período abierto.

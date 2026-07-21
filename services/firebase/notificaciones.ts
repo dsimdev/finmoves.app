@@ -5,7 +5,7 @@ import { db } from "./firebase";
 // es el deep-link al que navega el tap; lo escribe el backend al enviar el push.
 export type NotifTipo =
   | "dolar" | "version" | "recurrente" | "sueldo" | "carga"
-  | "meta" | "recordatorio" | "permiso" | "sync" | "baja" | "wrapped";
+  | "meta" | "recordatorio" | "permiso" | "sync" | "baja" | "wrapped" | "presupuesto";
 
 export interface Notificacion {
   id: string;

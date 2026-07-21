@@ -4,6 +4,20 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.93.0] — 2026-07-21
+
+### Aviso antes de pasarte del presupuesto
+FinMoves ahora te avisa **antes** de que te pases del presupuesto de una categoría, no cuando
+ya es tarde. Mira a qué ritmo vas gastando en el período y, si a ese ritmo la categoría va a
+cerrar por encima de lo que le pusiste, te manda un aviso: *"A este ritmo, Comida cierra en
+180% de su presupuesto."*
+
+- Te avisa **una sola vez** por categoría en cada período, así no molesta.
+- Espera unos días del período antes de avisar, para no dispararse con poca información.
+- Necesitás tener notificaciones activadas y un presupuesto puesto en la categoría.
+
+---
+
 ## [2.92.2] — 2026-07-21
 
 ### Arreglos
