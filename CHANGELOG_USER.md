@@ -4,6 +4,22 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.92.1] — 2026-07-20
+
+### Se fue el ahorro automático
+La opción que sumaba un monto fijo a tus ahorros con cada gasto ya no está. Los ahorros que
+ya se generaron con esa función quedan como están (son ahorros de verdad); simplemente de acá
+en adelante no se agrega ninguno solo. Podés seguir moviendo plata a ahorros a mano cuando
+quieras.
+
+### Arreglos
+- En la computadora, comparar períodos en Reportes podía mostrar una mejora como si fuera un
+  empeoramiento cuando el disponible estaba en negativo. Ahora la flecha y el color apuntan
+  para el lado correcto.
+- Pequeños ajustes en la carga rápida de la computadora.
+
+---
+
 ## [2.92.0] — 2026-07-18
 
 ### FinMoves ahora se usa en la computadora

@@ -35,8 +35,10 @@ export function PeriodCompare({ periodos }: { periodos: PeriodoResumen[] }) {
   const filas = useMemo((): Fila[] => {
     const serie = (get: (p: PeriodoResumen) => number) => cols.map(get);
     // Variación de cada columna contra la anterior. La primera no tiene con qué comparar.
+    // Denominador en valor absoluto: con base negativa (ej. disponible en rojo) dividir por
+    // el valor con signo invertía el delta —ir de −1000 a −500 (mejora) daba negativo—.
     const deltasDe = (vals: number[]) =>
-      vals.map((v, i) => (i === 0 || !vals[i - 1] ? null : ((v - vals[i - 1]) / vals[i - 1]) * 100));
+      vals.map((v, i) => (i === 0 || !vals[i - 1] ? null : ((v - vals[i - 1]) / Math.abs(vals[i - 1])) * 100));
 
     const mk = (label: string, get: (p: PeriodoResumen) => number, opts: { subirEsBueno?: boolean; destacada?: boolean } = {}): Fila => {
       const vals = serie(get);
@@ -118,7 +120,7 @@ export function PeriodCompare({ periodos }: { periodos: PeriodoResumen[] }) {
               <td className="dt-flex" style={{ color: "var(--muted)" }}>{cat}</td>
               {montos.map((m, i) => {
                 const prev = i > 0 ? montos[i - 1] : 0;
-                const d = i === 0 || !prev ? null : ((m - prev) / prev) * 100;
+                const d = i === 0 || !prev ? null : ((m - prev) / Math.abs(prev)) * 100;
                 return (
                   <td key={i} style={{ textAlign: "right", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", color: m === 0 ? "var(--muted)" : undefined }}>
                     {m === 0 ? "—" : money(m)}

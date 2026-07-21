@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import { useT } from "@/hooks/useTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import { crearMovimientoConId, nuevoMovimientoId } from "@/services/firebase/movimientos";
-import { montoAutoAhorro } from "@/utils/auto-ahorro";
 import { num } from "@/utils/movement-fx";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
@@ -53,25 +52,12 @@ export function QuickAdd({ config, periodoId, onCreated, onRollback, onError }: 
     const now = new Date();
     const fecha = hoyISO();
 
-    const creados: Movimiento[] = [];
-    creados.push({
+    const creados: Movimiento[] = [{
       id: nuevoMovimientoId(uid),
       timestampCarga: now, fecha, tipo: "Gasto",
       categoria: catFinal, descripcion: descripcion.trim(), monto: montoNum,
       medioPago: medioFinal, observaciones: observaciones.trim(), periodoId: periodoId!, userId: uid,
-    });
-
-    // Misma regla que el modal (utils/auto-ahorro): un gasto que califica arrastra su Move.
-    const montoAA = montoAutoAhorro(config, { tipo: "Gasto", categoria: catFinal, descripcion, medioPago: medioFinal });
-    if (montoAA > 0) {
-      creados.push({
-        id: nuevoMovimientoId(uid),
-        timestampCarga: now, fecha, tipo: "Move", direccionMove: "aAhorro",
-        categoria: "Move", descripcion: "Auto-ahorro", monto: montoAA,
-        medioPago: "Mercado Pago", observaciones: `por ${catFinal}`,
-        periodoId: periodoId!, userId: uid,
-      });
-    }
+    }];
 
     // Optimista: la fila aparece ya y el foco vuelve al monto para seguir cargando. Si la
     // escritura falla, se avisa y se revierte (mismo criterio que el alta del modal).
