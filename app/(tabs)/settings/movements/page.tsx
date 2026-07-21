@@ -3,15 +3,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../../data-context";
-import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useT } from "@/hooks/useTranslation";
 import { db } from "@/services/firebase/firebase";
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { dbErrorMessage } from "@/lib/firebase-error";
 import type { ConfigUsuario } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Loader } from "@/components/ui/Loader";
-import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Toggle, SubHeader } from "../_shared";
 
 // Fila editable: nombre + switch activar/desactivar + borrar.
@@ -31,7 +28,6 @@ function ItemRow({ name, dot, activo, onToggle, onDelete }: { name: string; dot:
 export default function MovementsSettings() {
   const { user } = useAuth();
   const { config, refreshConfig: refresh } = useData();
-  const { monedaPrincipal } = useAppPrefs();
   const t = useT();
 
   const [guardando, setGuardando] = useState(false);
@@ -41,12 +37,6 @@ export default function MovementsSettings() {
   const [adding, setAdding] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoTipo, setNuevoTipo] = useState<"Gasto" | "Ingreso">("Gasto");
-  const [showAutoAhorroModal, setShowAutoAhorroModal] = useState(false);
-  const [localAutoMonto, setLocalAutoMonto] = useState("");
-  const [localAutoMedios, setLocalAutoMedios] = useState<string[]>([]);
-  const [localAutoOmitir, setLocalAutoOmitir] = useState<string[]>([]);
-  const [localAutoOmitirInput, setLocalAutoOmitirInput] = useState("");
-
   const [localCats, setLocalCats] = useState<ConfigUsuario["categorias"]>([]);
   const [localMedios, setLocalMedios] = useState<ConfigUsuario["mediosPago"]>([]);
   const [localOrigenes, setLocalOrigenes] = useState<ConfigUsuario["origenesAhorro"]>([]);
@@ -91,36 +81,6 @@ export default function MovementsSettings() {
     else { const next = [...origRef.current, { id: nombre, nombre, activo: true }]; origRef.current = next; setLocalOrigenes(next); }
     setNuevoNombre(""); persist();
   };
-
-  // Auto-ahorro
-  const openAutoAhorroModal = () => {
-    if (!config) return;
-    setLocalAutoMonto(config.meta.autoAhorro?.monto?.toString() ?? "");
-    setLocalAutoMedios(config.meta.autoAhorro?.mediosPago ?? config.mediosPago.filter(m => m.activo).map(m => m.nombre));
-    setLocalAutoOmitir(config.meta.autoAhorro?.omitirDescripciones ?? []);
-    setLocalAutoOmitirInput(""); setShowAutoAhorroModal(true);
-  };
-  const handleToggleAutoAhorro = () => {
-    if (!config) return;
-    if (config.meta.autoAhorro?.activo) saveConfig({ ...config, meta: { ...config.meta, autoAhorro: { ...config.meta.autoAhorro, activo: false } } });
-    else openAutoAhorroModal();
-  };
-  const confirmAutoAhorro = () => {
-    if (!config) return;
-    const monto = parseFloat(localAutoMonto) || 0;
-    if (monto <= 0 || localAutoMedios.length === 0) return;
-    saveConfig({ ...config, meta: { ...config.meta, autoAhorro: { activo: true, monto, mediosPago: localAutoMedios, omitirDescripciones: localAutoOmitir } } });
-    setShowAutoAhorroModal(false);
-  };
-  const canConfirmAutoAhorro = (() => {
-    const monto = parseFloat(localAutoMonto) || 0;
-    if (monto <= 0 || localAutoMedios.length === 0) return false;
-    const saved = config?.meta.autoAhorro;
-    const montoChanged = monto !== (saved?.monto ?? 0);
-    const mediosChanged = JSON.stringify([...localAutoMedios].sort()) !== JSON.stringify([...(saved?.mediosPago ?? [])].sort());
-    const omitirChanged = JSON.stringify([...localAutoOmitir].sort()) !== JSON.stringify([...(saved?.omitirDescripciones ?? [])].sort());
-    return montoChanged || mediosChanged || omitirChanged || !saved?.activo;
-  })();
 
   // Presupuesto (template por categoría) — fusionado desde la antigua sección Presupuestos.
   const [localTemplate, setLocalTemplate] = useState<Record<string, string>>({});
@@ -206,70 +166,6 @@ export default function MovementsSettings() {
           <ItemRow key={o.nombre} name={o.nombre} dot="var(--green)" activo={o.activo} onToggle={() => toggleOri(o.nombre)} onDelete={() => setPendingDelete({ kind: "ori", nombre: o.nombre })} />
         ))}
       </div>
-
-      {/* Auto-ahorro */}
-      <div style={{ ...card, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ flex: 1, cursor: config.meta.autoAhorro?.activo ? "pointer" : "default" }} onClick={config.meta.autoAhorro?.activo ? openAutoAhorroModal : undefined}>
-          <div style={{ fontSize: 14, fontWeight: 500 }}>{t.autoSavings}</div>
-          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-            {config.meta.autoAhorro?.activo && config.meta.autoAhorro.monto > 0 ? (() => {
-              const sym = monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$";
-              const monto = `${sym}${config.meta.autoAhorro.monto.toLocaleString("es-AR")} por gasto`;
-              const medios = config.meta.autoAhorro.mediosPago ?? [];
-              const allActive = config.mediosPago.filter(m => m.activo).map(m => m.nombre);
-              const mediosStr = medios.length === 0 || medios.length === allActive.length ? t.allMethods : medios.join(" + ");
-              const omitir = config.meta.autoAhorro.omitirDescripciones ?? [];
-              const omitirStr = omitir.length > 0 ? ` · ${t.skipPrefix} ${omitir.join(", ")}` : "";
-              return `${monto} · ${mediosStr}${omitirStr}`;
-            })() : t.setsFixedAmount}
-          </div>
-        </div>
-        <Toggle activo={config.meta.autoAhorro?.activo ?? false} onClick={handleToggleAutoAhorro} />
-      </div>
-
-      <BottomSheet open={showAutoAhorroModal} onClose={() => setShowAutoAhorroModal(false)} title={t.autoSavings}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <div>
-            <div className="label" style={{ marginBottom: 8 }}>{t.autoSavingsAmountPerExpense(monedaPrincipal === "USD" ? "U$D" : monedaPrincipal === "EUR" ? "€" : "$")}</div>
-            <input type="number" value={localAutoMonto} placeholder="0" className="input" style={{ fontFamily: "var(--font-mono)", fontSize: 15 }} onChange={e => setLocalAutoMonto(e.target.value)} />
-          </div>
-          <div>
-            <div className="label" style={{ marginBottom: 8 }}>{t.appliedPaymentMethods}</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {config.mediosPago.filter(m => m.activo).map(m => {
-                const sel = localAutoMedios.includes(m.nombre);
-                return <button key={m.nombre} type="button" onClick={() => setLocalAutoMedios(sel ? localAutoMedios.filter(x => x !== m.nombre) : [...localAutoMedios, m.nombre])} className="pill" style={{ borderColor: sel ? "var(--blue)" : "var(--border)", background: sel ? "var(--blue-dim)" : "transparent", color: sel ? "var(--blue)" : "var(--muted)" }}>{m.nombre}</button>;
-              })}
-            </div>
-          </div>
-          <div>
-            <div className="label" style={{ marginBottom: 8 }}>{t.descriptionsToSkip}</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-              <input value={localAutoOmitirInput} onChange={e => setLocalAutoOmitirInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && localAutoOmitirInput.trim()) { const val = localAutoOmitirInput.trim(); if (!localAutoOmitir.includes(val)) setLocalAutoOmitir([...localAutoOmitir, val]); setLocalAutoOmitirInput(""); } }}
-                placeholder={t.egPlaceholder} style={{ flex: 1, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", fontSize: 13, color: "var(--text)" }} />
-              <button type="button" onClick={() => { const val = localAutoOmitirInput.trim(); if (val && !localAutoOmitir.includes(val)) setLocalAutoOmitir([...localAutoOmitir, val]); setLocalAutoOmitirInput(""); }} style={{ background: "none", border: "none", color: "var(--green)", fontSize: 26, fontWeight: 300, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>+</button>
-            </div>
-            {localAutoOmitir.length > 0 && (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {localAutoOmitir.map(d => (
-                  <div key={d} style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--red-dim)", border: "1px solid var(--red)33", borderRadius: 999, padding: "3px 10px" }}>
-                    <span style={{ fontSize: 12 }}>{d}</span>
-                    <button type="button" onClick={() => setLocalAutoOmitir(localAutoOmitir.filter(x => x !== d))} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1 }}>×</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
-            <button onClick={confirmAutoAhorro} disabled={!canConfirmAutoAhorro || guardando} style={{ width: 56, height: 56, borderRadius: "50%", background: canConfirmAutoAhorro ? "var(--green)" : "transparent", border: `2px solid ${canConfirmAutoAhorro ? "var(--green)" : "var(--border)"}`, color: canConfirmAutoAhorro ? "var(--bg)" : "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: canConfirmAutoAhorro ? "pointer" : "default", opacity: guardando ? 0.5 : 1 }}>
-              {guardando
-                ? <Loader size={20} />
-                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </button>
-          </div>
-        </div>
-      </BottomSheet>
 
       {/* Presupuesto (template por categoría) */}
       <div style={card}>

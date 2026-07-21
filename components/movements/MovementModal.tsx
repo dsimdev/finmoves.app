@@ -24,7 +24,6 @@ import { agruparPorPeriodo, formatARS, fechaCorta, fechaAPeriodoId } from "@/uti
 import { serieTendencia } from "@/utils/reportes";
 import { reservaFX } from "@/utils/reserva";
 import { fxFlags, calcularFX, num } from "@/utils/movement-fx";
-import { montoAutoAhorro } from "@/utils/auto-ahorro";
 import {
   DetalleHero, DetalleFX, DetalleTextos, ComprobanteButton,
   IconoCalendario, IconoTarjeta, IconoRecurrente, detalleChip, esMovimientoFX, monedaMovFX,
@@ -434,19 +433,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         periodoId: periodoIdFinal, userId: uid,
       };
       created.push({ ...restoData, id: nuevoMovimientoId(uid) });
-    }
-    // Auto-ahorro: la regla vive en utils/auto-ahorro, compartida con la carga rápida de
-    // escritorio (si divergieran, el mismo gasto ahorraría o no según desde dónde se cargue).
-    const montoAA = montoAutoAhorro(config, { tipo, categoria, descripcion, medioPago });
-    if (montoAA > 0) {
-      const aaData: Omit<Movimiento, "id"> = {
-        timestampCarga: now, fecha, tipo: "Move",
-        categoria: "Move", descripcion: "Auto-ahorro",
-        monto: montoAA,
-        medioPago: "Mercado Pago", observaciones: `por ${categoria}`,
-        periodoId: periodoIdFinal, userId: uid, direccionMove: "aAhorro",
-      };
-      created.push({ ...aaData, id: nuevoMovimientoId(uid) });
     }
 
     // Snapshot del recurrente antes del reset (usa estado del form).
@@ -870,21 +856,6 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
               </div>
             </div>
           )}
-
-          {/* Auto-ahorro: preview de lo que se va a sumar. Misma regla que el alta (utils/
-              auto-ahorro), más el requisito de que ya haya descripción escrita. */}
-          {descripcion.trim().length > 0 && (() => {
-            const monto = montoAutoAhorro(config, { tipo, categoria, descripcion, medioPago });
-            if (monto <= 0) return null;
-            return (
-              <div style={{ background: "var(--blue-dim)", border: "1px solid var(--blue)33", borderRadius: "var(--radius-sm)", padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "var(--blue)", display: "flex", alignItems: "center", gap: 8 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {money(monto)} {t.toSavings}
-              </div>
-            );
-          })()}
 
           {addError && (
             <div style={{ background: "var(--red-dim)", border: "1px solid var(--red)44", borderRadius: "var(--radius-sm)", padding: 12, marginBottom: 14, fontSize: 12, color: "var(--red)" }}>

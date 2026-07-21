@@ -4,6 +4,30 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.92.1] — 2026-07-20
+
+### Removed
+- **Auto-savings feature dropped entirely.** The rule that fired a fixed Move to savings on
+  every qualifying expense is gone: no config toggle (Settings → Movements), no generation in
+  the movement modal or in the desktop quick-add, and `utils/auto-ahorro` + its tests are
+  deleted. Historical Move entries labelled "Auto-ahorro" are left untouched (they are real
+  savings). `meta.autoAhorro` stays in the type as optional so existing config docs that carry
+  it are simply ignored.
+
+### Fixed
+- **Desktop quick-add skipped the new-row flash.** `QuickAdd` passed `onCreated` straight to
+  `prependMovimiento`, bypassing `handleCreated` (which sets the brief highlight). It now goes
+  through `handleCreated`, matching the mobile/modal feedback.
+- **Period comparison inverted the delta on a negative base.** `PeriodCompare` computed
+  `(v - prev) / prev`, so going from −1,000 to −500 in the `available` row (an improvement)
+  read as a negative delta painted red. The denominator is now `Math.abs(prev)`, so the sign
+  reflects the real direction of change.
+
+### Internal
+- **170 tests** (down from 177 — the 7 auto-savings tests were removed with the feature).
+
+---
+
 ## [2.92.0] — 2026-07-18
 
 ### Added — desktop

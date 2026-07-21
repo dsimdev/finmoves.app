@@ -287,7 +287,7 @@ export default function MovimientosPage() {
               <QuickAdd
                 config={config}
                 periodoId={activePeriodoId ?? null}
-                onCreated={prependMovimiento}
+                onCreated={handleCreated}
                 onRollback={removeMovimiento}
                 onError={setQuickError}
               />
