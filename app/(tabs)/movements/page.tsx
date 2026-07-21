@@ -53,16 +53,11 @@ export default function MovimientosPage() {
   const [showHint, dismissHint] = useHint("swipeRow");
 
   const periodos = agruparPorPeriodo(movimientos);
-  const años = useMemo(() => Array.from(new Set(periodos.map((p) => p.periodoId.split("/")[2] ?? ""))).filter(Boolean), [periodos]);
   const [añoSel, setAñoSel] = useState<string>("");
-  const añoActivo = añoSel || años[0] || "";
   const pillSel: React.CSSProperties = { border: "1px solid transparent", background: APP_GRAD_DIM };
   const pillOff: React.CSSProperties = { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)" };
   const pillGradText: React.CSSProperties = appGradText;
-  const periodosDelAño = useMemo(() => periodos.filter((p) => (p.periodoId.split("/")[2] ?? "") === añoActivo), [periodos, añoActivo]);
   const [periodoSel, setPeriodoSel] = useState<string | null>(null);
-  const activePeriodoId = periodoSel ?? periodosDelAño[0]?.periodoId;
-  const periodoActual = periodos.find((p) => p.periodoId === activePeriodoId);
 
   // Filtro in-place (lupa): términos que acotan la lista al período SELECCIONADO. El popup
   // se abre desde la lupa del header y filtra sin navegar a otra pantalla.
@@ -78,7 +73,35 @@ export default function MovimientosPage() {
   }, [quickError]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterTerms, setFilterTerms] = useState<string[]>([]);
+  // Ámbito del filtro: por defecto el período seleccionado; con `todosPeriodos`, todo el
+  // historial. En global el selector de año/período se REDUCE a los que tienen coincidencias,
+  // así se navega con las mismas pills en vez de una vista aparte.
+  const [todosPeriodos, setTodosPeriodos] = useState(false);
   const filterActivo = filterTerms.length > 0;
+  const busquedaGlobal = filterActivo && todosPeriodos;
+
+  // Períodos que ofrece el selector: todos, o solo los que matchean si la búsqueda es global.
+  const periodosVisibles = useMemo(
+    () => (busquedaGlobal ? periodos.filter((p) => p.movimientos.some((m) => movMatchesAny(m, filterTerms))) : periodos),
+    [periodos, busquedaGlobal, filterTerms]
+  );
+  const años = useMemo(
+    () => Array.from(new Set(periodosVisibles.map((p) => p.periodoId.split("/")[2] ?? ""))).filter(Boolean),
+    [periodosVisibles]
+  );
+  // El año elegido puede quedar fuera del recorte (buscaste algo que no está en ese año):
+  // en ese caso cae al primero con coincidencias, que es el más reciente.
+  const añoActivo = añoSel && años.includes(añoSel) ? añoSel : años[0] ?? "";
+  const periodosDelAño = useMemo(
+    () => periodosVisibles.filter((p) => (p.periodoId.split("/")[2] ?? "") === añoActivo),
+    [periodosVisibles, añoActivo]
+  );
+  // Igual que el año: si el período seleccionado no está entre los que matchean, salta al
+  // más reciente con resultados (periodos viene del más nuevo al más viejo).
+  const activePeriodoId = periodoSel && periodosDelAño.some((p) => p.periodoId === periodoSel)
+    ? periodoSel
+    : periodosDelAño[0]?.periodoId;
+  const periodoActual = periodos.find((p) => p.periodoId === activePeriodoId);
 
   // Modal de alta/edición (componente compartido). `view` permite abrir directo en borrado.
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete"; prefill?: { tipo?: "Gasto" | "Ingreso"; categoria?: string; descripcion?: string; observaciones?: string } } | null>(null);
@@ -179,9 +202,10 @@ export default function MovimientosPage() {
     // Sin filtro, solo el día más reciente (evita el scroll infinito).
     if (filterActivo) setDiasAbiertos(new Set(movsPorFecha.map((g) => g.fecha)));
     else setDiasAbiertos(new Set(movsPorFecha[0] ? [movsPorFecha[0].fecha] : []));
-    // Al cambiar de período/año o al (des)activar el filtro. No al editar (no cerrar lo abierto).
+    // Al cambiar de período/año, al (des)activar el filtro o al cambiar su ámbito. No al
+    // editar (no cerrar lo abierto).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePeriodoId, filterActivo]);
+  }, [activePeriodoId, filterActivo, busquedaGlobal]);
   const toggleDia = (fecha: string) => setDiasAbiertos((prev) => {
     const next = new Set(prev);
     next.has(fecha) ? next.delete(fecha) : next.add(fecha);
@@ -244,11 +268,17 @@ export default function MovimientosPage() {
             {periodosDelAño.map((p) => {
               const isSelected = activePeriodoId === p.periodoId;
               const [d, m] = p.periodoId.split("/");
+              // En búsqueda global, cada pill muestra cuántas coincidencias tiene ese período:
+              // el selector pasa a ser el mapa de dónde está lo que buscás.
+              const n = busquedaGlobal ? p.movimientos.filter((mv) => movMatchesAny(mv, filterTerms)).length : 0;
               return (
                 <button key={p.periodoId} onClick={() => setPeriodoSel(p.periodoId)} style={{
                   flexShrink: 0, padding: "4px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer",
-                  transition: "all 0.15s", ...(isSelected ? pillSel : pillOff),
-                }}>{isSelected ? <span style={pillGradText}>{d}/{m}</span> : `${d}/${m}`}</button>
+                  transition: "all 0.15s", display: "flex", alignItems: "center", gap: 5, ...(isSelected ? pillSel : pillOff),
+                }}>
+                  {isSelected ? <span style={pillGradText}>{d}/{m}</span> : `${d}/${m}`}
+                  {n > 0 && <span style={{ fontSize: 9, fontWeight: 800, color: isSelected ? "var(--accent)" : "var(--muted)", opacity: isSelected ? 1 : 0.8 }}>{n}</span>}
+                </button>
               );
             })}
           </div>
@@ -280,9 +310,12 @@ export default function MovimientosPage() {
             <>
               <SearchBar
                 movs={periodoActual?.movimientos ?? []}
+                movsGlobal={movimientos}
                 terms={filterTerms}
                 onChange={setFilterTerms}
                 onNew={openAdd}
+                todosPeriodos={todosPeriodos}
+                onTodosPeriodosChange={setTodosPeriodos}
               />
               <QuickAdd
                 config={config}
@@ -301,7 +334,7 @@ export default function MovimientosPage() {
 
           {movsFiltrados.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--muted)", fontSize: 13 }}>
-              {filterActivo ? t.filterNoResults : t.noMovementsAdd}
+              {!filterActivo ? t.noMovementsAdd : busquedaGlobal ? t.filterNoResultsGlobal : t.filterNoResults}
             </div>
           ) : isDesktop ? (
             /* Escritorio: tabla densa y ordenable en vez de la lista táctil agrupada por día.
@@ -472,8 +505,11 @@ export default function MovimientosPage() {
       open={filterOpen}
       onClose={() => setFilterOpen(false)}
       movs={periodoActual?.movimientos ?? []}
+      movsGlobal={movimientos}
       terms={filterTerms}
       onChange={setFilterTerms}
+      todosPeriodos={todosPeriodos}
+      onTodosPeriodosChange={setTodosPeriodos}
     />
     </>
   );

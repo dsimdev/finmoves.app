@@ -4,6 +4,23 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.94.0] — 2026-07-21
+
+### Buscar en todos los períodos
+Hasta ahora la lupa de Movimientos solo buscaba dentro del período que tenías abierto. Si
+querías saber cuándo compraste la heladera, no había forma de encontrarlo desde ahí.
+
+Ahora el filtro tiene un **"buscar en todos los períodos"**. Cuando lo activás:
+
+- Los períodos de arriba se achican y **quedan solo los que tienen lo que buscás**, cada uno
+  con el número de coincidencias. Tocás uno y ves los movimientos de ese período.
+- Si el período donde estabas no tiene nada, te lleva solo al más reciente que sí.
+- Mientras escribís te dice cuántas coincidencias hay y en cuántos períodos.
+
+Funciona igual en el celular y en la computadora.
+
+---
+
 ## [2.93.0] — 2026-07-21
 
 ### Aviso antes de pasarte del presupuesto

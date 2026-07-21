@@ -4,6 +4,30 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.94.0] — 2026-07-21
+
+### Added — search across all periods
+The magnifier filter only ever looked at the selected period, so "when did I buy the fridge?"
+could not be answered from Movements — you had to leave for Analysis, a screen built to
+compare, not to find. A **"search across all periods"** toggle now widens the scope.
+
+- With it on, the year and period pills **shrink to the ones that actually have matches**, and
+  each period pill carries its match count. The selector you already use becomes the map of
+  where the thing you are looking for lives — no separate results view.
+- If the year or period you were standing on has no matches, it falls to the most recent one
+  that does, so you always land on results.
+- The typing preview reports both numbers ("12 matches · in 3 periods") before you pin a term.
+- Available in both interfaces: the filter popover on mobile and the always-visible search bar
+  on desktop.
+- Costs nothing extra: `useAllMovimientos` already holds every movement in memory, so the wider
+  scope adds no Firestore reads.
+
+### Internal
+- **185 tests** (up from 178) — 7 cover the selector narrowing: year disappearing, period
+  falling back, and no matches anywhere.
+
+---
+
 ## [2.93.0] — 2026-07-21
 
 ### Added — budget deviation alerts
