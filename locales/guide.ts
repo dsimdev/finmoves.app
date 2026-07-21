@@ -29,7 +29,6 @@ const es: GuideSection[] = [
     items: [
       { q: "Move a ahorros / a disponible", a: "**Move a ahorros** (violeta) saca plata de tu disponible y la guarda. **Move a disponible** (verde agua) hace lo contrario: trae plata de tus ahorros al período. No es un gasto ni un ingreso, solo mueve." },
       { q: "El RESTO (arrastre de período)", a: "Cuando abrís un período nuevo con tu sueldo, lo que te sobró del disponible anterior se arrastra automáticamente como un movimiento **RESTO** (azul) hacia tus ahorros. Por eso ves un movimiento que no cargaste: es tu sobrante que no se pierde." },
-      { q: "Auto-ahorro", a: "Si lo activás en Configuración → Movimientos, cada vez que cargás un gasto se guarda un monto fijo en ahorros automáticamente. En el formulario te avisa con \"→ ahorros\". Sirve para ahorrar sin pensarlo." },
       { q: "Reserva en dólares o euros", a: "En Inversión llevás tu reserva de divisa: sumás con **Compra**, restás con **Venta**. La app calcula su valor en pesos al dólar oficial, tu **costo promedio** y la **ganancia**. La ganancia se mide solo sobre lo que compraste dentro de la app." },
     ],
   },
@@ -86,7 +85,6 @@ const en: GuideSection[] = [
     items: [
       { q: "Move to savings / to available", a: "**Move to savings** (purple) takes money from your available balance and stores it. **Move to available** (teal) does the opposite: brings money from savings into the period. It's neither an expense nor income, it just moves." },
       { q: "The RESTO (period carry-over)", a: "When you open a new period with your salary, whatever was left of the previous available balance carries over automatically as a **RESTO** movement (blue) into your savings. That's why you see a movement you didn't log: it's your leftover, saved." },
-      { q: "Auto-save", a: "If you enable it in Settings → Movements, every time you log an expense a fixed amount is saved to savings automatically. The form tells you with \"→ savings\". It's for saving without thinking about it." },
       { q: "Dollar or euro reserve", a: "In Investments you keep your currency reserve: add with **Buy**, subtract with **Sell**. The app shows its peso value at the official rate, your **average cost** and the **gain**. Gain is measured only on what you bought inside the app." },
     ],
   },

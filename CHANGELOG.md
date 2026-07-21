@@ -4,6 +4,19 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.92.2] — 2026-07-21
+
+### Fixed
+- **The in-app guide still documented auto-savings**, a feature removed in v2.92.1. The
+  "Auto-ahorro" / "Auto-save" item is gone from both locales, so the guide no longer explains
+  something that no longer exists.
+
+### Internal
+- Removed the now-orphaned `autoSavings` and `autoSavingsAmountPerExpense` locale keys (es + en);
+  nothing referenced them after the feature was dropped.
+
+---
+
 ## [2.92.1] — 2026-07-20
 
 ### Removed
