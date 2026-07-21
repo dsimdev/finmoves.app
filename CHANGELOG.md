@@ -4,6 +4,32 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.93.0] — 2026-07-21
+
+### Added — budget deviation alerts
+A new daily push warns you **before** you overshoot a category's budget, not after. Each day
+the cron projects, at the current period's pace, how each budgeted category will close; if the
+projection lands over budget, it sends one heads-up ("At this pace, Food closes at 180% of its
+budget").
+
+- Projection-based, not a flat threshold: it estimates the close from spend-so-far ÷
+  days-elapsed × 30, so it catches a runaway pace early instead of waiting until you've nearly
+  spent the budget.
+- Guarded against noise: no alert before ~9 days into the period (too few data points to
+  project), and a 1.05× threshold so trivial overshoots stay quiet.
+- One alert per category per period; the dedup resets on its own when a new period opens.
+- Effective budget resolves the period override (`presupuestos/{periodoId}`) first, then falls
+  back to `meta.presupuestoTemplate` — same source the Reports budget bars use.
+- `utils/budget-alert.ts` holds the pure logic (projection + guards), covered by 8 tests;
+  `checkPresupuesto` in `lib/notifications.ts` wires it into the existing daily cron with the
+  same per-check catch and confirm-before-dedup discipline as the other reminders.
+
+### Internal
+- New `presupuesto` notification type (icon + deep-link to Reports in the in-app panel).
+- **178 tests** (up from 170).
+
+---
+
 ## [2.92.2] — 2026-07-21
 
 ### Fixed
