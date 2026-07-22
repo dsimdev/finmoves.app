@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { CenterCard } from "@/components/ui/CenterCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
-import { crearRecordatorio, listarRecordatorios, type Recordatorio } from "@/services/firebase/recordatorios";
+import { crearRecordatorio, listarRecordatorios, eliminarRecordatorio, type Recordatorio } from "@/services/firebase/recordatorios";
+import { fechaCorta } from "@/utils/periodo";
+import { ReminderCalendar } from "./ReminderCalendar";
 
 // Días entre hoy (AR) y una fecha YYYY-MM-DD. Negativo = ya venció.
 function diasHasta(fecha: string): number {
@@ -27,25 +29,37 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
   const t = useT();
   const [texto, setTexto] = useState("");
   const [fecha, setFecha] = useState("");
+  const [repetir, setRepetir] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [proximo, setProximo] = useState<Recordatorio | null>(null);
-
+  const [lista, setLista] = useState<Recordatorio[]>([]);
   // El próximo a vencer: listarRecordatorios ya viene ordenado por fecha asc.
-  const cargarProximo = useCallback(() => {
+  const proximo = lista[0] ?? null;
+
+  const cargar = useCallback(() => {
     if (!user?.uid) return;
-    listarRecordatorios(user.uid).then((rs) => setProximo(rs[0] ?? null)).catch(() => {});
+    listarRecordatorios(user.uid).then(setLista).catch(() => {});
   }, [user?.uid]);
-  useEffect(() => { if (open) cargarProximo(); }, [open, cargarProximo]);
+  useEffect(() => { if (open) cargar(); }, [open, cargar]);
+
+  // Los del día elegido: se listan sobre el form para poder borrarlos sin ir a Configuración.
+  const delDia = fecha ? lista.filter((r) => r.fecha === fecha) : [];
 
   const guardar = async () => {
     if (!user?.uid || !texto.trim() || !fecha || saving) return;
     setSaving(true);
     try {
-      await crearRecordatorio(user.uid, texto.trim(), fecha);
-      setTexto(""); setFecha("");
-      onClose();
+      await crearRecordatorio(user.uid, texto.trim(), fecha, repetir);
+      // La card queda abierta en el mismo día: cargar varios seguidos es lo natural acá.
+      setTexto(""); setRepetir(false);
+      cargar();
     } catch { /* queda abierto para reintentar */ }
     finally { setSaving(false); }
+  };
+
+  const borrar = async (id: string) => {
+    if (!user?.uid) return;
+    setLista((prev) => prev.filter((r) => r.id !== id)); // optimista
+    eliminarRecordatorio(user.uid, id).catch(cargar);    // si falla, recarga la verdad
   };
 
   const listo = !!texto.trim() && !!fecha;
@@ -65,17 +79,46 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
           <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 5 }}>{t.agendaNext}</div>
           <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.3, lineHeight: 1.2, color: c }}>{cuando}</div>
           <div style={{ fontSize: 13, color: "var(--text)", marginTop: 6, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{proximo.texto}</div>
+          {proximo.repetir && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 7, fontSize: 10, fontWeight: 700, color: "var(--purple)", background: "color-mix(in srgb, var(--purple) 14%, transparent)", border: "1px solid color-mix(in srgb, var(--purple) 40%, transparent)", borderRadius: 999, padding: "3px 9px" }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" /></svg>
+              {t.reminderRepeats}
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 12.5, marginBottom: 16, lineHeight: 1.5 }}>{t.agendaEmpty}</div>
       )}
 
-      {/* Alta de uno nuevo */}
+      {/* El calendario ES el control: se navega y se toca un día para cargar ahí. */}
+      <ReminderCalendar recordatorios={lista} seleccionado={fecha || null} onSelect={setFecha} />
+
+      {/* Sin día elegido la card queda compacta: solo la invitación a tocar uno. */}
+      {!fecha ? (
+        <div style={{ borderTop: "1px solid var(--faint)", paddingTop: 12, textAlign: "center", fontSize: 11.5, color: "var(--muted)" }}>
+          {t.reminderPickDay}
+        </div>
+      ) : (
       <div style={{ borderTop: "1px solid var(--faint)", paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase" }}>{t.agendaNew}</div>
-        <input className="input" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={t.reminderTextPlaceholder} autoFocus />
+        {/* Lo que ya hay ese día, con × para borrarlo sin salir de la card. */}
+        {delDia.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {delDia.map((r) => (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-alt)", borderRadius: 9, padding: "7px 8px 7px 11px" }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", flexShrink: 0, background: r.repetir ? "var(--purple)" : "var(--teal)" }} />
+                <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.texto}</span>
+                <button type="button" onClick={() => borrar(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 2px", flexShrink: 0 }}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase" }}>
+          {t.reminderOnDay(fechaCorta(fecha))}
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center" }}>
-          <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <input className="input" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={t.reminderTextPlaceholder} autoFocus
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); guardar(); } }} />
           <button type="button" onClick={guardar} disabled={!listo || saving} aria-label={t.save} style={{
             width: 46, height: 46, borderRadius: "50%", border: "none", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
@@ -85,7 +128,31 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </button>
         </div>
+        {/* Repetir: vuelve el mismo día de cada mes. Se ofrece recién con fecha elegida,
+            porque el texto nombra ese día ("todos los 23"). */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={repetir}
+          disabled={!fecha}
+          onClick={() => setRepetir((v) => !v)}
+          style={{
+            display: "flex", alignItems: "center", gap: 9, background: "none", border: "none",
+            padding: "2px 0", cursor: fecha ? "pointer" : "default", opacity: fecha ? 1 : 0.45,
+            color: repetir ? "var(--purple)" : "var(--muted)", fontSize: 12, fontWeight: 600,
+          }}
+        >
+          <span style={{
+            width: 34, height: 19, borderRadius: 999, flexShrink: 0, position: "relative", display: "block",
+            background: repetir ? "var(--purple)" : "var(--surface-alt)",
+            border: `1px solid ${repetir ? "var(--purple)" : "var(--border)"}`, transition: "background .15s",
+          }}>
+            <span style={{ position: "absolute", top: 2, left: repetir ? 16 : 2, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left .15s" }} />
+          </span>
+          {t.reminderRepeatDay(Number(fecha.split("-")[2]))}
+        </button>
       </div>
+      )}
     </CenterCard>
   );
 }

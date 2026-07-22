@@ -4,6 +4,57 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.95.0] — 2026-07-21
+
+### Added — repeating reminders
+Reminders were one-shot: the cron fired the push and deleted the doc. A reminder can now
+**repeat on the same day every month** — load it for the 23rd and it comes back on the 23rd of
+August, September, and so on, pre-warning included each cycle.
+
+- The cron advances the date instead of deleting, and `avisadoPre` resets so every cycle gets
+  its own heads-up. If the cron was down for months it catches up in one jump rather than
+  firing daily until it recovers.
+- **The 31st does not decay.** A reminder on the 31st shows as the 28th in February but returns
+  to the 31st in March — the chosen day is stored separately from the current date, so a short
+  month can't pin it down permanently. `utils/recordatorio-repeat` holds the date logic (9 tests
+  covering leap years, year rollover and the catch-up).
+- Existing reminders can be switched to repeating from Settings → Notifications.
+
+### Added — the reminder card is now a calendar
+The card used to show only the next reminder plus a date input. It now carries a **month
+calendar you navigate and tap**: tapping a day opens the form for that date, and the day's
+existing reminders appear above it with an × to delete. A dot marks days that have something —
+purple when it repeats, teal when it's one-off. The date input is gone.
+
+### Added — "spend per day" replaces the deviation KPI
+Home's fourth KPI was a coefficient of variation: it described the past and suggested nothing.
+It now shows **how much you can spend per day to reach the end of the period** — what's left
+split across the days remaining.
+
+- Period length is **measured, not assumed**: the median gap between your actual periods, since
+  periods are pay cycles and not necessarily monthly. Falls back to 30 days only without
+  history. Median rather than mean so one odd cycle doesn't skew it.
+- The pace uses everything that actually draws down the available balance (`gastado +
+  moveAhorros`), not just pure expenses — measuring with `gastadoPuro` overstated how long the
+  balance lasts.
+- Red when your current pace doesn't reach the close, green when it does. Tapping it explains
+  how long the balance lasts at your current pace, marked as approximate because period length
+  is an estimate.
+- KPI order regrouped: current-period figures on top (spent / spend per day), cumulative ones
+  below (inflation / accumulated savings).
+
+### Fixed
+- `MiniStat` capitalised every word of its label, so "Por período" rendered as "Por Período".
+  Affects Home, Reports and Investments.
+- The Reserve card title used inline styles instead of the shared `.label` class, so it had
+  tighter letter-spacing than every other card title on the screen.
+
+### Internal
+- **213 tests** (up from 185): `recordatorio-repeat` (9) and `duracion-disponible` (19,
+  including a regression case built from real period figures).
+
+---
+
 ## [2.94.0] — 2026-07-21
 
 ### Added — search across all periods

@@ -4,6 +4,37 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.95.0] — 2026-07-21
+
+### Recordatorios que se repiten todos los meses
+Antes un recordatorio avisaba una vez y desaparecía. Ahora podés hacer que **vuelva el mismo
+día de cada mes**: lo cargás para el 23 y te avisa el 23 de agosto, el 23 de septiembre, y así.
+
+Si lo ponés un 31, en febrero te avisa el 28 pero en marzo **vuelve al 31** — no se queda pegado
+en el día más chico. Los recordatorios que ya tenías se pueden volver repetibles desde
+Configuración → Notificaciones.
+
+### El recordatorio ahora se carga desde un calendario
+La card de recordatorios tiene un **calendario que podés recorrer mes a mes**. Tocás el día que
+querés y ahí mismo escribís el recordatorio, sin tener que cargar la fecha a mano. Los días que
+ya tienen algo aparecen con un punto: violeta si se repite, verde agua si es por única vez. Si
+tocás uno de esos días, ves lo que tenías y lo podés borrar.
+
+### En Inicio: cuánto podés gastar por día
+Donde antes decía "Desvío" (un número que no servía para decidir nada) ahora ves **cuánto podés
+gastar por día para llegar bien al cierre del período**. Se pone en rojo si al ritmo que venís
+no llegás.
+
+Para saber cuántos días faltan, la app mira **cuánto duran tus períodos de verdad** (no asume
+que son de 30 días). Tocá el número y te dice, aproximadamente, cuánto te dura el disponible al
+ritmo que venís gastando.
+
+### Arreglos
+- Algunas etiquetas se veían con Mayúscula En Cada Palabra ("Por Período"); ahora se leen normal.
+- El título de la card Reserva tenía las letras más juntas que el resto de las cards.
+
+---
+
 ## [2.94.0] — 2026-07-21
 
 ### Buscar en todos los períodos

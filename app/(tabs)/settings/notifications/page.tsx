@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
 import { isoToFechaAR } from "@/lib/sheet-format";
 import { pushSupported, isPushEnabled, enablePush, disablePush } from "@/lib/push-client";
-import { listarRecordatorios, crearRecordatorio, eliminarRecordatorio, type Recordatorio } from "@/services/firebase/recordatorios";
+import { listarRecordatorios, crearRecordatorio, eliminarRecordatorio, setRepetir, type Recordatorio } from "@/services/firebase/recordatorios";
 import { setRecurrenteActivo, eliminarRecurrente } from "@/services/firebase/recurrentes";
 import { useData } from "../../data-context";
 import { Toggle, SubHeader } from "../_shared";
@@ -56,6 +56,18 @@ export default function NotificacionesSettings() {
     await eliminarRecordatorio(user.uid, id);
     setRecordatorios((prev) => prev.filter((r) => r.id !== id));
   };
+  // Repetición mensual de un recordatorio ya creado. Optimista: el toggle responde al toque
+  // y se revierte si la escritura falla.
+  const toggleRepetir = async (r: Recordatorio) => {
+    if (!user?.uid) return;
+    const valor = !r.repetir;
+    setRecordatorios((prev) => prev.map((x) => (x.id === r.id ? { ...x, repetir: valor } : x)));
+    try {
+      await setRepetir(user.uid, r.id, valor, r.fecha);
+    } catch {
+      setRecordatorios((prev) => prev.map((x) => (x.id === r.id ? { ...x, repetir: !valor } : x)));
+    }
+  };
 
   // Recurrentes (del DataProvider: fuente única, así el marcado en Movimientos
   // se mantiene en sync al togglear/borrar acá).
@@ -99,11 +111,17 @@ export default function NotificacionesSettings() {
         {recordatorios.length === 0 ? (
           <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, padding: "8px 0" }}>{t.noReminders}</div>
         ) : recordatorios.map((r) => (
-          <div key={r.id} className="row" style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)" }}>
+          <div key={r.id} className="row" style={{ padding: "11px 0", borderBottom: "1px solid var(--faint)", gap: 10 }}>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.texto}</div>
-              <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{isoToFechaAR(r.fecha)}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+                {isoToFechaAR(r.fecha)}
+                {r.repetir && <span style={{ color: "var(--purple)", fontWeight: 700 }}> · {t.reminderRepeats}</span>}
+              </div>
             </div>
+            {/* Repetir mensual: el mismo día de cada mes. Al apagarlo vuelve a ser puntual
+                (se borra cuando avise). */}
+            <Toggle activo={!!r.repetir} onClick={() => toggleRepetir(r)} />
             <button onClick={() => delRecordatorio(r.id)} aria-label={t.delete} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
           </div>
         ))}

@@ -6,7 +6,8 @@ import { useData } from "./data-context";
 import { useMoney } from "@/hooks/useHideValues";
 import { agruparPorPeriodo, fechaCorta, gastosPorCategoria } from "@/utils/periodo";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
-import { serieTendencia, inflacionPersonal as calcInflacionPersonal } from "@/utils/reportes";
+import { serieTendencia, inflacionPersonal as calcInflacionPersonal, parsePeriodoId } from "@/utils/reportes";
+import { duracionDisponible, duracionMedianaPeriodos } from "@/utils/duracion-disponible";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { Movimiento } from "@/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -69,12 +70,20 @@ export default function Dashboard() {
   // Solo gasto puro (sin compras de divisa, que disparan promedio y desvío).
   const gastos = useMemo(() => p?.movimientos.filter((m) => m.tipo === "Gasto") ?? [], [p]);
   const promPorMov = gastos.length > 0 ? Math.round(gastos.reduce((s, m) => s + m.monto, 0) / gastos.length) : 0;
-  const desvioCV = useMemo(() => {
-    if (gastos.length < 2 || promPorMov === 0) return 0;
-    const avg = gastos.reduce((s, m) => s + m.monto, 0) / gastos.length;
-    const sd = Math.sqrt(gastos.reduce((s, m) => s + (m.monto - avg) ** 2, 0) / gastos.length);
-    return Math.round((sd / avg) * 100);
-  }, [gastos, promPorMov]);
+  // Cuánto aguanta el disponible al ritmo del período, y cuánto se puede gastar por día para
+  // llegar al cierre. Los días transcurridos se cuentan igual que en DiasPeriodo.
+  const duracion = useMemo(() => {
+    if (!p) return null;
+    const dias = Math.max(1, Math.floor((Date.now() - parsePeriodoId(p.periodoId).getTime()) / 86_400_000) + 1);
+    // Cuánto dura un período se MIDE de los períodos reales (son días de cobro, no meses):
+    // sin esto, un ciclo quincenal se proyectaría contra 30 días y el número mentiría.
+    const largo = duracionMedianaPeriodos(periodos.map((x) => parsePeriodoId(x.periodoId)));
+    // El ritmo tiene que medir lo que REALMENTE baja el disponible, que es
+    // `total - gastado - moveAhorros` (ver utils/periodo): usar solo gastadoPuro ignoraba
+    // las compras de divisa y lo que se mueve a ahorros, y sobreestimaba cuánto dura.
+    const consumido = p.gastado + p.moveAhorros;
+    return duracionDisponible(p.disponible, consumido, dias, largo);
+  }, [p, periodos]);
   // Misma métrica que la card de Períodos en Reportes: promedio de cuánto cambió tu gasto
   // entre períodos (helper compartido). Solo ARS deflacta por IPC (variación real); otras
   // monedas, nominal.
@@ -164,16 +173,32 @@ export default function Dashboard() {
             </>) : (<>
               <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastadoPuro)} color="var(--red)"
                 onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastadoPuro), explain: t.kpiSpentRealInfo, color: "var(--red)" })} />
-              <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
-                onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
+              {/* Cuánto se puede gastar por día para llegar al cierre. Reemplazó al desvío
+                  (un coeficiente de variación describía el pasado; esto dice qué hacer).
+                  Va arriba, junto a Gastado: los dos hablan del período en curso. */}
+              {(() => {
+                const sug = duracion?.porDiaSugerido ?? null;
+                const v = sug === null ? "—" : money(Math.round(sug));
+                // Verde si al ritmo actual llegás al cierre; ROJO si no (hay que gastar menos
+                // que ahora para llegar, que es exactamente lo que el número está diciendo).
+                const c = sug === null ? "var(--muted)" : duracion!.llega ? "var(--green)" : "var(--red)";
+                // El detalle suma cuánto dura a tu ritmo actual: es el contraste que da sentido
+                // al objetivo. Va "aprox" porque el largo del período es una estimación (la
+                // mediana de los anteriores), nunca un dato cerrado.
+                const explain = duracion?.dias == null
+                  ? t.kpiCanSpendPerDayInfo
+                  : `${t.kpiCanSpendPerDayInfo} ${t.kpiLastsApprox(duracion.dias, duracion.diasRestantes)}`;
+                return (
+                  <MiniStat center basis="1 1 45%" label={t.canSpendPerDay} value={v} color={c}
+                    onClick={() => setKpiInfo({ title: t.canSpendPerDay, value: v, explain, color: c })} />
+                );
+              })()}
               {(() => { const ip = inflacionPersonal; const c = ip == null ? "var(--muted)" : deltaColor(ip, false); const mag = ip == null ? null : deltaMag(ip); const v = mag == null ? "—" : `${mag > 0 ? "+" : ""}${mag}%`; const label = inflacionEsReal ? t.inflation : t.inflationNominal; return (
                 <MiniStat center basis="1 1 45%" label={label} value={v} color={c}
                   onClick={() => setKpiInfo({ title: label, value: v, explain: inflacionEsReal ? t.kpiInflationInfo : t.kpiInflationInfoNominal, color: c })} />
               ); })()}
-              {(() => { const c = desvioCV <= 100 ? "var(--green)" : desvioCV <= 200 ? "var(--yellow)" : "var(--red)"; const v = desvioCV > 0 ? `±${desvioCV}%` : "—"; return (
-                <MiniStat center basis="1 1 45%" label={t.spendSpread} value={v} color={c}
-                  onClick={() => setKpiInfo({ title: t.spendSpread, value: v, explain: t.kpiSpendSpreadInfo, color: c })} />
-              ); })()}
+              <MiniStat center basis="1 1 45%" label={t.accumSavings} value={ahorrosAcum > 0 ? money(ahorrosAcum) : "—"} color="var(--blue)"
+                onClick={() => setKpiInfo({ title: t.accumSavings, value: money(ahorrosAcum), explain: t.kpiAccumSavingsInfo, color: "var(--blue)" })} />
             </>)}
           </div>
 

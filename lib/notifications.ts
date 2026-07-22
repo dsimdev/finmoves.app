@@ -4,6 +4,7 @@ import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { shouldRemind, type RecReminderState } from "@/utils/recurrent-reminder";
 import { categoriasEnRiesgo } from "@/utils/budget-alert";
+import { avanzarHastaFutura } from "@/utils/recordatorio-repeat";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
@@ -204,14 +205,23 @@ async function checkRecordatorios(uid: string) {
     .collection(`users/${uid}/recordatorios`)
     .get();
   await Promise.all(snap.docs.map(async (doc) => {
-    const r = doc.data() as { texto?: string; fecha?: string; avisadoPre?: boolean };
+    const r = doc.data() as { texto?: string; fecha?: string; avisadoPre?: boolean; repetir?: boolean; diaOriginal?: number };
     if (!r.fecha) return;
     const texto = r.texto ?? "";
     if (r.fecha <= hoy) {
-      // Llegó la fecha → aviso final. Borrar SOLO si el push se confirmó; si falla,
-      // se conserva y reintenta mañana (si no, el recordatorio se perdería sin avisar).
+      // Llegó la fecha → aviso final. El doc se toca SOLO si el push se confirmó; si falla,
+      // queda como está y se reintenta mañana (si no, el recordatorio se perdería sin avisar).
       const ok = await pushYGuardar(uid, "recordatorio", { title: "Recordatorio", body: texto, tag: `rec-${doc.id}`, url: "/movements" }, "/movements");
-      if (ok) await doc.ref.delete().catch(() => {});
+      if (!ok) return;
+      if (r.repetir) {
+        // Repetible: en vez de borrarse, salta al mismo día del mes siguiente. `avanzarHasta
+        // Futura` cubre el caso de que el cron haya estado caído varios meses (no queda
+        // atrasado avisando todos los días). Se limpia avisadoPre para el ciclo nuevo.
+        const proxima = avanzarHastaFutura(r.fecha, hoy, r.diaOriginal);
+        await doc.ref.set({ fecha: proxima, avisadoPre: false }, { merge: true }).catch(() => {});
+      } else {
+        await doc.ref.delete().catch(() => {});
+      }
       return;
     }
     // Pre-aviso: faltan entre 1 y 3 días y todavía no se avisó.
