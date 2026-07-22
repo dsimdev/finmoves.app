@@ -4,6 +4,44 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.96.0] — 2026-07-21
+
+### Added — multi-select in Movements
+Movements could only be handled one at a time: swipe, modal, confirm. Clearing five duplicates
+took fifteen interactions. You can now select several and act on all of them at once.
+
+- **Mobile**: long-press a row to enter selection mode with that one already picked; tap to
+  add or remove. The press cancels if the finger moves (that's a scroll) and swallows the
+  click the browser fires afterwards, so it doesn't also open the movement.
+- **Desktop**: a "Select" button in the search bar reveals checkboxes, with a header checkbox
+  that marks every visible row (indeterminate when partial).
+- Two actions: **delete** the selection, or **reassign its category** in one go.
+
+### Business rules the selection respects
+- **The anchor salary can't be deleted** — it defines the period's date. Selecting only that
+  leaves the delete action disabled. If a period holds more than one salary, only the first
+  is the anchor.
+- **Moves, FX operations and RESTO can't be recategorised**: their category is structural and
+  reassigning it would break how the period is computed.
+- `utils/seleccion` holds both rules, covered by 12 tests.
+
+### Batched writes
+`eliminarMovimientos`, `recategorizarMovimientos` and `restaurarMovimientos` use `writeBatch`
+and mark the full-sync flag plus the revision bump **once** per operation instead of per
+document. Deleting ten movements went from 30 writes to 12. Batches split at Firestore's
+500-operation limit.
+
+### Undo
+Bulk delete is optimistic and raises a "Deleted 5 · Undo" toast with a progress bar showing how
+long the action stays reversible. Undo restores the documents under **their original ids**, so
+attached receipts and recurring-template matches keep working.
+
+### Internal
+- **225 tests** (up from 213). New `hooks/useLongPress`, `components/ui/UndoToast` and
+  `components/movements/SelectionBar`.
+
+---
+
 ## [2.95.0] — 2026-07-21
 
 ### Added — repeating reminders

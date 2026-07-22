@@ -5,6 +5,12 @@ import { useData } from "../data-context";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { movMatchesAny } from "@/utils/search";
 import { recurrentKey } from "@/utils/recurrent-key";
+import { borrables, recategorizables, toggleId } from "@/utils/seleccion";
+import { eliminarMovimientos, recategorizarMovimientos, restaurarMovimientos } from "@/services/firebase/movimientos";
+import { useAuth } from "@/hooks/useAuth";
+import { useLongPress } from "@/hooks/useLongPress";
+import { SelectionBar } from "@/components/movements/SelectionBar";
+import { UndoToast } from "@/components/ui/UndoToast";
 import { useMoney } from "@/hooks/useHideValues";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { Movimiento, TipoMovimiento } from "@/types";
@@ -36,9 +42,36 @@ function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; cat
   return <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0, marginTop: 5 }} />;
 }
 
+/**
+ * Fila de la lista con long-press. Es un componente aparte porque el hook de long-press
+ * necesita estado propio por fila (no se puede llamar dentro de un .map).
+ */
+function RowButton({ onTap, onLongPress, children, ...rest }: {
+  onTap: () => void;
+  onLongPress: () => void;
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  "aria-label"?: string;
+}) {
+  const { handlers, consumioClick } = useLongPress(onLongPress);
+  return (
+    <button
+      {...rest}
+      {...handlers}
+      // Tras un long-press el navegador manda igual el click: se ignora para no abrir
+      // además el detalle del movimiento que se acaba de seleccionar.
+      onClick={() => { if (!consumioClick()) onTap(); }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function MovimientosPage() {
   const { oculto, toggle, m: money } = useMoney();
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento, recurrentes, recurrentesLoaded } = useData();
+  const { user } = useAuth();
   const t = useT();
 
   // Recurrentes activos → para marcar con un relojito los movimientos que matchean.
@@ -107,6 +140,56 @@ export default function MovimientosPage() {
   const [modalState, setModalState] = useState<{ mode: "add" | "edit"; mov?: Movimiento; view?: "form" | "delete"; prefill?: { tipo?: "Gasto" | "Ingreso"; categoria?: string; descripcion?: string; observaciones?: string } } | null>(null);
   const openAdd = () => setModalState({ mode: "add" });
   const openEdit = (m: Movimiento) => setModalState({ mode: "edit", mov: m });
+
+  // ── Selección múltiple ──────────────────────────────────────────────────────
+  // Se entra con long-press sobre una fila (móvil) o el checkbox de la tabla (escritorio).
+  // Las reglas de qué se puede borrar/recategorizar viven en utils/seleccion (testeadas).
+  const [seleccion, setSeleccion] = useState<string[] | null>(null); // null = modo apagado
+  const modoSeleccion = seleccion !== null;
+  const alternar = (id: string) => setSeleccion((prev) => toggleId(prev ?? [], id));
+  const salirSeleccion = () => setSeleccion(null);
+  // Borrado en lote pendiente de confirmar: mientras el toast está arriba se puede deshacer.
+  const [borradoUndo, setBorradoUndo] = useState<Movimiento[] | null>(null);
+
+  const aBorrar = useMemo(
+    () => (seleccion ? borrables(seleccion, movimientos) : []),
+    [seleccion, movimientos]
+  );
+  const aRecategorizar = useMemo(
+    () => (seleccion ? recategorizables(seleccion, movimientos) : []),
+    [seleccion, movimientos]
+  );
+
+  const borrarSeleccion = async () => {
+    if (!user?.uid || aBorrar.length === 0) return;
+    const borrados = aBorrar;
+    // Optimista: desaparecen ya y el toast ofrece deshacer mientras tanto.
+    borrados.forEach((m) => removeMovimiento(m.id));
+    setSeleccion(null);
+    setBorradoUndo(borrados);
+    try {
+      await eliminarMovimientos(user.uid, borrados.map((m) => m.id));
+    } catch {
+      borrados.forEach((m) => prependMovimiento([m])); // volvió a fallar: restaurar en pantalla
+      setBorradoUndo(null);
+    }
+  };
+
+  const deshacerBorrado = async () => {
+    if (!user?.uid || !borradoUndo) return;
+    const movs = borradoUndo;
+    setBorradoUndo(null);
+    prependMovimiento(movs); // vuelven a la lista al toque
+    await restaurarMovimientos(user.uid, movs).catch(() => refresh());
+  };
+
+  const recategorizarSeleccion = async (categoria: string) => {
+    if (!user?.uid || aRecategorizar.length === 0) return;
+    const ids = aRecategorizar.map((m) => m.id);
+    ids.forEach((id) => updateMovimiento(id, { categoria })); // optimista
+    setSeleccion(null);
+    await recategorizarMovimientos(user.uid, ids, categoria).catch(() => refresh());
+  };
 
   // Realce breve del movimiento recién cargado (feedback visual del guardado).
   const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
@@ -222,7 +305,20 @@ export default function MovimientosPage() {
         <LoadingSpinner />
       ) : (
         <div className="fade-up">
-          <div style={{ marginBottom: 20 }}>
+          {/* En modo selección la barra de acciones ocupa el lugar del header, como en
+              cualquier bandeja: el contexto pasa a ser "qué hago con lo elegido". */}
+          {modoSeleccion && (
+            <SelectionBar
+              count={seleccion!.length}
+              nBorrables={aBorrar.length}
+              nRecategorizables={aRecategorizar.length}
+              categorias={(config?.categorias ?? []).filter((c) => c.activa)}
+              onCancel={salirSeleccion}
+              onDelete={borrarSeleccion}
+              onRecategorize={recategorizarSeleccion}
+            />
+          )}
+          <div style={{ marginBottom: 20, display: modoSeleccion ? "none" : undefined }}>
             <PageHeader
               title={t.pageTitleMovements}
               style={{ marginBottom: 0 }}
@@ -316,6 +412,8 @@ export default function MovimientosPage() {
                 onNew={openAdd}
                 todosPeriodos={todosPeriodos}
                 onTodosPeriodosChange={setTodosPeriodos}
+                seleccionActiva={modoSeleccion}
+                onToggleSeleccion={() => setSeleccion((prev) => (prev === null ? [] : null))}
               />
               <QuickAdd
                 config={config}
@@ -343,6 +441,9 @@ export default function MovimientosPage() {
               movimientos={movsFiltrados}
               onEdit={(m) => setModalState({ mode: "edit", mov: m, view: "form" })}
               onDelete={(m) => setModalState({ mode: "edit", mov: m, view: "delete" })}
+              seleccion={seleccion}
+              onToggleSel={alternar}
+              onToggleTodos={(ids, marcar) => setSeleccion(marcar ? ids : [])}
             />
           ) : (
 
@@ -413,14 +514,19 @@ export default function MovimientosPage() {
                           onEdit={() => setModalState({ mode: "edit", mov: m, view: "form" })}
                           onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
                         {(abierta) => (
-                        <button
+                        <RowButton
                           className={flashIds.has(m.id) ? "row-tap flash-row" : "row-tap"}
-                          onClick={() => openEdit(m)}
+                          // Con la selección activa el tap alterna; si no, abre el detalle.
+                          // El long-press siempre entra en selección con este ya marcado.
+                          onTap={() => (modoSeleccion ? alternar(m.id) : openEdit(m))}
+                          onLongPress={() => setSeleccion((prev) => toggleId(prev ?? [], m.id))}
                           aria-label={t.edit} style={{
-                          width: "100%", textAlign: "left", background: "none", cursor: "pointer",
+                          width: "100%", textAlign: "left", cursor: "pointer",
                           display: "flex", alignItems: "flex-start", gap: 10, padding: "13px 14px",
                           border: "none", borderBottom: i < movs.length - 1 ? "1px solid var(--faint)" : "none",
                           WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none",
+                          // Fondo del seleccionado: el mismo acento que el resto de la app.
+                          background: seleccion?.includes(m.id) ? "var(--accent-dim)" : "none",
                         }}>
                           <TipoDot tipo={m.tipo} categoria={m.categoria} direccionMove={m.direccionMove} />
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -439,7 +545,7 @@ export default function MovimientosPage() {
                           <span style={{ fontSize: 13, fontWeight: 700, color: esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)") : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1, paddingRight: 4 }}>
                             {negativo ? "-" : "+"}{money(m.monto)}
                           </span>
-                        </button>
+                        </RowButton>
                         )}
                         </SwipeToDelete>
                       );
@@ -501,6 +607,17 @@ export default function MovimientosPage() {
       onUpdated={updateMovimiento}
       onDeleted={removeMovimiento}
     />
+    {/* Deshacer del borrado en lote: la escritura ya salió, pero se puede revertir mientras
+        el aviso siga arriba (restaura los docs con su mismo id). */}
+    {borradoUndo && (
+      <UndoToast
+        mensaje={t.deletedCount(borradoUndo.length)}
+        accion={t.undo}
+        onUndo={deshacerBorrado}
+        onDismiss={() => setBorradoUndo(null)}
+      />
+    )}
+
     <MovementsFilter
       open={filterOpen}
       onClose={() => setFilterOpen(false)}

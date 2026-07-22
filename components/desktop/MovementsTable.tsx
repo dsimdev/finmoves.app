@@ -16,6 +16,11 @@ type Props = {
   movimientos: Movimiento[];
   onEdit: (m: Movimiento) => void;
   onDelete: (m: Movimiento) => void;
+  /** Ids elegidos, o null si el modo selección está apagado. */
+  seleccion?: string[] | null;
+  onToggleSel?: (id: string) => void;
+  /** Marca/desmarca todas las filas visibles. */
+  onToggleTodos?: (ids: string[], marcar: boolean) => void;
 };
 
 const COLUMNAS: { id: ColumnaOrden; labelKey: "date" | "description" | "category" | "paymentMethod" | "amount"; align?: "right" }[] = [
@@ -26,12 +31,18 @@ const COLUMNAS: { id: ColumnaOrden; labelKey: "date" | "description" | "category
   { id: "monto", labelKey: "amount", align: "right" },
 ];
 
-export function MovementsTable({ movimientos, onEdit, onDelete }: Props) {
+export function MovementsTable({ movimientos, onEdit, onDelete, seleccion, onToggleSel, onToggleTodos }: Props) {
   const t = useT();
   const { m: money } = useMoney();
   const [orden, setOrden] = useState<{ col: ColumnaOrden; dir: DireccionOrden }>({ col: "fecha", dir: "desc" });
 
   const filas = useMemo(() => ordenarPor(movimientos, orden.col, orden.dir), [movimientos, orden]);
+
+  // Estado de la selección para el encabezado (marcar/desmarcar todo lo visible).
+  const sel = seleccion ?? null;
+  const marcadas = sel ? filas.filter((m) => sel.includes(m.id)).length : 0;
+  const todasMarcadas = marcadas > 0 && marcadas === filas.length;
+  const algunaMarcada = marcadas > 0;
 
   // Click en una columna: si ya es la activa invierte la dirección; si no, arranca en su
   // orden natural (desc: fecha más nueva, monto más alto, A→Z en texto).
@@ -47,6 +58,19 @@ export function MovementsTable({ movimientos, onEdit, onDelete }: Props) {
       <table className="dt">
         <thead>
           <tr>
+            {/* Selección: la casilla del encabezado marca/desmarca todo lo visible. */}
+            {sel !== null && (
+              <th style={{ width: 34 }}>
+                <input
+                  type="checkbox"
+                  checked={todasMarcadas}
+                  ref={(el) => { if (el) el.indeterminate = algunaMarcada && !todasMarcadas; }}
+                  onChange={() => onToggleTodos?.(filas.map((m) => m.id), !todasMarcadas)}
+                  aria-label={t.selectAll}
+                  style={{ cursor: "pointer", accentColor: "var(--accent)" }}
+                />
+              </th>
+            )}
             {COLUMNAS.map((c) => {
               const activa = orden.col === c.id;
               return (
@@ -67,8 +91,21 @@ export function MovementsTable({ movimientos, onEdit, onDelete }: Props) {
         <tbody>
           {filas.map((m) => {
             const d = detalleTipo(m);
+            const marcada = !!sel?.includes(m.id);
             return (
-              <tr key={m.id} onDoubleClick={() => onEdit(m)}>
+              <tr key={m.id} onDoubleClick={() => onEdit(m)}
+                style={marcada ? { background: "var(--accent-dim)" } : undefined}>
+                {sel !== null && (
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={marcada}
+                      onChange={() => onToggleSel?.(m.id)}
+                      aria-label={m.descripcion || m.categoria}
+                      style={{ cursor: "pointer", accentColor: "var(--accent)" }}
+                    />
+                  </td>
+                )}
                 <td style={{ color: "var(--muted)", whiteSpace: "nowrap" }}>{fechaCorta(m.fecha)}</td>
                 <td className="dt-flex">
                   {/* Punto de color por tipo: la misma paleta que la lista del móvil, pero

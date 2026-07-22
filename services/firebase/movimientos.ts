@@ -6,6 +6,7 @@ import {
   setDoc,
   doc,
   increment,
+  writeBatch,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -89,6 +90,56 @@ export async function eliminarMovimiento(
 ): Promise<void> {
   const ref = doc(db, `users/${userId}/movimientos/${movimientoId}`);
   await trackWrite(deleteDoc(ref));
+  await marcarFullSync(userId);
+  await bumpRevision(userId);
+}
+
+// ── Operaciones en lote (selección múltiple) ─────────────────────────────────
+// Un writeBatch en vez de N llamadas sueltas: además de ser atómico, marca el full-sync y
+// sube la revisión UNA sola vez. De a uno, borrar 10 movimientos costaba 30 escrituras
+// (delete + syncMeta + revision por cada uno); así son 12.
+// Firestore admite 500 operaciones por batch; los lotes más grandes se parten.
+const BATCH_MAX = 500;
+
+async function enLotes(ids: string[], op: (batch: ReturnType<typeof writeBatch>, id: string) => void, userId: string): Promise<void> {
+  for (let i = 0; i < ids.length; i += BATCH_MAX) {
+    const batch = writeBatch(db);
+    for (const id of ids.slice(i, i + BATCH_MAX)) op(batch, id);
+    await trackWrite(batch.commit());
+  }
+  await marcarFullSync(userId);
+  await bumpRevision(userId);
+}
+
+/** Borra varios movimientos de una. */
+export async function eliminarMovimientos(userId: string, ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await enLotes(ids, (batch, id) => batch.delete(doc(db, `users/${userId}/movimientos/${id}`)), userId);
+}
+
+/** Reasigna la categoría de varios movimientos de una. */
+export async function recategorizarMovimientos(userId: string, ids: string[], categoria: string): Promise<void> {
+  if (ids.length === 0) return;
+  await enLotes(ids, (batch, id) => batch.update(doc(db, `users/${userId}/movimientos/${id}`), { categoria }), userId);
+}
+
+/**
+ * Re-crea movimientos borrados con su MISMO id (deshacer de un borrado en lote). Escribe el
+ * doc completo, así el movimiento vuelve idéntico —id incluido— y las referencias que lo
+ * apuntaban (comprobante, recurrente) siguen valiendo.
+ */
+export async function restaurarMovimientos(userId: string, movs: Movimiento[]): Promise<void> {
+  if (movs.length === 0) return;
+  for (let i = 0; i < movs.length; i += BATCH_MAX) {
+    const batch = writeBatch(db);
+    for (const { id, ...data } of movs.slice(i, i + BATCH_MAX)) {
+      batch.set(doc(db, `users/${userId}/movimientos/${id}`), {
+        ...data,
+        timestampCarga: Timestamp.fromDate(data.timestampCarga),
+      });
+    }
+    await trackWrite(batch.commit());
+  }
   await marcarFullSync(userId);
   await bumpRevision(userId);
 }

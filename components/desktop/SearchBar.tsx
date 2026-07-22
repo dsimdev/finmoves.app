@@ -9,7 +9,7 @@ import type { Movimiento } from "@/types";
 // anclado a la lupa porque no hay lugar; acá la barra vive sobre la tabla y no la tapa.
 // Misma semántica que MovementsFilter: términos como pills, OR entre ellos, palabra exacta.
 
-export function SearchBar({ movs, movsGlobal, terms, onChange, onNew, todosPeriodos, onTodosPeriodosChange }: {
+export function SearchBar({ movs, movsGlobal, terms, onChange, onNew, todosPeriodos, onTodosPeriodosChange, seleccionActiva, onToggleSeleccion }: {
   /** Movimientos del período (para el preview de coincidencias mientras se tipea). */
   movs: Movimiento[];
   /** Todos los movimientos (preview cuando el ámbito es global). */
@@ -21,6 +21,9 @@ export function SearchBar({ movs, movsGlobal, terms, onChange, onNew, todosPerio
   /** Ámbito: período seleccionado (false) o todo el historial (true). */
   todosPeriodos: boolean;
   onTodosPeriodosChange: (v: boolean) => void;
+  /** Modo selección: en escritorio no hay long-press, se entra con este botón. */
+  seleccionActiva: boolean;
+  onToggleSeleccion: () => void;
 }) {
   const t = useT();
   const [input, setInput] = useState("");
@@ -96,6 +99,21 @@ export function SearchBar({ movs, movsGlobal, terms, onChange, onNew, todosPerio
       {terms.length > 0 && (
         <button onClick={() => onChange([])} className="searchbar-clear">{t.filterClear}</button>
       )}
+
+      {/* Entrada al modo selección: en escritorio no hay long-press. */}
+      <button
+        type="button"
+        onClick={onToggleSeleccion}
+        aria-pressed={seleccionActiva}
+        className="searchbar-pill"
+        style={{
+          background: seleccionActiva ? "var(--accent-dim)" : "transparent",
+          borderColor: seleccionActiva ? "var(--accent)" : "var(--border)",
+          color: seleccionActiva ? "var(--accent)" : "var(--muted)",
+        }}
+      >
+        {seleccionActiva ? t.cancel : t.select}
+      </button>
 
       {/* Escalón siguiente de la carga rápida, no una alternativa equivalente: abre el modal
           completo para lo que la fila de arriba no cubre (ingresos, moves, divisa,

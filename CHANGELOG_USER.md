@@ -4,6 +4,35 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.96.0] — 2026-07-21
+
+### Borrá o recategorizá varios movimientos de una
+Hasta ahora los movimientos se manejaban de a uno: deslizar, abrir, confirmar. Para limpiar
+cinco cargas repetidas eran quince toques.
+
+Ahora podés **elegir varios y hacerlo todo junto**:
+
+- En el celular, **mantené apretado** un movimiento y entrás en modo selección con ese ya
+  marcado. Después tocá los que quieras sumar.
+- En la computadora, el botón **"Seleccionar"** arriba de la tabla te muestra las casillas, y
+  la del encabezado marca todo de una.
+
+Con lo elegido podés **borrarlo** o **cambiarle la categoría** a todo junto — muy útil para
+ordenar movimientos viejos que quedaron mal clasificados.
+
+### Si borrás de más, lo podés deshacer
+Después de borrar aparece un aviso **"Se borraron 5 · Deshacer"** con una barra que muestra
+cuánto tiempo te queda para arrepentirte. Si tocás Deshacer, los movimientos vuelven tal cual
+estaban, con sus comprobantes.
+
+### Detalles
+- El **sueldo que abre el período no se puede borrar** (es el que le da la fecha), así que si
+  lo seleccionás, el botón de borrar queda apagado.
+- Los movimientos de tipo Move, las compras de dólares y el RESTO no se pueden recategorizar:
+  su categoría es parte de cómo la app calcula el período.
+
+---
+
 ## [2.95.0] — 2026-07-21
 
 ### Recordatorios que se repiten todos los meses
