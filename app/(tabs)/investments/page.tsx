@@ -563,7 +563,7 @@ export default function DolaresPage() {
           {showFX && showUSD && (<>
           <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>{t.usdReserve}</div>
+              <div className="label" style={{ marginBottom: 0 }}>{t.usdReserve}</div>
             </div>
             <div style={{ fontSize: 36, fontWeight: 700, color: "var(--yellow)", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
               U$D {oculto ? "••••" : totalUSD.toFixed(2)}
@@ -587,7 +587,7 @@ export default function DolaresPage() {
           {showFX && showEUR && (<>
           <div className="card" style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--yellow-dim) 100%)", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>{t.eurReserve}</div>
+              <div className="label" style={{ marginBottom: 0 }}>{t.eurReserve}</div>
             </div>
             <div style={{ fontSize: 36, fontWeight: 700, color: "var(--yellow)", letterSpacing: -1, lineHeight: 1, fontFamily: "var(--font-mono)" }}>
               € {oculto ? "••••" : totalEUR.toFixed(2)}
