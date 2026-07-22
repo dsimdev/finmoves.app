@@ -35,7 +35,7 @@ import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { Movimiento } from "@/types";
 import { calcularReserva } from "@/utils/reserva";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
+import { SwipeAway } from "@/components/ui/SwipeAway";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { eliminarMovimiento } from "@/services/firebase/movimientos";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
@@ -461,9 +461,11 @@ export default function DolaresPage() {
     );
     if (!borrable) return <div key={m.id}>{fila}</div>;
     return (
-      <SwipeToDelete key={m.id} onDelete={() => setFxDelete(m)} deleteLabel={t.delete}>
+      // El gesto es continuo (fondo rojo + tacho que acompañan el dedo), pero acá sigue
+      // pidiendo confirmación: borrar una operación de divisa mueve el patrimonio.
+      <SwipeAway key={m.id} onDelete={() => setFxDelete(m)} deleteLabel={t.delete} confirma>
         {fila}
-      </SwipeToDelete>
+      </SwipeAway>
     );
   };
 

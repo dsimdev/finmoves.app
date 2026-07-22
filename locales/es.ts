@@ -23,8 +23,6 @@ export const es = {
   rateManual: "manual",
   pageTitleDashboard: "Inicio",
   pageTitleMovements: "Movimientos",
-  deleteAll: "Eliminar todas",
-  deleteAllConfirm: (n: number) => `Se van a borrar ${n === 1 ? "la notificación" : `las ${n} notificaciones`} de la bandeja. No se puede deshacer.`,
   tapToOpen: "tocá de nuevo para abrir",
   select: "Seleccionar",
   selectAll: "Seleccionar todo",

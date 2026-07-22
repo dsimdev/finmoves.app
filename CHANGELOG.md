@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.97.1] — 2026-07-21
+
+### Changed — swipe to delete, in one gesture
+Notifications and the FX history now delete with a **continuous swipe** instead of revealing
+buttons: the row follows your finger over a red background, the bin fades in as you drag, and
+the colour saturates once you're past the threshold — release there and it's gone. Short of the
+threshold the row springs back, and there's resistance past the stop so the limit is felt.
+
+- `components/ui/SwipeAway` is a separate component: `SwipeToDelete` (reveal-and-hold buttons)
+  stays in Movements, where a row also offers edit and deleting deserves more deliberation.
+- The FX history keeps its confirmation dialog — removing a currency operation moves net worth —
+  so there the row returns to place and the dialog decides (`confirma` prop).
+- The "delete all" bin added earlier in v2.97.0 is gone: with the swipe this fluid, clearing
+  one by one is quick and a bulk wipe was risk without payoff.
+
+---
+
 ## [2.97.0] — 2026-07-21
 
 ### Added — the bell catches up when you open the app
