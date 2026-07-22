@@ -4,6 +4,30 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.98.0] — 2026-07-22
+
+### Cada categoría tiene su ícono y su color
+Hasta ahora las categorías eran solo texto. Ahora cada una tiene **su propio ícono con color**,
+y aparece en la lista de movimientos, en el detalle y en la tabla de la computadora.
+
+- En la lista, el ícono ocupa el lugar del puntito de color que había antes. Ese punto decía
+  si era gasto o ingreso, pero **eso ya lo dice el color del monto**, así que ahora ese espacio
+  muestra algo nuevo: de qué categoría es.
+- **Sacamos el nombre de la categoría** de abajo de cada movimiento: con el ícono alcanza, y
+  queda más lugar para la observación.
+
+### No tenés que configurar nada
+Tus categorías ya tienen un ícono y un color asignados automáticamente según su nombre: Games
+con el joystick, Car con el auto, Loki con la patita, Daily con la casa, Health con el corazón.
+
+Si querés cambiar alguno, entrá a **Configuración → Movimientos** y tocá el ícono de la
+categoría: elegís entre 18 íconos y 10 colores, y ves al instante cómo va a quedar.
+
+Los colores que se pueden elegir **no incluyen** los que la app usa para otra cosa (el verde de
+ingreso, el rojo de gasto, el violeta de ahorro…), así no se confunden entre sí.
+
+---
+
 ## [2.97.1] — 2026-07-21
 
 ### Deslizá para eliminar

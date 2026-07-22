@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useT } from "@/hooks/useTranslation";
 import { useMoney } from "@/hooks/useHideValues";
 import { detalleTipo } from "@/components/movements/movement-shared";
+import { CategoriaIcono } from "@/components/ui/CategoriaIcono";
 import { ordenarPor, type ColumnaOrden, type DireccionOrden } from "@/utils/movement-sort";
 import { fechaCorta } from "@/utils/periodo";
 import type { Movimiento } from "@/types";
@@ -21,6 +22,8 @@ type Props = {
   onToggleSel?: (id: string) => void;
   /** Marca/desmarca todas las filas visibles. */
   onToggleTodos?: (ids: string[], marcar: boolean) => void;
+  /** Resuelve la categoría de un movimiento (para su ícono y color). */
+  catDe: (m: Movimiento) => { nombre: string; icono?: string; color?: string };
 };
 
 const COLUMNAS: { id: ColumnaOrden; labelKey: "date" | "description" | "category" | "paymentMethod" | "amount"; align?: "right" }[] = [
@@ -31,7 +34,7 @@ const COLUMNAS: { id: ColumnaOrden; labelKey: "date" | "description" | "category
   { id: "monto", labelKey: "amount", align: "right" },
 ];
 
-export function MovementsTable({ movimientos, onEdit, onDelete, seleccion, onToggleSel, onToggleTodos }: Props) {
+export function MovementsTable({ movimientos, onEdit, onDelete, seleccion, onToggleSel, onToggleTodos, catDe }: Props) {
   const t = useT();
   const { m: money } = useMoney();
   const [orden, setOrden] = useState<{ col: ColumnaOrden; dir: DireccionOrden }>({ col: "fecha", dir: "desc" });
@@ -110,7 +113,11 @@ export function MovementsTable({ movimientos, onEdit, onDelete, seleccion, onTog
                 <td className="dt-flex">
                   {/* Punto de color por tipo: la misma paleta que la lista del móvil, pero
                       como marca chica en vez de ícono grande (en tabla el color alcanza). */}
-                  <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: d.color, marginRight: 9, verticalAlign: "middle" }} />
+                  {/* Ícono de la categoría, como en la lista del móvil. El tipo lo sigue
+                      diciendo el color del monto, a la derecha. */}
+                  <span style={{ display: "inline-flex", verticalAlign: "middle", marginRight: 9 }}>
+                    <CategoriaIcono categoria={catDe(m)} size={22} />
+                  </span>
                   {m.descripcion || <span style={{ color: "var(--muted)" }}>—</span>}
                   {m.observaciones && <span style={{ color: "var(--muted)", fontSize: 11, marginLeft: 8 }}>{m.observaciones}</span>}
                 </td>

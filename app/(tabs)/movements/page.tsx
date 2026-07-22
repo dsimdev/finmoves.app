@@ -10,6 +10,7 @@ import { eliminarMovimientos, recategorizarMovimientos, restaurarMovimientos } f
 import { useAuth } from "@/hooks/useAuth";
 import { useLongPress } from "@/hooks/useLongPress";
 import { SelectionBar } from "@/components/movements/SelectionBar";
+import { CategoriaIcono } from "@/components/ui/CategoriaIcono";
 import { UndoToast } from "@/components/ui/UndoToast";
 import { useMoney } from "@/hooks/useHideValues";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
@@ -28,19 +29,6 @@ import { SectionHint } from "@/components/ui/SectionHint";
 import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { APP_GRAD_DIM, appGradText } from "@/components/ui/gradients";
-
-function TipoDot({ tipo, categoria, direccionMove }: { tipo: TipoMovimiento; categoria: string; direccionMove?: string }) {
-  let c = "var(--muted)";
-  if (categoria === "RESTO") c = "var(--blue)"; // arrastre a ahorros (Ingreso viejo o Move nuevo)
-  else if (tipo === "CompraUSD" || tipo === "CompraEUR" || tipo === "VentaUSD" || tipo === "VentaEUR") c = "var(--yellow)";
-  else if (tipo === "Gasto") c = "var(--red)";
-  else if (tipo === "Move") c = direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)";
-  else if (tipo === "Ingreso") {
-    if (categoria === "Ahorros") c = "var(--blue)";
-    else c = "var(--green)";
-  }
-  return <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0, marginTop: 5 }} />;
-}
 
 /**
  * Fila de la lista con long-press. Es un componente aparte porque el hook de long-press
@@ -73,6 +61,16 @@ export default function MovimientosPage() {
   const { movimientos, loading, refresh, config, updateMovimiento, removeMovimiento, prependMovimiento, recurrentes, recurrentesLoaded } = useData();
   const { user } = useAuth();
   const t = useT();
+
+  // Ícono/color de cada movimiento: se busca su categoría en la config para leer lo elegido.
+  // Si no está (categoría borrada, o Move/RESTO que no son categorías reales), se usa solo el
+  // nombre y utils/categoria-visual deduce un default.
+  const catsPorNombre = useMemo(() => {
+    const m = new Map<string, { nombre: string; icono?: string; color?: string }>();
+    for (const c of config?.categorias ?? []) m.set(c.nombre, c);
+    return m;
+  }, [config?.categorias]);
+  const catDe = (mov: Movimiento) => catsPorNombre.get(mov.categoria) ?? { nombre: mov.categoria };
 
   // Recurrentes activos → para marcar con un relojito los movimientos que matchean.
   // La clave incluye la observación (recurrentKey, la MISMA que usan el doc id y el cron):
@@ -445,6 +443,7 @@ export default function MovimientosPage() {
               seleccion={seleccion}
               onToggleSel={alternar}
               onToggleTodos={(ids, marcar) => setSeleccion(marcar ? ids : [])}
+              catDe={catDe}
             />
           ) : (
 
@@ -529,7 +528,10 @@ export default function MovimientosPage() {
                           // Fondo del seleccionado: el mismo acento que el resto de la app.
                           background: seleccion?.includes(m.id) ? "var(--accent-dim)" : "none",
                         }}>
-                          <TipoDot tipo={m.tipo} categoria={m.categoria} direccionMove={m.direccionMove} />
+                          {/* Ícono de la CATEGORÍA. Reemplazó al punto de color por tipo: el
+                              tipo ya se lee en el color del monto, así que el punto repetía
+                              información y gastaba el lugar donde ahora entra la categoría. */}
+                          <CategoriaIcono categoria={catDe(m)} size={34} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}>
                               <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || m.categoria}</span>
@@ -537,11 +539,16 @@ export default function MovimientosPage() {
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }} aria-label={t.recurrentsTitle}><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
                               )}
                             </div>
-                            {/* Al swipear (abierta), se oculta la observación para que el texto no
-                                se corte contra el tacho; queda solo la categoría. */}
-                            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {m.categoria}{!abierta && m.observaciones && <span style={{ fontStyle: "italic" }}> · {m.observaciones.toLowerCase()}</span>}
-                            </div>
+                            {/* La categoría ya la dice el ícono, así que el subtítulo queda para
+                                la observación. Solo se nombra cuando el movimiento no tiene
+                                descripción (ahí el título ES la categoría y no hay qué repetir).
+                                Al swipear se oculta la observación para que el texto no se corte
+                                contra el tacho. */}
+                            {m.observaciones && !abierta && (
+                              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontStyle: "italic" }}>
+                                {m.observaciones.toLowerCase()}
+                              </div>
+                            )}
                           </div>
                           <span style={{ fontSize: 13, fontWeight: 700, color: esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)") : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1, paddingRight: 4 }}>
                             {negativo ? "-" : "+"}{money(m.monto)}
