@@ -256,7 +256,12 @@ export default function MovementsSettings() {
                     <button key={col} type="button" onClick={() => setVisual(catEditando.nombre, { color: col })} aria-label={col} aria-pressed={sel}
                       style={{
                         width: 32, height: 32, borderRadius: 10, background: hex, cursor: "pointer",
-                        border: `2px solid ${sel ? "var(--text)" : "transparent"}`, transition: "transform .12s",
+                        // El "contraste" toma el color del texto: sobre la superficie casi se
+                        // funde, así que lleva un borde tenue para que se vea el swatch.
+                        border: sel
+                          ? "2px solid var(--accent)"
+                          : `2px solid ${col === "contraste" ? "var(--border-hi)" : "transparent"}`,
+                        transition: "transform .12s",
                       }} />
                   );
                 })}
