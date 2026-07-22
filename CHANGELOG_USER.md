@@ -4,6 +4,24 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.98.1] — 2026-07-22
+
+### Mejoramos los colores y los íconos de las categorías
+Los colores que se podían elegir tenían **tres naranjas parecidos** y **dos violetas casi
+iguales**, más un gris que no aportaba nada. Ahora son diez tonos bien distintos entre sí, y
+sumamos uno nuevo que **se adapta al tema**: se ve negro cuando usás la app en claro y blanco
+cuando la usás en oscuro.
+
+En los íconos sacamos cuatro que no se entendían bien (el regalo, la pelota, el archivador y
+el de belleza) y **sumamos un chanchito** para las categorías de ahorro.
+
+### Arreglos
+- Las compras y ventas de dólares ahora se ven con el **signo $ en amarillo**, que es como la
+  app las marca en todos lados. Antes les tocaba un ícono cualquiera.
+- En el detalle ya no aparece "COMPRAUSD · COMPRAUSD" repetido.
+
+---
+
 ## [2.98.0] — 2026-07-22
 
 ### Cada categoría tiene su ícono y su color

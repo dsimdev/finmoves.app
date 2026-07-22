@@ -30,9 +30,30 @@ describe("paleta de categorías", () => {
     expect(new Set(usados).size).toBe(usados.length);
   });
 
-  it("todos los colores son hex válidos", () => {
-    for (const hex of Object.values(COLORES_CATEGORIA)) {
-      expect(hex).toMatch(/^#[0-9a-f]{6}$/i);
+  it("todos son hex válidos, salvo el contraste que es un token del tema", () => {
+    for (const [nombre, valor] of Object.entries(COLORES_CATEGORIA)) {
+      if (nombre === "contraste") {
+        // Se resuelve por CSS: negro en tema claro, blanco en oscuro.
+        expect(valor).toBe("var(--text)");
+        continue;
+      }
+      expect(valor).toMatch(/^#[0-9a-f]{6}$/i);
+    }
+  });
+
+  it("no hay dos tonos que se confundan de un vistazo", () => {
+    // Distancia mínima en RGB entre cada par: antes convivían tres naranjas casi iguales.
+    const hexes = Object.entries(COLORES_CATEGORIA)
+      .filter(([n]) => n !== "contraste")
+      .map(([n, h]) => [n, h] as const);
+    const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    for (let i = 0; i < hexes.length; i++) {
+      for (let j = i + 1; j < hexes.length; j++) {
+        const [na, ha] = hexes[i], [nb, hb] = hexes[j];
+        const [a, b] = [rgb(ha), rgb(hb)];
+        const dist = Math.sqrt(a.reduce((s, v, k) => s + (v - b[k]) ** 2, 0));
+        expect(dist, `${na} y ${nb} son demasiado parecidos`).toBeGreaterThan(60);
+      }
     }
   });
 });
@@ -80,6 +101,22 @@ describe("visualPorNombre — defaults de categorías existentes", () => {
     expect(visualPorNombre("Efectivo").icono).toBe("billete");
   });
 
+  it("ahorro e inversión usan el chanchito", () => {
+    expect(visualPorNombre("Ahorros").icono).toBe("chancho");
+    expect(visualPorNombre("Inversión").icono).toBe("chancho");
+  });
+
+  it("toda regla apunta a un ícono que existe en el catálogo", () => {
+    // Al sacar íconos del set, una regla podía quedar apuntando a uno inexistente y
+    // CategoriaIcono renderizaría vacío.
+    const nombres = ["Comida", "Transporte", "Hogar", "Salud", "Farmacia", "Sueldo", "Ocio",
+      "Compras", "Servicios", "Educación", "Mascotas", "Regalos", "Viajes", "Trabajo",
+      "Deporte", "Belleza", "Tecnología", "Ahorros", "Desconocida"];
+    for (const n of nombres) {
+      expect(ICONOS_LISTA, `"${n}" apunta a un ícono inexistente`).toContain(visualPorNombre(n).icono);
+    }
+  });
+
   it("el color de una desconocida es estable pero no siempre el mismo", () => {
     // Estable: dos llamadas al mismo nombre dan igual.
     expect(visualPorNombre("Zxqw").color).toBe(visualPorNombre("Zxqw").color);
@@ -113,6 +150,31 @@ describe("visualDeCategoria — lo elegido gana al default", () => {
   it("siempre devuelve un hex de la paleta", () => {
     const v = visualDeCategoria({ nombre: "Cualquiera" });
     expect(Object.values(COLORES_CATEGORIA)).toContain(v.hex);
+  });
+});
+
+describe("categorías con visual fija", () => {
+  it("las operaciones de divisa usan el signo $ en amarillo", () => {
+    for (const nombre of ["CompraUSD", "VentaUSD", "CompraEUR", "VentaEUR"]) {
+      const v = visualDeCategoria({ nombre });
+      expect(v.icono, nombre).toBe("divisa");
+      expect(v.hex, nombre).toBe("var(--yellow)");
+    }
+  });
+
+  it("el RESTO va en azul, como su monto", () => {
+    expect(visualDeCategoria({ nombre: "RESTO" }).hex).toBe("var(--blue)");
+  });
+
+  it("lo guardado NO puede sobrescribir una visual fija", () => {
+    // Su color dice qué operación es: dejarlo elegir rompería esa lectura.
+    const v = visualDeCategoria({ nombre: "CompraUSD", icono: "comida", color: "rosa" });
+    expect(v.icono).toBe("divisa");
+    expect(v.hex).toBe("var(--yellow)");
+  });
+
+  it("las fijas no se ofrecen en el selector", () => {
+    expect(ICONOS_LISTA).not.toContain("divisa");
   });
 });
 

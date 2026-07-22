@@ -4,6 +4,40 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.98.1] — 2026-07-22
+
+### Changed — the category palette, cleaned up
+The first pass shipped tones that were too close to tell apart: three oranges (coral, rust,
+sand) and two violets (lavender, indigo), plus a slate grey that gave no identity and competed
+with muted text. The palette now spreads ten tones around the colour wheel — rose, magenta,
+orange, olive, lime, mint, sky, indigo, sand — and a test measures the RGB distance between
+every pair, failing if two ever land too close again.
+
+**`contraste` replaces the grey**: it resolves to `var(--text)`, so it's black in the light
+theme and white in the dark one. Storing a flat "black" would have left the icon invisible the
+moment you switched themes.
+
+### Changed — icon set
+Dropped four that read poorly at 34px (gift, the sport ball, the filing cabinet, and the
+"beauty" glyph that looked like a syringe) and added a **piggy bank** for savings. Categories
+that defaulted to a removed icon were reassigned, and a test now asserts every name-based rule
+points at an icon that actually exists in the catalogue.
+
+### Fixed — currency operations aren't categories
+`CompraUSD`, `VentaUSD` and their EUR counterparts were falling through to the generic
+name-based default. They now have a **fixed visual — the $ sign in amber**, the same amber that
+marks them everywhere else in the app, and stored preferences can't override it: the colour is
+what tells you it's a currency operation, not a taste. RESTO is likewise pinned to blue, like
+its amount.
+
+The detail view also stopped printing "COMPRAUSD · COMPRAUSD" — the de-duplication that already
+ran in Reserve now applies in Movements too.
+
+### Internal
+- **268 tests** (up from 261).
+
+---
+
 ## [2.98.0] — 2026-07-22
 
 ### Added — every category has its own icon and colour

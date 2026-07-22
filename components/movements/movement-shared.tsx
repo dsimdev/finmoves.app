@@ -91,10 +91,10 @@ export function DetalleHero({ movimiento, money, children, fxComoHeroe, categori
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{dc.icon}</svg>
         </div>
       )}
-      {/* En Reserva, tipo y categoría suelen coincidir ("COMPRAUSD · COMPRAUSD"): se muestra
-          uno solo cuando dicen lo mismo. */}
+      {/* Tipo y categoría coinciden en las operaciones de divisa ("COMPRAUSD · COMPRAUSD"):
+          se muestra uno solo cuando dicen lo mismo. */}
       <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>
-        {fxComoHeroe && dc.label.toLowerCase() === movimiento.categoria.toLowerCase()
+        {dc.label.toLowerCase() === movimiento.categoria.toLowerCase()
           ? dc.label
           : `${dc.label} · ${movimiento.categoria}`}
       </div>
