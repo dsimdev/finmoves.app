@@ -62,11 +62,17 @@ export const IconoRecurrente = () => (
 );
 
 // ── Héroe del detalle: ícono en halo + tipo/categoría + monto grande + chips ──
-export function DetalleHero({ movimiento, money, children }: {
+export function DetalleHero({ movimiento, money, children, fxComoHeroe }: {
   movimiento: Movimiento;
   money: (n: number) => string;
   /** Chips bajo el monto (fecha, medio de pago, recurrente…). */
   children?: React.ReactNode;
+  /**
+   * Solo en Reserva: en una operación de divisa el dato es CUÁNTA divisa entró o salió, así
+   * que va de héroe y los pesos quedan debajo. En Movimientos el héroe sigue siendo el monto
+   * en pesos, que es lo que mueve el período.
+   */
+  fxComoHeroe?: boolean;
 }) {
   const dc = detalleTipo(movimiento);
   return (
@@ -74,8 +80,25 @@ export function DetalleHero({ movimiento, money, children }: {
       <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, background: `color-mix(in srgb, ${dc.color} 16%, transparent)`, border: `1px solid color-mix(in srgb, ${dc.color} 45%, transparent)`, color: dc.color }}>
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{dc.icon}</svg>
       </div>
-      <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>{dc.label} · {movimiento.categoria}</div>
-      <div style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-mono)", lineHeight: 1, color: dc.color }}>{dc.prefix}{money(movimiento.monto)}</div>
+      {/* En Reserva, tipo y categoría suelen coincidir ("COMPRAUSD · COMPRAUSD"): se muestra
+          uno solo cuando dicen lo mismo. */}
+      <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>
+        {fxComoHeroe && dc.label.toLowerCase() === movimiento.categoria.toLowerCase()
+          ? dc.label
+          : `${dc.label} · ${movimiento.categoria}`}
+      </div>
+      {fxComoHeroe && movimiento.cantidadUSD ? (
+        <>
+          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-mono)", lineHeight: 1, color: dc.color }}>
+            {movimiento.tipo.endsWith("EUR") ? "€" : "U$D"} {movimiento.cantidadUSD.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div style={{ fontSize: 14, fontFamily: "var(--font-mono)", color: "var(--muted)", marginTop: 6 }}>
+            {dc.prefix}{money(movimiento.monto)}
+          </div>
+        </>
+      ) : (
+        <div style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-mono)", lineHeight: 1, color: dc.color }}>{dc.prefix}{money(movimiento.monto)}</div>
+      )}
       {children && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap", marginTop: 12 }}>{children}</div>
       )}
@@ -84,21 +107,36 @@ export function DetalleHero({ movimiento, money, children }: {
 }
 
 // ── Cantidad + cotización de un movimiento de reserva ──
-export function DetalleFX({ movimiento, labels }: {
+export function DetalleFX({ movimiento, labels, sinCantidad, conObservaciones }: {
   movimiento: Movimiento;
-  labels: { quantity: string; exchangeRate: string };
+  labels: { quantity: string; exchangeRate: string; notes?: string };
+  /** En Reserva la cantidad ya es el héroe: repetirla acá sería decir dos veces lo mismo. */
+  sinCantidad?: boolean;
+  /** En Reserva las observaciones comparten fila con la cotización (dos datos cortos). */
+  conObservaciones?: boolean;
 }) {
   if (!esMovimientoFX(movimiento)) return null;
+  const mostrarCantidad = !sinCantidad;
+  const mostrarObs = conObservaciones && !!movimiento.observaciones;
+  const celdas = [mostrarCantidad, movimiento.cotizacion != null, mostrarObs].filter(Boolean).length;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: movimiento.cotizacion != null ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 12 }}>
+    <div style={{ display: "grid", gridTemplateColumns: celdas > 1 ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 12 }}>
+      {mostrarCantidad && (
       <div style={detalleField}>
         <div style={detalleFieldLabel}>{labels.quantity}</div>
         <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{monedaMovFX(movimiento)} {movimiento.cantidadUSD?.toFixed(2) ?? "—"}</div>
       </div>
+      )}
       {movimiento.cotizacion != null && (
         <div style={detalleField}>
           <div style={detalleFieldLabel}>{labels.exchangeRate}</div>
           <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)" }}>${movimiento.cotizacion.toLocaleString("es-AR")}</div>
+        </div>
+      )}
+      {mostrarObs && (
+        <div style={detalleField}>
+          <div style={detalleFieldLabel}>{labels.notes}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis" }}>{movimiento.observaciones}</div>
         </div>
       )}
     </div>

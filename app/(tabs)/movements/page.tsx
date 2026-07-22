@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useData } from "../data-context";
 import { agruparPorPeriodo, fechaCorta } from "@/utils/periodo";
 import { movMatchesAny } from "@/utils/search";
@@ -105,6 +105,7 @@ export default function MovimientosPage() {
     return () => clearTimeout(id);
   }, [quickError]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const lupaRef = useRef<HTMLButtonElement>(null); // ancla del popover del filtro
   const [filterTerms, setFilterTerms] = useState<string[]>([]);
   // Ámbito del filtro: por defecto el período seleccionado; con `todosPeriodos`, todo el
   // historial. En global el selector de año/período se REDUCE a los que tienen coincidencias,
@@ -326,7 +327,7 @@ export default function MovimientosPage() {
                 /* La lupa abre el popover del filtro. En escritorio no va: el buscador es
                    una barra siempre visible sobre la tabla (SearchBar). */
                 isDesktop ? null : (
-                <button onClick={() => setFilterOpen(true)} aria-label={t.filterTitle} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", color: filterActivo ? "var(--accent)" : "var(--muted)", padding: 6, margin: -6, display: "flex" }}>
+                <button ref={lupaRef} onClick={() => setFilterOpen(true)} aria-label={t.filterTitle} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", color: filterActivo ? "var(--accent)" : "var(--muted)", padding: 6, margin: -6, display: "flex" }}>
                   <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                   {filterActivo && <span style={{ position: "absolute", top: 2, right: 2, minWidth: 15, height: 15, padding: "0 3px", borderRadius: 8, background: "var(--accent)", color: "#fff", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>{filterTerms.length}</span>}
                 </button>
@@ -627,6 +628,7 @@ export default function MovimientosPage() {
       onChange={setFilterTerms}
       todosPeriodos={todosPeriodos}
       onTodosPeriodosChange={setTodosPeriodos}
+      anchorRef={lupaRef}
     />
     </>
   );

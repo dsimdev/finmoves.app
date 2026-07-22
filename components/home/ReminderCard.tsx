@@ -90,16 +90,15 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
         <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 12.5, marginBottom: 16, lineHeight: 1.5 }}>{t.agendaEmpty}</div>
       )}
 
-      {/* El calendario ES el control: se navega y se toca un día para cargar ahí. */}
-      <ReminderCalendar recordatorios={lista} seleccionado={fecha || null} onSelect={setFecha} />
-
-      {/* Sin día elegido la card queda compacta: solo la invitación a tocar uno. */}
-      {!fecha ? (
-        <div style={{ borderTop: "1px solid var(--faint)", paddingTop: 12, textAlign: "center", fontSize: 11.5, color: "var(--muted)" }}>
-          {t.reminderPickDay}
-        </div>
-      ) : (
-      <div style={{ borderTop: "1px solid var(--faint)", paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* El calendario ES el control: se navega y se toca un día. El detalle de ese día sale
+          como popover ANCLADO a la fecha tocada, así la card no crece hacia abajo. */}
+      <ReminderCalendar
+        recordatorios={lista}
+        seleccionado={fecha || null}
+        onSelect={setFecha}
+        onCerrarDia={() => { setFecha(""); setTexto(""); setRepetir(false); }}
+      >
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {/* Lo que ya hay ese día, con × para borrarlo sin salir de la card. */}
         {delDia.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -114,7 +113,7 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
         )}
 
         <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase" }}>
-          {t.reminderOnDay(fechaCorta(fecha))}
+          {fecha && t.reminderOnDay(fechaCorta(fecha))}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center" }}>
           <input className="input" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={t.reminderTextPlaceholder} autoFocus
@@ -149,10 +148,10 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
           }}>
             <span style={{ position: "absolute", top: 2, left: repetir ? 16 : 2, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left .15s" }} />
           </span>
-          {t.reminderRepeatDay(Number(fecha.split("-")[2]))}
+          {fecha && t.reminderRepeatDay(Number(fecha.split("-")[2]))}
         </button>
       </div>
-      )}
+      </ReminderCalendar>
     </CenterCard>
   );
 }

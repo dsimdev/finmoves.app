@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import type { Recordatorio } from "@/services/firebase/recordatorios";
@@ -17,11 +18,15 @@ const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
 const iso = (anio: number, mes0: number, dia: number) =>
   `${anio}-${String(mes0 + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 
-export function ReminderCalendar({ recordatorios, seleccionado, onSelect }: {
+export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerrarDia, children }: {
   recordatorios: Recordatorio[];
   /** Día elegido (YYYY-MM-DD) o null si todavía no se tocó ninguno. */
   seleccionado: string | null;
   onSelect: (fecha: string) => void;
+  /** Cierra el detalle del día (tocar afuera, Escape o la ×). */
+  onCerrarDia: () => void;
+  /** Detalle del día: sale como popover anclado a la celda tocada. */
+  children: React.ReactNode;
 }) {
   const t = useT();
   const { lang } = useAppPrefs();
@@ -30,6 +35,59 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect }: {
 
   // Mes en vista: arranca en el actual y se mueve con las flechas.
   const [vista, setVista] = useState({ anio: ar.getUTCFullYear(), mes: ar.getUTCMonth() });
+
+  // Posición del popover del día. Se calcula respecto del contenedor del calendario y se
+  // acomoda solo: arriba o abajo de la celda según dónde haya lugar, y corrido en horizontal
+  // para no salirse por los bordes.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const celdaRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [pos, setPos] = useState<{ top: number; left: number; arriba: boolean } | null>(null);
+  const [mounted, setMounted] = useState(false); // el portal necesita document
+  useEffect(() => { setMounted(true); }, []);
+
+  // Se posiciona en coordenadas de VIEWPORT (el popover vive en un portal, fuera de la card):
+  // si se anclara dentro, el overflow de la card lo recortaría y abriría scroll.
+  useLayoutEffect(() => {
+    if (!seleccionado) { setPos(null); return; }
+    const celda = celdaRefs.current[seleccionado];
+    if (!celda) return;
+    const c = celda.getBoundingClientRect();
+    const ANCHO = Math.min(280, window.innerWidth - 24);
+    // Centrado en la celda, sin salirse de la pantalla.
+    const left = Math.max(12, Math.min(c.left + c.width / 2 - ANCHO / 2, window.innerWidth - ANCHO - 12));
+    // Si abajo no entra, se abre hacia arriba de la celda.
+    const arriba = window.innerHeight - c.bottom < 260;
+    const top = arriba ? c.top - 6 : c.bottom + 6;
+    setPos({ top, left, arriba });
+  }, [seleccionado, vista]);
+
+  // Cerrar al tocar afuera o con Escape.
+  useEffect(() => {
+    if (!seleccionado) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      const el = e.target as HTMLElement;
+      // El popover está en un portal: no alcanza con mirar el contenedor del calendario.
+      if (el.closest?.("[data-daypop]")) return;
+      if (wrapRef.current?.contains(el)) return; // tocar otro día lo cambia, no lo cierra
+      onCerrarDia();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrarDia(); };
+    // Al ser fixed, el popover no acompaña el scroll de la card: se cierra para no quedar
+    // flotando lejos del día que lo abrió.
+    const onScroll = (e: Event) => {
+      if ((e.target as HTMLElement)?.closest?.("[data-daypop]")) return; // scroll interno, no
+      onCerrarDia();
+    };
+    document.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true); // capture: agarra scroll de contenedores
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [seleccionado, onCerrarDia]);
+
   const { anio, mes } = vista;
 
   const mover = (delta: number) =>
@@ -61,7 +119,7 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect }: {
   };
 
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div ref={wrapRef} style={{ marginBottom: 14, position: "relative" }}>
       {/* Mes en vista + navegación */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
         <button type="button" onClick={() => mover(-1)} aria-label={t.prevMonth} style={navBtn}>
@@ -69,7 +127,7 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect }: {
         </button>
         {/* Solo el mes: el año se sobreentiende. Si la navegación sale del año en curso, se
             agrega para no perder la referencia. */}
-        <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: 0.4 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: 0.3 }}>
           {(() => {
             const d = new Date(Date.UTC(anio, mes, 1));
             const nombre = d.toLocaleDateString(lang === "en" ? "en-US" : "es-AR", { month: "long", timeZone: "UTC" });
@@ -100,7 +158,8 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect }: {
             <button
               key={dia}
               type="button"
-              onClick={() => onSelect(fecha)}
+              ref={(el) => { celdaRefs.current[fecha] = el; }}
+              onClick={() => (sel ? onCerrarDia() : onSelect(fecha))}
               aria-label={fecha}
               aria-pressed={sel}
               style={{
@@ -124,6 +183,39 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect }: {
           );
         })}
       </div>
+
+      {/* Detalle del día: en un PORTAL, para que ningún contenedor con overflow (la card que
+          lo envuelve) lo recorte ni abra scroll. Se ancla a la celda en coords de viewport. */}
+      {seleccionado && pos && mounted && createPortal(
+        <div
+          data-daypop
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
+            position: "fixed", zIndex: 10000,
+            left: pos.left,
+            width: Math.min(280, window.innerWidth - 24),
+            // Hacia arriba se ancla por `bottom` para crecer en esa dirección.
+            ...(pos.arriba
+              ? { bottom: window.innerHeight - pos.top }
+              : { top: pos.top }),
+            maxHeight: "min(60vh, 420px)", overflowY: "auto",
+            background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12,
+            boxShadow: "0 12px 34px rgba(0,0,0,.45)", padding: "12px 13px",
+            transformOrigin: pos.arriba ? "bottom center" : "top center",
+            animation: "dayPop .15s cubic-bezier(.2,.9,.3,1.15)",
+          }}
+        >
+          {/* Sin botón de cerrar: se sale tocando afuera, con Escape o volviendo a tocar el
+              día. Una × acá se pisaba con la × de cada recordatorio de la lista. */}
+          {children}
+        </div>,
+        document.body
+      )}
+
+      <style>{`
+        @keyframes dayPop { from { opacity: 0; transform: scale(.94) } to { opacity: 1 } }
+        @media (prefers-reduced-motion: reduce) { [data-daypop] { animation: none !important } }
+      `}</style>
     </div>
   );
 }

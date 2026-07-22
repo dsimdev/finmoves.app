@@ -24,6 +24,14 @@ export interface CategoriaEnRiesgo {
   proyeccion: number;
   /** proyeccion / presupuesto, redondeado a % entero. */
   pctProyectado: number;
+  /**
+   * true si el gasto YA superó el presupuesto (hecho consumado), false si todavía está por
+   * debajo y es el ritmo el que proyecta pasarse (se puede corregir). Son dos situaciones
+   * distintas y no deben avisarse con el mismo mensaje.
+   */
+  excedida: boolean;
+  /** gastado / presupuesto, redondeado a % entero. Lo REAL, no lo proyectado. */
+  pctGastado: number;
 }
 
 /**
@@ -53,7 +61,11 @@ export function categoriasEnRiesgo(
     if (gastado <= 0) continue;               // sin gasto real → nada que proyectar
 
     const proyeccion = (gastado / diasTranscurridos) * DIAS_PERIODO;
-    if (proyeccion <= presu * UMBRAL_PROYECCION) continue;
+    const excedida = gastado > presu;
+    // Una categoría entra si YA se pasó (hecho consumado) o si el ritmo proyecta que se va a
+    // pasar. Sin lo primero, cruzar el presupuesto pasaba desapercibido cuando el ritmo del
+    // período ya se había amesetado.
+    if (!excedida && proyeccion <= presu * UMBRAL_PROYECCION) continue;
 
     enRiesgo.push({
       categoria,
@@ -61,9 +73,17 @@ export function categoriasEnRiesgo(
       presupuesto: presu,
       proyeccion,
       pctProyectado: Math.round((proyeccion / presu) * 100),
+      excedida,
+      pctGastado: Math.round((gastado / presu) * 100),
     });
   }
 
   // Peor primero (mayor % proyectado): si hay varias, el cuerpo del push muestra las top.
   return enRiesgo.sort((a, b) => b.pctProyectado - a.pctProyectado);
 }
+
+/** Separa las que ya se pasaron de las que todavía están a tiempo. */
+export const partirPorEstado = (cats: CategoriaEnRiesgo[]) => ({
+  excedidas: cats.filter((c) => c.excedida).sort((a, b) => b.pctGastado - a.pctGastado),
+  enRiesgo: cats.filter((c) => !c.excedida),
+});

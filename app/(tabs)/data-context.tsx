@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
@@ -10,6 +10,9 @@ import { listarRecurrentes, type Recurrente } from "@/services/firebase/recurren
 import { listarPlantillas, type Plantilla } from "@/services/firebase/plantillas";
 import { syncPushSubscription } from "@/lib/push-client";
 import { useMetaHitos } from "@/hooks/useMetaHitos";
+import { useNotifCatchUp } from "@/hooks/useNotifCatchUp";
+import { useCotizacion } from "@/hooks/useCotizacion";
+import { agruparPorPeriodo } from "@/utils/periodo";
 import { MetaCelebration } from "@/components/investments/MetaCelebration";
 import type { Movimiento, ConfigUsuario } from "@/types";
 
@@ -92,6 +95,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // Hitos de meta (50/75/100%): se festejan acá, en el momento en que la carga mueve el
   // acumulado. Reemplazan al push del cron, que llegaba después de que el usuario ya lo vio.
   const { festejo, cerrarFestejo } = useMetaHitos(uid, movimientos, config, patchConfigMeta);
+
+  // Campana al día: el cron corre cada varias horas, así que al abrir la app puede haber
+  // cosas ya ocurridas (el dólar se movió, un gasto disparó el desvío) todavía sin registrar.
+  // Se anotan en la bandeja sin mandar push y sin tocar el baseline del cron.
+  const { cotizacion } = useCotizacion();
+  const periodoActualId = useMemo(() => agruparPorPeriodo(movimientos)[0]?.periodoId, [movimientos]);
+  useNotifCatchUp({
+    uid,
+    movimientos,
+    config,
+    recurrentes,
+    listo: !loading && !configLoading && recurrentesLoaded,
+    dolarOficial: cotizacion?.oficial ?? null,
+    periodoActualId,
+  });
 
   return (
     <Ctx.Provider value={{ movimientos, loading, refresh, updateMovimiento: updateLocal, removeMovimiento: removeLocal, prependMovimiento: prependLocal, config, configLoading, refreshConfig, patchConfigMeta, recurrentes, recurrentesLoaded, plantillas, refreshRecurrentes, refreshPlantillas, mutateRecurrentes: setRecurrentes, mutatePlantillas: setPlantillas }}>

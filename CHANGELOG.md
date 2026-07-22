@@ -4,6 +4,50 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.97.0] — 2026-07-21
+
+### Added — the bell catches up when you open the app
+The cron runs every few hours. Between runs the dollar moves and new expenses change the budget
+outlook, so the inbox was always behind what had already happened. Opening the app now evaluates
+the same checks against current state and records whatever is missing — **without sending push**
+(interrupting is still the cron's job) and **without touching the cron's baseline**.
+
+- Five checks run on open: dollar, budget, pending recurring items, new version, and the
+  three-day heads-up for reminders. The final reminder alert stays with the cron, which also
+  deletes the reminder — the client stays out of that.
+- The client keeps its own dedup marker (`notifyMeta.inApp`), so the cron's push behaviour is
+  unchanged. Budget is the exception: that dedup is now **shared** with the cron, so a category
+  is only announced once per period no matter which side spotted it first.
+- `utils/notif-inapp` holds the logic, reusing the same pure functions the cron uses
+  (`categoriasEnRiesgo`, `shouldRemind`) so the two paths can't drift. 14 tests.
+
+### Budget alerts now separate "already over" from "heading there"
+One message covered both cases and said "heading over budget" about categories that had
+**already** blown past it. They are now two different alerts: `4 categorías ya se pasaron`
+(a done deal) and `3 van camino a pasarse` (still correctable). A category that exceeds its
+budget is also caught even when its pace has flattened out and the projection no longer trips
+the threshold.
+
+### Notifications: one-line body, tap to expand
+Bodies are a single line; the first tap expands the full breakdown inside the bell (every
+category, not just the top three) and a second tap navigates. Added **delete all** — a bin next
+to the close button, behind a confirmation since it can't be undone.
+
+### Fixed
+- **The notification popover sat flush against the bell on Home.** Both popovers used a fixed
+  `top` offset, but Home's header is taller (it carries a subtitle), so the panel landed on top
+  of the icon. Both now measure the trigger's actual position instead of assuming a header
+  height.
+- **Reserve detail** showed "COMPRAUSD · COMPRAUSD" and led with the peso amount. It now shows
+  the label once, leads with the **currency amount** (what the operation is actually about) and
+  puts pesos underneath. Quantity and description cards are gone (they repeated the hero and the
+  title); rate and notes share a row. Movements' detail is untouched.
+
+### Internal
+- **245 tests** (up from 225). New `hooks/useNotifCatchUp`, `utils/notif-inapp`.
+
+---
+
 ## [2.96.0] — 2026-07-21
 
 ### Added — multi-select in Movements

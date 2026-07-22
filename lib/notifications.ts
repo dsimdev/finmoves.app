@@ -3,7 +3,7 @@ import { pushYGuardar } from "./notif-store";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { shouldRemind, type RecReminderState } from "@/utils/recurrent-reminder";
-import { categoriasEnRiesgo } from "@/utils/budget-alert";
+import { categoriasEnRiesgo, partirPorEstado } from "@/utils/budget-alert";
 import { avanzarHastaFutura } from "@/utils/recordatorio-repeat";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Movimiento, ConfigUsuario } from "@/types";
@@ -349,18 +349,25 @@ async function checkPresupuesto(uid: string, movs: Movimiento[], config: ConfigU
   const dias = Math.max(1, Math.round((Date.now() - inicio.getTime()) / 86_400_000));
 
   const avisadas = ((notify.budgetAvisos as Record<string, string[]>) ?? {})[actual.periodoId] ?? [];
-  const enRiesgo = categoriasEnRiesgo(gastadoPorCategoria, presupuesto, dias, avisadas);
-  if (enRiesgo.length === 0) return;
+  const todas = categoriasEnRiesgo(gastadoPorCategoria, presupuesto, dias, avisadas);
+  if (todas.length === 0) return;
 
-  const primera = enRiesgo[0];
-  const body = enRiesgo.length === 1
-    ? `A este ritmo, ${primera.categoria} cierra en ${primera.pctProyectado}% de su presupuesto.`
-    : `${enRiesgo.length} categorías van camino a pasarse: ${enRiesgo.slice(0, 3).map((c) => c.categoria).join(", ")}${enRiesgo.length > 3 ? "…" : ""}`;
+  // Pasarse ya es un hecho consumado; ir camino a pasarse todavía se puede corregir. Se avisa
+  // lo más urgente primero (lo excedido), con el mismo criterio que usa la app al abrirse.
+  const { excedidas, enRiesgo } = partirPorEstado(todas);
+  const title = excedidas.length > 0 ? "Presupuesto excedido" : "Presupuesto";
+  const body = excedidas.length > 0
+    ? (excedidas.length === 1
+        ? `${excedidas[0].categoria} se pasó · ${excedidas[0].pctGastado}% del presupuesto`
+        : `${excedidas.length} categorías ya se pasaron${enRiesgo.length > 0 ? ` y ${enRiesgo.length} van camino` : ""}`)
+    : (enRiesgo.length === 1
+        ? `A este ritmo, ${enRiesgo[0].categoria} cierra en ${enRiesgo[0].pctProyectado}% de su presupuesto.`
+        : `${enRiesgo.length} categorías van camino a pasarse: ${enRiesgo.slice(0, 3).map((c) => c.categoria).join(", ")}${enRiesgo.length > 3 ? "…" : ""}`);
 
-  const ok = await pushYGuardar(uid, "presupuesto", { title: "Presupuesto", body, tag: `presu-${safeId}`, url: "/reports" }, "/reports");
+  const ok = await pushYGuardar(uid, "presupuesto", { title, body, tag: `presu-${safeId}`, url: "/reports" }, "/reports");
   // Dedup SOLO si el push se confirmó (regla v2.71.0). Se marcan TODAS las avisadas ahora y se
   // deja únicamente la entrada del período en curso, para no acumular períodos viejos.
-  if (ok) updates.budgetAvisos = { [actual.periodoId]: [...avisadas, ...enRiesgo.map((c) => c.categoria)] };
+  if (ok) updates.budgetAvisos = { [actual.periodoId]: [...avisadas, ...todas.map((c) => c.categoria)] };
 }
 
 // Recordatorio de sueldo: si pasó más de ~1 mes desde el último período abierto.
