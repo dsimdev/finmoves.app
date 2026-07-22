@@ -55,6 +55,10 @@ export interface Categoria {
   nombre: string;
   tipo: TipoCategoria;
   activa: boolean;
+  /** Ícono elegido (id de utils/categoria-visual). Sin él se deduce del nombre. */
+  icono?: string;
+  /** Color elegido de la paleta de categorías. NO incluye los tonos semánticos de tipo. */
+  color?: string;
 }
 
 export interface MedioPago {

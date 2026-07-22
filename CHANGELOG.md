@@ -4,6 +4,46 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.98.0] — 2026-07-22
+
+### Added — every category has its own icon and colour
+Categories were plain text. They now carry visual identity, which is what the project's design
+brief asks for: icons, colour and shape as the protagonists rather than more labels.
+
+- **In the movements list** the category icon replaces the type dot. The dot was redundant —
+  the amount's colour already says expense, income or move — so that slot now carries
+  information it didn't before.
+- **The category name is gone from the row subtitle**: the icon says it. The subtitle is left
+  for the note. A movement with no description still shows the category as its title, so
+  nothing loses its name.
+- **The detail view** leads with the category icon instead of the generic type arrow, which
+  repeated what the sign and colour of the amount already convey.
+- Same icon in the desktop table.
+
+### The colour palette avoids the semantic tones
+Six colours already mean something in the app: green (income), red (expense), purple (move to
+savings), teal (move to available), amber (currency operations) and blue (RESTO). None of them
+is offered as a category colour — an expense with a green icon next to a red amount reads
+wrong. Categories draw from a **separate ten-tone palette** (rose, lime, coral, indigo, mint,
+lavender, rust, sand, slate, sky), and a test asserts the two sets never overlap.
+
+Report bars stay red on purpose: there the colour is what marks the entry as spending, and
+there's no icon alongside to carry that meaning.
+
+### Nothing to set up
+`icono` and `color` are optional fields. Existing categories get a sensible default deduced
+from their name — matching ignores case and accents and works on partial names, so "Games"
+lands on the controller, "Car" on the vehicle, "Loki" on the paw, "Daily" on the house. To
+change one, tap its icon in Settings → Movements: 18 icons and 10 colours, picked by tapping,
+with a live preview of the row.
+
+### Internal
+- `utils/categoria-visual` (palette, icon catalogue, name-based defaults) with 16 tests;
+  `components/ui/CategoriaIcono` is the single component every view renders.
+- **261 tests** (up from 245).
+
+---
+
 ## [2.97.1] — 2026-07-21
 
 ### Changed — swipe to delete, in one gesture

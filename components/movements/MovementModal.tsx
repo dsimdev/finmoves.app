@@ -299,6 +299,13 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
   const esIngresoFX = tipo === "IngresoUSD" || tipo === "IngresoEUR";
   const tipoColor = TIPOS.find((tx) => tx.t === tipo)?.color ?? "var(--accent)";
 
+  // Categoría del movimiento que se está viendo, para que el héroe del detalle muestre SU
+  // ícono. Si no está en la config (borrada, o Move/RESTO que no son categorías reales), se
+  // pasa solo el nombre y utils/categoria-visual deduce un default.
+  const catDelMovimiento = movimiento
+    ? config?.categorias.find((c) => c.nombre === movimiento.categoria) ?? { nombre: movimiento.categoria }
+    : undefined;
+
   const categoriasFiltradas = tipo === "Gasto"
     ? (config?.categorias.filter((c) => c.tipo === "Gasto" && c.activa) ?? [])
     : tipo === "Ingreso"
@@ -1028,7 +1035,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
         {/* El detalle es SOLO LECTURA: editar y eliminar son gestos de swipe en la lista
             (lapicito + tacho). Así la card no repite acciones y desaparece el flujo de
             borrado-desde-detalle (que traía el bug del cancelar). */}
-        <DetalleHero movimiento={movimiento} money={money}>
+        <DetalleHero movimiento={movimiento} money={money} categoria={catDelMovimiento}>
           <span style={detalleChip}><IconoCalendario />{fechaCorta(movimiento.fecha)}</span>
           {movimiento.medioPago && !isLocked && (
             <span style={detalleChip}><IconoTarjeta />{movimiento.medioPago}</span>

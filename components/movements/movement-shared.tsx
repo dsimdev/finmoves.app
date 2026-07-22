@@ -1,6 +1,7 @@
 "use client";
 
 import type { Movimiento } from "@/types";
+import { CategoriaIcono } from "@/components/ui/CategoriaIcono";
 
 // Piezas compartidas por las vistas del MovementModal (detalle, reserva, edición).
 // Vivían duplicadas dentro del modal: el héroe y los campos del detalle estaban escritos
@@ -62,11 +63,16 @@ export const IconoRecurrente = () => (
 );
 
 // ── Héroe del detalle: ícono en halo + tipo/categoría + monto grande + chips ──
-export function DetalleHero({ movimiento, money, children, fxComoHeroe }: {
+export function DetalleHero({ movimiento, money, children, fxComoHeroe, categoria }: {
   movimiento: Movimiento;
   money: (n: number) => string;
   /** Chips bajo el monto (fecha, medio de pago, recurrente…). */
   children?: React.ReactNode;
+  /**
+   * Categoría del movimiento (de la config). Si viene, el héroe muestra SU ícono en vez de la
+   * flecha genérica por tipo: la flecha repetía lo que ya dicen el signo y el color del monto.
+   */
+  categoria?: { nombre: string; icono?: string; color?: string };
   /**
    * Solo en Reserva: en una operación de divisa el dato es CUÁNTA divisa entró o salió, así
    * que va de héroe y los pesos quedan debajo. En Movimientos el héroe sigue siendo el monto
@@ -77,9 +83,14 @@ export function DetalleHero({ movimiento, money, children, fxComoHeroe }: {
   const dc = detalleTipo(movimiento);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 18 }}>
-      <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, background: `color-mix(in srgb, ${dc.color} 16%, transparent)`, border: `1px solid color-mix(in srgb, ${dc.color} 45%, transparent)`, color: dc.color }}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{dc.icon}</svg>
-      </div>
+      {/* Con categoría, su ícono (en su color); sin ella, el ícono genérico por tipo. */}
+      {categoria ? (
+        <div style={{ marginBottom: 12 }}><CategoriaIcono categoria={categoria} size={56} /></div>
+      ) : (
+        <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, background: `color-mix(in srgb, ${dc.color} 16%, transparent)`, border: `1px solid color-mix(in srgb, ${dc.color} 45%, transparent)`, color: dc.color }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{dc.icon}</svg>
+        </div>
+      )}
       {/* En Reserva, tipo y categoría suelen coincidir ("COMPRAUSD · COMPRAUSD"): se muestra
           uno solo cuando dicen lo mismo. */}
       <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>

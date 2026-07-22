@@ -9,13 +9,20 @@ import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { dbErrorMessage } from "@/lib/firebase-error";
 import type { ConfigUsuario } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { CategoriaIcono, CategoriaGlifo } from "@/components/ui/CategoriaIcono";
+import { visualDeCategoria, ICONOS_LISTA, COLORES_LISTA, COLORES_CATEGORIA } from "@/utils/categoria-visual";
 import { Toggle, SubHeader } from "../_shared";
 
 // Fila editable: nombre + switch activar/desactivar + borrar.
-function ItemRow({ name, dot, activo, onToggle, onDelete }: { name: string; dot: string; activo: boolean; onToggle: () => void; onDelete: () => void }) {
+function ItemRow({ name, dot, icon, activo, onToggle, onDelete }: { name: string; dot?: string; icon?: React.ReactNode; activo: boolean; onToggle: () => void; onDelete: () => void }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 4px", borderBottom: "1px solid var(--faint)" }}>
-      <span style={{ width: 8, height: 8, borderRadius: "50%", background: dot, flexShrink: 0, opacity: activo ? 1 : 0.4 }} />
+      {/* Las categorías traen su ícono (tocable, elige ícono y color); medios y orígenes
+          siguen con el punto de color simple. */}
+      {icon
+        ? <span style={{ flexShrink: 0, opacity: activo ? 1 : 0.4 }}>{icon}</span>
+        : <span style={{ width: 8, height: 8, borderRadius: "50%", background: dot, flexShrink: 0, opacity: activo ? 1 : 0.4 }} />}
       <span style={{ flex: 1, minWidth: 0, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", opacity: activo ? 1 : 0.5 }}>{name}</span>
       <Toggle activo={activo} onClick={onToggle} />
       <button onClick={onDelete} aria-label="Eliminar" style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: 4, display: "flex", flexShrink: 0 }}>
@@ -65,6 +72,13 @@ export default function MovementsSettings() {
   const scheduleSave = () => { if (saveTimer.current) clearTimeout(saveTimer.current); saveTimer.current = setTimeout(persist, 1200); };
 
   const toggleCat = (n: string) => { const next = catsRef.current.map(c => c.nombre === n ? { ...c, activa: !c.activa } : c); catsRef.current = next; setLocalCats(next); scheduleSave(); };
+  // Categoría cuyo ícono/color se está eligiendo (nombre), o null si el selector está cerrado.
+  const [editandoVisual, setEditandoVisual] = useState<string | null>(null);
+  const catEditando = localCats.find((c) => c.nombre === editandoVisual) ?? null;
+  const setVisual = (nombre: string, patch: { icono?: string; color?: string }) => {
+    const next = catsRef.current.map(c => c.nombre === nombre ? { ...c, ...patch } : c);
+    catsRef.current = next; setLocalCats(next); scheduleSave();
+  };
   const toggleMed = (n: string) => { const next = mediosRef.current.map(m => m.nombre === n ? { ...m, activo: !m.activo } : m); mediosRef.current = next; setLocalMedios(next); scheduleSave(); };
   const toggleOri = (n: string) => { const next = origRef.current.map(o => o.nombre === n ? { ...o, activo: !o.activo } : o); origRef.current = next; setLocalOrigenes(next); scheduleSave(); };
 
@@ -156,8 +170,17 @@ export default function MovementsSettings() {
 
         {/* Lista */}
         {movSub === "origenes" && <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6 }}>{t.shownWhenAddingIncomeSavings}</div>}
+        {/* El "dot" de la categoría es su ÍCONO: se toca para elegir ícono y color. El punto
+            de tipo (gasto/ingreso) ya no hace falta acá — las categorías vienen agrupadas. */}
         {movSub === "categorias" && [...localCats].sort((a, b) => a.tipo === b.tipo ? 0 : a.tipo === "Gasto" ? -1 : 1).map(c => (
-          <ItemRow key={c.nombre} name={c.nombre} dot={c.tipo === "Gasto" ? "var(--red)" : "var(--green)"} activo={c.activa} onToggle={() => toggleCat(c.nombre)} onDelete={() => setPendingDelete({ kind: "cat", nombre: c.nombre })} />
+          <ItemRow
+            key={c.nombre}
+            name={c.nombre}
+            icon={<button type="button" onClick={() => setEditandoVisual(c.nombre)} aria-label={t.chooseIconColor} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex" }}><CategoriaIcono categoria={c} size={30} /></button>}
+            activo={c.activa}
+            onToggle={() => toggleCat(c.nombre)}
+            onDelete={() => setPendingDelete({ kind: "cat", nombre: c.nombre })}
+          />
         ))}
         {movSub === "medios" && localMedios.map(m => (
           <ItemRow key={m.nombre} name={m.nombre} dot="var(--blue)" activo={m.activo} onToggle={() => toggleMed(m.nombre)} onDelete={() => setPendingDelete({ kind: "med", nombre: m.nombre })} />
@@ -186,6 +209,62 @@ export default function MovementsSettings() {
           {templateSaving ? "…" : t.save}
         </button>
       </div>
+
+      {/* Ícono y color de una categoría. Se elige tocando: sin campos de texto ni códigos.
+          Los colores ofrecidos NO incluyen los semánticos de tipo (ver utils/categoria-visual). */}
+      <BottomSheet open={!!catEditando} onClose={() => setEditandoVisual(null)} title={catEditando?.nombre ?? ""}>
+        {catEditando && (() => {
+          const actual = visualDeCategoria(catEditando);
+          return (
+            <div style={{ paddingBottom: 10 }}>
+              {/* Vista previa de cómo va a quedar en la lista. */}
+              <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "12px 13px", marginBottom: 18, background: "var(--surface-alt)", borderRadius: "var(--radius-sm)" }}>
+                <CategoriaIcono categoria={catEditando} size={34} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 13, fontWeight: 500 }}>{t.exampleMovement}</span>
+                  <span style={{ display: "block", fontSize: 11, color: "var(--muted)", marginTop: 1 }}>{catEditando.nombre}</span>
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", color: catEditando.tipo === "Gasto" ? "var(--red)" : "var(--green)" }}>
+                  {catEditando.tipo === "Gasto" ? "-" : "+"}$8.400
+                </span>
+              </div>
+
+              <div className="label" style={{ marginBottom: 10 }}>{t.icon}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 20 }}>
+                {ICONOS_LISTA.map((ic) => {
+                  const sel = actual.icono === ic;
+                  return (
+                    <button key={ic} type="button" onClick={() => setVisual(catEditando.nombre, { icono: ic })} aria-label={ic} aria-pressed={sel}
+                      style={{
+                        aspectRatio: "1", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                        background: sel ? `color-mix(in srgb, ${actual.hex} 18%, transparent)` : "var(--surface-alt)",
+                        border: `1px solid ${sel ? actual.hex : "var(--border)"}`,
+                        color: sel ? actual.hex : "var(--muted)", transition: "background .12s, border-color .12s",
+                      }}>
+                      <CategoriaGlifo icono={ic} size={19} />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="label" style={{ marginBottom: 10 }}>{t.color}</div>
+              <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                {COLORES_LISTA.map((col) => {
+                  const hex = COLORES_CATEGORIA[col];
+                  const sel = actual.color === col;
+                  return (
+                    <button key={col} type="button" onClick={() => setVisual(catEditando.nombre, { color: col })} aria-label={col} aria-pressed={sel}
+                      style={{
+                        width: 32, height: 32, borderRadius: 10, background: hex, cursor: "pointer",
+                        border: `2px solid ${sel ? "var(--text)" : "transparent"}`, transition: "transform .12s",
+                      }} />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+      </BottomSheet>
 
       {pendingDelete && (
         <ConfirmModal title={t.delete} confirmLabel={t.yesDelete} cancelLabel={t.cancel} confirmColor="var(--red)" onConfirm={confirmDelete} onCancel={() => setPendingDelete(null)}>
