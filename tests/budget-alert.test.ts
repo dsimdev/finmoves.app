@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { categoriasEnRiesgo, MIN_DIAS_PARA_PROYECTAR } from "@/utils/budget-alert";
+import { categoriasEnRiesgo, partirPorEstado, MIN_DIAS_PARA_PROYECTAR } from "@/utils/budget-alert";
 
 // Un período dura 30 días. Proyección = gastado / diasTranscurridos * 30.
 // El umbral de disparo es 1.05× el presupuesto.
@@ -57,6 +57,41 @@ describe("categoriasEnRiesgo", () => {
     // Comida 200%, Ocio 150% → Comida primero.
     expect(r.map((c) => c.categoria)).toEqual(["Comida", "Ocio"]);
     expect(r[0].pctProyectado).toBeGreaterThan(r[1].pctProyectado);
+  });
+
+  it("detecta una categoría YA excedida aunque el ritmo se haya amesetado", () => {
+    // Gastó 12.000 de 10.000 en 25 días: el ritmo proyecta 14.400, pero lo importante es que
+    // YA se pasó. Antes esto podía no entrar si la proyección quedaba baja.
+    const r = categoriasEnRiesgo({ Comida: 12000 }, { Comida: 10000 }, 25);
+    expect(r).toHaveLength(1);
+    expect(r[0].excedida).toBe(true);
+    expect(r[0].pctGastado).toBe(120);
+  });
+
+  it("una categoría excedida entra aunque su proyección no supere el umbral", () => {
+    // Gastó 10.500 de 10.000 el último día del período: proyección ≈ presupuesto (no dispara
+    // por ritmo), pero ya se pasó.
+    const r = categoriasEnRiesgo({ Comida: 10500 }, { Comida: 10000 }, 30);
+    expect(r).toHaveLength(1);
+    expect(r[0].excedida).toBe(true);
+  });
+
+  it("distingue excedida de en-riesgo", () => {
+    // Comida ya se pasó (12.000 > 10.000); Ocio todavía no (4.000 < 10.000) pero proyecta 12.000.
+    const r = categoriasEnRiesgo({ Comida: 12000, Ocio: 4000 }, { Comida: 10000, Ocio: 10000 }, 10);
+    const { excedidas, enRiesgo } = partirPorEstado(r);
+    expect(excedidas.map((c) => c.categoria)).toEqual(["Comida"]);
+    expect(enRiesgo.map((c) => c.categoria)).toEqual(["Ocio"]);
+  });
+
+  it("las excedidas se ordenan por cuánto se pasaron", () => {
+    const r = categoriasEnRiesgo(
+      { A: 11000, B: 20000, C: 15000 },
+      { A: 10000, B: 10000, C: 10000 },
+      15
+    );
+    const { excedidas } = partirPorEstado(r);
+    expect(excedidas.map((c) => c.categoria)).toEqual(["B", "C", "A"]); // 200%, 150%, 110%
   });
 
   // Simula el ciclo de vida del dedup por período tal como lo maneja checkPresupuesto.

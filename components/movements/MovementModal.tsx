@@ -1052,11 +1052,12 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
       <CenterCard open={open && view !== "delete"} onClose={onClose} title={t.detail}>
         {/* Mismas piezas que el detalle de Movimientos, pero sin acciones ni chip de medio
             de pago: la reserva es solo lectura (borrar es swipe en la fila del historial). */}
-        <DetalleHero movimiento={movimiento} money={money}>
+        <DetalleHero movimiento={movimiento} money={money} fxComoHeroe>
           <span style={detalleChip}><IconoCalendario />{fechaCorta(movimiento.fecha)}</span>
         </DetalleHero>
-        <DetalleFX movimiento={movimiento} labels={{ quantity: t.quantity, exchangeRate: t.exchangeRate }} />
-        <DetalleTextos movimiento={movimiento} labels={{ description: t.description, notes: t.notes }} />
+        {/* Cotización y observaciones en una fila; la descripción no se muestra porque en
+            reserva siempre repite el título ("Compra USD"). */}
+        <DetalleFX movimiento={movimiento} labels={{ quantity: t.quantity, exchangeRate: t.exchangeRate, notes: t.notes }} sinCantidad conObservaciones />
         <ComprobanteButton movimiento={movimiento} label={t.receipt} onOpen={(src, isPdf) => setViewer({ src, isPdf })} />
       </CenterCard>
     )}

@@ -4,6 +4,35 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.97.0] — 2026-07-21
+
+### La campana se pone al día cuando abrís la app
+Los avisos los manda un proceso que corre cada varias horas. Entre una corrida y la otra el
+dólar se mueve o cargás gastos que cambian tu presupuesto, así que al entrar la campana estaba
+atrasada.
+
+Ahora, **cada vez que abrís la app**, FinMoves revisa qué pasó y lo suma a la campana: el
+dólar, el presupuesto, los recurrentes que te faltan cargar, una versión nueva y los
+recordatorios que están por vencer. **No te llega una notificación al teléfono por esto** —
+para eso siguen estando los avisos de siempre; esto solo completa la campana.
+
+### El aviso de presupuesto ahora distingue dos cosas
+Antes decía "van camino a pasarse" incluso para categorías que **ya** se habían pasado. Ahora
+son dos avisos distintos: uno para las que ya te pasaste y otro para las que todavía estás a
+tiempo de frenar.
+
+### Notificaciones más ordenadas
+- Cada notificación se ve en **una línea**. Tocala una vez y se abre con el detalle completo
+  (por ejemplo, todas las categorías, no solo tres); tocala de nuevo y te lleva a la pantalla.
+- Nuevo botón para **eliminar todas** las notificaciones de una, con confirmación.
+
+### Arreglos
+- En Inicio, el panel de notificaciones quedaba pegado a la campana.
+- El detalle de un movimiento de Reserva repetía el nombre dos veces y mostraba los pesos como
+  dato principal. Ahora muestra **cuántos dólares** compraste o vendiste, con los pesos abajo.
+
+---
+
 ## [2.96.0] — 2026-07-21
 
 ### Borrá o recategorizá varios movimientos de una

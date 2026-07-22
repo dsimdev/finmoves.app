@@ -15,9 +15,11 @@ import type { Movimiento } from "@/types";
 // Ámbito: por defecto acota al período seleccionado. Con "todos los períodos" la búsqueda
 // pasa a ser global y el selector de año/período de la pantalla se reduce a los que tienen
 // coincidencias (la navegación por pills sigue siendo la misma, solo se acorta).
-export function MovementsFilter({ open, onClose, movs, movsGlobal, terms, onChange, todosPeriodos, onTodosPeriodosChange }: {
+export function MovementsFilter({ open, onClose, movs, movsGlobal, terms, onChange, todosPeriodos, onTodosPeriodosChange, anchorRef }: {
   open: boolean;
   onClose: () => void;
+  /** Botón que lo abre: el popover se ancla ahí en vez de a un top fijo. */
+  anchorRef?: React.RefObject<HTMLElement | null>;
   /** Movimientos del período seleccionado (para el preview de coincidencias). */
   movs: Movimiento[];
   /** Todos los movimientos (preview cuando el ámbito es global). */
@@ -30,15 +32,20 @@ export function MovementsFilter({ open, onClose, movs, movsGlobal, terms, onChan
   const t = useT();
   const [input, setInput] = useState("");
   const [mounted, setMounted] = useState(false);
+  // Igual que el panel de notificaciones: la distancia se mide del ícono que lo abre, para
+  // que no dependa de cuán alto sea el header de cada pantalla.
+  const [top, setTop] = useState<number | null>(null);
   useEffect(() => { setMounted(true); }, []);
   useScrollLock(open);
   useModalBack(open, onClose);
   useEffect(() => {
     if (!open) return;
+    const r = anchorRef?.current?.getBoundingClientRect();
+    if (r) setTop(r.bottom + 8);
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, anchorRef]);
 
   const addTerm = () => {
     const v = input.trim();
@@ -65,7 +72,8 @@ export function MovementsFilter({ open, onClose, movs, movsGlobal, terms, onChan
         data-movfilter
         onClick={(e) => e.stopPropagation()}
         style={{
-          position: "fixed", top: "calc(env(safe-area-inset-top, 0px) + 54px)", right: 12,
+          position: "fixed", right: 12,
+          top: top ?? "calc(env(safe-area-inset-top, 0px) + 54px)",
           width: "min(360px, calc(100vw - 24px))", maxHeight: "70vh", overflowY: "auto",
           background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16,
           boxShadow: "0 14px 44px rgba(0,0,0,0.5)", transformOrigin: "top right",
