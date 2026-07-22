@@ -7,9 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useModalBack } from "@/hooks/useModalBack";
-import { SwipeToDelete } from "@/components/ui/SwipeToDelete";
-import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { listarNotificaciones, marcarLeida, eliminarNotificacion, marcarTodasLeidas, eliminarTodasNotificaciones, type Notificacion, type NotifTipo } from "@/services/firebase/notificaciones";
+import { SwipeAway } from "@/components/ui/SwipeAway";
+import { listarNotificaciones, marcarLeida, eliminarNotificacion, marcarTodasLeidas, type Notificacion, type NotifTipo } from "@/services/firebase/notificaciones";
 
 // Ícono + color por tipo de notificación.
 const META: Record<NotifTipo, { color: string; icon: ReactNode }> = {
@@ -45,7 +44,7 @@ function Row({ n, onOpen, onDelete, deleteLabel, tapLabel }: { n: Notificacion; 
   const [abierta, setAbierta] = useState(false);
 
   return (
-    <SwipeToDelete onDelete={onDelete} deleteLabel={deleteLabel} radius={12}>
+    <SwipeAway onDelete={onDelete} deleteLabel={deleteLabel} radius={12}>
       <button
         onClick={() => (abierta ? onOpen() : setAbierta(true))}
         style={{
@@ -75,7 +74,7 @@ function Row({ n, onOpen, onDelete, deleteLabel, tapLabel }: { n: Notificacion; 
           </span>
         </span>
       </button>
-    </SwipeToDelete>
+    </SwipeAway>
   );
 }
 
@@ -114,16 +113,6 @@ export function NotificationsBell() {
     marcarTodasLeidas(user.uid, ids).catch(() => {});
     setItems((prev) => prev.map((x) => ({ ...x, leida: true })));
   };
-  // Vaciar la bandeja: cuando se acumulan muchas, marcarlas leídas no alcanza. Pide
-  // confirmación porque borra todo de una y no hay vuelta atrás.
-  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
-  const borrarTodas = async () => {
-    if (!user?.uid || items.length === 0) return;
-    const ids = items.map((n) => n.id);
-    setConfirmarBorrado(false);
-    setItems([]); // optimista
-    eliminarTodasNotificaciones(user.uid, ids).catch(() => cargar());
-  };
 
   return (
     <>
@@ -134,17 +123,7 @@ export function NotificationsBell() {
         )}
       </button>
 
-      <NotifPopover
-        open={open}
-        onClose={() => setOpen(false)}
-        title={t.notifications}
-        anchorRef={btnRef}
-        acciones={items.length > 0 ? (
-          <button onClick={() => setConfirmarBorrado(true)} aria-label={t.deleteAll} title={t.deleteAll} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: 4, margin: -4, display: "flex" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-          </button>
-        ) : undefined}
-      >
+      <NotifPopover open={open} onClose={() => setOpen(false)} title={t.notifications} anchorRef={btnRef}>
         {items.length === 0 ? (
           <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, padding: "28px 0" }}>{t.notificationsEmpty}</div>
         ) : (
@@ -159,22 +138,6 @@ export function NotificationsBell() {
           </div>
         )}
       </NotifPopover>
-
-      {/* Vaciar la bandeja borra todo y no se puede deshacer: se confirma antes. */}
-      {confirmarBorrado && (
-        <ConfirmModal
-          title={t.deleteAll}
-          confirmLabel={t.yesDelete}
-          cancelLabel={t.cancel}
-          confirmColor="var(--red)"
-          onConfirm={borrarTodas}
-          onCancel={() => setConfirmarBorrado(false)}
-        >
-          <div style={{ textAlign: "center", fontSize: 13, color: "var(--muted)" }}>
-            {t.deleteAllConfirm(items.length)}
-          </div>
-        </ConfirmModal>
-      )}
     </>
   );
 }
@@ -182,7 +145,7 @@ export function NotificationsBell() {
 // Popover anclado bajo la campana (esquina superior derecha): se despliega desde ahí,
 // no ocupa toda la pantalla. Overlay transparente para cerrar al tocar afuera; portal
 // para escapar el stacking del header. Bloquea el scroll de fondo mientras está abierto.
-function NotifPopover({ open, onClose, title, children, anchorRef, acciones }: { open: boolean; onClose: () => void; title: string; children: ReactNode; anchorRef?: React.RefObject<HTMLElement | null>; acciones?: ReactNode }) {
+function NotifPopover({ open, onClose, title, children, anchorRef }: { open: boolean; onClose: () => void; title: string; children: ReactNode; anchorRef?: React.RefObject<HTMLElement | null> }) {
   const [mounted, setMounted] = useState(false);
   // Distancia desde arriba: se mide del botón que lo abre, así queda a la misma distancia
   // del ícono en cualquier pantalla (el header de Inicio es más alto por el subtítulo).
@@ -217,10 +180,7 @@ function NotifPopover({ open, onClose, title, children, anchorRef, acciones }: {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px 8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
           <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: 0.3 }}>{title}</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {acciones}
-            <button onClick={onClose} aria-label="×" style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 20, lineHeight: 1, cursor: "pointer", padding: 4, margin: -4 }}>×</button>
-          </span>
+          <button onClick={onClose} aria-label="×" style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 20, lineHeight: 1, cursor: "pointer", padding: 4, margin: -4 }}>×</button>
         </div>
         <div style={{ padding: "0 14px 14px" }}>{children}</div>
       </div>

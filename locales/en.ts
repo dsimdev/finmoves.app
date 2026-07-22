@@ -25,8 +25,6 @@ export const en: AppLocale = {
   rateManual: "manual",
   pageTitleDashboard: "Dashboard",
   pageTitleMovements: "Movements",
-  deleteAll: "Delete all",
-  deleteAllConfirm: (n: number) => `This will delete ${n === 1 ? "the notification" : `all ${n} notifications`} from your inbox. It can't be undone.`,
   tapToOpen: "tap again to open",
   select: "Select",
   selectAll: "Select all",

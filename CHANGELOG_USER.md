@@ -4,6 +4,20 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.97.1] — 2026-07-21
+
+### Deslizá para eliminar
+En las notificaciones y en el historial de dólares, ahora **deslizás la fila hacia el costado
+y se elimina**, como en Mercado Pago: mientras arrastrás aparece un fondo rojo con el tachito,
+y cuando pasás cierto punto soltás y listo. Si no llegás, la fila vuelve sola a su lugar.
+
+En el historial de dólares te sigue preguntando antes de borrar, porque eso afecta tu patrimonio.
+
+Sacamos el botón de "eliminar todas" que habíamos puesto: con este gesto, borrarlas de a una es
+más rápido y no hay riesgo de vaciar todo sin querer.
+
+---
+
 ## [2.97.0] — 2026-07-21
 
 ### La campana se pone al día cuando abrís la app

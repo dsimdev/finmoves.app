@@ -112,12 +112,3 @@ export async function guardarNotifyMeta(uid: string, inApp: InAppMeta, budgetAvi
   );
 }
 
-/** Borra todas las notificaciones de la bandeja. */
-export async function eliminarTodasNotificaciones(uid: string, ids: string[]): Promise<void> {
-  if (ids.length === 0) return;
-  for (let i = 0; i < ids.length; i += 450) {
-    const batch = writeBatch(db);
-    for (const id of ids.slice(i, i + 450)) batch.delete(doc(db, `users/${uid}/notificaciones/${id}`));
-    await batch.commit();
-  }
-}
