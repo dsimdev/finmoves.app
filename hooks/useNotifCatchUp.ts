@@ -16,7 +16,7 @@ import type { Recurrente } from "@/services/firebase/recurrentes";
 // NO manda push (interrumpir sigue siendo del cron) y NO toca su baseline: el dedup usa una
 // marca propia del cliente. Corre UNA vez por sesión, cuando los datos ya cargaron.
 
-export function useNotifCatchUp({ uid, movimientos, config, recurrentes, listo, dolarOficial, periodoActualId, onNuevas }: {
+export function useNotifCatchUp({ uid, movimientos, config, recurrentes, listo, dolarOficial, periodoActualId, periodoCerrado, onNuevas }: {
   uid: string | undefined;
   movimientos: Movimiento[];
   config: ConfigUsuario | null;
@@ -25,6 +25,8 @@ export function useNotifCatchUp({ uid, movimientos, config, recurrentes, listo, 
   listo: boolean;
   dolarOficial: number | null;
   periodoActualId: string | undefined;
+  /** periodoId del período que cerró (para el aviso de recap), o null. */
+  periodoCerrado: string | null;
   /** Se llama si se anotó algo, para refrescar el badge de la campana. */
   onNuevas?: () => void;
 }) {
@@ -59,6 +61,7 @@ export function useNotifCatchUp({ uid, movimientos, config, recurrentes, listo, 
           recordatorios,
           presupuesto: presupuestoOverride ?? config?.meta.presupuestoTemplate ?? {},
           periodoActual: periodoActualId ? { periodoId: periodoActualId, movimientos: periodoMovs } : null,
+          periodoCerrado,
           diasTranscurridos: dias,
           hoy,
         });

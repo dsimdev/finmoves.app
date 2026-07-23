@@ -88,6 +88,10 @@ export interface InAppMeta {
   recurrentes?: string;
   /** Ids de recordatorios cuyo pre-aviso ya se anotó (se purgan al desaparecer el doc). */
   recordatoriosPre?: string[];
+  /** periodoId del último recap de cierre ya visto (el recap se ofrece hasta verse una vez). */
+  recapVisto?: string;
+  /** periodoId del último cierre por el que ya se anotó la notificación in-app. */
+  recapAvisado?: string;
 }
 
 /**

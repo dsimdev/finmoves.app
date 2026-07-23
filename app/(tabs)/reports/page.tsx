@@ -9,6 +9,9 @@ import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { useDolarHistorico } from "@/hooks/useDolarHistorico";
 import { SectionHint } from "@/components/ui/SectionHint";
 import { YearWrapped, wrappedYears } from "@/components/reports/YearWrapped";
+import { RecapPeriodo } from "@/components/reports/RecapPeriodo";
+import { recapDisponible } from "@/utils/recap-periodo";
+import { leerNotifyMeta, guardarNotifyMeta } from "@/services/firebase/notificaciones";
 import { useData } from "../data-context";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
@@ -80,6 +83,37 @@ export default function ReportesPage() {
     const m = ar.getUTCMonth() + 1, d = ar.getUTCDate();
     return (m === 12 && d >= 26) || (m === 1 && d <= 5);
   }, [movimientos]);
+  // Recap del período que cerró: aparece cuando abrís un período nuevo y queda hasta que lo
+  // veas UNA vez (como una notificación). Tiene PRIORIDAD sobre el Wrapped anual en el botón.
+  const [recapOpen, setRecapOpen] = useState(false);
+  const [recapVisto, setRecapVisto] = useState<string | undefined>(undefined);
+  // Hasta que no sepamos qué recap ya se vio, NO se decide: si no, el botón aparece con
+  // recapVisto=undefined (cree que no lo viste) y desaparece al llegar la lectura → parpadeo.
+  const [metaCargado, setMetaCargado] = useState(false);
+  useEffect(() => {
+    const uid = user?.uid;
+    if (!uid) return;
+    leerNotifyMeta(uid)
+      .then((meta) => setRecapVisto(meta.inApp.recapVisto))
+      .catch(() => {})
+      .finally(() => setMetaCargado(true));
+  }, [user?.uid]);
+  // ?recap=1 fuerza mostrarlo aunque ya se haya visto (atajo para revisarlo cuando quieras
+  // sin cerrar un período real). Se deja a propósito: es inofensivo.
+  const forzarRecap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("recap") === "1";
+  const recap = useMemo(
+    () => ((metaCargado || forzarRecap) ? recapDisponible(agruparPorPeriodo(movimientos), forzarRecap ? undefined : recapVisto) : null),
+    [movimientos, recapVisto, metaCargado, forzarRecap]
+  );
+  // Al abrir el recap se marca como visto: no vuelve a ofrecerse hasta el próximo cierre.
+  const abrirRecap = () => {
+    setRecapOpen(true);
+    const uid = user?.uid;
+    if (uid && recap) {
+      setRecapVisto(recap.periodoId);
+      leerNotifyMeta(uid).then((meta) => guardarNotifyMeta(uid, { ...meta.inApp, recapVisto: recap.periodoId }, meta.budgetAvisos)).catch(() => {});
+    }
+  };
   const [periodosSelIds, setPeriodosSelIds] = useState<string[]>([]);
   const [modalTop, setModalTop] = useState<"gastos" | "descs" | "movcat" | null>(null);
   const [kpiInfo, setKpiInfo] = useState<{ title: string; value: string; explain: string; color?: string } | null>(null);
@@ -516,13 +550,20 @@ export default function ReportesPage() {
           <PageHeader
             title={t.pageTitleReports}
             style={{ marginBottom: 18 }}
-            left={hayWrapped ? (
-              // Wrapped a la IZQUIERDA, solo en la ventana de fin de año (ver hayWrapped).
-              <button onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(110deg, var(--blue), var(--green))", border: "none", color: "#fff", borderRadius: 999, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px var(--accent)55" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                {t.yearWrapped}
-              </button>
-            ) : undefined}
+            left={
+              // El recap del período recién cerrado tiene prioridad; si no hay, el Wrapped
+              // anual en su ventana de fin de año. Mismo lugar y MISMO tamaño (solo ícono, como
+              // el wrapped): un botón con texto largo desbalanceaba el header.
+              recap ? (
+                <button onClick={abrirRecap} aria-label={t.recapTitle} title={t.recapTitle} style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 6, margin: -6 }}>
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3 8-8M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+                </button>
+              ) : hayWrapped ? (
+                <button onClick={() => setWrappedOpen(true)} aria-label={t.yearWrapped} title={t.yearWrapped} style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "var(--green)", cursor: "pointer", padding: 6, margin: -6 }}>
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </button>
+              ) : undefined
+            }
             right={
               // Acceso a Análisis (reportes avanzados). Ícono de "ajustes/sliders" para
               // distinguirlo de la lupa de Movimientos. Es una función TÁCTIL (swipe entre
@@ -938,6 +979,7 @@ export default function ReportesPage() {
       </BottomSheet>
 
       <YearWrapped open={wrappedOpen} onClose={() => setWrappedOpen(false)} />
+      <RecapPeriodo open={recapOpen} onClose={() => setRecapOpen(false)} recap={recap} />
     </div>
   );
 }
