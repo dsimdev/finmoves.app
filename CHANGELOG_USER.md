@@ -4,6 +4,21 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.101.0] — 2026-07-22
+
+### Vibración al usar la app
+Ahora la app **te responde** al guardar, borrar, cambiar de pestaña o seleccionar: una vibración
+(en Android) más un pequeño efecto visual. Lo podés apagar en Configuración → Preferencias — eso
+apaga solo la vibración, el efecto visual queda siempre.
+
+### Arreglos en la selección múltiple
+- Si deseleccionás todo, ahora **salís del modo selección** solo (antes se quedaba en "0
+  seleccionados").
+- En modo selección ya no se te abre el deslizar de una fila por error.
+- Antes de borrar varios, **te pregunta para confirmar**.
+
+---
+
 ## [2.100.0] — 2026-07-22
 
 ### Simulador en tus metas

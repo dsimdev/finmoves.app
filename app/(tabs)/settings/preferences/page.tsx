@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useData } from "../../data-context";
 import { useTheme } from "@/hooks/useTheme";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { haptic } from "@/lib/haptics";
 import { useT } from "@/hooks/useTranslation";
 import { db } from "@/services/firebase/firebase";
 import { doc, setDoc } from "firebase/firestore";
@@ -16,7 +17,7 @@ export default function PreferencesSettings() {
   const { user } = useAuth();
   const { config, refreshConfig: refresh } = useData();
   const { dark, toggle: toggleTheme } = useTheme();
-  const { showReportes, dashboardClasico, monedaPrincipal, lang, set: setPref, setMonedaPrincipal, setLang } = useAppPrefs();
+  const { showReportes, dashboardClasico, haptics, monedaPrincipal, lang, set: setPref, setMonedaPrincipal, setLang } = useAppPrefs();
   const t = useT();
   const [, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pendingLang, setPendingLang] = useState<"es" | "en" | null>(null);
@@ -106,6 +107,21 @@ export default function PreferencesSettings() {
           </div>
         </div>
         <Toggle activo={dashboardClasico} onClick={() => setPref("dashboardClasico", !dashboardClasico)} />
+      </div>
+
+      {/* Vibración (haptics). Solo la vibración física del teléfono; el feedback visual va
+          siempre. En iOS no dispara (la API no existe ahí), es útil sobre todo en Android. */}
+      <div style={row}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ ...ic, background: "var(--surface-alt)", border: "1px solid var(--border)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M2 9v6M22 9v6"/></svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500 }}>{t.hapticsTitle}</div>
+            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{t.hapticsSub}</div>
+          </div>
+        </div>
+        <Toggle activo={haptics} onClick={() => { setPref("haptics", !haptics); if (!haptics) haptic("select"); }} />
       </div>
 
 

@@ -4,6 +4,32 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.101.0] — 2026-07-22
+
+### Added — haptic feedback
+Key actions now give feedback, through `lib/haptics`: a hardware buzz where it works (Android)
+plus a visual punch that always runs. `navigator.vibrate` is fired **synchronously inside the
+gesture** — the old bug was calling it after an `await`, which drops the user activation.
+
+- Wired on: saving a movement (`success`), deleting (`delete`), tab navigation (`light`) and
+  long-press selection (`select`). Each has its own vibration pattern and visual pulse.
+- **Toggle in Settings → Preferences** (default on) controls **only** the hardware vibration —
+  the visual pulse is always on, so iOS (where the Vibration API doesn't exist and Apple closed
+  the switch hack in 26.5) still gets a response.
+- The pulse reuses the shared motion system (`--ease-settle`).
+
+### Fixed — multi-select
+- **Deselecting the last item now exits selection mode** instead of sitting on "0 selected".
+- **Swipe is disabled while selecting**: with selection active the row's swipe (edit/delete) no
+  longer fires — actions belong to the selection bar. An open row closes when selection starts.
+- **Bulk delete now confirms first**, then deletes (with the existing undo toast). It no longer
+  wiped the selection straight from the trash button.
+
+### Internal
+- `lib/haptics`, `haptics` device pref. 297 tests.
+
+---
+
 ## [2.100.0] — 2026-07-22
 
 ### Added — goal simulator

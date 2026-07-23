@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import { useSyncError } from "@/hooks/useSyncError";
+import { haptic } from "@/lib/haptics";
 
 function navGradColor(index: number, total: number) {
   const t = total <= 1 ? 0 : index / (total - 1);
@@ -109,6 +110,7 @@ export function BottomNav() {
         return (
           <Link key={tab.href} href={tab.href} replace
             onClick={(e) => {
+              haptic("light", e.currentTarget as HTMLElement); // toquecito de navegación
               // Re-tocar la tab activa scrollea al tope (gesto nativo), sin re-navegar.
               if (active) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }
             }}

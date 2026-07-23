@@ -315,6 +315,24 @@ input[type="number"] { -moz-appearance: textfield; }
   40%  { transform: translateX(-5px); }
   100% { transform: translateX(0); }
 }
+/* Pulso VISUAL del háptico (lib/haptics). Va siempre, incluso si la vibración está apagada.
+   punch = confirmación (guardar, toggle); shake = borrado. Cortos para que no molesten. */
+@keyframes hapticPunch {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(.94); }
+  100% { transform: scale(1); }
+}
+@keyframes hapticShake {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-3px); }
+  75%     { transform: translateX(3px); }
+}
+.haptic-punch { animation: hapticPunch .2s var(--ease-settle); }
+.haptic-shake { animation: hapticShake .22s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  @keyframes hapticPunch { 0%,100% { transform: none; } }
+  @keyframes hapticShake { 0%,100% { transform: none; } }
+}
 @media (prefers-reduced-motion: reduce) {
   @keyframes appearPop { from,to { opacity: 1; transform: none; } }
   @keyframes appearPopover { from,to { opacity: 1; transform: none; } }

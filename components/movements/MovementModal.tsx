@@ -29,6 +29,7 @@ import {
   IconoCalendario, IconoTarjeta, IconoRecurrente, detalleChip, esMovimientoFX, monedaMovFX,
 } from "./movement-shared";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
+import { haptic } from "@/lib/haptics";
 
 interface MovementModalProps {
   open: boolean;
@@ -407,6 +408,10 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     const periodoIdFinal = abrePeriodo ? fechaAPeriodoId(fecha) : (periodoActual?.periodoId ?? null);
     if (!periodoIdFinal) { setAddError(t.errNoActivePeriod); return; }
 
+    // Háptico de confirmación: acá ya está todo validado y el guardado va sí o sí. Sincrónico,
+    // antes de cualquier await (navigator.vibrate necesita la activación del gesto viva).
+    haptic("success");
+
     const uid = user.uid;
     const now = new Date();
     const file = canComprobante ? comprobanteFile : null; // capturar antes del reset
@@ -496,6 +501,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   const handleDelete = async () => {
     if (!user?.uid || !movimiento) return;
+    haptic("delete"); // sincrónico al entrar, antes del await
     setEditLoading(true); setEditError("");
     try {
       await eliminarMovimiento(user.uid, movimiento.id);
