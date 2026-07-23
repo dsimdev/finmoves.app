@@ -175,7 +175,7 @@ function NotifPopover({ open, onClose, title, children, anchorRef }: { open: boo
           width: "min(360px, calc(100vw - 24px))", maxHeight: "70vh", overflowY: "auto",
           background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16,
           boxShadow: "0 14px 44px rgba(0,0,0,0.5)", transformOrigin: "top right",
-          animation: "notifPop .17s cubic-bezier(.2,.9,.3,1.15)",
+          animation: "appearPopover var(--open-dur) var(--ease-out)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px 8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
@@ -185,7 +185,6 @@ function NotifPopover({ open, onClose, title, children, anchorRef }: { open: boo
         <div style={{ padding: "0 14px 14px" }}>{children}</div>
       </div>
       <style>{`
-        @keyframes notifPop { from { opacity: 0; transform: scale(.9) translateY(-6px) } to { opacity: 1; transform: scale(1) translateY(0) } }
         @media (prefers-reduced-motion: reduce) { [data-notif-pop] { animation: none !important } }
       `}</style>
     </div>,

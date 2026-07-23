@@ -172,7 +172,10 @@ export function BottomSheet({ open, onClose, title, children }: {
           borderBottom: "none", boxShadow: "0 -16px 50px rgba(0,0,0,0.5)",
           transform: open ? `translateY(${ty}px)` : "translateY(101%)",
           opacity: open ? 1 : 0.4,
-          transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
+          // Al abrir, la hoja sube y "asienta" con un leve overshoot (curva compartida
+          // --ease-settle), como que rebota al apoyarse arriba. Sin overshoot al arrastrar
+          // (dragging → sin transición) para que el drag siga al dedo 1:1.
+          transition: dragging ? "none" : "transform 0.4s var(--ease-settle), opacity 0.3s ease",
           willChange: "transform", userSelect: "none" as const,
           WebkitUserSelect: "none" as const, WebkitTouchCallout: "none" as const,
         }),

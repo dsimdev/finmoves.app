@@ -202,7 +202,7 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerr
             background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12,
             boxShadow: "0 12px 34px rgba(0,0,0,.45)", padding: "12px 13px",
             transformOrigin: pos.arriba ? "bottom center" : "top center",
-            animation: "dayPop .15s cubic-bezier(.2,.9,.3,1.15)",
+            animation: "appearPopover var(--open-dur) var(--ease-out)",
           }}
         >
           {/* Sin botón de cerrar: se sale tocando afuera, con Escape o volviendo a tocar el
@@ -213,7 +213,6 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerr
       )}
 
       <style>{`
-        @keyframes dayPop { from { opacity: 0; transform: scale(.94) } to { opacity: 1 } }
         @media (prefers-reduced-motion: reduce) { [data-daypop] { animation: none !important } }
       `}</style>
     </div>

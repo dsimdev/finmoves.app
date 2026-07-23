@@ -31,8 +31,9 @@ export function ConfirmModal({ title, children, confirmLabel, cancelLabel, confi
   if (!mounted) return null;
 
   return createPortal(
-    <div onClick={onCancel} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 340, padding: 22, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
+    <div onClick={onCancel} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, animation: "ccFade .16s ease-out" }}>
+      {/* Apertura con el sistema de movimiento compartido (globals.css). */}
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, width: "100%", maxWidth: 340, padding: 22, boxShadow: "0 12px 40px rgba(0,0,0,0.5)", animation: "appearPop var(--open-dur) var(--ease-out)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <span style={{ fontSize: 16, fontWeight: 700 }}>{title}</span>
           <button onClick={onCancel} aria-label={cancelLabel} style={{ background: "none", border: "none", color: "var(--red)", fontSize: 22, lineHeight: 1, cursor: "pointer", padding: 0 }}>×</button>

@@ -22,6 +22,8 @@ const TRAZOS: Record<CategoriaIconoId, React.ReactNode> = {
   chancho: <><path d="M4 11a7 7 0 0 1 7-6h3a7 7 0 0 1 6.3 4H21a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.7a7 7 0 0 1-2.3 3v2a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1v-.6a9 9 0 0 1-3 0v.6a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-2a7 7 0 0 1-3-5.4z" /><path d="M10 5V3.6M16.5 11h.01" /></>,
   // Operaciones de divisa: el signo $, en amarillo (no es elegible, ver FIJAS).
   divisa: <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />,
+  // Move (entre disponible y ahorros): dos flechas cruzándose, con el color de la dirección.
+  move: <><path d="M7 4v13M7 17l-3-3M7 17l3-3" /><path d="M17 20V7M17 7l-3 3M17 7l3 3" /></>,
   billete: <><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /><path d="M6 12h.01M18 12h.01" /></>,
   farmacia: <><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M12 8v8M8 12h8" /></>,
   otros: <><circle cx="12" cy="12" r="1.4" /><circle cx="19" cy="12" r="1.4" /><circle cx="5" cy="12" r="1.4" /></>,
@@ -33,8 +35,11 @@ export function CategoriaIcono({ categoria, size = 34 }: {
   /** Lado de la caja. El glifo escala con ella. */
   size?: number;
 }) {
-  const { icono, hex } = visualDeCategoria(categoria);
+  const { icono, hex, gradiente } = visualDeCategoria(categoria);
   const glifo = Math.round(size * 0.5);
+  // Con gradiente (Move: teal+purple), el ícono se pinta con degradé. Como el trazo usa
+  // currentColor, el degradé va por SVG gradient; el tinte de fondo/borde toma el color base.
+  const gradId = gradiente ? `catgrad-${icono}` : null;
 
   return (
     <span
@@ -42,12 +47,24 @@ export function CategoriaIcono({ categoria, size = 34 }: {
       style={{
         width: size, height: size, borderRadius: Math.round(size * 0.3), flexShrink: 0,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: `color-mix(in srgb, ${hex} 16%, transparent)`,
-        border: `1px solid color-mix(in srgb, ${hex} 40%, transparent)`,
+        background: gradiente
+          ? "color-mix(in srgb, var(--teal) 12%, transparent)"
+          : `color-mix(in srgb, ${hex} 16%, transparent)`,
+        border: gradiente
+          ? "1px solid color-mix(in srgb, var(--purple) 34%, transparent)"
+          : `1px solid color-mix(in srgb, ${hex} 40%, transparent)`,
         color: hex,
       }}
     >
-      <svg width={glifo} height={glifo} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={glifo} height={glifo} viewBox="0 0 24 24" fill="none" stroke={gradId ? `url(#${gradId})` : "currentColor"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        {gradId && (
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="var(--teal)" />
+              <stop offset="100%" stopColor="var(--purple)" />
+            </linearGradient>
+          </defs>
+        )}
         {TRAZOS[icono]}
       </svg>
     </span>

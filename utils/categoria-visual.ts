@@ -37,7 +37,7 @@ export const COLORES_LISTA = Object.keys(COLORES_CATEGORIA) as CategoriaColor[];
 export type CategoriaIconoId =
   | "comida" | "transporte" | "hogar" | "salud" | "farmacia" | "ocio"
   | "compras" | "servicios" | "educacion" | "mascotas" | "viajes"
-  | "tecnologia" | "billete" | "chancho" | "divisa" | "otros";
+  | "tecnologia" | "billete" | "chancho" | "divisa" | "move" | "otros";
 
 export const ICONOS_LISTA: CategoriaIconoId[] = [
   "comida", "transporte", "hogar", "salud", "farmacia", "ocio",
@@ -95,16 +95,26 @@ const FIJAS: Record<string, { icono: CategoriaIconoId; hex: string }> = {
   ventaeur: { icono: "divisa", hex: "var(--yellow)" },
   dolares: { icono: "divisa", hex: "var(--yellow)" },
   resto: { icono: "chancho", hex: "var(--blue)" },
+  // Move: flechas cruzándose. Color mixto teal+purple (los dos lados que conecta: disponible y
+  // ahorros), sin importar la dirección. Se pinta con gradiente (ver CategoriaIcono).
+  move: { icono: "move", hex: "var(--teal)" },
+};
+
+/** Categorías cuyo ícono se pinta con un GRADIENTE en vez de un color plano. */
+export const GRADIENTE_CATEGORIA: Record<string, string> = {
+  move: "linear-gradient(135deg, var(--teal), var(--purple))",
 };
 
 /** Resuelve lo elegido por el usuario, cayendo al default por nombre. */
 export function visualDeCategoria(cat: { nombre: string; icono?: string; color?: string }) {
-  // Las fijas ignoran lo guardado: su color dice qué tipo de operación es.
-  const fija = FIJAS[normalizar(cat.nombre)];
-  if (fija) return { icono: fija.icono, color: "contraste" as CategoriaColor, hex: fija.hex };
+  // Las fijas ignoran lo guardado: su color dice qué tipo de operación es. Algunas (Move) se
+  // pintan con gradiente en vez de color plano.
+  const clave = normalizar(cat.nombre);
+  const fija = FIJAS[clave];
+  if (fija) return { icono: fija.icono, color: "contraste" as CategoriaColor, hex: fija.hex, gradiente: GRADIENTE_CATEGORIA[clave] };
 
   const base = visualPorNombre(cat.nombre);
   const icono = (ICONOS_LISTA as string[]).includes(cat.icono ?? "") ? (cat.icono as CategoriaIconoId) : base.icono;
   const color = (COLORES_LISTA as string[]).includes(cat.color ?? "") ? (cat.color as CategoriaColor) : base.color;
-  return { icono, color, hex: COLORES_CATEGORIA[color] };
+  return { icono, color, hex: COLORES_CATEGORIA[color], gradiente: undefined as string | undefined };
 }
