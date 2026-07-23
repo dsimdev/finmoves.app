@@ -69,12 +69,17 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
   // Al abrir se dispara un "asentamiento": el contenido da un rebote corto, para que se SIENTA
   // que la fila se movió (feedback visual, no vibración del teléfono — esa no anda en el device).
   const [asienta, setAsienta] = useState(false);
+  const asientaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (asientaTimer.current) clearTimeout(asientaTimer.current); }, []);
   const abrir = () => {
     if (cerrarAbierta && cerrarAbierta !== cerrar.current) cerrarAbierta();
     cerrarAbierta = cerrar.current;
     setPad(PANEL_W);
     setAsienta(true);
-    setTimeout(() => setAsienta(false), 320);
+    // Se guarda el id y se limpia al desmontar: si la fila se va antes de los 320ms (borrado,
+    // filtro), el timeout no intenta un setState sobre un componente desmontado.
+    if (asientaTimer.current) clearTimeout(asientaTimer.current);
+    asientaTimer.current = setTimeout(() => setAsienta(false), 320);
   };
   const cerrarSelf = () => {
     if (cerrarAbierta === cerrar.current) cerrarAbierta = null;

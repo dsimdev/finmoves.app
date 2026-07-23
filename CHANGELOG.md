@@ -4,6 +4,25 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.101.1] — 2026-07-22
+
+### Changed — swipe highlight uses the category color
+The swipe-to-reveal highlight in the movements list now tints with the **category's own color**
+(the one the user configured) instead of the movement type's semantic color, so the list feels
+like the user's own setup. The amount keeps the type color, so the meaning (red spend, green
+income…) is unchanged.
+
+### Added — five more category colors
+`COLORES_CATEGORIA` gains `coral`, `turquesa`, `lavanda`, `dorado` and `violeta` — high-contrast
+tones filling gaps in the wheel (no repeats), all passing the RGB-distance > 60 legibility test.
+
+### Fixed
+- `SwipeToDelete`: the settle-animation `setTimeout` was not cleared on unmount, so a row removed
+  within 320 ms (delete/filter) could fire a `setState` on an unmounted component. Now tracked in
+  a ref and cleared in a cleanup effect.
+
+---
+
 ## [2.101.0] — 2026-07-22
 
 ### Added — haptic feedback
