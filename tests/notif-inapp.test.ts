@@ -17,6 +17,7 @@ const base = (over: Partial<EstadoInApp> = {}): EstadoInApp => ({
   periodoActual: null,
   diasTranscurridos: 10,
   hoy: "2026-07-21",
+  periodoCerrado: null,
   ...over,
 });
 
@@ -160,6 +161,31 @@ describe("recordatorios (solo pre-aviso)", () => {
       meta: { recordatoriosPre: ["viejo-borrado"] },
     }));
     expect(r.meta.recordatoriosPre).toEqual(["r2"]); // el viejo se descartó
+  });
+});
+
+describe("recap de cierre de período", () => {
+  it("avisa cuando cerró un período que no se avisó ni se vio", () => {
+    const r = notificacionesPendientes(base({ periodoCerrado: "01/06/2026" }));
+    const recap = r.nuevas.find((n) => n.title === "Cierre de período");
+    expect(recap).toBeTruthy();
+    expect(recap?.dest).toBe("/reports");
+    expect(r.meta.recapAvisado).toBe("01/06/2026");
+  });
+
+  it("no repite si ya se avisó ese cierre", () => {
+    const r = notificacionesPendientes(base({ periodoCerrado: "01/06/2026", meta: { recapAvisado: "01/06/2026" } }));
+    expect(r.nuevas.some((n) => n.title === "Cierre de período")).toBe(false);
+  });
+
+  it("no avisa si el recap de ese período ya se vio en Reportes", () => {
+    const r = notificacionesPendientes(base({ periodoCerrado: "01/06/2026", meta: { recapVisto: "01/06/2026" } }));
+    expect(r.nuevas.some((n) => n.title === "Cierre de período")).toBe(false);
+  });
+
+  it("no avisa si nunca cerró un período", () => {
+    const r = notificacionesPendientes(base({ periodoCerrado: null }));
+    expect(r.nuevas.some((n) => n.title === "Cierre de período")).toBe(false);
   });
 });
 

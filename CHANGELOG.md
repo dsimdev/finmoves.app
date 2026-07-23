@@ -4,6 +4,33 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.99.0] — 2026-07-22
+
+### Added — period recap
+Closing a period (logging the salary that opens the next one) now produces a recap of the one
+that ended. The Wrapped carousel is a once-a-year, full-screen thing; this is a single panel
+with an extended summary, because it happens every pay cycle and has to read at a glance.
+
+- **Where**: the icon button in the Reports header — the same slot as the year Wrapped. The
+  recap takes priority when there's a recently closed period; the Wrapped shows in its
+  end-of-year window otherwise.
+- **Until seen once**: like a notification. Open it and the button goes away; it returns only
+  when the next period closes. An in-app bell notification points you to it when the period
+  closes, without a push (`?recap=1` reopens it any time for a look).
+- **What it shows**: spent and saved, each with its ± vs the previous period; the category that
+  rose the most (in pesos, with a rounded % — a tiny prior base was producing "48.500516908%");
+  plus carried-over available, movement count, average per expense and the biggest-spend day.
+
+The logic in `utils/recap-periodo` composes the existing `kpisPeriodo` and
+`comparativaCategorias` rather than recomputing, so the recap can't drift from the rest of
+Reports. Header buttons dropped their gradient pill for a plain accent icon, matching the rest
+of the header.
+
+### Internal
+- **284 tests** (up from 268): `recap-periodo` and the recap branch of the in-app catch-up.
+
+---
+
 ## [2.98.1] — 2026-07-22
 
 ### Changed — the category palette, cleaned up

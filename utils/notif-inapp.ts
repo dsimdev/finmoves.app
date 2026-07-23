@@ -36,6 +36,8 @@ export interface EstadoInApp {
   diasTranscurridos: number;
   /** Hoy en AR, YYYY-MM-DD. */
   hoy: string;
+  /** periodoId del período que CERRÓ (el segundo más nuevo), o null si nunca cerró uno. */
+  periodoCerrado: string | null;
 }
 
 export interface ResultadoInApp {
@@ -163,6 +165,19 @@ export function notificacionesPendientes(e: EstadoInApp): ResultadoInApp {
       });
       meta.recurrentes = e.hoy;
     }
+  }
+
+  // ── Recap de cierre de período ────────────────────────────────────────────
+  // Cuando cerrás un período (se abre el siguiente) hay un recap del que terminó. Se avisa una
+  // vez por período cerrado, con el MISMO dedup que usa el botón de Reportes (recapVisto): si
+  // ya lo viste o ya se avisó, no repite. El tap lleva a Reportes, donde está el panel.
+  if (e.periodoCerrado && e.meta.recapAvisado !== e.periodoCerrado && e.meta.recapVisto !== e.periodoCerrado) {
+    nuevas.push({
+      tipo: "wrapped", title: "Cierre de período",
+      body: "Ya podés ver el resumen del período que cerraste",
+      dest: "/reports",
+    });
+    meta.recapAvisado = e.periodoCerrado;
   }
 
   // ── Pre-aviso de recordatorios ────────────────────────────────────────────

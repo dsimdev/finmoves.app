@@ -100,7 +100,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // cosas ya ocurridas (el dólar se movió, un gasto disparó el desvío) todavía sin registrar.
   // Se anotan en la bandeja sin mandar push y sin tocar el baseline del cron.
   const { cotizacion } = useCotizacion();
-  const periodoActualId = useMemo(() => agruparPorPeriodo(movimientos)[0]?.periodoId, [movimientos]);
+  const periodosAgrupados = useMemo(() => agruparPorPeriodo(movimientos), [movimientos]);
+  const periodoActualId = periodosAgrupados[0]?.periodoId;
+  const periodoCerrado = periodosAgrupados[1]?.periodoId ?? null;
   useNotifCatchUp({
     uid,
     movimientos,
@@ -109,6 +111,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     listo: !loading && !configLoading && recurrentesLoaded,
     dolarOficial: cotizacion?.oficial ?? null,
     periodoActualId,
+    periodoCerrado,
   });
 
   return (
