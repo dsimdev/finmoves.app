@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal, variacionGastoVsAnterior, progresoMetaPropia, ritmoAhorro } from "@/utils/reportes";
+import { parsePeriodoId, estadisticasPeriodos, ritmoGasto, serieTendencia, inflacionPersonal, variacionGastoVsAnterior, progresoMetaPropia, ritmoAhorro, kpisPeriodo } from "@/utils/reportes";
 import { agruparPorPeriodo } from "@/utils/periodo";
 import type { PeriodoResumen } from "@/utils/periodo";
 import type { Movimiento } from "@/types";
@@ -274,5 +274,40 @@ describe("ritmoAhorro (base única de las proyecciones)", () => {
 
   it("null si no hay serie", () => {
     expect(ritmoAhorro([])).toBeNull();
+  });
+});
+
+describe("kpisPeriodo — día pico y gasto más grande", () => {
+  const per = (movs: Movimiento[]): PeriodoResumen => ({
+    periodoId: "1/6/2026", sueldo: 0, extras: 0, total: 0, gastado: 0, gastadoPuro: 0,
+    ahorros: 0, resto: 0, disponible: 0, moveDisponible: 0, moveAhorros: 0, pct: 0, movimientos: movs,
+  });
+
+  it("el día de mayor gasto trae cuántos movimientos tuvo ese día", () => {
+    const k = kpisPeriodo(per([
+      mov({ tipo: "Gasto", monto: 5000, fecha: "2026-06-10" }),
+      mov({ tipo: "Gasto", monto: 3000, fecha: "2026-06-10" }),
+      mov({ tipo: "Gasto", monto: 1000, fecha: "2026-06-12" }),
+    ]));
+    expect(k.diaMayorGasto).toEqual({ fecha: "2026-06-10", monto: 8000, movs: 2 });
+  });
+
+  it("encuentra el gasto individual más caro con su descripción", () => {
+    const k = kpisPeriodo(per([
+      mov({ tipo: "Gasto", monto: 2000, fecha: "2026-06-01", descripcion: "café" }),
+      mov({ tipo: "Gasto", monto: 90000, fecha: "2026-06-05", descripcion: "heladera" }),
+    ]));
+    expect(k.gastoMasGrande).toEqual({ monto: 90000, descripcion: "heladera", fecha: "2026-06-05" });
+  });
+
+  it("sin descripción, el gasto más grande cae en la categoría", () => {
+    const k = kpisPeriodo(per([mov({ tipo: "Gasto", monto: 5000, categoria: "Varios", descripcion: "" })]));
+    expect(k.gastoMasGrande?.descripcion).toBe("Varios");
+  });
+
+  it("sin gastos, día pico y gasto más grande son null", () => {
+    const k = kpisPeriodo(per([mov({ tipo: "Ingreso", categoria: "Sueldo", monto: 500000 })]));
+    expect(k.diaMayorGasto).toBeNull();
+    expect(k.gastoMasGrande).toBeNull();
   });
 });

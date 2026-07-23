@@ -27,7 +27,7 @@ describe("recapPeriodo", () => {
     expect(r.disponibleArrastrado).toBe(30000);
     expect(r.cantMovimientos).toBe(2);
     expect(r.promedioPorMovimiento).toBe(60000); // 120000 / 2 gastos
-    expect(r.diaMayorGasto).toEqual({ fecha: "2026-06-10", monto: 100000 });
+    expect(r.diaMayorGasto).toEqual({ fecha: "2026-06-10", monto: 100000, movs: 1 });
   });
 
   it("sin período anterior no hay deltas ni categoría que subió", () => {

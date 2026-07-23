@@ -4,6 +4,22 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.99.1] — 2026-07-22
+
+### Changed — KPI shuffle across Home and Reports
+- **Home** drops "Spent" (the period total is already the available hero plus its bar) for
+  **"Today"** — what you've spent so far today. Its colour compares against the "spend per day"
+  recommendation: green under it, amber close (≥85%), red once you've matched or passed it. So
+  the top row now tells one story of the day — how much, and how it's going.
+- **Reports → Movements** drops "Today" and "Daily average" for two figures it didn't surface
+  before: **busiest day** (the day with the most movements) and **biggest expense** (the single
+  priciest purchase, with its description in the detail).
+- The "highest-spend day" KPI now shows **how many movements that day had** in its detail.
+- `kpisPeriodo` gained `gastoMasGrande` and a movement count on `diaMayorGasto`; both covered by
+  new tests. **288 tests** (up from 284).
+
+---
+
 ## [2.99.0] — 2026-07-22
 
 ### Added — period recap

@@ -83,8 +83,11 @@ export function gastosPorFecha(movs: Movimiento[], totalGastado: number): Distri
 
 // ── KPIs del período ─────────────────────────────────────────────────────────
 export interface KpisPeriodo {
-  diaMayorGasto: { fecha: string; monto: number } | null;
+  /** Día de mayor gasto, con cuántos movimientos (de cualquier tipo) tuvo ese día. */
+  diaMayorGasto: { fecha: string; monto: number; movs: number } | null;
   diaMasMovimientos: { fecha: string; cant: number } | null;
+  /** El gasto individual más caro del período. */
+  gastoMasGrande: { monto: number; descripcion: string; fecha: string } | null;
   cantGastos: number;
   cantIngresos: number;
   promedioDiario: number;
@@ -97,6 +100,8 @@ export function kpisPeriodo(p: PeriodoResumen): KpisPeriodo {
   let cantGastos = 0;
   let cantIngresos = 0;
   let gastoPuro = 0; // suma de tipo Gasto, para el promedio diario sin divisa
+  // Gasto individual más grande del período (solo gasto puro, con su descripción).
+  let gastoMasGrande: { monto: number; descripcion: string; fecha: string } | null = null;
 
   for (const m of p.movimientos) {
     porFechaCant.set(m.fecha, (porFechaCant.get(m.fecha) ?? 0) + 1);
@@ -106,6 +111,9 @@ export function kpisPeriodo(p: PeriodoResumen): KpisPeriodo {
       if (esGastoPuro(m)) {
         gastoPuro += m.monto;
         porFechaMonto.set(m.fecha, (porFechaMonto.get(m.fecha) ?? 0) + m.monto);
+        if (!gastoMasGrande || m.monto > gastoMasGrande.monto) {
+          gastoMasGrande = { monto: m.monto, descripcion: m.descripcion || m.categoria, fecha: m.fecha };
+        }
       }
     } else if (m.tipo === "Ingreso") {
       cantIngresos++;
@@ -117,8 +125,9 @@ export function kpisPeriodo(p: PeriodoResumen): KpisPeriodo {
   const diasConGasto = porFechaMonto.size;
 
   return {
-    diaMayorGasto: diaMayorGasto ? { fecha: diaMayorGasto[0], monto: diaMayorGasto[1] } : null,
+    diaMayorGasto: diaMayorGasto ? { fecha: diaMayorGasto[0], monto: diaMayorGasto[1], movs: porFechaCant.get(diaMayorGasto[0]) ?? 0 } : null,
     diaMasMovimientos: diaMasMov ? { fecha: diaMasMov[0], cant: diaMasMov[1] } : null,
+    gastoMasGrande,
     cantGastos,
     cantIngresos,
     promedioDiario: diasConGasto > 0 ? gastoPuro / diasConGasto : 0,

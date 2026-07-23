@@ -4,6 +4,31 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.99.1] — 2026-07-22
+
+### Nuevos datos en Inicio y Reportes
+En **Inicio**, en vez de "Gastado" ahora ves **"Hoy"**: cuánto llevás gastado en el día. Y se
+pinta según cómo vas — verde si gastaste menos de lo recomendado para el día, amarillo si estás
+cerca, rojo si ya te pasaste.
+
+En **Reportes → Movimientos** sumamos dos datos que antes no estaban: tu **día más activo** (el
+que más movimientos cargaste) y tu **gasto más grande** del período. Y al día que más gastaste
+ahora le ves cuántos movimientos tuvo.
+
+---
+
+## [2.99.0] — 2026-07-22
+
+### Resumen al cerrar el período
+Cuando cargás el sueldo del período nuevo, ahora podés ver un **resumen del período que
+cerraste**: cuánto gastaste y ahorraste (y cómo cambió respecto del anterior), la categoría que
+más se disparó, lo que arrastraste al nuevo período y algunos datos más.
+
+Aparece en el botón de arriba de Reportes y te avisa por la campana. Se queda hasta que lo
+mirás una vez; después vuelve solo cuando cierres el próximo período.
+
+---
+
 ## [2.98.1] — 2026-07-22
 
 ### Mejoramos los colores y los íconos de las categorías

@@ -80,21 +80,18 @@ export function MovimientosTab({
 
           {/* Mini-stats: 2x2 grid */}
           {(() => {
-            const hoy = new Date();
-            const esMismaFecha = (fecha: string) => { const d = new Date(fecha.includes("-") ? fecha + "T12:00:00" : fecha.split("/").length === 3 ? (() => { const [dd,mm,yy] = fecha.split("/"); return `${yy}-${mm.padStart(2,"0")}-${dd.padStart(2,"0")}T12:00:00`; })() : fecha); return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth() && d.getDate() === hoy.getDate(); };
-            const esActivo = finPeriodo === null;
-            const gastoHoy = esActivo
-              ? periodo.movimientos.filter(m => m.tipo === "Gasto" && esMismaFecha(m.fecha)).reduce((s, m) => s + m.monto, 0)
-              : null;
             const diaCaro = kpis?.diaMayorGasto;
             return (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                <MiniStat center basis="1 1 45%" label={t.today} value={gastoHoy !== null ? (oculto ? "••" : abbr(gastoHoy)) : "—"} gradient="linear-gradient(90deg, var(--teal), var(--purple))"
-                  onClick={gastoHoy !== null ? () => setKpiInfo({ title: t.todaySpent, value: oculto ? "••" : formatARS(gastoHoy), explain: t.kpiTodaySpentInfo, color: "var(--teal)" }) : undefined} />
+                {/* Día que más gastaste: el detalle suma cuántos movimientos tuvo ese día. */}
                 {diaCaro && <MiniStat center basis="1 1 45%" label={t.highestSpendingDay} value={oculto ? "••" : abbr(diaCaro.monto)} color="var(--red)"
-                  onClick={() => setKpiInfo({ title: t.highestSpendingDay, value: oculto ? "••" : formatARS(diaCaro.monto), explain: `${t.kpiHighestDayInfo} (${sinAño(diaCaro.fecha)})`, color: "var(--red)" })} />}
-                {kpis && <MiniStat center basis="1 1 45%" label={t.avgDayWithExpense} value={oculto ? "••" : abbr(kpis.promedioDiario)} gradient="linear-gradient(90deg, var(--teal), var(--purple))"
-                  onClick={() => setKpiInfo({ title: t.avgDayWithExpense, value: oculto ? "••" : formatARS(kpis!.promedioDiario), explain: `${t.kpiAvgDayInfo} (${t.daysWithExpenses(kpis!.diasConGasto)})`, color: "var(--teal)" })} />}
+                  onClick={() => setKpiInfo({ title: t.highestSpendingDay, value: oculto ? "••" : formatARS(diaCaro.monto), explain: `${t.kpiHighestDayInfo} (${sinAño(diaCaro.fecha)} · ${t.movementsThatDay(diaCaro.movs)})`, color: "var(--red)" })} />}
+                {/* Día más activo: el que más movimientos tuvo (cantidad, no monto). */}
+                {kpis?.diaMasMovimientos && <MiniStat center basis="1 1 45%" label={t.dayMostMovements} value={sinAño(kpis.diaMasMovimientos.fecha)} gradient="linear-gradient(90deg, var(--teal), var(--purple))"
+                  onClick={() => setKpiInfo({ title: t.dayMostMovements, value: sinAño(kpis!.diaMasMovimientos!.fecha), explain: `${t.kpiDayMostMovementsInfo} (${t.movementsThatDay(kpis!.diaMasMovimientos!.cant)})`, color: "var(--teal)" })} />}
+                {/* Gasto individual más caro, con su descripción en el detalle. */}
+                {kpis?.gastoMasGrande && <MiniStat center basis="1 1 45%" label={t.biggestExpense} value={oculto ? "••" : abbr(kpis.gastoMasGrande.monto)} color="var(--red)"
+                  onClick={() => setKpiInfo({ title: t.biggestExpense, value: oculto ? "••" : formatARS(kpis!.gastoMasGrande!.monto), explain: `${kpis!.gastoMasGrande!.descripcion} · ${sinAño(kpis!.gastoMasGrande!.fecha)}`, color: "var(--red)" })} />}
                 {tendenciaMovs !== null && (() => { const c = colorZ(periodos[0].movimientos.length, periodos.slice(1).map((p) => p.movimientos.length)); const mag = deltaMag(tendenciaMovs); const v = `${mag > 0 ? "+" : ""}${mag}%`; return (
                   <MiniStat center basis="1 1 45%" label={t.trend} value={v} color={c}
                     onClick={() => setKpiInfo({ title: t.trend, value: v, explain: `Período actual: ${periodos[0]?.movimientos.length ?? 0} movimientos · Promedio histórico: ${Math.round(avgHistoricoMovs)}`, color: c })} />
