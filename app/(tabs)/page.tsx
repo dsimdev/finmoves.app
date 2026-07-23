@@ -69,6 +69,11 @@ export default function Dashboard() {
   const ahorrosAcum = serie.length ? serie[serie.length - 1].ahorrosAcum : 0;
   // Solo gasto puro (sin compras de divisa, que disparan promedio y desvío).
   const gastos = useMemo(() => p?.movimientos.filter((m) => m.tipo === "Gasto") ?? [], [p]);
+  // Gasto de HOY (fecha AR): lo que llevás gastado en el día del período en curso.
+  const gastadoHoy = useMemo(() => {
+    const hoy = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return gastos.filter((m) => m.fecha === hoy).reduce((s, m) => s + m.monto, 0);
+  }, [gastos]);
   const promPorMov = gastos.length > 0 ? Math.round(gastos.reduce((s, m) => s + m.monto, 0) / gastos.length) : 0;
   // Cuánto aguanta el disponible al ritmo del período, y cuánto se puede gastar por día para
   // llegar al cierre. Los días transcurridos se cuentan igual que en DiasPeriodo.
@@ -171,11 +176,24 @@ export default function Dashboard() {
               <MiniStat basis="1 1 45%" label={t.savings} value={money(ahorrosAcum)} color="var(--blue)" />
               <MiniStat basis="1 1 45%" label={t.withdrawals} value={p.extras > 0 ? money(p.extras) : "—"} color="var(--teal)" />
             </>) : (<>
-              <MiniStat center basis="1 1 45%" label={t.spent} value={money(p.gastadoPuro)} color="var(--red)"
-                onClick={() => setKpiInfo({ title: t.spent, value: money(p.gastadoPuro), explain: t.kpiSpentRealInfo, color: "var(--red)" })} />
+              {/* Cuánto llevás gastado HOY, coloreado contra la recomendación diaria (el KPI
+                  "gastá por día"): verde si gastaste menos, amarillo si estás cerca, rojo si
+                  igualaste o pasaste el presupuesto del día. Sin recomendación (período cerrado
+                  o sin datos) queda neutro. */}
+              {(() => {
+                const sug = duracion?.porDiaSugerido ?? null;
+                const c = sug == null || gastadoHoy === 0 ? "var(--text)"
+                  : gastadoHoy >= sug ? "var(--red)"
+                  : gastadoHoy >= sug * 0.85 ? "var(--yellow)"
+                  : "var(--green)";
+                return (
+                  <MiniStat center basis="1 1 45%" label={t.today} value={money(gastadoHoy)} color={c}
+                    onClick={() => setKpiInfo({ title: t.todaySpent, value: money(gastadoHoy), explain: t.kpiTodaySpentInfo, color: c })} />
+                );
+              })()}
               {/* Cuánto se puede gastar por día para llegar al cierre. Reemplazó al desvío
                   (un coeficiente de variación describía el pasado; esto dice qué hacer).
-                  Va arriba, junto a Gastado: los dos hablan del período en curso. */}
+                  Va arriba, junto a Hoy: los dos hablan del período en curso. */}
               {(() => {
                 const sug = duracion?.porDiaSugerido ?? null;
                 const v = sug === null ? "—" : money(Math.round(sug));
