@@ -25,6 +25,7 @@ function fechaCortaConAnio(fecha: string): string {
 }
 import { agruparPorPeriodo } from "@/utils/periodo";
 import { serieTendencia, progresoMetaPropia, parsePeriodoId, ritmoAhorro, desdeSeed } from "@/utils/reportes";
+import { SimuladorMeta } from "@/components/investments/SimuladorMeta";
 import { useInflacionIPC } from "@/hooks/useInflacionIPC";
 import { useMoney, MASK } from "@/hooks/useHideValues";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
@@ -151,6 +152,8 @@ export default function DolaresPage() {
   // Deflactar solo en ARS: en USD/EUR el IPC argentino no aplica (identidad).
   const deflateAhorro = monedaPrincipal === "ARS" ? deflatar : undefined;
   const progresoPropia = metaPropia?.monto ? progresoMetaPropia(serieAhorros, metaPropia.monto, deflateAhorro, seedId) : null;
+  // Ritmo de ahorro (moneda propia) para el simulador de la meta propia.
+  const ritmoPropio = useMemo(() => ritmoAhorro(serieAhorros, deflateAhorro, seedId), [serieAhorros, deflateAhorro, seedId]);
   const fxLabel = historialUSD.length > 0 && historialEUR.length > 0 ? "divisas" : historialEUR.length > 0 ? "EUR" : "U$D";
 
   // Ritmo/proyección/mejor-peor: mismas reglas que Reportes (ritmoAhorro): delta REAL del
@@ -361,6 +364,17 @@ export default function DolaresPage() {
             ? t.noSavingsPace
             : progresoPropia.periodos === 0 ? t.reached : t.savingsGoalPeriods(progresoPropia.periodos)}
         </div>
+        {/* Simulador: solo tiene sentido si todavía falta (no en meta ya alcanzada). Una
+            perilla: cuánto más ahorrás por período (va a ahorros en pesos). */}
+        {!alcanzada && (
+          <SimuladorMeta
+            faltante={progresoPropia.faltante}
+            ritmo={ritmoPropio}
+            color="var(--purple)"
+            formatMonto={(n) => `${simboloPropio} ${Math.round(n).toLocaleString("es-AR")}`}
+            perillas={[{ label: t.simSaveMore, control: t.simSavePerPeriod, max: 150000, step: 5000 }]}
+          />
+        )}
       </div>
     );
   })() : null;
@@ -672,6 +686,17 @@ export default function DolaresPage() {
                       onClick={() => setKpiInfo({ title: t.statToGoal, value: periodosParaMeta === 0 ? t.reached : `${periodosParaMeta} ${t.periodsShort}`, explain: t.kpiToGoalInfo, color: "var(--yellow)" })} />
                   )}
                 </div>
+                {/* Simulador FX: la perilla es COMPRAR más divisa por período (en la unidad de
+                    la reserva), no ahorrar pesos. Solo si todavía falta. */}
+                {metaMonto != null && totalDisplay < metaMonto && (
+                  <SimuladorMeta
+                    faltante={metaMonto - totalDisplay}
+                    ritmo={ritmoFX}
+                    color="var(--yellow)"
+                    formatMonto={(n) => `${simbolo} ${Math.round(n).toLocaleString("es-AR")}`}
+                    perillas={[{ label: t.simBuyMore, control: t.simBuyPerPeriod, max: Math.max(500, Math.ceil((ritmoFX || 100) * 3)), step: 50 }]}
+                  />
+                )}
               </div>
             );
           })()}

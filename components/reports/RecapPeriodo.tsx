@@ -59,7 +59,7 @@ export function RecapPeriodo({ open, onClose, recap }: { open: boolean; onClose:
           background: "var(--surface)", borderTopLeftRadius: 22, borderTopRightRadius: 22,
           border: "1px solid var(--border)", borderBottom: "none",
           padding: "22px 18px calc(env(safe-area-inset-bottom, 0px) + 22px)",
-          animation: "recapUp .22s cubic-bezier(.2,.9,.3,1.1)",
+          animation: "recapUp var(--open-dur) var(--ease-settle)",
         }}
         data-recap
       >

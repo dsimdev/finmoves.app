@@ -4,6 +4,29 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.100.0] — 2026-07-22
+
+### Simulador en tus metas
+En cada meta de Inversión ahora hay un **"¿Y si…?"** que podés desplegar: movés una perilla y
+ves cuántos períodos antes llegarías. En la meta de ahorro simulás cuánto más guardar por
+período; en la de dólares/euros, cuánto más comprar. No cambia nada de tus datos, es solo para
+probar.
+
+### Todo se abre más lindo
+Unificamos el efecto de apertura en toda la app: modals, hojas y ventanitas ahora aparecen con
+el mismo pequeño rebote, en vez de cada una a su manera.
+
+### El deslizar para borrar, más suave
+En Movimientos, deslizar una fila ahora se siente fluido en vez de brusco: acompaña el dedo, se
+resalta con el color del tipo de movimiento (rojo gasto, verde ingreso…) y da un toquecito al
+abrirse. Y ya no se queda trabada a medias con un roce.
+
+### Ícono de los Move
+Los movimientos entre disponible y ahorros ahora tienen un ícono de **flechas cruzándose** con
+su color, en vez del genérico.
+
+---
+
 ## [2.99.1] — 2026-07-22
 
 ### Nuevos datos en Inicio y Reportes

@@ -280,6 +280,65 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* Respeta la preferencia del sistema de movimiento reducido (accesibilidad).
    El spinner conserva su giro para no parecer "colgado". */
+/* ── Sistema de movimiento ───────────────────────────────────────────────────
+   Un lenguaje de apertura ÚNICO para toda la app: modals, sheets y popovers usan estas curvas
+   y keyframes en vez de inventar la suya. La firma es un pequeño "asentamiento" (overshoot):
+   el elemento se pasa apenas de su posición final y vuelve, para que la apertura se SIENTA en
+   vez de aparecer seca. Cambiar acá cambia el feel en toda la app. */
+:root {
+  /* Overshoot suave para aperturas (el "rebote" de asentamiento). */
+  --ease-settle: cubic-bezier(.25, 1.3, .4, 1);
+  /* Salida/entrada sin rebote (fades, cierres). */
+  --ease-out: cubic-bezier(.2, .8, .3, 1);
+  --open-dur: .26s;
+}
+/* Fade del backdrop, compartido por todos los overlays. */
+@keyframes ccFade { from { opacity: 0; } to { opacity: 1; } }
+/* Pop centrado: para modals que aparecen en el medio (CenterCard, Confirm, KpiInfo). Overshoot
+   real (se pasa de 1 y vuelve) para que el "pop" se SIENTA — un scale de solo 8% en un modal
+   chico casi no se percibe. */
+@keyframes appearPop {
+  0%   { opacity: 0; transform: scale(.85); }
+  60%  { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+/* Pop anclado: para popovers que salen de un botón (notif, filtro, día). Nace desde su
+   transform-origin, que cada uno fija según dónde está anclado. */
+@keyframes appearPopover {
+  0%   { opacity: 0; transform: scale(.86); }
+  60%  { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+/* Rebote de asentamiento reutilizable (lo usa el swipe y cualquier "llegó a destino"). */
+@keyframes settleNudge {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes appearPop { from,to { opacity: 1; transform: none; } }
+  @keyframes appearPopover { from,to { opacity: 1; transform: none; } }
+  @keyframes settleNudge { 0%,100% { transform: none; } }
+}
+
+/* Slider del simulador de meta: pista fina con relleno del acento de la meta, thumb blanco
+   con borde del acento. Un solo look en ambos temas (usa tokens). */
+.sim-range {
+  width: 100%; margin: 0; -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer;
+}
+.sim-range::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--sim-accent) var(--sim-fill, 0%), var(--surface-alt) var(--sim-fill, 0%));
+}
+.sim-range::-moz-range-track { height: 6px; border-radius: 999px; background: var(--surface-alt); }
+.sim-range::-moz-range-progress { height: 6px; border-radius: 999px; background: var(--sim-accent); }
+.sim-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; margin-top: -7px;
+  background: #fff; border: 3px solid var(--sim-accent); box-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+.sim-range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid var(--sim-accent); }
+.sim-range:focus-visible { outline: 2px solid var(--sim-accent); outline-offset: 4px; border-radius: 4px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

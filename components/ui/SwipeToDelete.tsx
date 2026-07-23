@@ -3,8 +3,6 @@
 import { useRef, useState, useEffect, type ReactNode } from "react";
 
 const BTN_W = 46;     // ancho de cada botón que asoma a la derecha
-const OPEN_AT = 28;   // umbral (px arrastrados) para quedar abierta al soltar
-
 // Solo UNA fila abierta a la vez en toda la app: al abrir una, la anterior se cierra.
 let cerrarAbierta: (() => void) | null = null;
 
@@ -17,7 +15,7 @@ let cerrarAbierta: (() => void) | null = null;
  * Con `onEdit` se revelan DOS botones (lapicito editar + tacho eliminar); sin él, solo el
  * tacho (comportamiento original, usado en Notificaciones y Home).
  */
-export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius, railBg, children }: {
+export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius, railBg, accent, children }: {
   onDelete: () => void;
   deleteLabel: string;
   /** Si se pasa, se agrega un lapicito (editar) a la izquierda del tacho → atajo directo
@@ -26,6 +24,10 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
   editLabel?: string;
   /** Radio del contenedor (ej. 12 en notificaciones; sin radio en listas flush). */
   radius?: number;
+  /** Color del resaltado al deslizar. Por defecto el acento; en Movimientos se pasa el color
+   *  del TIPO de movimiento (rojo gasto, verde ingreso…) para que el resaltado hable el mismo
+   *  idioma de color que el monto. */
+  accent?: string;
   /** Fondo del "carril" de los botones. En listas planas (Movimientos) se pasa
    *  "var(--red-dim)" para separarlo del monto y evitar el choque rojo-con-rojo. En
    *  notificaciones (cada fila ya es una card separada) se omite → sobre fondo transparente. */
@@ -61,10 +63,15 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
     return () => document.removeEventListener("pointerdown", cerrarSiFuera, true);
   }, [pad]);
 
+  // Al abrir se dispara un "asentamiento": el contenido da un rebote corto, para que se SIENTA
+  // que la fila se movió (feedback visual, no vibración del teléfono — esa no anda en el device).
+  const [asienta, setAsienta] = useState(false);
   const abrir = () => {
     if (cerrarAbierta && cerrarAbierta !== cerrar.current) cerrarAbierta();
     cerrarAbierta = cerrar.current;
     setPad(PANEL_W);
+    setAsienta(true);
+    setTimeout(() => setAsienta(false), 320);
   };
   const cerrarSelf = () => {
     if (cerrarAbierta === cerrar.current) cerrarAbierta = null;
@@ -89,19 +96,33 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
     }
     if (!horizontal.current) return;
     dragged.current = true;
-    // El padding crece a medida que arrastrás a la izquierda; tope al ancho del panel.
-    setPad(Math.max(0, Math.min(PANEL_W, base.current - mx)));
+    // El panel sigue al dedo con FRICCIÓN (0.6): se abre a menos velocidad que el dedo, así el
+    // gesto se siente controlado en vez de saltar de golpe. Tope al ancho del panel.
+    const bruto = base.current - mx;
+    setPad(Math.max(0, Math.min(PANEL_W, bruto * 0.6)));
   };
   const onTouchEnd = () => {
     start.current = null;
     setTouching(false);
-    if (pad >= OPEN_AT) abrir(); else cerrarSelf();
+    // Solo queda abierta si se arrastró EN SERIO (más de la mitad del panel). Un toque leve o
+    // un arrastre corto vuelve a cerrar del todo — nada de estados trabados a medias.
+    if (pad >= PANEL_W / 2) abrir(); else cerrarSelf();
   };
 
-  const abierta = pad > 0;
+  // "Abierta" = llegó al estado final (panel entero). Los botones solo son clickeables acá.
+  const abierta = pad >= PANEL_W;
 
   return (
-    <div ref={rootRef} style={{ position: "relative", borderRadius: radius, overflow: "hidden" }}>
+    <div ref={rootRef} style={{
+      position: "relative", borderRadius: radius ?? 10, overflow: "hidden",
+      // Resaltado proporcional al arrastre: mientras deslizás y cuando queda abierta, la fila se
+      // tiñe del color de acento (en Movimientos, el del TIPO del movimiento) para marcar que
+      // está en modo acción. Se desvanece sola al cerrar.
+      ["--sw-accent" as string]: accent ?? "var(--accent)",
+      background: pad > 0 ? "color-mix(in srgb, var(--sw-accent) 14%, transparent)" : "transparent",
+      boxShadow: pad > 0 ? "inset 3px 0 0 var(--sw-accent)" : "inset 0 0 0 transparent",
+      transition: touching ? "none" : "background .2s, box-shadow .2s",
+    }}>
       {/* Panel de acciones: asoma a la derecha en el hueco que deja el contenido al encogerse.
           Lapicito (editar) + tacho (eliminar), o solo el tacho si no hay onEdit. */}
       <div
@@ -111,7 +132,9 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
           // Carril opcional (railBg): en listas planas separa los botones del monto; en
           // notificaciones se omite (la fila-card ya lo separa).
           background: railBg ?? "none",
-          opacity: abierta ? Math.min(1, pad / PANEL_W) : 0, transition: touching ? "none" : "opacity .15s",
+          // Asoma progresivo con el arrastre (pad), no de golpe. Clickeable solo cuando quedó
+          // abierta del todo — así un roce a medias no deja botones activos por error.
+          opacity: pad > 0 ? Math.min(1, pad / PANEL_W) : 0, transition: touching ? "none" : "opacity .15s",
           pointerEvents: abierta ? "auto" : "none",
         }}
       >
@@ -150,16 +173,33 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
         onTouchCancel={onTouchEnd}
         onClickCapture={(e) => {
           if (dragged.current) { e.preventDefault(); e.stopPropagation(); dragged.current = false; return; }
-          if (abierta) { e.preventDefault(); e.stopPropagation(); cerrarSelf(); }
+          // Cualquier tap sobre el contenido con la fila corrida (aun a medias) la cierra en
+          // vez de abrir el detalle — así un roce que dejó pad intermedio se limpia al tocar.
+          if (pad > 0) { e.preventDefault(); e.stopPropagation(); cerrarSelf(); }
         }}
         style={{
           paddingRight: pad,
-          transition: touching ? "none" : "padding-right .18s",
+          transition: touching ? "none" : "padding-right .22s cubic-bezier(.25,.8,.3,1)",
           touchAction: "pan-y",
         }}
       >
-        {typeof children === "function" ? children(abierta) : children}
+        {/* Envoltorio del asentamiento: al abrir, el contenido da un rebote (se pasa un toque a
+            la izquierda y vuelve). Va acá como transform para no pelear con el paddingRight.
+            La `key` fuerza a re-montar el nodo en cada apertura, así la animación SIEMPRE corre
+            desde cero — antes, si abrías "justito", el navegador no la reiniciaba y no se veía. */}
+        <div key={asienta ? "settle" : "idle"} style={{ animation: asienta ? "swipeSettle .32s cubic-bezier(.3,1.5,.5,1)" : "none" }}>
+          {typeof children === "function" ? children(abierta) : children}
+        </div>
       </div>
+      <style>{`
+        @keyframes swipeSettle {
+          0% { transform: translateX(0) }
+          45% { transform: translateX(-7px) }
+          75% { transform: translateX(2px) }
+          100% { transform: translateX(0) }
+        }
+        @media (prefers-reduced-motion: reduce) { @keyframes swipeSettle { 0%,100% { transform: none } } }
+      `}</style>
     </div>
   );
 }

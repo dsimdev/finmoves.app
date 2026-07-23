@@ -509,8 +509,10 @@ export default function MovimientosPage() {
                       const isMove = m.tipo === "Move";
                       const esResto = m.categoria === "RESTO"; // arrastre a ahorros: azul y "+"
                       const negativo = !esResto && (isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro"));
+                      // Color del TIPO del movimiento: lo usan el monto y el resaltado del swipe.
+                      const colorTipo = esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)") : "var(--green)";
                       return (
-                        <SwipeToDelete key={m.id} deleteLabel={t.delete} editLabel={t.edit} railBg="var(--surface-alt)"
+                        <SwipeToDelete key={m.id} deleteLabel={t.delete} editLabel={t.edit} railBg="var(--surface-alt)" accent={colorTipo}
                           onEdit={() => setModalState({ mode: "edit", mov: m, view: "form" })}
                           onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
                         {(abierta) => (
@@ -550,7 +552,7 @@ export default function MovimientosPage() {
                               </div>
                             )}
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)") : "var(--green)", fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1, paddingRight: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: colorTipo, fontFamily: "var(--font-mono)", flexShrink: 0, marginTop: 1, paddingRight: 4 }}>
                             {negativo ? "-" : "+"}{money(m.monto)}
                           </span>
                         </RowButton>

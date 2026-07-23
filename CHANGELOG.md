@@ -4,6 +4,42 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.100.0] — 2026-07-22
+
+### Added — goal simulator
+Each goal card in Investments now has a collapsible **"What if…?"** that turns the passive
+"you'll reach it in X periods" into something you can play with: drag a knob and watch the
+number drop. It touches no data — only re-projects with an extra.
+
+- Each goal simulates in **its own unit**: the ARS savings goal in pesos (knob: save more per
+  period), the FX goal in currency (knob: buy more per period). The FX projection runs on net
+  currency purchases, not converted pesos — buying dollars is what moves an FX reserve, not
+  saving pesos.
+- `utils/simulador-meta` re-uses the same `ceil(remaining / pace)` the cards already use, so
+  the simulated and real numbers can't diverge. 9 tests.
+
+### Added — a shared motion system
+Openings across the app spoke different dialects: modals, sheets and popovers each had their
+own easing curve. There's now one motion language in `globals.css` (`--ease-settle`, plus
+`appearPop` / `appearPopover` with a real overshoot), and every overlay uses it — CenterCard
+(and everything built on it), ConfirmModal, KpiInfoModal, BottomSheet, the notification /
+filter / calendar-day popovers, and the recap sheet. One value tunes the feel everywhere.
+
+### Changed — swipe-to-delete feels right
+The movements swipe was janky and could get stuck half-open on a light touch. Now it has drag
+friction so it follows the finger smoothly, opens only past the halfway point (a graze closes
+clean), highlights the row **in the movement type's colour** (red expense, green income, etc.)
+while sliding, and gives a small settle-nudge on open.
+
+### Changed — Move icon
+Moves (between available and savings) had the generic "…" icon. They now show **two crossing
+arrows** painted with a teal→purple gradient — the two sides a Move connects.
+
+### Internal
+- **297 tests** (up from 288).
+
+---
+
 ## [2.99.1] — 2026-07-22
 
 ### Changed — KPI shuffle across Home and Reports
