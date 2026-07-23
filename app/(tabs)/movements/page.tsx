@@ -12,6 +12,8 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { SelectionBar } from "@/components/movements/SelectionBar";
 import { CategoriaIcono } from "@/components/ui/CategoriaIcono";
 import { UndoToast } from "@/components/ui/UndoToast";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { haptic } from "@/lib/haptics";
 import { useMoney } from "@/hooks/useHideValues";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { Movimiento, TipoMovimiento } from "@/types";
@@ -145,7 +147,12 @@ export default function MovimientosPage() {
   // Las reglas de qué se puede borrar/recategorizar viven en utils/seleccion (testeadas).
   const [seleccion, setSeleccion] = useState<string[] | null>(null); // null = modo apagado
   const modoSeleccion = seleccion !== null;
-  const alternar = (id: string) => setSeleccion((prev) => toggleId(prev ?? [], id));
+  // Alternar un ítem. Si al sacarlo la selección queda vacía, se SALE del modo (vuelve a null):
+  // quedarse en "0 seleccionados" no tiene sentido — deseleccionar todo = salir.
+  const alternar = (id: string) => setSeleccion((prev) => {
+    const next = toggleId(prev ?? [], id);
+    return next.length === 0 ? null : next;
+  });
   const salirSeleccion = () => setSeleccion(null);
   // Borrado en lote pendiente de confirmar: mientras el toast está arriba se puede deshacer.
   const [borradoUndo, setBorradoUndo] = useState<Movimiento[] | null>(null);
@@ -159,9 +166,14 @@ export default function MovimientosPage() {
     [seleccion, movimientos]
   );
 
+  // Borrar en lote pide confirmar ANTES (es destructivo y son varios), y ofrece deshacer
+  // DESPUÉS. La barra dispara la confirmación; recién al confirmar se ejecuta el borrado.
+  const [confirmarBorradoLote, setConfirmarBorradoLote] = useState(false);
   const borrarSeleccion = async () => {
     if (!user?.uid || aBorrar.length === 0) return;
+    haptic("delete");
     const borrados = aBorrar;
+    setConfirmarBorradoLote(false);
     // Optimista: desaparecen ya y el toast ofrece deshacer mientras tanto.
     borrados.forEach((m) => removeMovimiento(m.id));
     setSeleccion(null);
@@ -313,7 +325,7 @@ export default function MovimientosPage() {
               nRecategorizables={aRecategorizar.length}
               categorias={(config?.categorias ?? []).filter((c) => c.activa)}
               onCancel={salirSeleccion}
-              onDelete={borrarSeleccion}
+              onDelete={() => setConfirmarBorradoLote(true)}
               onRecategorize={recategorizarSeleccion}
             />
           )}
@@ -513,15 +525,16 @@ export default function MovimientosPage() {
                       const colorTipo = esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)") : "var(--green)";
                       return (
                         <SwipeToDelete key={m.id} deleteLabel={t.delete} editLabel={t.edit} railBg="var(--surface-alt)" accent={colorTipo}
+                          disabled={modoSeleccion}
                           onEdit={() => setModalState({ mode: "edit", mov: m, view: "form" })}
                           onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>
                         {(abierta) => (
                         <RowButton
                           className={flashIds.has(m.id) ? "row-tap flash-row" : "row-tap"}
                           // Con la selección activa el tap alterna; si no, abre el detalle.
-                          // El long-press siempre entra en selección con este ya marcado.
+                          // El long-press entra en selección con esta fila ya marcada.
                           onTap={() => (modoSeleccion ? alternar(m.id) : openEdit(m))}
-                          onLongPress={() => setSeleccion((prev) => toggleId(prev ?? [], m.id))}
+                          onLongPress={() => setSeleccion((prev) => (prev && prev.includes(m.id) ? prev : [...(prev ?? []), m.id]))}
                           aria-label={t.edit} style={{
                           width: "100%", textAlign: "left", cursor: "pointer",
                           display: "flex", alignItems: "flex-start", gap: 10, padding: "13px 14px",
@@ -617,6 +630,23 @@ export default function MovimientosPage() {
       onUpdated={updateMovimiento}
       onDeleted={removeMovimiento}
     />
+    {/* Confirmación ANTES del borrado en lote (destructivo, varios ítems). Al confirmar, el
+        borrado optimista + el deshacer del toast de abajo. */}
+    {confirmarBorradoLote && (
+      <ConfirmModal
+        title={t.delete}
+        confirmLabel={t.yesDelete}
+        cancelLabel={t.cancel}
+        confirmColor="var(--red)"
+        onConfirm={borrarSeleccion}
+        onCancel={() => setConfirmarBorradoLote(false)}
+      >
+        <div style={{ textAlign: "center", fontSize: 13, color: "var(--muted)" }}>
+          {t.deleteSelectedConfirm(aBorrar.length)}
+        </div>
+      </ConfirmModal>
+    )}
+
     {/* Deshacer del borrado en lote: la escritura ya salió, pero se puede revertir mientras
         el aviso siga arriba (restaura los docs con su mismo id). */}
     {borradoUndo && (

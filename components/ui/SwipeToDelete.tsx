@@ -15,7 +15,7 @@ let cerrarAbierta: (() => void) | null = null;
  * Con `onEdit` se revelan DOS botones (lapicito editar + tacho eliminar); sin él, solo el
  * tacho (comportamiento original, usado en Notificaciones y Home).
  */
-export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius, railBg, accent, children }: {
+export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius, railBg, accent, disabled, children }: {
   onDelete: () => void;
   deleteLabel: string;
   /** Si se pasa, se agrega un lapicito (editar) a la izquierda del tacho → atajo directo
@@ -28,6 +28,9 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
    *  del TIPO de movimiento (rojo gasto, verde ingreso…) para que el resaltado hable el mismo
    *  idioma de color que el monto. */
   accent?: string;
+  /** Desactiva el swipe (p.ej. en modo selección múltiple, donde las acciones son las de la
+   *  barra de arriba, no las de la fila). El contenido se renderiza plano, sin gesto. */
+  disabled?: boolean;
   /** Fondo del "carril" de los botones. En listas planas (Movimientos) se pasa
    *  "var(--red-dim)" para separarlo del monto y evitar el choque rojo-con-rojo. En
    *  notificaciones (cada fila ya es una card separada) se omite → sobre fondo transparente. */
@@ -78,7 +81,12 @@ export function SwipeToDelete({ onDelete, onEdit, deleteLabel, editLabel, radius
     setPad(0);
   };
 
+  // Al entrar en modo selección (disabled), cerrar si había quedado abierta y no permitir
+  // deslizar: las acciones pasan a la barra de selección, no a la fila.
+  useEffect(() => { if (disabled && pad > 0) setPad(0); }, [disabled, pad]);
+
   const onTouchStart = (e: React.TouchEvent) => {
+    if (disabled) return; // sin swipe en modo selección
     start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     horizontal.current = null;
     dragged.current = false;

@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAllMovimientos } from "@/hooks/useAllMovimientos";
 import { useConfig } from "@/hooks/useConfig";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
+import { setHapticsEnabled } from "@/lib/haptics";
 import { listarRecurrentes, type Recurrente } from "@/services/firebase/recurrentes";
 import { listarPlantillas, type Plantilla } from "@/services/firebase/plantillas";
 import { syncPushSubscription } from "@/lib/push-client";
@@ -49,6 +50,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // en otro dispositivo que no alteran el count (ediciones puras) → fuerza re-fetch.
   const { movimientos, loading, refresh, updateLocal, removeLocal, prependLocal } = useAllMovimientos(user?.uid, config?.meta.movsRevision ?? 0);
   const hydratePrefs = useAppPrefs((s) => s.hydrate);
+  // Espejar el pref de vibración al módulo de haptics (que vive fuera de React). Solo la
+  // VIBRACIÓN se gatea con esto; el pulso visual va siempre.
+  const hapticsPref = useAppPrefs((s) => s.haptics);
+  useEffect(() => { setHapticsEnabled(hapticsPref); }, [hapticsPref]);
 
   // Recurrentes y plantillas: se leen una vez por sesión (antes se re-leían en cada
   // visita a Movimientos y en cada apertura del modal de alta, respectivamente).
