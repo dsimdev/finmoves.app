@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLongPress } from "@/hooks/useLongPress";
 import { SelectionBar } from "@/components/movements/SelectionBar";
 import { CategoriaIcono } from "@/components/ui/CategoriaIcono";
+import { visualDeCategoria } from "@/utils/categoria-visual";
 import { UndoToast } from "@/components/ui/UndoToast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { haptic } from "@/lib/haptics";
@@ -523,8 +524,12 @@ export default function MovimientosPage() {
                       const negativo = !esResto && (isGasto || isCompraFX || (isMove && m.direccionMove === "aAhorro"));
                       // Color del TIPO del movimiento: lo usan el monto y el resaltado del swipe.
                       const colorTipo = esResto ? "var(--blue)" : isFX ? "var(--yellow)" : isGasto ? "var(--red)" : isMove ? (m.direccionMove === "aAhorro" ? "var(--purple)" : "var(--teal)") : "var(--green)";
+                      // El resaltado del swipe usa el color de la CATEGORÍA (el que el usuario
+                      // configuró), para que sienta que "es su app". El monto sigue con el color
+                      // del tipo. Move/RESTO/FX (visual fija) caen en su color semántico.
+                      const colorCat = visualDeCategoria(catDe(m)).hex;
                       return (
-                        <SwipeToDelete key={m.id} deleteLabel={t.delete} editLabel={t.edit} railBg="var(--surface-alt)" accent={colorTipo}
+                        <SwipeToDelete key={m.id} deleteLabel={t.delete} editLabel={t.edit} railBg="var(--surface-alt)" accent={colorCat}
                           disabled={modoSeleccion}
                           onEdit={() => setModalState({ mode: "edit", mov: m, view: "form" })}
                           onDelete={() => setModalState({ mode: "edit", mov: m, view: "delete" })}>

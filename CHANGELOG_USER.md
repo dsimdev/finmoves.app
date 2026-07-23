@@ -4,6 +4,21 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.101.1] — 2026-07-22
+
+### El deslizar ahora habla tu idioma de colores
+Cuando deslizás un movimiento para borrarlo o editarlo, el resaltado toma **el color de la
+categoría** que vos elegiste, no un color genérico. Se siente que es tu app.
+
+### Más colores para tus categorías
+Sumamos cinco tonos nuevos (coral, turquesa, lavanda, dorado y violeta) para que tengas más
+variedad al armar tus categorías, sin que se confundan entre sí.
+
+### Arreglos menores
+Correcciones internas.
+
+---
+
 ## [2.101.0] — 2026-07-22
 
 ### Vibración al usar la app

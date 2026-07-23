@@ -8,12 +8,15 @@
 
 export type CategoriaColor =
   | "rosa" | "magenta" | "naranja" | "oliva" | "lima"
-  | "menta" | "cielo" | "indigo" | "arena" | "contraste";
+  | "menta" | "cielo" | "indigo" | "arena"
+  | "coral" | "turquesa" | "lavanda" | "dorado" | "violeta"
+  | "contraste";
 
 /**
- * Paleta de categorías: diez tonos repartidos por el círculo cromático, sin dos vecinos que
- * se confundan de un vistazo (había tres naranjas y dos violetas casi iguales) y sin grises,
- * que no daban identidad y competían con el texto apagado.
+ * Paleta de categorías: tonos repartidos por el círculo cromático, sin dos vecinos que se
+ * confundan de un vistazo (había tres naranjas y dos violetas casi iguales) y sin grises, que
+ * no daban identidad y competían con el texto apagado. Ampliada con cinco huecos que faltaban
+ * (coral, turquesa, lavanda, dorado, violeta profundo) para dar más juego sin repetir.
  *
  * `contraste` es especial: no es un hex fijo sino `var(--text)`, o sea negro en tema claro y
  * blanco en oscuro. Guardar "negro" a secas dejaba el ícono invisible al cambiar de tema.
@@ -21,13 +24,18 @@ export type CategoriaColor =
 export const COLORES_CATEGORIA: Record<CategoriaColor, string> = {
   rosa: "#ff6e9c",       // rosa fuerte
   magenta: "#d94ecc",    // magenta/fucsia
-  naranja: "#ff8a3d",    // el único naranja
+  naranja: "#ff8a3d",    // naranja cálido
   oliva: "#9aa83a",      // verde oliva apagado
   lima: "#c6e64a",       // lima brillante
   menta: "#5fd3a8",      // verde menta
   cielo: "#5bb8e8",      // celeste
   indigo: "#7c6bf0",     // índigo
   arena: "#d9b878",      // arena / mostaza suave
+  coral: "#e8492e",      // rojo-teja intenso (más cálido y oscuro que el rosa)
+  turquesa: "#20d3c2",   // cian/turquesa saturado
+  lavanda: "#b39cff",    // lavanda claro
+  dorado: "#f5d020",     // amarillo dorado brillante
+  violeta: "#7326b8",    // violeta profundo
   contraste: "var(--text)",
 };
 
