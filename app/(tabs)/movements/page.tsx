@@ -463,18 +463,38 @@ export default function MovimientosPage() {
               {movsPorFecha.map(({ fecha, movs }, idx) => {
                 // El día más reciente siempre abierto; el resto colapsa a un resumen (fecha + total).
                 const abierto = idx === 0 ? true : diasAbiertos.has(fecha);
-                // Conteo por tipo para el resumen colapsado. Orden de izq→der:
-                // ingreso (verde), usd/dólares (amarillo), move (amarillo), gasto (rojo, a la derecha).
+                // Conteo por tipo (lo sigue usando el total del día abierto con filtro).
                 let nGasto = 0, nMoveAhorro = 0, nMoveDisp = 0, nUsd = 0, nIngreso = 0;
+                // Día CERRADO: lo que importa es cuánto se gastó, no cuántos movimientos hubo
+                // ("3" no dice nada, "$45.000" sí). El gastado usa el MISMO criterio que
+                // utils/periodo (Gasto + CompraUSD), para que el total del día coincida con lo
+                // que muestra Reportes. Lo que queda fuera de esa cuenta (ingreso, moves, resto
+                // de operaciones de divisa) no se numera: va como un dot de su color al lado,
+                // que dice "además pasó esto" sin sumar texto ni competir con el monto.
+                let gastadoDia = 0;
                 for (const m of movs) {
-                  if (m.tipo === "Gasto") nGasto++;
+                  if (m.tipo === "Gasto") { nGasto++; gastadoDia += m.monto; }
                   else if (m.tipo === "Move") {
                     if (m.direccionMove === "aAhorro") nMoveAhorro++;
                     else nMoveDisp++;
                   }
                   else if (m.tipo === "Ingreso") nIngreso++;
-                  else nUsd++;
+                  else {
+                    nUsd++;
+                    if (m.tipo === "CompraUSD") gastadoDia += m.monto;
+                  }
                 }
+                // Dots de lo que quedó FUERA del gastado, en el orden del resto de la app. Las
+                // operaciones de divisa solo ponen dot si alguna no entró ya en el total
+                // (CompraUSD sí entra: sería contarla dos veces).
+                const fxFueraDelTotal = movs.some((m) =>
+                  m.tipo !== "Gasto" && m.tipo !== "Ingreso" && m.tipo !== "Move" && m.tipo !== "CompraUSD");
+                const dots = [
+                  nIngreso > 0 && "var(--green)",
+                  fxFueraDelTotal && "var(--yellow)",
+                  nMoveDisp > 0 && "var(--teal)",
+                  nMoveAhorro > 0 && "var(--purple)",
+                ].filter(Boolean) as string[];
                 return (
                 <div key={fecha} className="card" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
                   <button onClick={() => { if (idx !== 0) toggleDia(fecha); }} style={{
@@ -484,12 +504,21 @@ export default function MovimientosPage() {
                   }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: 0.3 }}>{fechaCorta(fecha)}</span>
                     {!abierto && (
-                      <span style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: 10, fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)" }}>
-                        {nIngreso > 0 && <span style={{ color: "var(--green)" }}>{nIngreso}</span>}
-                        {nUsd > 0 && <span style={{ color: "var(--yellow)" }}>{nUsd}</span>}
-                        {nMoveDisp > 0 && <span style={{ color: "var(--teal)" }}>{nMoveDisp}</span>}
-                        {nMoveAhorro > 0 && <span style={{ color: "var(--purple)" }}>{nMoveAhorro}</span>}
-                        {nGasto > 0 && <span style={{ color: "var(--red)" }}>{nGasto}</span>}
+                      <span style={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 7 }}>
+                        {/* Los dots primero: el monto queda pegado al borde, que es donde se
+                            alinea con el resto de los números de la lista. */}
+                        {dots.length > 0 && (
+                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                            {dots.map((c) => (
+                              <span key={c} style={{ width: 5, height: 5, borderRadius: "50%", background: c }} />
+                            ))}
+                          </span>
+                        )}
+                        {/* Un día sin gasto (solo ingreso o moves) muestra "—": un $0 se lee
+                            como dato y esto se lee como "acá no hubo gasto". */}
+                        <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", color: gastadoDia > 0 ? "var(--red)" : "var(--muted)" }}>
+                          {gastadoDia > 0 ? money(gastadoDia) : "—"}
+                        </span>
                       </span>
                     )}
                     {/* Con filtro activo y el día abierto: total de lo filtrado ese día a la

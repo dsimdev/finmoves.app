@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { CenterCard } from "@/components/ui/CenterCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useTranslation";
+import { useData } from "@/app/(tabs)/data-context";
 import { crearRecordatorio, listarRecordatorios, eliminarRecordatorio, type Recordatorio } from "@/services/firebase/recordatorios";
 import { fechaCorta } from "@/utils/periodo";
+import { proyectarRecurrentes } from "@/utils/recurrent-forecast";
+import { useMoney } from "@/hooks/useHideValues";
 import { ReminderCalendar } from "./ReminderCalendar";
 
 // Días entre hoy (AR) y una fecha YYYY-MM-DD. Negativo = ya venció.
@@ -27,6 +30,8 @@ const ICON_CAL = (
 export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user } = useAuth();
   const t = useT();
+  const { m: money } = useMoney();
+  const { movimientos, recurrentes } = useData();
   const [texto, setTexto] = useState("");
   const [fecha, setFecha] = useState("");
   const [repetir, setRepetir] = useState(false);
@@ -43,6 +48,23 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
 
   // Los del día elegido: se listan sobre el form para poder borrarlos sin ir a Configuración.
   const delDia = fecha ? lista.filter((r) => r.fecha === fecha) : [];
+
+  // Hoy (AR) se fija al montar: leer el reloj durante el render es impuro y dos renders del
+  // mismo día podrían no coincidir. La card se abre y cierra, así que se recalcula seguido.
+  const [hoyISO] = useState(() => new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10));
+
+  // Recurrentes proyectados a su próxima fecha esperada. Mismo cálculo que usa el cron para
+  // notificar (utils/recurrent-forecast), así el calendario y el push no se contradicen.
+  const proyectados = useMemo(
+    () => proyectarRecurrentes(recurrentes, movimientos, hoyISO),
+    [recurrentes, movimientos, hoyISO],
+  );
+
+  // Los que caen en el día elegido. Los vencidos se muestran en HOY (es donde los ancla el
+  // calendario), no en su fecha esperada ya pasada.
+  const recurrentesDelDia = fecha
+    ? proyectados.filter((p) => (p.estado === "vencido" ? fecha === hoyISO : p.fecha === fecha))
+    : [];
 
   const guardar = async () => {
     if (!user?.uid || !texto.trim() || !fecha || saving) return;
@@ -94,11 +116,29 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
           como popover ANCLADO a la fecha tocada, así la card no crece hacia abajo. */}
       <ReminderCalendar
         recordatorios={lista}
+        recurrentes={proyectados}
         seleccionado={fecha || null}
         onSelect={setFecha}
         onCerrarDia={() => { setFecha(""); setTexto(""); setRepetir(false); }}
       >
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Recurrentes esperados ese día. Son una PREDICCIÓN, no algo agendado: van con punto
+            hueco y sin × (no se borran desde acá, se gestionan en Movimientos). */}
+        {recurrentesDelDia.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {recurrentesDelDia.map((p) => {
+              const c = p.estado === "vencido" ? "var(--red)" : p.estado === "cerca" ? "var(--yellow)" : "var(--teal)";
+              return (
+                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-alt)", borderRadius: 9, padding: "7px 11px" }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", flexShrink: 0, boxSizing: "border-box", border: `1.4px solid ${c}` }} />
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.descripcion}</span>
+                  <span style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", color: c, flexShrink: 0 }}>{money(p.monto)}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Lo que ya hay ese día, con × para borrarlo sin salir de la card. */}
         {delDia.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

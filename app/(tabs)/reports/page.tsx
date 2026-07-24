@@ -19,11 +19,11 @@ import { agruparPorPeriodo, gastosPorCategoria } from "@/utils/periodo";
 import { obtenerPresupuesto, guardarPresupuesto } from "@/services/firebase/presupuestos";
 import { useMoney } from "@/hooks/useHideValues";
 import {
-  gastosPorMedioPago, gastosPorDescripcion, gastosPorFecha,
+  gastosPorMedioPago, gastosPorDescripcion,
   kpisPeriodo, ritmoGasto, comparativaCategorias,
   serieTendencia, parsePeriodoId, diasSinGastos,
   historialSueldo, proyectarAhorros, ritmoAhorro,
-  progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
+  progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos,
   inflacionPersonal as calcInflacionPersonal,
 } from "@/utils/reportes";
 import { afectaDisponible } from "@/utils/movement-fx";
@@ -120,7 +120,6 @@ export default function ReportesPage() {
   const [navPeriodo, setNavPeriodo] = useState<{ periodoId: string; target: Sub } | null>(null);
   const [modalSueldo, setModalSueldo] = useState(false);
   const [modalAhorros, setModalAhorros] = useState(false);
-  const [diaModal, setDiaModal] = useState<string | null>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [presupuesto, setPresupuesto] = useState<Record<string, number> | null>(null);
   const [showBudget, setShowBudget] = useState(false);
@@ -181,19 +180,6 @@ export default function ReportesPage() {
     return s;
   }, [periodo]);
   const esCatCompra = (cat: string) => cat === "CompraUSD" || cat === "CompraEUR";
-  const porFecha = periodo ? gastosPorFecha(periodo.movimientos, periodo.gastado) : [];
-  // Split por día: gasto (rojo) vs compra USD (amarillo). Clave = fecha original.
-  const splitPorFecha = useMemo(() => {
-    const map = new Map<string, { gasto: number; compra: number }>();
-    if (periodo) for (const m of periodo.movimientos) {
-      if (!esGasto(m)) continue;
-      const k = m.fecha || "—";
-      const cur = map.get(k) ?? { gasto: 0, compra: 0 };
-      if (m.tipo === "CompraUSD") cur.compra += m.monto; else cur.gasto += m.monto;
-      map.set(k, cur);
-    }
-    return map;
-  }, [periodo]);
   const kpis = periodo ? kpisPeriodo(periodo) : null;
   // Ritmo y comparativa sólo aplican a un período individual
   const ritmo = periodo && activos.length === 1 ? ritmoGasto(periodo, finPeriodo) : null;
@@ -713,10 +699,10 @@ export default function ReportesPage() {
                 periodo={periodo} periodos={periodos} activos={activos} anterior={anterior}
                 esPeriodoVigente={esPeriodoVigente} ritmo={ritmo} tendenciaGasto={tendenciaGasto} avgHistorico={avgHistorico}
                 promPorMov={promPorMov} comp={comp} descs={descs} descsCompra={descsCompra}
-                porFecha={porFecha} splitPorFecha={splitPorFecha} catsConPresu={catsConPresu} catsEditables={catsEditables}
+                catsConPresu={catsConPresu} catsEditables={catsEditables}
                 esCatCompra={esCatCompra} presupuesto={presupuesto} presupuestoEfectivo={presupuestoEfectivo}
                 showBudget={showBudget} config={config} setShowBudget={setShowBudget} setEditingBudget={setEditingBudget}
-                setModalBudget={setModalBudget} setCatModal={setCatModal} setDiaModal={setDiaModal}
+                setModalBudget={setModalBudget} setCatModal={setCatModal}
                 setModalTop={setModalTop} setKpiInfo={setKpiInfo}
               />
             ) : <div />}
@@ -832,28 +818,8 @@ export default function ReportesPage() {
             ))}
       </BottomSheet>
 
-      <BottomSheet open={!!diaModal} onClose={() => setDiaModal(null)} title={diaModal ?? ""}>
-        {(() => {
-          if (!diaModal) return null;
-          const fechaOriginal = porFecha.find((f) => sinAño(f.nombre) === diaModal)?.nombre ?? diaModal;
-          const movsDia = (periodo?.movimientos ?? []).filter((m) => esGasto(m) && (sinAño(m.fecha) === diaModal || m.fecha === fechaOriginal)).sort((a, b) => b.monto - a.monto);
-          const totalDia = movsDia.reduce((s, m) => s + m.monto, 0);
-          return (
-            <>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16 }}>{`${money(totalDia)} · ${t.expensesCount(movsDia.length)}`}</div>
-              {movsDia.map((m, i) => { const esCompra = m.tipo === "CompraUSD"; return (
-                <div key={i} className="row" style={{ padding: "11px 0" }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{m.descripcion || (esCompra ? t.buyUsd : "—")}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{esCompra ? `${m.cantidadUSD ? `U$D ${m.cantidadUSD}` : t.reserve}${m.medioPago ? ` · ${m.medioPago}` : ""}` : `${m.categoria} · ${m.medioPago}`}</div>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: esCompra ? "var(--yellow)" : "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(m.monto)}</div>
-                </div>
-              ); })}
-            </>
-          );
-        })()}
-      </BottomSheet>
+      {/* El detalle por día salía del gráfico "Por día", eliminado en v2.103.0 junto con este
+          modal (era su único acceso). El detalle diario vive ahora en Movimientos. */}
 
       {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
 

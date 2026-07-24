@@ -4,6 +4,32 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.103.0] — 2026-07-23
+
+### Tus recurrentes ahora se ven en el calendario
+El calendario del Inicio te muestra **cuándo se espera cada gasto recurrente** (Netflix, el
+gimnasio, lo que tengas marcado). Antes te enterabas solo cuando llegaba la notificación; ahora
+lo ves venir.
+
+Se distinguen de los recordatorios a propósito: el recordatorio es algo que vos agendaste y va
+con **punto lleno**; el recurrente es una **estimación** (según cuándo lo cargaste por última
+vez) y va con **punto hueco**. El color te dice qué tan cerca está: celeste si falta, amarillo
+si se aproxima, rojo si ya se pasó. Tocá el día y ves cuáles son, con su monto.
+
+Los que ya se pasaron aparecen en el día de hoy, para que no se te pierdan en una fecha vieja.
+Las notificaciones siguen funcionando igual que siempre.
+
+### Un día cerrado te dice cuánto gastaste
+Antes, al colapsar un día en Movimientos, veías cuántos movimientos hubo de cada tipo. Saber que
+hubo "3" no servía de mucho. Ahora ves **cuánto gastaste ese día**, que es el dato que
+importa. Si además hubo un ingreso o un move, aparece un puntito de color al lado. Si no hubo
+gastos, va un guioncito en vez de un $0.
+
+### Sacamos el gráfico "Por día" de Reportes
+Con el total de cada día ya visible en Movimientos, el gráfico repetía la misma información.
+
+---
+
 ## [2.102.0] — 2026-07-23
 
 ### Sacamos la vibración

@@ -4,6 +4,46 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.103.0] — 2026-07-23
+
+### Added — recurrentes projected onto the home calendar
+The reminder calendar now also shows **when each recurring movement is expected**, so an
+upcoming subscription is visible before the push arrives instead of only through it.
+
+- New `utils/recurrent-forecast.ts`: `proyectarRecurrentes()` resolves each active template's
+  reference date exactly the way the cron does (latest movement matching `recurrentKey`, or
+  `createdAt` in AR time when it was never loaded) and projects it to `ref + DUE_DAYS`. The
+  thresholds are imported from `recurrent-reminder`, not re-declared, so the calendar and the
+  notification can never disagree. 15 unit tests cover matching, homonyms, and the AR-time edge
+  where a UTC-midnight `createdAt` belongs to the previous day.
+- Marks are deliberately distinct: a projection is a **prediction**, not an agenda entry, so it
+  renders as a **hollow dot** while reminders stay solid. Both fit the existing cell — a day
+  with each shows two dots and does not change size.
+- Colour follows the cron's own cycle: teal while far, yellow from `PRE_DAYS` (approaching, when
+  the pre-notice fires), red past `DUE_DAYS`. When several land on one day, the most urgent wins.
+- **Overdue ones anchor to today** rather than their elapsed expected date, which would have
+  scrolled them out of view precisely when they matter. The day popover lists them with their
+  amount, without a delete button (they are managed from Movements).
+- Notification behaviour is untouched: this only mirrors a calculation that already existed.
+
+### Changed — a collapsed day shows what was spent, not how many movements
+The collapsed day header showed one count per type — five coloured digits where "3" told you
+nothing. It now shows the **day's spending as the hero number**, with anything outside that total
+(income, moves, remaining FX operations) reduced to a **coloured dot** beside it: "something else
+happened here" without adding text.
+
+- The total uses the same `Gasto + CompraUSD` rule as `utils/periodo`, so it matches Reports.
+  `CompraUSD` therefore gets no yellow dot — it is already inside the number.
+- A day with no spending shows `—` instead of `$0`, which reads as a value rather than an absence.
+
+### Removed — "By day" chart in Reports → Gastos
+Redundant now that the per-day total lives in Movements, and the same reasoning that retired
+"Top 5 descriptions" in v2.85.2. The day-detail `BottomSheet` goes with it (the chart was its
+only entry point), along with `porFecha`/`splitPorFecha`, the `diaModal` state, the now-unused
+`gastosPorFecha`/`esGasto` imports and the orphaned `byDay`/`buyUsd` strings in both locales.
+
+---
+
 ## [2.102.0] — 2026-07-23
 
 ### Removed — hardware vibration (haptics)
