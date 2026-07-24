@@ -127,7 +127,9 @@ export function ReminderCard({ open, onClose }: { open: boolean; onClose: () => 
         {recurrentesDelDia.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {recurrentesDelDia.map((p) => {
-              const c = p.estado === "vencido" ? "var(--red)" : p.estado === "cerca" ? "var(--yellow)" : "var(--teal)";
+              // Mismos colores que el tinte de la celda (naranja el lejano, no teal: ese es el
+              // del recordatorio puntual).
+              const c = p.estado === "vencido" ? "var(--red)" : p.estado === "cerca" ? "var(--yellow)" : "var(--orange)";
               return (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-alt)", borderRadius: 9, padding: "7px 11px" }}>
                   <span style={{ width: 5, height: 5, borderRadius: "50%", flexShrink: 0, boxSizing: "border-box", border: `1.4px solid ${c}` }} />

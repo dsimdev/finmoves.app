@@ -16,6 +16,7 @@ import { useData } from "../data-context";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
 import { agruparPorPeriodo, gastosPorCategoria } from "@/utils/periodo";
+import { agruparGastosPorDescripcion } from "@/utils/agrupar-gastos";
 import { obtenerPresupuesto, guardarPresupuesto } from "@/services/firebase/presupuestos";
 import { useMoney } from "@/hooks/useHideValues";
 import {
@@ -127,6 +128,9 @@ export default function ReportesPage() {
   const [editingBudget, setEditingBudget] = useState<Record<string, string>>({});
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [catModal, setCatModal] = useState<string | null>(null);
+  // Misma idea que catModal pero leyendo del período ANTERIOR: es el detalle de una fila de
+  // "vs período anterior", donde lo que se quiere ver es en qué se fue la plata ENTONCES.
+  const [catAnteriorModal, setCatAnteriorModal] = useState<string | null>(null);
   const [medioModal, setMedioModal] = useState<string | null>(null);
   const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo" | "inflacion" | "sueldoReal">("gasto");
   const [sueldoRealMode, setSueldoRealMode] = useState<"USD" | "IPC">("USD");
@@ -702,7 +706,7 @@ export default function ReportesPage() {
                 catsConPresu={catsConPresu} catsEditables={catsEditables}
                 esCatCompra={esCatCompra} presupuesto={presupuesto} presupuestoEfectivo={presupuestoEfectivo}
                 showBudget={showBudget} config={config} setShowBudget={setShowBudget} setEditingBudget={setEditingBudget}
-                setModalBudget={setModalBudget} setCatModal={setCatModal}
+                setModalBudget={setModalBudget} setCatModal={setCatModal} setCatAnteriorModal={setCatAnteriorModal}
                 setModalTop={setModalTop} setKpiInfo={setKpiInfo}
               />
             ) : <div />}
@@ -828,8 +832,10 @@ export default function ReportesPage() {
         {(() => {
           if (!catModal || !periodo) return null;
           const movsCat = periodo.movimientos
-            .filter((m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD") && m.categoria === catModal)
-            .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+            .filter((m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD") && m.categoria === catModal);
+          // Agrupado por descripción: en categorías repetitivas (peajes, café) el listado
+          // movimiento por movimiento era un scroll interminable de la misma línea.
+          const gruposCat = agruparGastosPorDescripcion(movsCat);
           const totalCat = movsCat.reduce((s, m) => s + m.monto, 0);
           const budgetCat = presupuestoEfectivo?.[catModal];
           return (
@@ -842,13 +848,46 @@ export default function ReportesPage() {
                   return <span style={{ color: bc, fontWeight: 600 }}>{t.budget}: {money(budgetCat)} · {usedPct}%</span>;
                 })()}
               </div>
-              {movsCat.map((m) => (
-                <div key={m.id} className="row" style={{ padding: "11px 0" }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || "—"}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{sinAño(m.fecha)} · {m.medioPago}</div>
+              {gruposCat.map((g) => (
+                <div key={g.descripcion} className="row" style={{ padding: "11px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.descripcion}</span>
+                    {/* El "×N" solo aparece si hubo más de uno: en los únicos sería ruido. */}
+                    {g.veces > 1 && <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{g.veces}×</span>}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(m.monto)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(g.total)}</div>
+                </div>
+              ))}
+              {movsCat.length === 0 && (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--muted)", fontSize: 13 }}>{t.noMovements}</div>
+              )}
+            </>
+          );
+        })()}
+      </BottomSheet>
+
+      {/* Modal: gastos de una categoría en el período ANTERIOR (fila de "vs período anterior").
+          Mismo agrupado que el del período actual, para poder compararlos de un vistazo. */}
+      <BottomSheet open={!!catAnteriorModal} onClose={() => setCatAnteriorModal(null)}
+        title={catAnteriorModal ? `${catAnteriorModal} · ${shortPer(anterior?.periodoId ?? "")}` : ""}>
+        {(() => {
+          if (!catAnteriorModal || !anterior) return null;
+          const movsCat = anterior.movimientos
+            .filter((m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD") && m.categoria === catAnteriorModal);
+          const grupos = agruparGastosPorDescripcion(movsCat);
+          const total = movsCat.reduce((s, m) => s + m.monto, 0);
+          return (
+            <>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16 }}>
+                {money(total)} · {t.expensesCount(movsCat.length)}
+              </div>
+              {grupos.map((g) => (
+                <div key={g.descripcion} className="row" style={{ padding: "11px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.descripcion}</span>
+                    {g.veces > 1 && <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{g.veces}×</span>}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(g.total)}</div>
                 </div>
               ))}
               {movsCat.length === 0 && (

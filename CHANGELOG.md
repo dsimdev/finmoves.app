@@ -16,15 +16,38 @@ upcoming subscription is visible before the push arrives instead of only through
   thresholds are imported from `recurrent-reminder`, not re-declared, so the calendar and the
   notification can never disagree. 15 unit tests cover matching, homonyms, and the AR-time edge
   where a UTC-midnight `createdAt` belongs to the previous day.
-- Marks are deliberately distinct: a projection is a **prediction**, not an agenda entry, so it
-  renders as a **hollow dot** while reminders stay solid. Both fit the existing cell — a day
-  with each shows two dots and does not change size.
-- Colour follows the cron's own cycle: teal while far, yellow from `PRE_DAYS` (approaching, when
-  the pre-notice fires), red past `DUE_DAYS`. When several land on one day, the most urgent wins.
+- Colour follows the cron's own cycle: **orange** while far, yellow from `PRE_DAYS` (approaching,
+  when the pre-notice fires), red past `DUE_DAYS`. When several land on one day, the most urgent
+  wins. Orange rather than teal because teal is already the one-off reminder's colour.
 - **Overdue ones anchor to today** rather than their elapsed expected date, which would have
   scrolled them out of view precisely when they matter. The day popover lists them with their
   amount, without a delete button (they are managed from Movements).
 - Notification behaviour is untouched: this only mirrors a calculation that already existed.
+
+### Changed — calendar days are tinted, not dotted
+Every day with something now **tints its whole cell** (background, border and number) instead of
+carrying a 4px dot underneath. The dot had to be hunted for; the tint reads at a glance. Reminders
+keep their colours (violet repeating, teal one-off) and recurrentes use the urgency scale above.
+When a day holds both, the reminder wins the tint — it is an agenda entry, not an estimate — and
+the recurrente falls back to a dot.
+
+### Fixed — day popover survived a month change
+Navigating months with a day open left the popover floating over a month it did not belong to:
+the outside-click handler ignores everything inside the calendar, and the arrows live there. The
+arrows now close the open day, stale `celdaRefs` are dropped on navigation, and the positioning
+effect clears `pos` when the anchor cell is not on screen instead of keeping the previous spot.
+
+### Changed — category detail groups identical expenses
+Tapping a category in Reports → Gastos listed one row per movement, which in repetitive
+categories (tolls, coffee) was an endless scroll of the same description. Rows are now **grouped
+by description** with their total and a `×N` count, sorted by total. Date and payment method are
+dropped on purpose — Movements' in-place filter covers that. New `utils/agrupar-gastos.ts`,
+6 unit tests (case/whitespace folding, first-seen label, blank descriptions).
+
+### Added — "vs previous period" rows open their detail
+Each category row in the comparison is now tappable and opens what was spent on it **during the
+previous period**, grouped the same way, so both sides of the comparison read alike. Rows with
+nothing on the previous side stay inert rather than opening an empty sheet.
 
 ### Changed — a collapsed day shows what was spent, not how many movements
 The collapsed day header showed one count per type — five coloured digits where "3" told you

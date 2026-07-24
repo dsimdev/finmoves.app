@@ -11,13 +11,29 @@ El calendario del Inicio te muestra **cuándo se espera cada gasto recurrente** 
 gimnasio, lo que tengas marcado). Antes te enterabas solo cuando llegaba la notificación; ahora
 lo ves venir.
 
-Se distinguen de los recordatorios a propósito: el recordatorio es algo que vos agendaste y va
-con **punto lleno**; el recurrente es una **estimación** (según cuándo lo cargaste por última
-vez) y va con **punto hueco**. El color te dice qué tan cerca está: celeste si falta, amarillo
-si se aproxima, rojo si ya se pasó. Tocá el día y ves cuáles son, con su monto.
+El color te dice qué tan cerca está: naranja si falta, amarillo si se aproxima, rojo si ya se
+pasó. Tocá el día y ves cuáles son, con su monto.
 
 Los que ya se pasaron aparecen en el día de hoy, para que no se te pierdan en una fecha vieja.
 Las notificaciones siguen funcionando igual que siempre.
+
+### El calendario ahora se pinta
+Antes cada día con algo tenía un puntito chiquito abajo que había que buscar. Ahora **el día
+entero se pinta** de su color, así ves el mes de un vistazo. Los recordatorios mantienen sus
+colores (violeta los que se repiten, celeste los puntuales) y los recurrentes usan los de arriba.
+
+También arreglamos que al cambiar de mes con un día abierto, el detalle quedaba flotando sobre
+un mes que no era el suyo.
+
+### Al tocar una categoría, se agrupan los gastos iguales
+En Reportes → Gastos, tocar una categoría te mostraba un renglón por cada movimiento: en cosas
+como peajes era un scroll interminable de la misma línea repetida. Ahora **se agrupan por
+descripción**, con el total de cada una y cuántas veces fue. Se pierde la fecha y el medio de
+pago, pero eso lo tenés en el filtro de Movimientos.
+
+### "vs período anterior" ahora se puede tocar
+Cada categoría de la comparativa abre **en qué se te fue la plata el período anterior**, agrupado
+igual, para poder comparar los dos lados de la misma manera.
 
 ### Un día cerrado te dice cuánto gastaste
 Antes, al colapsar un día en Movimientos, veías cuántos movimientos hubo de cada tipo. Saber que

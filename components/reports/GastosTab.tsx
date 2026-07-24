@@ -39,6 +39,8 @@ interface Props {
   setEditingBudget: Dispatch<SetStateAction<Record<string, string>>>;
   setModalBudget: (v: boolean) => void;
   setCatModal: (v: string | null) => void;
+  /** Abre el detalle de una categoría en el período anterior (desde la comparativa). */
+  setCatAnteriorModal: (v: string | null) => void;
   setModalTop: (v: "gastos" | "descs" | "movcat" | null) => void;
   setKpiInfo: (v: KpiInfo) => void;
 }
@@ -49,7 +51,7 @@ export function GastosTab({
   periodo, periodos, activos, anterior, esPeriodoVigente, ritmo, tendenciaGasto, avgHistorico,
   promPorMov, comp, descs, descsCompra, catsConPresu, catsEditables,
   esCatCompra, presupuesto, presupuestoEfectivo, showBudget, config,
-  setShowBudget, setEditingBudget, setModalBudget, setCatModal, setModalTop, setKpiInfo,
+  setShowBudget, setEditingBudget, setModalBudget, setCatModal, setCatAnteriorModal, setModalTop, setKpiInfo,
 }: Props) {
   const t = useT();
   const { oculto, toggle, m: money } = useMoney();
@@ -139,8 +141,13 @@ export function GastosTab({
         <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{t.vsPrevPeriod}</div>
           <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12 }}>{shortPer(anterior.periodoId)}</div>
+          {/* Tocar una fila abre lo que se gastó en esa categoría el período ANTERIOR (que es
+              el término de comparación). Las que no tuvieron nada entonces no son clickeables:
+              abrirían un modal vacío. */}
           {comp.filter((c) => c.actual > 0 || c.anterior > 0).slice(0, 8).map((c) => (
-            <div key={c.categoria} className="row" style={{ padding: "8px 0" }}>
+            <div key={c.categoria} className="row" role={c.anterior > 0 ? "button" : undefined}
+              onClick={c.anterior > 0 ? () => setCatAnteriorModal(c.categoria) : undefined}
+              style={{ padding: "8px 0", cursor: c.anterior > 0 ? "pointer" : "default" }}>
               <span style={{ fontSize: 13 }}>{c.categoria}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {(() => { const diff = c.actual - c.anterior; return (
