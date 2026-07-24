@@ -17,6 +17,11 @@ pasó. Tocá el día y ves cuáles son, con su monto.
 Los que ya se pasaron aparecen en el día de hoy, para que no se te pierdan en una fecha vieja.
 Las notificaciones siguen funcionando igual que siempre.
 
+### El día de hoy se marca con un punto verde
+Antes el día actual se distinguía por un fondo grisecito que, si ese día tenía algo agendado,
+quedaba tapado por el color. Ahora lleva un **punto verde** abajo del número que no lo tapa nada,
+así siempre sabés dónde estás parado.
+
 ### El calendario ahora se pinta
 Antes cada día con algo tenía un puntito chiquito abajo que había que buscar. Ahora **el día
 entero se pinta** de su color, así ves el mes de un vistazo. Los recordatorios mantienen sus

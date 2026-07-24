@@ -24,6 +24,12 @@ upcoming subscription is visible before the push arrives instead of only through
   amount, without a delete button (they are managed from Movements).
 - Notification behaviour is untouched: this only mirrors a calculation that already existed.
 
+### Changed — today is marked with a green dot
+Today used to be a grey cell background plus a faint border — which the tint painted over, so the
+current day stopped being recognisable exactly when it had a reminder or a recurrente on it. It
+now carries a **green dot** under the number, independent of the tint, and its number stays at
+full weight. The grey background is gone (it was the part that competed with the tint).
+
 ### Changed — calendar days are tinted, not dotted
 Every day with something now **tints its whole cell** (background, border and number) instead of
 carrying a 4px dot underneath. The dot had to be hunted for; the tint reads at a glance. Reminders
