@@ -4,6 +4,18 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.103.1] — 2026-07-23
+
+### El calendario vuelve a marcar con puntitos
+En la versión anterior el día con algo se pintaba entero (fondo y recuadro incluidos) y quedaba
+demasiado cargado: se comía la grilla. Ahora el día marcado se ve por **el número en color y un
+punto abajo**, y el fondo queda solo para el día que tocás.
+
+Cada cosa tiene su punto: verde para hoy, el del recordatorio y el del recurrente. Un día que
+tenga las tres muestra los tres, sin agrandarse.
+
+---
+
 ## [2.103.0] — 2026-07-23
 
 ### Tus recurrentes ahora se ven en el calendario
@@ -22,9 +34,9 @@ Antes el día actual se distinguía por un fondo grisecito que, si ese día ten�
 quedaba tapado por el color. Ahora lleva un **punto verde** abajo del número que no lo tapa nada,
 así siempre sabés dónde estás parado.
 
-### El calendario ahora se pinta
-Antes cada día con algo tenía un puntito chiquito abajo que había que buscar. Ahora **el día
-entero se pinta** de su color, así ves el mes de un vistazo. Los recordatorios mantienen sus
+### El día marcado ahora se ve mejor
+Antes el día con algo solo tenía un puntito gris que había que buscar. Ahora **el número va en
+color** además del punto, así se distingue sin tener que fijarse. Los recordatorios mantienen sus
 colores (violeta los que se repiten, celeste los puntuales) y los recurrentes usan los de arriba.
 
 También arreglamos que al cambiar de mes con un día abierto, el detalle quedaba flotando sobre

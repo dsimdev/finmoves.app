@@ -11,11 +11,12 @@ import type { RecurrenteProyectado } from "@/utils/recurrent-forecast";
 // navega entre meses y se toca un día para cargar ahí (reemplaza al input de fecha, que
 // ocupaba una fila y obligaba a escribir la fecha a mano).
 //
-// Todo día con algo se TIÑE de su color (fondo + borde + número). Antes era un punto de 4px
-// bajo el número y no alcanzaba: había que buscarlo. El tinte se lee de un vistazo.
+// Un día con algo se marca con el NÚMERO en color + un punto abajo. Nada de rellenar la celda:
+// se probó con fondo y borde teñidos y pintaba el día entero, comiéndose la grilla. El fondo
+// queda solo para el día seleccionado, que es un estado de interacción.
 //
-// HOY se marca con un punto VERDE, no con el tinte: así se reconoce aunque el día además
-// tenga un recordatorio o un recurrente pintándolo de otro color.
+// HOY lleva un punto VERDE propio, independiente del resto: así se reconoce aunque ese día
+// además tenga un recordatorio o un recurrente.
 //
 // Los colores:
 //   · recordatorio repetible → violeta · recordatorio puntual → teal
@@ -209,8 +210,8 @@ export function ReminderCalendar({ recordatorios, recurrentes = [], seleccionado
           const sel = fecha === seleccionado;
           const color = marca?.repite ? "var(--purple)" : "var(--teal)";
           const colorRec = recs ? colorRecurrente(recs) : null;
-          // Un solo color de tinte por celda. Si el día tiene recordatorio Y recurrente, manda
-          // el recordatorio: es algo que el usuario agendó, no una estimación.
+          // Color del NÚMERO. Si el día tiene recordatorio Y recurrente manda el recordatorio
+          // (es algo agendado, no una estimación); el recurrente igual muestra su punto.
           const tinte = marca ? color : colorRec;
           return (
             <button
@@ -223,38 +224,34 @@ export function ReminderCalendar({ recordatorios, recurrentes = [], seleccionado
               style={{
                 aspectRatio: "1", display: "flex", flexDirection: "column", cursor: "pointer",
                 alignItems: "center", justifyContent: "center", gap: 2, borderRadius: 7, padding: 0,
-                // TODA celda con algo se TIÑE de su color: un punto de 4px es demasiado sutil
-                // para leer el mes de un vistazo. El tinte pinta el día entero y el punto queda
-                // como refuerzo, no como única señal.
-                // Hoy ya no pinta el fondo: eso competía con el tinte y lo perdía cuando el día
-                // tenía algo. Lo identifica el punto verde de abajo, que no depende del tinte.
-                background: sel ? "var(--accent)"
-                  : tinte ? `color-mix(in srgb, ${tinte} 18%, transparent)`
-                  : "transparent",
-                border: `1px solid ${sel ? "var(--accent)"
-                  : tinte ? `color-mix(in srgb, ${tinte} 45%, transparent)`
-                  : "transparent"}`,
+                // Fondo y borde son SOLO del día seleccionado: es un estado de interacción. Las
+                // marcas (recordatorio, recurrente, hoy) NO pintan la celda — rellenarla se
+                // comía la grilla. Se ven en el color del número y en el punto de abajo.
+                background: sel ? "var(--accent)" : "transparent",
+                border: `1px solid ${sel ? "var(--accent)" : "transparent"}`,
                 transition: "background .12s",
               }}
             >
               <span style={{
                 fontSize: 10, lineHeight: 1, fontVariantNumeric: "tabular-nums",
-                // Sobre celda teñida el número toma el mismo color: día y marca se leen como
-                // una sola cosa en vez de un número neutro sobre un fondo de color.
+                // El número toma el color de lo que hay ese día: junto con el punto, es toda la
+                // señal (la celda no se pinta).
                 color: sel ? "#fff" : tinte ? tinte : esHoy ? "var(--text)" : "var(--muted)",
                 fontWeight: sel || tinte || esHoy ? 700 : 400, opacity: sel || tinte || esHoy ? 1 : 0.55,
               }}>{dia}</span>
-              {/* Fila de puntos bajo el número:
-                  · HOY siempre lleva el suyo, verde. Antes se marcaba solo con un fondo gris y
-                    borde tenue, que un día con tinte pisaba: hoy dejaba de reconocerse justo
-                    cuando la celda tenía algo. El punto es independiente del tinte.
-                  · El del recurrente aparece cuando el día tiene AMBAS cosas (el tinte es del
-                    recordatorio y el punto avisa que además cae un recurrente). */}
+              {/* Fila de puntos bajo el número — la señal de qué hay ese día:
+                  · verde = hoy (siempre, no depende de lo demás)
+                  · el del recordatorio (violeta repetible / teal puntual)
+                  · el del recurrente, en su color de urgencia
+                  Un día puede juntar los tres sin que la celda cambie de tamaño. */}
               <span style={{ height: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 2 }}>
                 {esHoy && (
                   <span style={{ width: 4, height: 4, borderRadius: "50%", background: sel ? "#fff" : "var(--green)" }} />
                 )}
-                {marca && colorRec && (
+                {marca && (
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: sel ? "#fff" : color }} />
+                )}
+                {colorRec && (
                   <span style={{ width: 4, height: 4, borderRadius: "50%", background: sel ? "#fff" : colorRec }} />
                 )}
               </span>
