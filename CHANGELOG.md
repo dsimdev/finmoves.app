@@ -4,6 +4,23 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.103.1] — 2026-07-23
+
+### Changed — calendar marks are dots again, not a filled cell
+v2.103.0 tinted the whole cell (background + border + number) for any day with something on it.
+In practice that painted the day solid and swallowed the grid — too much ink for the signal.
+
+Cells are no longer filled. A marked day now shows its **number in colour plus a dot underneath**,
+and background/border are reserved for the *selected* day, which is an interaction state rather
+than a mark. Each source gets its own dot — green for today, the reminder's (violet repeating /
+teal one-off), and the recurrente's urgency colour — so a day holding all three shows three dots
+without the cell changing size.
+
+The recurrente's dot is no longer conditional on a reminder being present: with the tint gone, the
+dot is the signal rather than a supplement to it.
+
+---
+
 ## [2.103.0] — 2026-07-23
 
 ### Added — recurrentes projected onto the home calendar
@@ -25,17 +42,18 @@ upcoming subscription is visible before the push arrives instead of only through
 - Notification behaviour is untouched: this only mirrors a calculation that already existed.
 
 ### Changed — today is marked with a green dot
-Today used to be a grey cell background plus a faint border — which the tint painted over, so the
-current day stopped being recognisable exactly when it had a reminder or a recurrente on it. It
-now carries a **green dot** under the number, independent of the tint, and its number stays at
-full weight. The grey background is gone (it was the part that competed with the tint).
+Today used to be a grey cell background plus a faint border, which any other mark painted over —
+so the current day stopped being recognisable exactly when it had a reminder or a recurrente on
+it. It now carries a **green dot** under the number, independent of everything else, and its
+number stays at full weight.
 
-### Changed — calendar days are tinted, not dotted
-Every day with something now **tints its whole cell** (background, border and number) instead of
-carrying a 4px dot underneath. The dot had to be hunted for; the tint reads at a glance. Reminders
-keep their colours (violet repeating, teal one-off) and recurrentes use the urgency scale above.
-When a day holds both, the reminder wins the tint — it is an agenda entry, not an estimate — and
-the recurrente falls back to a dot.
+### Changed — a marked day colours its number
+A day with something now shows its **number in the corresponding colour** rather than a neutral
+one, which makes the mark readable without filling the cell. Reminders keep their colours (violet
+repeating, teal one-off) and recurrentes use the urgency scale above; when a day holds both, the
+number takes the reminder's colour — it is an agenda entry, not an estimate.
+
+*(v2.103.0 shipped this as a full-cell tint, walked back in v2.103.1 — see above.)*
 
 ### Fixed — day popover survived a month change
 Navigating months with a day open left the popover floating over a month it did not belong to:
