@@ -8,7 +8,7 @@ import { db, auth } from "@/services/firebase/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getIdToken } from "firebase/auth";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { BottomSheet } from "@/components/ui/BottomSheet";
+import { CenterCard } from "@/components/ui/CenterCard";
 import { SubHeader } from "../_shared";
 
 type SyncLog = { status: "ok" | "error"; type: "manual" | "auto"; at: Date; message: string };
@@ -156,7 +156,7 @@ export default function DataSettings() {
         </button>
       )}
 
-      <BottomSheet open={showInviteModal} onClose={() => setShowInviteModal(false)} title={t.inviteCodeModalTitle}>
+      <CenterCard open={showInviteModal} onClose={() => setShowInviteModal(false)} title={t.inviteCodeModalTitle}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-dim)", border: "1px solid var(--accent)44", borderRadius: 14, padding: "16px 18px" }}>
           <span style={{ flex: 1, fontSize: 26, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 4, color: "var(--accent)", textAlign: "center" }}>{inviteCode}</span>
           <button onClick={copyInviteCode} aria-label={t.copy} style={{ background: codeCopied ? "var(--green-dim)" : "var(--surface)", border: `1px solid ${codeCopied ? "var(--green)" : "var(--border)"}`, borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: codeCopied ? "var(--green)" : "var(--muted)", flexShrink: 0 }}>
@@ -165,9 +165,9 @@ export default function DataSettings() {
               : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>}
           </button>
         </div>
-      </BottomSheet>
+      </CenterCard>
 
-      <BottomSheet open={showSyncLog} onClose={() => setShowSyncLog(false)} title={t.syncHistory}>
+      <CenterCard open={showSyncLog} onClose={() => setShowSyncLog(false)} title={t.syncHistory} maxWidth={420}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {syncLogs.length === 0 ? <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: 24 }}>{t.noRecords}</div>
             : syncLogs.map((log, i) => (
@@ -183,7 +183,7 @@ export default function DataSettings() {
               </div>
             ))}
         </div>
-      </BottomSheet>
+      </CenterCard>
 
       {showExportConfirm && (
         <ConfirmModal title="Backup" confirmLabel={t.download} cancelLabel={t.cancel} confirmColor="var(--blue)"

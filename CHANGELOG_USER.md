@@ -31,6 +31,18 @@ como peajes era un scroll interminable de la misma línea repetida. Ahora **se a
 descripción**, con el total de cada una y cuántas veces fue. Se pierde la fecha y el medio de
 pago, pero eso lo tenés en el filtro de Movimientos.
 
+### Los modales cortos ahora son cards flotantes
+Los que tenían poca info subían desde abajo ocupando toda la pantalla, que es mucho gesto para
+mostrar dos botones. Ahora **aparecen como una card en el centro**, más liviano y más cerca de
+donde estabas mirando.
+
+Cambiaron: ir a un período, historial de sueldo, directo a ahorros, detalle por medio de pago,
+el rango y el detalle del día en Análisis, el código de invitación, el historial de sync y el
+detalle de una categoría (el del período actual y el del anterior).
+
+Los que siguen subiendo desde abajo son los que tienen listas largas de verdad: el top 20 de
+gastos, el presupuesto y el changelog.
+
 ### "vs período anterior" ahora se puede tocar
 Cada categoría de la comparativa abre **en qué se te fue la plata el período anterior**, agrupado
 igual, para poder comparar los dos lados de la misma manera.

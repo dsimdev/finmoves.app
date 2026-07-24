@@ -44,6 +44,21 @@ by description** with their total and a `×N` count, sorted by total. Date and p
 dropped on purpose — Movements' in-place filter covers that. New `utils/agrupar-gastos.ts`,
 6 unit tests (case/whitespace folding, first-seen label, blank descriptions).
 
+### Changed — short modals are floating cards, not bottom sheets
+A bottom sheet is a big gesture for a two-button confirmation. Modals whose content is short and
+bounded now open as centred `CenterCard`s — they appear in place with a pop instead of sliding a
+full-width panel up from the bottom.
+
+Converted: period navigation (a confirm), salary history, direct-to-savings, payment-method
+breakdown, `/analisis` range picker and day detail, the invite code, the sync log, and both
+category details — the current period's and its previous-period twin. Grouping by description
+(above) is what made those two short enough to qualify; `CenterCard` caps at `88vh` with its own
+scroll, so a category with many distinct descriptions still fits.
+
+`BottomSheet` stays only where the list is deliberately long: "top 20 expenses" / "all
+categories", the budget editor (a form with one row per category) and the changelog (five full
+releases). Those are what a draggable, near-full-height sheet is for.
+
 ### Added — "vs previous period" rows open their detail
 Each category row in the comparison is now tappable and opens what was spent on it **during the
 previous period**, grouped the same way, so both sides of the comparison read alike. Rows with

@@ -8,7 +8,7 @@ import { agruparPorPeriodo } from "@/utils/periodo";
 import { parsePeriodoId } from "@/utils/reportes";
 import { MultiLineChart, Stat } from "@/components/reports/charts";
 import { abbr } from "@/components/reports/format";
-import { BottomSheet } from "@/components/ui/BottomSheet";
+import { CenterCard } from "@/components/ui/CenterCard";
 import { SwipeTabs } from "@/components/ui/SwipeTabs";
 import { useMoney } from "@/hooks/useHideValues";
 import { useT } from "@/hooks/useTranslation";
@@ -590,7 +590,7 @@ export default function AnalisisPage() {
       )}
 
       {/* Rango de fechas */}
-      <BottomSheet open={rangoOpen} onClose={() => setRangoOpen(false)} title={t.analyzeRange}>
+      <CenterCard open={rangoOpen} onClose={() => setRangoOpen(false)} title={t.analyzeRange}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <div className="label">{t.analyzeFrom}</div>
@@ -610,10 +610,10 @@ export default function AnalisisPage() {
             }} style={{ flex: 1, background: "var(--accent)", color: "#fff", border: "none", borderRadius: 999, padding: "9px 0", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{t.analyzeApply}</button>
           </div>
         </div>
-      </BottomSheet>
+      </CenterCard>
 
       {/* Detalle de observaciones del día */}
-      <BottomSheet open={!!diaSel} onClose={() => setDiaSel(null)} title={diaSel ? `${diaSel.label} · ${diaLabel(diaSel.fecha)}` : ""}>
+      <CenterCard open={!!diaSel} onClose={() => setDiaSel(null)} title={diaSel ? `${diaSel.label} · ${diaLabel(diaSel.fecha)}` : ""}>
         {diaSel && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {diaSel.obs.map((o, i) => (
@@ -630,7 +630,7 @@ export default function AnalisisPage() {
             </div>
           </div>
         )}
-      </BottomSheet>
+      </CenterCard>
     </div>
   );
 }
