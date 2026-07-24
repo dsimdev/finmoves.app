@@ -4,6 +4,34 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.102.0] — 2026-07-23
+
+### Sacamos la vibración
+La vibración nunca funcionó en iPhone: Apple no la permite en apps web, y no hay forma de
+esquivarlo. Tener un botón de "Vibración" en Ajustes prometía algo que en muchos teléfonos no
+pasaba, así que lo sacamos junto con la opción.
+
+### A cambio, el efecto visual pega más fuerte
+Ahora que es la única respuesta al tocar, la reforzamos: al guardar, el botón se hunde y
+**rebota**; al borrar hace una sacudida más marcada; al navegar o seleccionar, un toque corto.
+Se siente la diferencia entre confirmar y borrar sin necesidad de vibración.
+
+### Paleta nueva: un color por ícono
+Los colores de categorías pasaron a estar **ordenados como un arcoíris** (rojo → amarillo →
+verde → celeste → azul → violeta → rosa), así encontrás el que buscás de un vistazo en vez de
+recorrer una lista desordenada. Ahora hay 18 colores y 18 íconos: uno para cada, para que cada
+categoría tenga identidad propia.
+
+Sumamos tonos que faltaban (verde profundo, petróleo, aguamarina, oliva oscuro, azul grisáceo)
+y sacamos algunos que se confundían entre sí. Si alguna categoría tuya usaba uno de esos, toma
+automáticamente el color que le corresponde por su nombre — no tenés que hacer nada.
+
+### Tres íconos nuevos
+**Gimnasio**, **regalo** y **café**. Además se asignan solos: si tu categoría se llama "Gym",
+"Regalos" o "Bar", ya les toca el ícono correcto sin que lo elijas.
+
+---
+
 ## [2.101.1] — 2026-07-22
 
 ### El deslizar ahora habla tu idioma de colores

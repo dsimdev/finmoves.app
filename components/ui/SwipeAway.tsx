@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { haptic } from "@/lib/haptics";
 
 // Deslizar para eliminar, en un solo gesto: la fila acompaña al dedo sobre un fondo rojo con
 // el tacho, y al soltar pasado el umbral se borra. Sin botones intermedios — el mismo patrón
@@ -70,7 +69,8 @@ export function SwipeAway({ onDelete, deleteLabel, radius, children, confirma }:
       onDelete();
       return;
     }
-    haptic("delete"); // borrado directo (sin confirmación): feedback al soltar
+    // Sin pulso de borrado acá: la fila ya tiene su propia animación de salida y un shake
+    // encima competiría con ella.
     // Sale de la pantalla y recién ahí se avisa: el ítem no "parpadea" antes de irse.
     setSaliendo(true);
     setDx(-window.innerWidth);

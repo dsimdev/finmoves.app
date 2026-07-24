@@ -4,6 +4,59 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.102.0] — 2026-07-23
+
+### Removed — hardware vibration (haptics)
+`navigator.vibrate` never fired on iOS: Apple never shipped the Vibration API and closed the
+only workaround (the ringer switch) in iOS 26.5. Shipping a "Vibration" toggle in Settings
+promised something that silently did nothing on half the devices, so the hardware side is gone.
+There is no web alternative — this is settled, not pending.
+
+- `lib/haptics.ts` → **`lib/feedback.ts`**, exporting `feedback(tipo, el)`. The vibration
+  patterns, the `setHapticsEnabled` mirror and the `try/catch` around `navigator.vibrate` are
+  all removed.
+- The `haptics` pref is dropped from `useAppPrefs` (interface, `set` union and defaults), along
+  with its toggle in Settings → Preferences and the `hapticsTitle`/`hapticsSub` strings in both
+  locales.
+
+### Changed — the visual pulse carries the feedback now
+Being the only feedback left, the pulse hits harder: `fbPunch` compresses to .88 and **overshoots
+to 1.04** before settling (it used to bottom out at .94 with no bounce), which is what makes it
+read as a hit rather than a fade.
+
+- Three distinct animations replace the previous two: `fb-punch` (weighty confirmations),
+  `fb-tap` (light touches — navigation, selection) and `fb-shake` (delete, now a 3-step
+  sway). All keep their `prefers-reduced-motion` no-op.
+- `ConfirmModal` now fires the pulse from its own confirm button, picking `delete` for red
+  (destructive) actions and `success` otherwise — so every confirm inherits it instead of each
+  caller wiring its own.
+- Fixed call sites that passed no element and were therefore silent no-ops once the vibration
+  was gone: saving in `MovementModal` (now targets the submit button), and `useLongPress` (which
+  captures `currentTarget` at pointerdown, since the event is recycled by the time the 450 ms
+  timer fires).
+- `SwipeAway` drops its pulse: the row already animates itself off-screen and a shake competed.
+
+### Changed — category palette reworked: 18 colors, ordered by hue
+The palette is now **one color per icon** (18 and 18) and is declared **in hue order** (red →
+yellow → green → cyan → blue → violet → pink), so the picker reads as a color wheel instead of
+a bag of swatches.
+
+- Added, on a **luminosity axis**: `olivaProfundo`, `mentaProfunda`, `turquesaClaro`,
+  `petroleo`, `grafito`. With six semantic tones off-limits, nearly every new *hue* landed under
+  the 60-distance threshold — so the extra variety comes from light/deep variants of existing
+  families, where brightness provides the separation.
+- Removed to hit 18 without crowding: `lavanda`, `cieloProfundo`, `rosaProfundo`, `ciruela`,
+  `salmon`. Categories saved with a removed color fall back to the name-derived default —
+  `visualDeCategoria` already validates against `COLORES_LISTA`.
+- Closest pair is now **66.8** (dorado/lima), against the > 60 threshold. Full suite: 297 tests.
+
+### Added — three category icons
+`gimnasio` (dumbbell), `regalo` (gift box) and `cafe` (cup), bringing the selectable set to 18.
+Name-based rules updated: gym/deporte/club → `gimnasio`, regalo/gift/cumple → `regalo`, and
+cafe/bar/coffee → `cafe` (`bar` moved off `ocio`, which matched it first before).
+
+---
+
 ## [2.101.1] — 2026-07-22
 
 ### Changed — swipe highlight uses the category color

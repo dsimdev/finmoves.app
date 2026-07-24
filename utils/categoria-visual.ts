@@ -6,36 +6,56 @@
 // gasto suyo mostraría ícono verde junto a un monto rojo y se leería mal. Por eso la paleta
 // de categorías es un set aparte, elegido para no confundirse con ninguno de esos seis.
 
+// Declarados EN ORDEN DE TONO (rojo → amarillo → verde → cian → azul → violeta → rosa), que es
+// el orden en que se pintan en el selector. Ver COLORES_CATEGORIA.
 export type CategoriaColor =
-  | "rosa" | "magenta" | "naranja" | "oliva" | "lima"
-  | "menta" | "cielo" | "indigo" | "arena"
-  | "coral" | "turquesa" | "lavanda" | "dorado" | "violeta"
+  | "coral" | "naranja" | "arena" | "dorado"
+  | "oliva" | "olivaProfundo" | "lima"
+  | "menta" | "mentaProfunda" | "turquesaClaro" | "turquesa"
+  | "petroleo" | "cielo" | "grafito"
+  | "indigo" | "violeta" | "magenta" | "rosa"
   | "contraste";
 
 /**
- * Paleta de categorías: tonos repartidos por el círculo cromático, sin dos vecinos que se
- * confundan de un vistazo (había tres naranjas y dos violetas casi iguales) y sin grises, que
- * no daban identidad y competían con el texto apagado. Ampliada con cinco huecos que faltaban
- * (coral, turquesa, lavanda, dorado, violeta profundo) para dar más juego sin repetir.
+ * Paleta de categorías: un tono por ícono (18 y 18), ordenados por MATIZ para que el selector
+ * se recorra como un círculo cromático — rojo → amarillo → verde → cian → azul → violeta →
+ * rosa — y no como una bolsa de colores sueltos. Sin dos vecinos que se confundan de un
+ * vistazo (había tres naranjas y dos violetas casi iguales) y sin grises neutros, que no daban
+ * identidad y competían con el texto apagado.
+ *
+ * EJE DE LUMINOSIDAD: el círculo de matices ya está saturado — con seis tonos semánticos
+ * vedados, casi todo matiz nuevo cae a menos de 60 de distancia de alguno existente. Por eso
+ * la variedad extra no sale de matices nuevos sino de versiones CLARAS/PROFUNDAS de familias
+ * que ya están (oliva/olivaProfundo, menta/mentaProfunda, turquesa/turquesaClaro): ahí la
+ * distancia la da el brillo, no el tono.
+ *
+ * Para agregar un color: sumarlo al type Y a este record EN SU POSICIÓN DE TONO, y correr el
+ * test de distancia (tests/categoria-visual.test.ts) — el margen es fino (el par más cercano
+ * está en 66.8, con umbral 60) y es fácil violarlo sin darse cuenta.
  *
  * `contraste` es especial: no es un hex fijo sino `var(--text)`, o sea negro en tema claro y
  * blanco en oscuro. Guardar "negro" a secas dejaba el ícono invisible al cambiar de tema.
+ * Va último a propósito: no tiene matiz, así que no entra en el orden del círculo.
  */
 export const COLORES_CATEGORIA: Record<CategoriaColor, string> = {
-  rosa: "#ff6e9c",       // rosa fuerte
-  magenta: "#d94ecc",    // magenta/fucsia
-  naranja: "#ff8a3d",    // naranja cálido
-  oliva: "#9aa83a",      // verde oliva apagado
-  lima: "#c6e64a",       // lima brillante
-  menta: "#5fd3a8",      // verde menta
-  cielo: "#5bb8e8",      // celeste
-  indigo: "#7c6bf0",     // índigo
-  arena: "#d9b878",      // arena / mostaza suave
-  coral: "#e8492e",      // rojo-teja intenso (más cálido y oscuro que el rosa)
-  turquesa: "#20d3c2",   // cian/turquesa saturado
-  lavanda: "#b39cff",    // lavanda claro
-  dorado: "#f5d020",     // amarillo dorado brillante
-  violeta: "#7326b8",    // violeta profundo
+  coral: "#e8492e",          //   9° rojo-teja intenso
+  naranja: "#ff8a3d",        //  24° naranja cálido
+  arena: "#d9b878",          //  40° arena / mostaza suave
+  dorado: "#f5d020",         //  50° amarillo dorado brillante
+  oliva: "#9aa83a",          //  68° verde oliva apagado
+  olivaProfundo: "#5c6b1f",  //  72° oliva oscuro
+  lima: "#c6e64a",           //  72° lima brillante
+  menta: "#5fd3a8",          // 158° verde menta
+  mentaProfunda: "#1f8f6b",  // 161° verde profundo
+  turquesaClaro: "#9ceee5",  // 173° aguamarina claro
+  turquesa: "#20d3c2",       // 174° turquesa saturado
+  petroleo: "#0f4450",       // 191° azul petróleo muy oscuro
+  cielo: "#5bb8e8",          // 200° celeste
+  grafito: "#4a5a7a",        // 220° azul grisáceo (identidad sin ser gris neutro)
+  indigo: "#7c6bf0",         // 248° índigo
+  violeta: "#7326b8",        // 272° violeta profundo
+  magenta: "#d94ecc",        // 306° magenta/fucsia
+  rosa: "#ff6e9c",           // 341° rosa fuerte
   contraste: "var(--text)",
 };
 
@@ -43,14 +63,17 @@ export const COLORES_LISTA = Object.keys(COLORES_CATEGORIA) as CategoriaColor[];
 
 /** Íconos disponibles. El id se guarda en el doc; el trazo lo dibuja CategoriaIcono. */
 export type CategoriaIconoId =
-  | "comida" | "transporte" | "hogar" | "salud" | "farmacia" | "ocio"
-  | "compras" | "servicios" | "educacion" | "mascotas" | "viajes"
-  | "tecnologia" | "billete" | "chancho" | "divisa" | "move" | "otros";
+  | "comida" | "cafe" | "transporte" | "hogar" | "salud" | "farmacia" | "ocio"
+  | "gimnasio" | "compras" | "regalo" | "servicios" | "educacion" | "mascotas"
+  | "viajes" | "tecnologia" | "billete" | "chancho" | "divisa" | "move" | "otros";
 
+// Los ELEGIBLES desde el selector: 18, uno por color de la paleta (COLORES_CATEGORIA), para
+// que se pueda dar identidad única a cada categoría. `divisa` y `move` quedan afuera a
+// propósito: son operaciones del sistema con color fijo, no categorías que el usuario elija.
 export const ICONOS_LISTA: CategoriaIconoId[] = [
-  "comida", "transporte", "hogar", "salud", "farmacia", "ocio",
-  "compras", "servicios", "educacion", "mascotas", "viajes",
-  "tecnologia", "billete", "chancho", "otros",
+  "comida", "cafe", "transporte", "hogar", "salud", "farmacia",
+  "ocio", "gimnasio", "compras", "regalo", "servicios", "educacion",
+  "mascotas", "viajes", "tecnologia", "billete", "chancho", "otros",
 ];
 
 // Defaults por nombre: las categorías que ya existen no tienen ícono ni color guardados, así
@@ -63,15 +86,16 @@ const REGLAS: { claves: string[]; icono: CategoriaIconoId; color: CategoriaColor
   { claves: ["farmacia", "medicament", "remedio", "pharmacy"], icono: "farmacia", color: "menta" },
   { claves: ["salud", "medic", "health", "obra social"], icono: "salud", color: "menta" },
   { claves: ["sueldo", "salario", "efectivo", "cobro", "honorario", "salary", "cash"], icono: "billete", color: "contraste" },
-  { claves: ["ocio", "juego", "game", "salida", "cine", "bar"], icono: "ocio", color: "rosa" },
+  { claves: ["cafe", "bar", "starbucks", "coffee"], icono: "cafe", color: "coral" },
+  { claves: ["ocio", "juego", "game", "salida", "cine"], icono: "ocio", color: "rosa" },
   { claves: ["compra", "ropa", "shopping", "indument"], icono: "compras", color: "magenta" },
   { claves: ["servicio", "luz", "gas", "internet", "netflix", "suscrip", "service"], icono: "servicios", color: "indigo" },
   { claves: ["educa", "curso", "libro", "escuela", "facultad"], icono: "educacion", color: "lima" },
   { claves: ["mascota", "perro", "gato", "vet", "loki"], icono: "mascotas", color: "arena" },
-  { claves: ["regalo", "gift"], icono: "compras", color: "rosa" },
+  { claves: ["regalo", "gift", "cumple"], icono: "regalo", color: "rosa" },
   { claves: ["viaje", "vacacion", "hotel", "vuelo", "travel"], icono: "viajes", color: "cielo" },
   { claves: ["trabajo", "oficina", "work"], icono: "billete", color: "contraste" },
-  { claves: ["deporte", "gimnasio", "gym", "sport"], icono: "salud", color: "lima" },
+  { claves: ["deporte", "gimnasio", "gym", "sport", "club"], icono: "gimnasio", color: "lima" },
   { claves: ["belleza", "peluqu", "estetica"], icono: "compras", color: "magenta" },
   { claves: ["tecno", "compu", "celular", "software", "tech"], icono: "tecnologia", color: "indigo" },
   { claves: ["ahorro", "reserva", "saving", "inversion", "invest"], icono: "chancho", color: "menta" },
