@@ -276,8 +276,6 @@ export const en: AppLocale = {
     `At your current pace it lasts about ${dura} ${dura === 1 ? "day" : "days"}, with about ${faltan} left to close.`,
   canSpendPerDay: "Spend per day",
   kpiCanSpendPerDayInfo: "Your available balance split across the days left in the period (estimated from your previous periods).",
-  hapticsTitle: "Vibration",
-  hapticsSub: "Buzzes on save, delete and navigation (Android only; the visual effect is always on)",
   simWhatIf: "What if…?",
   simNow: "now",
   simNoChange: "At your current pace.",

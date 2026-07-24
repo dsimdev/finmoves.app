@@ -315,23 +315,35 @@ input[type="number"] { -moz-appearance: textfield; }
   40%  { transform: translateX(-5px); }
   100% { transform: translateX(0); }
 }
-/* Pulso VISUAL del háptico (lib/haptics). Va siempre, incluso si la vibración está apagada.
-   punch = confirmación (guardar, toggle); shake = borrado. Cortos para que no molesten. */
-@keyframes hapticPunch {
+/* Pulso VISUAL de feedback (lib/feedback). Es el ÚNICO feedback físico que da la app: la
+   vibración se sacó en v2.102.0 porque iOS no la soporta y no hay alternativa web.
+   Por eso el pulso pisa más fuerte que antes: comprime y REBOTA (overshoot), que es lo que
+   lo hace leerse como un golpe y no como un fundido.
+   punch = confirmación (guardar); tap = toque liviano (navegar, seleccionar); shake = borrado. */
+@keyframes fbPunch {
   0%   { transform: scale(1); }
-  35%  { transform: scale(.94); }
+  30%  { transform: scale(.88); }
+  60%  { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
-@keyframes hapticShake {
-  0%,100% { transform: translateX(0); }
-  25%     { transform: translateX(-3px); }
-  75%     { transform: translateX(3px); }
+@keyframes fbTap {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(.93); }
+  100% { transform: scale(1); }
 }
-.haptic-punch { animation: hapticPunch .2s var(--ease-settle); }
-.haptic-shake { animation: hapticShake .22s ease-in-out; }
+@keyframes fbShake {
+  0%,100% { transform: translateX(0); }
+  15%     { transform: translateX(-5px); }
+  45%     { transform: translateX(4px); }
+  75%     { transform: translateX(-2px); }
+}
+.fb-punch { animation: fbPunch .26s var(--ease-settle); }
+.fb-tap   { animation: fbTap .16s var(--ease-settle); }
+.fb-shake { animation: fbShake .28s ease-in-out; }
 @media (prefers-reduced-motion: reduce) {
-  @keyframes hapticPunch { 0%,100% { transform: none; } }
-  @keyframes hapticShake { 0%,100% { transform: none; } }
+  @keyframes fbPunch { 0%,100% { transform: none; } }
+  @keyframes fbTap   { 0%,100% { transform: none; } }
+  @keyframes fbShake { 0%,100% { transform: none; } }
 }
 @media (prefers-reduced-motion: reduce) {
   @keyframes appearPop { from,to { opacity: 1; transform: none; } }

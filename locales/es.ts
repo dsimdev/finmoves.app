@@ -274,8 +274,6 @@ export const es = {
     `A tu ritmo actual te dura aprox. ${dura} ${dura === 1 ? "día" : "días"} y faltan aprox. ${faltan} para cerrar.`,
   canSpendPerDay: "Gastá por día",
   kpiCanSpendPerDayInfo: "Tu disponible repartido entre los días que faltan para cerrar el período (estimados según tus períodos anteriores).",
-  hapticsTitle: "Vibración",
-  hapticsSub: "Vibra al guardar, borrar y navegar (solo Android; el efecto visual va siempre)",
   simWhatIf: "¿Y si…?",
   simNow: "hoy",
   simNoChange: "A tu ritmo actual.",

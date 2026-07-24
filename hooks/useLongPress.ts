@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useCallback } from "react";
-import { haptic } from "@/lib/haptics";
+import { feedback } from "@/lib/feedback";
 
 // Long-press para entrar en modo selección (patrón de cualquier bandeja: WhatsApp, Gmail,
 // Fotos). Devuelve handlers listos para pegar en el elemento.
@@ -27,9 +27,12 @@ export function useLongPress(onLongPress: () => void) {
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     disparado.current = false;
     inicio.current = { x: e.clientX, y: e.clientY };
+    // El elemento se captura ACÁ: dentro del setTimeout el evento ya se recicló y
+    // currentTarget viene en null.
+    const el = e.currentTarget as HTMLElement;
     timer.current = setTimeout(() => {
       disparado.current = true;
-      haptic("select"); // el long-press "prendió" la selección: micro-feedback
+      feedback("select", el); // el long-press "prendió" la selección: micro-feedback
       onLongPress();
     }, UMBRAL_MS);
   }, [onLongPress]);

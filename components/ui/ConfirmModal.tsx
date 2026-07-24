@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useModalBack } from "@/hooks/useModalBack";
+import { feedback } from "@/lib/feedback";
 
 /**
  * Modal flotante centrado para confirmaciones y advertencias (estilo unificado
@@ -41,7 +42,9 @@ export function ConfirmModal({ title, children, confirmLabel, cancelLabel, confi
         {children && <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, marginBottom: 22 }}>{children}</div>}
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid var(--border)", background: "none", color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>{cancelLabel}</button>
-          <button onClick={onConfirm} disabled={loading} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: confirmColor, color: "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>{loading ? "…" : confirmLabel}</button>
+          {/* El pulso sale de acá y no de cada llamador: así todo confirmar lo hereda. Rojo =
+              destructivo → shake; el resto → punch de confirmación. */}
+          <button onClick={(e) => { feedback(confirmColor === "var(--red)" ? "delete" : "success", e.currentTarget); onConfirm(); }} disabled={loading} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: confirmColor, color: "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>{loading ? "…" : confirmLabel}</button>
         </div>
       </div>
     </div>,

@@ -14,7 +14,6 @@ import { CategoriaIcono } from "@/components/ui/CategoriaIcono";
 import { visualDeCategoria } from "@/utils/categoria-visual";
 import { UndoToast } from "@/components/ui/UndoToast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { haptic } from "@/lib/haptics";
 import { useMoney } from "@/hooks/useHideValues";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { Movimiento, TipoMovimiento } from "@/types";
@@ -172,7 +171,7 @@ export default function MovimientosPage() {
   const [confirmarBorradoLote, setConfirmarBorradoLote] = useState(false);
   const borrarSeleccion = async () => {
     if (!user?.uid || aBorrar.length === 0) return;
-    haptic("delete");
+    // El pulso lo dispara el botón del ConfirmModal que llama acá.
     const borrados = aBorrar;
     setConfirmarBorradoLote(false);
     // Optimista: desaparecen ya y el toast ofrece deshacer mientras tanto.

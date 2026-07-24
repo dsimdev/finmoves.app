@@ -26,6 +26,12 @@ const TRAZOS: Record<CategoriaIconoId, React.ReactNode> = {
   move: <><path d="M7 4v13M7 17l-3-3M7 17l3-3" /><path d="M17 20V7M17 7l-3 3M17 7l3 3" /></>,
   billete: <><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /><path d="M6 12h.01M18 12h.01" /></>,
   farmacia: <><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M12 8v8M8 12h8" /></>,
+  // Mancuerna: gimnasio, deporte, club.
+  gimnasio: <><path d="M2 12h2M20 12h2M6.5 8v8M17.5 8v8M6.5 12h11" /><rect x="4" y="9" width="2.5" height="6" rx="1" /><rect x="17.5" y="9" width="2.5" height="6" rx="1" /></>,
+  // Caja con moño: regalos.
+  regalo: <><rect x="3" y="9" width="18" height="12" rx="1.5" /><path d="M3 13h18M12 9v12" /><path d="M12 9S10.5 3 7.5 3a2.5 2.5 0 0 0 0 5M12 9s1.5-6 4.5-6a2.5 2.5 0 0 1 0 5" /></>,
+  // Taza: café, bar, salidas cortas.
+  cafe: <><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" /><path d="M17 10h2a2.5 2.5 0 0 1 0 5h-2M7 2v2.5M11 2v2.5" /></>,
   otros: <><circle cx="12" cy="12" r="1.4" /><circle cx="19" cy="12" r="1.4" /><circle cx="5" cy="12" r="1.4" /></>,
 };
 

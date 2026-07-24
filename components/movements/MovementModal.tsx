@@ -29,7 +29,7 @@ import {
   IconoCalendario, IconoTarjeta, IconoRecurrente, detalleChip, esMovimientoFX, monedaMovFX,
 } from "./movement-shared";
 import { Movimiento, TipoMovimiento, ConfigUsuario } from "@/types";
-import { haptic } from "@/lib/haptics";
+import { feedback } from "@/lib/feedback";
 
 interface MovementModalProps {
   open: boolean;
@@ -408,9 +408,9 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
     const periodoIdFinal = abrePeriodo ? fechaAPeriodoId(fecha) : (periodoActual?.periodoId ?? null);
     if (!periodoIdFinal) { setAddError(t.errNoActivePeriod); return; }
 
-    // Háptico de confirmación: acá ya está todo validado y el guardado va sí o sí. Sincrónico,
-    // antes de cualquier await (navigator.vibrate necesita la activación del gesto viva).
-    haptic("success");
+    // Pulso de confirmación sobre el botón de guardar: acá ya está todo validado y el guardado
+    // va sí o sí. Se dispara antes del await para que el rebote acompañe al toque.
+    feedback("success", (e.currentTarget as HTMLFormElement | null)?.querySelector<HTMLElement>('button[type="submit"]'));
 
     const uid = user.uid;
     const now = new Date();
@@ -501,7 +501,7 @@ export function MovementModal({ open, mode, movimiento, movimientos, config, act
 
   const handleDelete = async () => {
     if (!user?.uid || !movimiento) return;
-    haptic("delete"); // sincrónico al entrar, antes del await
+    // El pulso lo dispara el botón del ConfirmModal que llama acá.
     setEditLoading(true); setEditError("");
     try {
       await eliminarMovimiento(user.uid, movimiento.id);
