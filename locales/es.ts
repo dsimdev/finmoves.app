@@ -334,7 +334,6 @@ export const es = {
   byCategory: "Por categoría",
   vsPrevPeriod: "vs período anterior",
   top5Descriptions: "Top 5 descripciones",
-  byDay: "Por día",
   expensesCount: (n: number) => `${n} gasto${n !== 1 ? "s" : ""}`,
   availableIncome: "Total disponible",
   /** Subtítulo del hero de Ingresos: lo que queda hoy sin gastar, junto a la comparativa. */
@@ -367,7 +366,6 @@ export const es = {
   today: "Hoy",
   todaySpent: "Gasto hoy",
   kpiTodaySpentInfo: "Lo que llevás gastado hoy. El color lo compara con lo que podés gastar por día para llegar al cierre: verde si vas por debajo, amarillo si estás cerca, rojo si lo igualaste o te pasaste.",
-  buyUsd: "Compra U$D",
   privacyLink: "Privacidad",
   termsLink: "Términos",
   avgSpent: "Gasto típico",

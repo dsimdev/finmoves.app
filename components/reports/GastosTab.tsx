@@ -6,7 +6,7 @@ import { useMoney } from "@/hooks/useHideValues";
 import { EyeIcon } from "@/components/ui/EyeIcon";
 import { MiniStat } from "@/components/ui/MiniStat";
 import { Bar } from "@/components/reports/charts";
-import { abbr, sinAño, shortPer, colorPct, colorZ, deltaMag, deltaColor } from "@/components/reports/format";
+import { abbr, shortPer, colorPct, colorZ, deltaMag, deltaColor } from "@/components/reports/format";
 import { formatARS } from "@/utils/periodo";
 import type { PeriodoResumen } from "@/utils/periodo";
 import type { ConfigUsuario } from "@/types";
@@ -28,8 +28,6 @@ interface Props {
   comp: { categoria: string; actual: number; anterior: number; deltaPct: number | null }[];
   descs: Desc[];
   descsCompra: Set<string>;
-  porFecha: Desc[];
-  splitPorFecha: Map<string, { gasto: number; compra: number }>;
   catsConPresu: Cat[];
   catsEditables: string[];
   esCatCompra: (cat: string) => boolean;
@@ -41,19 +39,19 @@ interface Props {
   setEditingBudget: Dispatch<SetStateAction<Record<string, string>>>;
   setModalBudget: (v: boolean) => void;
   setCatModal: (v: string | null) => void;
-  setDiaModal: (v: string | null) => void;
+  /** Abre el detalle de una categoría en el período anterior (desde la comparativa). */
+  setCatAnteriorModal: (v: string | null) => void;
   setModalTop: (v: "gastos" | "descs" | "movcat" | null) => void;
   setKpiInfo: (v: KpiInfo) => void;
 }
 
 // Subtab "Gastos" de Reportes: hero del gastado, mini-stats (tendencia, gasto real,
-// ritmo, prom. por mov), categorías con presupuesto, comparativa vs anterior,
-// top descripciones y gasto por día.
+// ritmo, prom. por mov), categorías con presupuesto y comparativa vs anterior.
 export function GastosTab({
   periodo, periodos, activos, anterior, esPeriodoVigente, ritmo, tendenciaGasto, avgHistorico,
-  promPorMov, comp, descs, descsCompra, porFecha, splitPorFecha, catsConPresu, catsEditables,
+  promPorMov, comp, descs, descsCompra, catsConPresu, catsEditables,
   esCatCompra, presupuesto, presupuestoEfectivo, showBudget, config,
-  setShowBudget, setEditingBudget, setModalBudget, setCatModal, setDiaModal, setModalTop, setKpiInfo,
+  setShowBudget, setEditingBudget, setModalBudget, setCatModal, setCatAnteriorModal, setModalTop, setKpiInfo,
 }: Props) {
   const t = useT();
   const { oculto, toggle, m: money } = useMoney();
@@ -143,8 +141,13 @@ export function GastosTab({
         <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{t.vsPrevPeriod}</div>
           <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 12 }}>{shortPer(anterior.periodoId)}</div>
+          {/* Tocar una fila abre lo que se gastó en esa categoría el período ANTERIOR (que es
+              el término de comparación). Las que no tuvieron nada entonces no son clickeables:
+              abrirían un modal vacío. */}
           {comp.filter((c) => c.actual > 0 || c.anterior > 0).slice(0, 8).map((c) => (
-            <div key={c.categoria} className="row" style={{ padding: "8px 0" }}>
+            <div key={c.categoria} className="row" role={c.anterior > 0 ? "button" : undefined}
+              onClick={c.anterior > 0 ? () => setCatAnteriorModal(c.categoria) : undefined}
+              style={{ padding: "8px 0", cursor: c.anterior > 0 ? "pointer" : "default" }}>
               <span style={{ fontSize: 13 }}>{c.categoria}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {(() => { const diff = c.actual - c.anterior; return (
@@ -164,42 +167,9 @@ export function GastosTab({
       {/* "Top 5 descripciones" eliminado (v2.85.2): con el filtro in-place de Movimientos
           ya se ve el detalle por descripción; ahorra pantalla en Reportes. */}
 
-      {/* Por fecha — barra apilada: rojo gasto, amarillo compra USD */}
-      {reportOn("gastos_otros") && porFecha.length > 0 && (
-        <div className="soft" style={{ marginBottom: 12, background: "linear-gradient(135deg, var(--surface), var(--surface-alt))" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{t.byDay}</span>
-            {[...splitPorFecha.values()].some((v) => v.compra > 0) && (
-              <div style={{ display: "flex", gap: 10, fontSize: 9, color: "var(--muted)" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "var(--red)" }} />{t.spent}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "var(--yellow)" }} />USD</span>
-              </div>
-            )}
-          </div>
-          {(() => {
-            const maxTotal = Math.max(...porFecha.map((f) => f.monto), 1);
-            return (
-              <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, alignItems: "flex-end", scrollbarWidth: "none" }}>
-                {porFecha.map((f, i) => {
-                  const sp = splitPorFecha.get(f.nombre) ?? { gasto: f.monto, compra: 0 };
-                  const gH = Math.round((sp.gasto / maxTotal) * 96);
-                  const cH = Math.round((sp.compra / maxTotal) * 96);
-                  return (
-                    <div key={i} onClick={() => setDiaModal(sinAño(f.nombre))} style={{ flexShrink: 0, width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: "pointer" }}>
-                      <div style={{ fontSize: 8, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{oculto ? "•" : abbr(f.monto)}</div>
-                      <div style={{ height: 96, width: 20, background: "var(--faint)", borderRadius: 7, display: "flex", flexDirection: "column", justifyContent: "flex-end", overflow: "hidden" }}>
-                        {cH > 0 && <div style={{ width: "100%", height: cH, background: "var(--yellow)", transition: "height .5s ease" }} />}
-                        {gH > 0 && <div style={{ width: "100%", height: gH, background: "var(--red)", transition: "height .5s ease" }} />}
-                      </div>
-                      <div style={{ fontSize: 8, color: "var(--muted)" }}>{sinAño(f.nombre)}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>
-      )}
+      {/* "Por día" eliminado (v2.103.0): el total gastado de cada día ahora vive en el resumen
+          del día colapsado en Movimientos, que es donde se mira el detalle diario. Misma
+          lógica con la que se sacó "Top 5 descripciones" en v2.85.2. */}
     </>
   );
 }

@@ -5,12 +5,27 @@ import { createPortal } from "react-dom";
 import { useT } from "@/hooks/useTranslation";
 import { useAppPrefs } from "@/hooks/useAppPrefs";
 import type { Recordatorio } from "@/services/firebase/recordatorios";
+import type { RecurrenteProyectado } from "@/utils/recurrent-forecast";
 
 // Calendario de la card de recordatorios. No es un adorno: ES el control de entrada — se
 // navega entre meses y se toca un día para cargar ahí (reemplaza al input de fecha, que
 // ocupaba una fila y obligaba a escribir la fecha a mano).
 //
-// El punto bajo el número marca los días con algo; violeta = repetible, teal = puntual.
+// Todo día con algo se TIÑE de su color (fondo + borde + número). Antes era un punto de 4px
+// bajo el número y no alcanzaba: había que buscarlo. El tinte se lee de un vistazo.
+//
+// HOY se marca con un punto VERDE, no con el tinte: así se reconoce aunque el día además
+// tenga un recordatorio o un recurrente pintándolo de otro color.
+//
+// Los colores:
+//   · recordatorio repetible → violeta · recordatorio puntual → teal
+//   · recurrente proyectado  → naranja si falta, amarillo si se aproxima, rojo si venció
+//     (los MISMOS umbrales que usa el cron para notificar)
+//
+// El recurrente es una PREDICCIÓN (cuándo se espera el próximo, según la última carga), no un
+// hecho agendado: por eso si un día tiene las dos cosas manda el color del recordatorio, y el
+// recurrente pasa a un punto bajo el número. El naranja del "lejos" evita el teal, que ya es
+// el del recordatorio puntual.
 
 const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
 
@@ -18,8 +33,10 @@ const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
 const iso = (anio: number, mes0: number, dia: number) =>
   `${anio}-${String(mes0 + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 
-export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerrarDia, children }: {
+export function ReminderCalendar({ recordatorios, recurrentes = [], seleccionado, onSelect, onCerrarDia, children }: {
   recordatorios: Recordatorio[];
+  /** Recurrentes proyectados a su próxima fecha esperada (marca hueca). */
+  recurrentes?: RecurrenteProyectado[];
   /** Día elegido (YYYY-MM-DD) o null si todavía no se tocó ninguno. */
   seleccionado: string | null;
   onSelect: (fecha: string) => void;
@@ -50,7 +67,9 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerr
   useLayoutEffect(() => {
     if (!seleccionado) { setPos(null); return; }
     const celda = celdaRefs.current[seleccionado];
-    if (!celda) return;
+    // Sin celda visible (el día quedó fuera del mes en vista) no hay dónde anclarlo: se limpia
+    // la posición para que no quede flotando en el lugar viejo.
+    if (!celda) { setPos(null); return; }
     const c = celda.getBoundingClientRect();
     const ANCHO = Math.min(280, window.innerWidth - 24);
     // Centrado en la celda, sin salirse de la pantalla.
@@ -90,11 +109,19 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerr
 
   const { anio, mes } = vista;
 
-  const mover = (delta: number) =>
+  // Cambiar de mes CIERRA el día abierto: su celda deja de existir en la grilla y el popover
+  // quedaba flotando sobre un mes que ya no es el suyo (el cierre por "tocar afuera" no lo
+  // agarra, porque las flechas están dentro del calendario).
+  const mover = (delta: number) => {
+    if (seleccionado) onCerrarDia();
+    // Las refs del mes que se va quedan apuntando a nodos desmontados: se descartan para no
+    // resolver una celda vieja en el próximo posicionamiento.
+    celdaRefs.current = {};
     setVista(({ anio: a, mes: m }) => {
       const total = a * 12 + m + delta;
       return { anio: Math.floor(total / 12), mes: ((total % 12) + 12) % 12 };
     });
+  };
 
   const diasEnMes = new Date(Date.UTC(anio, mes + 1, 0)).getUTCDate();
   // getUTCDay(): 0=domingo. La grilla arranca en lunes, así que domingo pasa a ser 6.
@@ -107,6 +134,32 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerr
     if (y !== anio || m !== mes + 1) continue;
     porDia.set(d, { repite: (porDia.get(d)?.repite ?? false) || !!r.repetir });
   }
+
+  // Día del mes → recurrentes esperados ahí. Un VENCIDO proyecta a una fecha ya pasada, así
+  // que se ancla en HOY: es lo que sigue estando pendiente, y si no se movería fuera de vista
+  // justo cuando más importa. Si hoy no está en el mes en vista, no se ancla nada.
+  const recurrentesPorDia = new Map<number, RecurrenteProyectado[]>();
+  const hoyEnVista = Number(hoyISO.slice(0, 4)) === anio && Number(hoyISO.slice(5, 7)) === mes + 1;
+  for (const p of recurrentes) {
+    let dia: number | null = null;
+    if (p.estado === "vencido") {
+      if (hoyEnVista) dia = Number(hoyISO.slice(8, 10));
+    } else {
+      const [y, m, d] = p.fecha.split("-").map(Number);
+      if (y === anio && m === mes + 1) dia = d;
+    }
+    if (dia === null) continue;
+    const arr = recurrentesPorDia.get(dia);
+    if (arr) arr.push(p); else recurrentesPorDia.set(dia, [p]);
+  }
+
+  // Color del recurrente por urgencia, con los umbrales del cron. Si un día junta varios,
+  // manda el más urgente. El "lejos" usa NARANJA y no teal: el teal ya es el punto del
+  // recordatorio puntual y dos tonos casi iguales no se distinguían.
+  const colorRecurrente = (ps: RecurrenteProyectado[]) =>
+    ps.some((p) => p.estado === "vencido") ? "var(--red)"
+      : ps.some((p) => p.estado === "cerca") ? "var(--yellow)"
+      : "var(--orange)";
 
   const celdas: (number | null)[] = [
     ...Array<null>(offset).fill(null),
@@ -151,9 +204,14 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerr
           if (dia === null) return <div key={`v${i}`} />;
           const fecha = iso(anio, mes, dia);
           const marca = porDia.get(dia);
+          const recs = recurrentesPorDia.get(dia);
           const esHoy = fecha === hoyISO;
           const sel = fecha === seleccionado;
           const color = marca?.repite ? "var(--purple)" : "var(--teal)";
+          const colorRec = recs ? colorRecurrente(recs) : null;
+          // Un solo color de tinte por celda. Si el día tiene recordatorio Y recurrente, manda
+          // el recordatorio: es algo que el usuario agendó, no una estimación.
+          const tinte = marca ? color : colorRec;
           return (
             <button
               key={dia}
@@ -165,20 +223,41 @@ export function ReminderCalendar({ recordatorios, seleccionado, onSelect, onCerr
               style={{
                 aspectRatio: "1", display: "flex", flexDirection: "column", cursor: "pointer",
                 alignItems: "center", justifyContent: "center", gap: 2, borderRadius: 7, padding: 0,
-                background: sel ? "var(--accent)" : esHoy ? "var(--surface-alt)" : "transparent",
-                border: `1px solid ${sel ? "var(--accent)" : esHoy ? "var(--border)" : "transparent"}`,
+                // TODA celda con algo se TIÑE de su color: un punto de 4px es demasiado sutil
+                // para leer el mes de un vistazo. El tinte pinta el día entero y el punto queda
+                // como refuerzo, no como única señal.
+                // Hoy ya no pinta el fondo: eso competía con el tinte y lo perdía cuando el día
+                // tenía algo. Lo identifica el punto verde de abajo, que no depende del tinte.
+                background: sel ? "var(--accent)"
+                  : tinte ? `color-mix(in srgb, ${tinte} 18%, transparent)`
+                  : "transparent",
+                border: `1px solid ${sel ? "var(--accent)"
+                  : tinte ? `color-mix(in srgb, ${tinte} 45%, transparent)`
+                  : "transparent"}`,
                 transition: "background .12s",
               }}
             >
               <span style={{
                 fontSize: 10, lineHeight: 1, fontVariantNumeric: "tabular-nums",
-                color: sel ? "#fff" : marca ? "var(--text)" : "var(--muted)",
-                fontWeight: sel || marca ? 700 : 400, opacity: sel || marca ? 1 : 0.55,
+                // Sobre celda teñida el número toma el mismo color: día y marca se leen como
+                // una sola cosa en vez de un número neutro sobre un fondo de color.
+                color: sel ? "#fff" : tinte ? tinte : esHoy ? "var(--text)" : "var(--muted)",
+                fontWeight: sel || tinte || esHoy ? 700 : 400, opacity: sel || tinte || esHoy ? 1 : 0.55,
               }}>{dia}</span>
-              <span style={{
-                width: 4, height: 4, borderRadius: "50%",
-                background: marca ? (sel ? "#fff" : color) : "transparent",
-              }} />
+              {/* Fila de puntos bajo el número:
+                  · HOY siempre lleva el suyo, verde. Antes se marcaba solo con un fondo gris y
+                    borde tenue, que un día con tinte pisaba: hoy dejaba de reconocerse justo
+                    cuando la celda tenía algo. El punto es independiente del tinte.
+                  · El del recurrente aparece cuando el día tiene AMBAS cosas (el tinte es del
+                    recordatorio y el punto avisa que además cae un recurrente). */}
+              <span style={{ height: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 2 }}>
+                {esHoy && (
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: sel ? "#fff" : "var(--green)" }} />
+                )}
+                {marca && colorRec && (
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: sel ? "#fff" : colorRec }} />
+                )}
+              </span>
             </button>
           );
         })}

@@ -4,6 +4,90 @@ All notable changes to FinMoves are documented here.
 
 ---
 
+## [2.103.0] — 2026-07-23
+
+### Added — recurrentes projected onto the home calendar
+The reminder calendar now also shows **when each recurring movement is expected**, so an
+upcoming subscription is visible before the push arrives instead of only through it.
+
+- New `utils/recurrent-forecast.ts`: `proyectarRecurrentes()` resolves each active template's
+  reference date exactly the way the cron does (latest movement matching `recurrentKey`, or
+  `createdAt` in AR time when it was never loaded) and projects it to `ref + DUE_DAYS`. The
+  thresholds are imported from `recurrent-reminder`, not re-declared, so the calendar and the
+  notification can never disagree. 15 unit tests cover matching, homonyms, and the AR-time edge
+  where a UTC-midnight `createdAt` belongs to the previous day.
+- Colour follows the cron's own cycle: **orange** while far, yellow from `PRE_DAYS` (approaching,
+  when the pre-notice fires), red past `DUE_DAYS`. When several land on one day, the most urgent
+  wins. Orange rather than teal because teal is already the one-off reminder's colour.
+- **Overdue ones anchor to today** rather than their elapsed expected date, which would have
+  scrolled them out of view precisely when they matter. The day popover lists them with their
+  amount, without a delete button (they are managed from Movements).
+- Notification behaviour is untouched: this only mirrors a calculation that already existed.
+
+### Changed — today is marked with a green dot
+Today used to be a grey cell background plus a faint border — which the tint painted over, so the
+current day stopped being recognisable exactly when it had a reminder or a recurrente on it. It
+now carries a **green dot** under the number, independent of the tint, and its number stays at
+full weight. The grey background is gone (it was the part that competed with the tint).
+
+### Changed — calendar days are tinted, not dotted
+Every day with something now **tints its whole cell** (background, border and number) instead of
+carrying a 4px dot underneath. The dot had to be hunted for; the tint reads at a glance. Reminders
+keep their colours (violet repeating, teal one-off) and recurrentes use the urgency scale above.
+When a day holds both, the reminder wins the tint — it is an agenda entry, not an estimate — and
+the recurrente falls back to a dot.
+
+### Fixed — day popover survived a month change
+Navigating months with a day open left the popover floating over a month it did not belong to:
+the outside-click handler ignores everything inside the calendar, and the arrows live there. The
+arrows now close the open day, stale `celdaRefs` are dropped on navigation, and the positioning
+effect clears `pos` when the anchor cell is not on screen instead of keeping the previous spot.
+
+### Changed — category detail groups identical expenses
+Tapping a category in Reports → Gastos listed one row per movement, which in repetitive
+categories (tolls, coffee) was an endless scroll of the same description. Rows are now **grouped
+by description** with their total and a `×N` count, sorted by total. Date and payment method are
+dropped on purpose — Movements' in-place filter covers that. New `utils/agrupar-gastos.ts`,
+6 unit tests (case/whitespace folding, first-seen label, blank descriptions).
+
+### Changed — short modals are floating cards, not bottom sheets
+A bottom sheet is a big gesture for a two-button confirmation. Modals whose content is short and
+bounded now open as centred `CenterCard`s — they appear in place with a pop instead of sliding a
+full-width panel up from the bottom.
+
+Converted: period navigation (a confirm), salary history, direct-to-savings, payment-method
+breakdown, `/analisis` range picker and day detail, the invite code, the sync log, and both
+category details — the current period's and its previous-period twin. Grouping by description
+(above) is what made those two short enough to qualify; `CenterCard` caps at `88vh` with its own
+scroll, so a category with many distinct descriptions still fits.
+
+`BottomSheet` stays only where the list is deliberately long: "top 20 expenses" / "all
+categories", the budget editor (a form with one row per category) and the changelog (five full
+releases). Those are what a draggable, near-full-height sheet is for.
+
+### Added — "vs previous period" rows open their detail
+Each category row in the comparison is now tappable and opens what was spent on it **during the
+previous period**, grouped the same way, so both sides of the comparison read alike. Rows with
+nothing on the previous side stay inert rather than opening an empty sheet.
+
+### Changed — a collapsed day shows what was spent, not how many movements
+The collapsed day header showed one count per type — five coloured digits where "3" told you
+nothing. It now shows the **day's spending as the hero number**, with anything outside that total
+(income, moves, remaining FX operations) reduced to a **coloured dot** beside it: "something else
+happened here" without adding text.
+
+- The total uses the same `Gasto + CompraUSD` rule as `utils/periodo`, so it matches Reports.
+  `CompraUSD` therefore gets no yellow dot — it is already inside the number.
+- A day with no spending shows `—` instead of `$0`, which reads as a value rather than an absence.
+
+### Removed — "By day" chart in Reports → Gastos
+Redundant now that the per-day total lives in Movements, and the same reasoning that retired
+"Top 5 descriptions" in v2.85.2. The day-detail `BottomSheet` goes with it (the chart was its
+only entry point), along with `porFecha`/`splitPorFecha`, the `diaModal` state, the now-unused
+`gastosPorFecha`/`esGasto` imports and the orphaned `byDay`/`buyUsd` strings in both locales.
+
+---
+
 ## [2.102.0] — 2026-07-23
 
 ### Removed — hardware vibration (haptics)

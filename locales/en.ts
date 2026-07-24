@@ -336,7 +336,6 @@ export const en: AppLocale = {
   byCategory: "By category",
   vsPrevPeriod: "vs previous period",
   top5Descriptions: "Top 5 descriptions",
-  byDay: "By day",
   expensesCount: (n: number) => `${n} expense${n !== 1 ? "s" : ""}`,
   availableIncome: "Total available",
   /** Income hero subtitle: what's left unspent today, next to the comparison. */
@@ -369,7 +368,6 @@ export const en: AppLocale = {
   today: "Today",
   todaySpent: "Spent today",
   kpiTodaySpentInfo: "What you've spent today. The colour compares it with how much you can spend per day to reach the close: green if under, amber if close, red if you've matched or gone over.",
-  buyUsd: "USD buy",
   privacyLink: "Privacy",
   termsLink: "Terms",
   avgSpent: "Typical spent",

@@ -16,14 +16,15 @@ import { useData } from "../data-context";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/services/firebase/firebase";
 import { agruparPorPeriodo, gastosPorCategoria } from "@/utils/periodo";
+import { agruparGastosPorDescripcion } from "@/utils/agrupar-gastos";
 import { obtenerPresupuesto, guardarPresupuesto } from "@/services/firebase/presupuestos";
 import { useMoney } from "@/hooks/useHideValues";
 import {
-  gastosPorMedioPago, gastosPorDescripcion, gastosPorFecha,
+  gastosPorMedioPago, gastosPorDescripcion,
   kpisPeriodo, ritmoGasto, comparativaCategorias,
   serieTendencia, parsePeriodoId, diasSinGastos,
   historialSueldo, proyectarAhorros, ritmoAhorro,
-  progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos, esGasto,
+  progresoMetaUSD, periodosParaMetaUSD, estadisticasPeriodos,
   inflacionPersonal as calcInflacionPersonal,
 } from "@/utils/reportes";
 import { afectaDisponible } from "@/utils/movement-fx";
@@ -40,6 +41,7 @@ import { GastosTab } from "@/components/reports/GastosTab";
 import { PeriodosTab } from "@/components/reports/PeriodosTab";
 import { KpiInfoModal } from "@/components/ui/KpiInfoModal";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { CenterCard } from "@/components/ui/CenterCard";
 import { SwipeTabs } from "@/components/ui/SwipeTabs";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { PeriodCompare } from "@/components/desktop/PeriodCompare";
@@ -120,7 +122,6 @@ export default function ReportesPage() {
   const [navPeriodo, setNavPeriodo] = useState<{ periodoId: string; target: Sub } | null>(null);
   const [modalSueldo, setModalSueldo] = useState(false);
   const [modalAhorros, setModalAhorros] = useState(false);
-  const [diaModal, setDiaModal] = useState<string | null>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [presupuesto, setPresupuesto] = useState<Record<string, number> | null>(null);
   const [showBudget, setShowBudget] = useState(false);
@@ -128,6 +129,9 @@ export default function ReportesPage() {
   const [editingBudget, setEditingBudget] = useState<Record<string, string>>({});
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [catModal, setCatModal] = useState<string | null>(null);
+  // Misma idea que catModal pero leyendo del período ANTERIOR: es el detalle de una fila de
+  // "vs período anterior", donde lo que se quiere ver es en qué se fue la plata ENTONCES.
+  const [catAnteriorModal, setCatAnteriorModal] = useState<string | null>(null);
   const [medioModal, setMedioModal] = useState<string | null>(null);
   const [periodMetric, setPeriodMetric] = useState<"gasto" | "ingreso" | "dias" | "gastoSueldo" | "inflacion" | "sueldoReal">("gasto");
   const [sueldoRealMode, setSueldoRealMode] = useState<"USD" | "IPC">("USD");
@@ -181,19 +185,6 @@ export default function ReportesPage() {
     return s;
   }, [periodo]);
   const esCatCompra = (cat: string) => cat === "CompraUSD" || cat === "CompraEUR";
-  const porFecha = periodo ? gastosPorFecha(periodo.movimientos, periodo.gastado) : [];
-  // Split por día: gasto (rojo) vs compra USD (amarillo). Clave = fecha original.
-  const splitPorFecha = useMemo(() => {
-    const map = new Map<string, { gasto: number; compra: number }>();
-    if (periodo) for (const m of periodo.movimientos) {
-      if (!esGasto(m)) continue;
-      const k = m.fecha || "—";
-      const cur = map.get(k) ?? { gasto: 0, compra: 0 };
-      if (m.tipo === "CompraUSD") cur.compra += m.monto; else cur.gasto += m.monto;
-      map.set(k, cur);
-    }
-    return map;
-  }, [periodo]);
   const kpis = periodo ? kpisPeriodo(periodo) : null;
   // Ritmo y comparativa sólo aplican a un período individual
   const ritmo = periodo && activos.length === 1 ? ritmoGasto(periodo, finPeriodo) : null;
@@ -713,10 +704,10 @@ export default function ReportesPage() {
                 periodo={periodo} periodos={periodos} activos={activos} anterior={anterior}
                 esPeriodoVigente={esPeriodoVigente} ritmo={ritmo} tendenciaGasto={tendenciaGasto} avgHistorico={avgHistorico}
                 promPorMov={promPorMov} comp={comp} descs={descs} descsCompra={descsCompra}
-                porFecha={porFecha} splitPorFecha={splitPorFecha} catsConPresu={catsConPresu} catsEditables={catsEditables}
+                catsConPresu={catsConPresu} catsEditables={catsEditables}
                 esCatCompra={esCatCompra} presupuesto={presupuesto} presupuestoEfectivo={presupuestoEfectivo}
                 showBudget={showBudget} config={config} setShowBudget={setShowBudget} setEditingBudget={setEditingBudget}
-                setModalBudget={setModalBudget} setCatModal={setCatModal} setDiaModal={setDiaModal}
+                setModalBudget={setModalBudget} setCatModal={setCatModal} setCatAnteriorModal={setCatAnteriorModal}
                 setModalTop={setModalTop} setKpiInfo={setKpiInfo}
               />
             ) : <div />}
@@ -758,10 +749,10 @@ export default function ReportesPage() {
       )}
 
       {/* Card: ir al período seleccionado en el gráfico */}
-      <BottomSheet open={!!navPeriodo} onClose={() => setNavPeriodo(null)} title={t.goToPeriodTitle}>
+      <CenterCard open={!!navPeriodo} onClose={() => setNavPeriodo(null)} title={t.goToPeriodTitle}>
         {navPeriodo && (
           <>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginTop: -8, marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 20 }}>
               {(navPeriodo.target === "ingresos" ? t.goToPeriodIncome : t.goToPeriodSpent)(shortPer(navPeriodo.periodoId))}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -771,10 +762,10 @@ export default function ReportesPage() {
             </div>
           </>
         )}
-      </BottomSheet>
+      </CenterCard>
 
       {/* Modal: Historial de aumentos de sueldo */}
-      <BottomSheet open={modalSueldo} onClose={() => setModalSueldo(false)} title={t.salaryHistory}>
+      <CenterCard open={modalSueldo} onClose={() => setModalSueldo(false)} title={t.salaryHistory} maxWidth={400}>
         {suelHistorial.map((ev, i) => (
           <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < suelHistorial.length - 1 ? "1px solid var(--faint)" : "none" }}>
             <div>
@@ -786,10 +777,10 @@ export default function ReportesPage() {
             <span style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)" }}>+{ev.pct}%</span>
           </div>
         ))}
-      </BottomSheet>
+      </CenterCard>
 
       {/* Modal: Todo lo directo a ahorros */}
-      <BottomSheet open={modalAhorros} onClose={() => setModalAhorros(false)} title={t.directToSavings}>
+      <CenterCard open={modalAhorros} onClose={() => setModalAhorros(false)} title={t.directToSavings} maxWidth={400}>
         {movIngresosAhorros.map((m) => (
           <div key={m.id} className="row" style={{ padding: "10px 0", borderBottom: "1px solid var(--faint)" }}>
             <div style={{ minWidth: 0 }}>
@@ -799,7 +790,7 @@ export default function ReportesPage() {
             <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>+{money(m.monto)}</span>
           </div>
         ))}
-      </BottomSheet>
+      </CenterCard>
 
       {/* Modal: Todos los top gastos/descripciones */}
       <BottomSheet open={!!modalTop} onClose={() => setModalTop(null)}
@@ -832,43 +823,25 @@ export default function ReportesPage() {
             ))}
       </BottomSheet>
 
-      <BottomSheet open={!!diaModal} onClose={() => setDiaModal(null)} title={diaModal ?? ""}>
-        {(() => {
-          if (!diaModal) return null;
-          const fechaOriginal = porFecha.find((f) => sinAño(f.nombre) === diaModal)?.nombre ?? diaModal;
-          const movsDia = (periodo?.movimientos ?? []).filter((m) => esGasto(m) && (sinAño(m.fecha) === diaModal || m.fecha === fechaOriginal)).sort((a, b) => b.monto - a.monto);
-          const totalDia = movsDia.reduce((s, m) => s + m.monto, 0);
-          return (
-            <>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16 }}>{`${money(totalDia)} · ${t.expensesCount(movsDia.length)}`}</div>
-              {movsDia.map((m, i) => { const esCompra = m.tipo === "CompraUSD"; return (
-                <div key={i} className="row" style={{ padding: "11px 0" }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{m.descripcion || (esCompra ? t.buyUsd : "—")}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{esCompra ? `${m.cantidadUSD ? `U$D ${m.cantidadUSD}` : t.reserve}${m.medioPago ? ` · ${m.medioPago}` : ""}` : `${m.categoria} · ${m.medioPago}`}</div>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: esCompra ? "var(--yellow)" : "var(--red)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{money(m.monto)}</div>
-                </div>
-              ); })}
-            </>
-          );
-        })()}
-      </BottomSheet>
+      {/* El detalle por día salía del gráfico "Por día", eliminado en v2.103.0 junto con este
+          modal (era su único acceso). El detalle diario vive ahora en Movimientos. */}
 
       {kpiInfo && <KpiInfoModal title={kpiInfo.title} value={kpiInfo.value} explain={kpiInfo.explain} color={kpiInfo.color} onClose={() => setKpiInfo(null)} />}
 
       {/* Modal: gastos de una categoría */}
-      <BottomSheet open={!!catModal} onClose={() => setCatModal(null)} title={catModal ?? ""}>
+      <CenterCard open={!!catModal} onClose={() => setCatModal(null)} title={catModal ?? ""} maxWidth={420}>
         {(() => {
           if (!catModal || !periodo) return null;
           const movsCat = periodo.movimientos
-            .filter((m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD") && m.categoria === catModal)
-            .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+            .filter((m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD") && m.categoria === catModal);
+          // Agrupado por descripción: en categorías repetitivas (peajes, café) el listado
+          // movimiento por movimiento era un scroll interminable de la misma línea.
+          const gruposCat = agruparGastosPorDescripcion(movsCat);
           const totalCat = movsCat.reduce((s, m) => s + m.monto, 0);
           const budgetCat = presupuestoEfectivo?.[catModal];
           return (
             <>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <span>{money(totalCat)} · {t.expensesCount(movsCat.length)}</span>
                 {budgetCat && !oculto && (() => {
                   const usedPct = Math.round((totalCat / budgetCat) * 100);
@@ -876,13 +849,14 @@ export default function ReportesPage() {
                   return <span style={{ color: bc, fontWeight: 600 }}>{t.budget}: {money(budgetCat)} · {usedPct}%</span>;
                 })()}
               </div>
-              {movsCat.map((m) => (
-                <div key={m.id} className="row" style={{ padding: "11px 0" }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.descripcion || "—"}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{sinAño(m.fecha)} · {m.medioPago}</div>
+              {gruposCat.map((g) => (
+                <div key={g.descripcion} className="row" style={{ padding: "11px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.descripcion}</span>
+                    {/* El "×N" solo aparece si hubo más de uno: en los únicos sería ruido. */}
+                    {g.veces > 1 && <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{g.veces}×</span>}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(m.monto)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(g.total)}</div>
                 </div>
               ))}
               {movsCat.length === 0 && (
@@ -891,17 +865,49 @@ export default function ReportesPage() {
             </>
           );
         })()}
-      </BottomSheet>
+      </CenterCard>
+
+      {/* Modal: gastos de una categoría en el período ANTERIOR (fila de "vs período anterior").
+          Mismo agrupado que el del período actual, para poder compararlos de un vistazo. */}
+      <CenterCard open={!!catAnteriorModal} onClose={() => setCatAnteriorModal(null)} maxWidth={420}
+        title={catAnteriorModal ? `${catAnteriorModal} · ${shortPer(anterior?.periodoId ?? "")}` : ""}>
+        {(() => {
+          if (!catAnteriorModal || !anterior) return null;
+          const movsCat = anterior.movimientos
+            .filter((m) => (m.tipo === "Gasto" || m.tipo === "CompraUSD") && m.categoria === catAnteriorModal);
+          const grupos = agruparGastosPorDescripcion(movsCat);
+          const total = movsCat.reduce((s, m) => s + m.monto, 0);
+          return (
+            <>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16 }}>
+                {money(total)} · {t.expensesCount(movsCat.length)}
+              </div>
+              {grupos.map((g) => (
+                <div key={g.descripcion} className="row" style={{ padding: "11px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.descripcion}</span>
+                    {g.veces > 1 && <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{g.veces}×</span>}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 12 }}>{money(g.total)}</div>
+                </div>
+              ))}
+              {movsCat.length === 0 && (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--muted)", fontSize: 13 }}>{t.noMovements}</div>
+              )}
+            </>
+          );
+        })()}
+      </CenterCard>
 
       {/* Modal: detalle por medio de pago — totales por tipo de movimiento */}
-      <BottomSheet open={!!medioModal} onClose={() => setMedioModal(null)} title={medioModal ?? ""}>
+      <CenterCard open={!!medioModal} onClose={() => setMedioModal(null)} title={medioModal ?? ""} maxWidth={380}>
         {(() => {
           if (!medioModal) return null;
           const data = movCounts?.porMedio.find((p) => p.medio === medioModal);
           if (!data) return null;
           return (
             <>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: -8, marginBottom: 16 }}>{money(data.total)} · {data.count}×</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16 }}>{money(data.total)} · {data.count}×</div>
               {data.tipos.map(({ tipo, n, monto }) => (
                 <div key={tipo} className="row" style={{ padding: "11px 0" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
@@ -915,7 +921,7 @@ export default function ReportesPage() {
             </>
           );
         })()}
-      </BottomSheet>
+      </CenterCard>
 
       {/* Modal: editar presupuesto del período */}
       <BottomSheet open={modalBudget} onClose={() => setModalBudget(false)} title={t.budgetPeriod}>

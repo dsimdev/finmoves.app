@@ -4,6 +4,65 @@ Lo nuevo y lo que mejoró, versión por versión.
 
 ---
 
+## [2.103.0] — 2026-07-23
+
+### Tus recurrentes ahora se ven en el calendario
+El calendario del Inicio te muestra **cuándo se espera cada gasto recurrente** (Netflix, el
+gimnasio, lo que tengas marcado). Antes te enterabas solo cuando llegaba la notificación; ahora
+lo ves venir.
+
+El color te dice qué tan cerca está: naranja si falta, amarillo si se aproxima, rojo si ya se
+pasó. Tocá el día y ves cuáles son, con su monto.
+
+Los que ya se pasaron aparecen en el día de hoy, para que no se te pierdan en una fecha vieja.
+Las notificaciones siguen funcionando igual que siempre.
+
+### El día de hoy se marca con un punto verde
+Antes el día actual se distinguía por un fondo grisecito que, si ese día tenía algo agendado,
+quedaba tapado por el color. Ahora lleva un **punto verde** abajo del número que no lo tapa nada,
+así siempre sabés dónde estás parado.
+
+### El calendario ahora se pinta
+Antes cada día con algo tenía un puntito chiquito abajo que había que buscar. Ahora **el día
+entero se pinta** de su color, así ves el mes de un vistazo. Los recordatorios mantienen sus
+colores (violeta los que se repiten, celeste los puntuales) y los recurrentes usan los de arriba.
+
+También arreglamos que al cambiar de mes con un día abierto, el detalle quedaba flotando sobre
+un mes que no era el suyo.
+
+### Al tocar una categoría, se agrupan los gastos iguales
+En Reportes → Gastos, tocar una categoría te mostraba un renglón por cada movimiento: en cosas
+como peajes era un scroll interminable de la misma línea repetida. Ahora **se agrupan por
+descripción**, con el total de cada una y cuántas veces fue. Se pierde la fecha y el medio de
+pago, pero eso lo tenés en el filtro de Movimientos.
+
+### Los modales cortos ahora son cards flotantes
+Los que tenían poca info subían desde abajo ocupando toda la pantalla, que es mucho gesto para
+mostrar dos botones. Ahora **aparecen como una card en el centro**, más liviano y más cerca de
+donde estabas mirando.
+
+Cambiaron: ir a un período, historial de sueldo, directo a ahorros, detalle por medio de pago,
+el rango y el detalle del día en Análisis, el código de invitación, el historial de sync y el
+detalle de una categoría (el del período actual y el del anterior).
+
+Los que siguen subiendo desde abajo son los que tienen listas largas de verdad: el top 20 de
+gastos, el presupuesto y el changelog.
+
+### "vs período anterior" ahora se puede tocar
+Cada categoría de la comparativa abre **en qué se te fue la plata el período anterior**, agrupado
+igual, para poder comparar los dos lados de la misma manera.
+
+### Un día cerrado te dice cuánto gastaste
+Antes, al colapsar un día en Movimientos, veías cuántos movimientos hubo de cada tipo. Saber que
+hubo "3" no servía de mucho. Ahora ves **cuánto gastaste ese día**, que es el dato que
+importa. Si además hubo un ingreso o un move, aparece un puntito de color al lado. Si no hubo
+gastos, va un guioncito en vez de un $0.
+
+### Sacamos el gráfico "Por día" de Reportes
+Con el total de cada día ya visible en Movimientos, el gráfico repetía la misma información.
+
+---
+
 ## [2.102.0] — 2026-07-23
 
 ### Sacamos la vibración
